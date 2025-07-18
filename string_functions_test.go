@@ -239,12 +239,12 @@ func TestEvaluateFullForm(t *testing.T) {
 				NewIntAtom(1),
 				NewIntAtom(2),
 			}},
-			expected: "Plus[1, 2]",
+			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "Empty list",
 			arg:      &List{Elements: []Expr{}},
-			expected: "{}",
+			expected: "List()",
 		},
 		{
 			name: "List literal",
@@ -254,7 +254,7 @@ func TestEvaluateFullForm(t *testing.T) {
 				NewIntAtom(2),
 				NewIntAtom(3),
 			}},
-			expected: "List[1, 2, 3]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name: "Nested expression",
@@ -267,7 +267,7 @@ func TestEvaluateFullForm(t *testing.T) {
 					NewIntAtom(3),
 				}},
 			}},
-			expected: "Plus[1, Times[2, 3]]",
+			expected: "Plus(1, Times(2, 3))",
 		},
 		{
 			name: "Complex expression",
@@ -280,7 +280,7 @@ func TestEvaluateFullForm(t *testing.T) {
 				}},
 				NewIntAtom(5),
 			}},
-			expected: "Equal[Plus[x, 1], 5]",
+			expected: "Equal(Plus(x, 1), 5)",
 		},
 	}
 
@@ -346,88 +346,88 @@ func TestStringFunctions_Integration(t *testing.T) {
 		// StringQ tests
 		{
 			name:     "StringQ on string",
-			input:    "StringQ[\"hello\"]",
+			input:    "StringQ(\"hello\")",
 			expected: "True",
 		},
 		{
 			name:     "StringQ on integer",
-			input:    "StringQ[42]",
+			input:    "StringQ(42)",
 			expected: "False",
 		},
 		{
 			name:     "StringQ on symbol",
-			input:    "StringQ[x]",
+			input:    "StringQ(x)",
 			expected: "False",
 		},
 		{
 			name:     "StringQ on list",
-			input:    "StringQ[{1, 2, 3}]",
+			input:    "StringQ([1, 2, 3])",
 			expected: "False",
 		},
 		
 		// StringLength tests
 		{
 			name:     "StringLength empty string",
-			input:    "StringLength[\"\"]",
+			input:    "StringLength(\"\")",
 			expected: "0",
 		},
 		{
 			name:     "StringLength simple string",
-			input:    "StringLength[\"hello\"]",
+			input:    "StringLength(\"hello\")",
 			expected: "5",
 		},
 		{
 			name:     "StringLength string with spaces",
-			input:    "StringLength[\"hello world\"]",
+			input:    "StringLength(\"hello world\")",
 			expected: "11",
 		},
 		{
 			name:     "StringLength on non-string",
-			input:    "StringLength[42]",
-			expected: "$Failed[ArgumentError]",
+			input:    "StringLength(42)",
+			expected: "$Failed(ArgumentError)",
 		},
 		
 		// FullForm tests
 		{
 			name:     "FullForm integer",
-			input:    "FullForm[42]",
+			input:    "FullForm(42)",
 			expected: "\"42\"",
 		},
 		{
 			name:     "FullForm string",
-			input:    "FullForm[\"hello\"]",
+			input:    "FullForm(\"hello\")",
 			expected: "\"\"hello\"\"",
 		},
 		{
 			name:     "FullForm symbol",
-			input:    "FullForm[x]",
+			input:    "FullForm(x)",
 			expected: "\"x\"",
 		},
 		{
 			name:     "FullForm evaluated expression",
-			input:    "FullForm[Plus[1, 2]]",
-			expected: "\"3\"", // Plus[1,2] evaluates to 3, then FullForm[3] = "3"
+			input:    "FullForm(Plus(1, 2))",
+			expected: "\"3\"", // Plus(1,2) evaluates to 3, then FullForm(3) = "3"
 		},
 		{
 			name:     "FullForm unevaluated expression",
-			input:    "FullForm[Hold[Plus[1, 2]]]",
-			expected: "\"Hold[Plus[1, 2]]\"",
+			input:    "FullForm(Hold(Plus(1, 2)))",
+			expected: "\"Hold(Plus(1, 2))\"",
 		},
 		{
 			name:     "FullForm list literal",
-			input:    "FullForm[{1, 2, 3}]",
-			expected: "\"List[1, 2, 3]\"",
+			input:    "FullForm([1, 2, 3])",
+			expected: "\"List(1, 2, 3)\"",
 		},
 		
 		// Combined tests
 		{
 			name:     "StringLength of FullForm",
-			input:    "StringLength[FullForm[42]]",
+			input:    "StringLength(FullForm(42))",
 			expected: "2", // "42" has 2 characters
 		},
 		{
 			name:     "StringQ of FullForm",
-			input:    "StringQ[FullForm[42]]",
+			input:    "StringQ(FullForm(42))",
 			expected: "True",
 		},
 	}
@@ -458,23 +458,23 @@ func TestFullForm_ComplexExpressions(t *testing.T) {
 	}{
 		{
 			name:     "FullForm of unevaluated expression",
-			input:    "FullForm[Hold[1 + 2]]",
-			expected: "\"Hold[Plus[1, 2]]\"",
+			input:    "FullForm(Hold(1 + 2))",
+			expected: "\"Hold(Plus(1, 2))\"",
 		},
 		{
 			name:     "FullForm of nested list",
-			input:    "FullForm[{{1, 2}, {3, 4}}]",
-			expected: "\"List[List[1, 2], List[3, 4]]\"",
+			input:    "FullForm([[1, 2], [3, 4]])",
+			expected: "\"List(List(1, 2), List(3, 4))\"",
 		},
 		{
 			name:     "FullForm of evaluated comparison",
-			input:    "FullForm[Equal[x, y]]",
-			expected: "\"False\"", // Equal[x,y] evaluates to False first
+			input:    "FullForm(Equal(x, y))",
+			expected: "\"False\"", // Equal(x,y) evaluates to False first
 		},
 		{
 			name:     "FullForm of held comparison",
-			input:    "FullForm[Hold[Equal[x, y]]]",
-			expected: "\"Hold[Equal[x, y]]\"",
+			input:    "FullForm(Hold(Equal(x, y)))",
+			expected: "\"Hold(Equal(x, y))\"",
 		},
 	}
 	

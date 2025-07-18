@@ -99,7 +99,7 @@ func TestEvaluatePart(t *testing.T) {
 				NewIntAtom(3),
 			}},
 			index:    1,
-			expected: "Inner[1, 2]",
+			expected: "Inner(1, 2)",
 			hasError: false,
 		},
 		{
@@ -248,22 +248,22 @@ func TestEvaluatePart_NonIntegerIndex(t *testing.T) {
 		{
 			name:     "String index",
 			index:    NewStringAtom("hello"),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Float index",
 			index:    NewFloatAtom(1.5),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Boolean index",
 			index:    NewBoolAtom(true),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Symbol index",
 			index:    NewSymbolAtom("x"),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name: "List index",
@@ -271,7 +271,7 @@ func TestEvaluatePart_NonIntegerIndex(t *testing.T) {
 				NewSymbolAtom("List"),
 				NewIntAtom(1),
 			}},
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 	}
 
@@ -300,27 +300,27 @@ func TestEvaluatePart_NonListExpression(t *testing.T) {
 		{
 			name:     "Integer atom",
 			expr:     NewIntAtom(42),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "String atom",
 			expr:     NewStringAtom("hello"),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Boolean atom",
 			expr:     NewBoolAtom(true),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Symbol atom",
 			expr:     NewSymbolAtom("x"),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Float atom",
 			expr:     NewFloatAtom(3.14),
-			expected: "$Failed[PartError]",
+			expected: "$Failed(PartError)",
 		},
 	}
 
@@ -397,110 +397,110 @@ func TestPart_Integration(t *testing.T) {
 		// Basic positive indexing
 		{
 			name:     "Part 1 of simple list",
-			input:    "Part[{a, b, c}, 1]",
+			input:    "Part([a, b, c], 1)",
 			expected: "a",
 		},
 		{
 			name:     "Part 2 of simple list",
-			input:    "Part[{a, b, c}, 2]",
+			input:    "Part([a, b, c], 2)",
 			expected: "b",
 		},
 		{
 			name:     "Part 3 of simple list",
-			input:    "Part[{a, b, c}, 3]",
+			input:    "Part([a, b, c], 3)",
 			expected: "c",
 		},
 		{
 			name:     "Part of function call",
-			input:    "Part[Plus[x, y, z], 2]",
+			input:    "Part(Plus(x, y, z), 2)",
 			expected: "y",
 		},
 		{
 			name:     "Part of numeric list",
-			input:    "Part[{10, 20, 30, 40}, 3]",
+			input:    "Part([10, 20, 30, 40], 3)",
 			expected: "30",
 		},
 		
 		// Negative indexing
 		{
 			name:     "Part -1 (last element)",
-			input:    "Part[{a, b, c}, -1]",
+			input:    "Part([a, b, c], -1)",
 			expected: "c",
 		},
 		{
 			name:     "Part -2 (second to last)",
-			input:    "Part[{a, b, c}, -2]",
+			input:    "Part([a, b, c], -2)",
 			expected: "b",
 		},
 		{
 			name:     "Part -3 (third to last)",
-			input:    "Part[{a, b, c}, -3]",
+			input:    "Part([a, b, c], -3)",
 			expected: "a",
 		},
 		
 		// Single element lists
 		{
 			name:     "Part of single element list",
-			input:    "Part[{x}, 1]",
+			input:    "Part([x], 1)",
 			expected: "x",
 		},
 		{
 			name:     "Part of single element with negative index",
-			input:    "Part[{x}, -1]",
+			input:    "Part([x], -1)",
 			expected: "x",
 		},
 		
 		// Error cases
 		{
 			name:     "Part index 0 - should error",
-			input:    "Part[{a, b, c}, 0]",
-			expected: "$Failed[PartError]",
+			input:    "Part([a, b, c], 0)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Part index out of bounds",
-			input:    "Part[{a, b}, 5]",
-			expected: "$Failed[PartError]",
+			input:    "Part([a, b], 5)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Part negative index out of bounds",
-			input:    "Part[{a, b}, -5]",
-			expected: "$Failed[PartError]",
+			input:    "Part([a, b], -5)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Part of atom",
-			input:    "Part[42, 1]",
-			expected: "$Failed[PartError]",
+			input:    "Part(42, 1)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Part of empty list",
-			input:    "Part[{}, 1]",
-			expected: "$Failed[PartError]",
+			input:    "Part([], 1)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Part with non-integer index",
-			input:    "Part[{a, b, c}, \"hello\"]",
-			expected: "$Failed[PartError]",
+			input:    "Part([a, b, c], \"hello\")",
+			expected: "$Failed(PartError)",
 		},
 		
 		// Combination with other functions
 		{
 			name:     "Part of Rest result",
-			input:    "Part[Rest[{a, b, c, d}], 2]",
+			input:    "Part(Rest([a, b, c, d]), 2)",
 			expected: "c",
 		},
 		{
 			name:     "Part of Most result",
-			input:    "Part[Most[{a, b, c, d}], 1]",
+			input:    "Part(Most([a, b, c, d]), 1)",
 			expected: "a",
 		},
 		{
 			name:     "First equals Part[expr, 1]",
-			input:    "Equal[First[{x, y, z}], Part[{x, y, z}, 1]]",
+			input:    "Equal(First([x, y, z]), Part([x, y, z], 1))",
 			expected: "True",
 		},
 		{
 			name:     "Last equals Part[expr, -1]",
-			input:    "Equal[Last[{x, y, z}], Part[{x, y, z}, -1]]",
+			input:    "Equal(Last([x, y, z]), Part([x, y, z], -1))",
 			expected: "True",
 		},
 	}

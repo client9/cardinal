@@ -22,53 +22,53 @@ func TestEvaluator_ArithmeticOperations(t *testing.T) {
 	}{
 		{
 			name:     "simple addition",
-			input:    "Plus[1, 2]",
+			input:    "Plus(1, 2)",
 			expected: "3",
 		},
 		{
 			name:     "simple multiplication",
-			input:    "Times[2, 3]",
+			input:    "Times(2, 3)",
 			expected: "6",
 		},
 		{
 			name:     "subtraction",
-			input:    "Subtract[5, 3]",
+			input:    "Subtract(5, 3)",
 			expected: "2",
 		},
 		{
 			name:     "division",
-			input:    "Divide[10, 2]",
+			input:    "Divide(10, 2)",
 			expected: "5",
 		},
 		{
 			name:     "power",
-			input:    "Power[2, 3]",
+			input:    "Power(2, 3)",
 			expected: "8",
 		},
 		{
 			name:     "mixed types",
-			input:    "Plus[1, 2.5]",
+			input:    "Plus(1, 2.5)",
 			expected: "3.5",
 		},
 		{
 			name:     "multiple arguments",
-			input:    "Plus[1, 2, 3, 4]",
+			input:    "Plus(1, 2, 3, 4)",
 			expected: "10",
 		},
 		{
 			name:     "nested operations",
-			input:    "Plus[1, Times[2, 3]]",
+			input:    "Plus(1, Times(2, 3))",
 			expected: "7",
 		},
 		{
 			name:     "symbolic arithmetic",
-			input:    "Plus[x, y]",
-			expected: "Plus[x, y]",
+			input:    "Plus(x, y)",
+			expected: "Plus(x, y)",
 		},
 		{
 			name:     "division by zero",
-			input:    "Divide[1, 0]",
-			expected: "$Failed[DivisionByZero]",
+			input:    "Divide(1, 0)",
+			expected: "$Failed(DivisionByZero)",
 		},
 	}
 	
@@ -97,47 +97,47 @@ func TestEvaluator_ComparisonOperations(t *testing.T) {
 	}{
 		{
 			name:     "equal numbers",
-			input:    "Equal[3, 3]",
+			input:    "Equal(3, 3)",
 			expected: "True",
 		},
 		{
 			name:     "unequal numbers",
-			input:    "Equal[3, 4]",
+			input:    "Equal(3, 4)",
 			expected: "False",
 		},
 		{
 			name:     "less than",
-			input:    "Less[2, 3]",
+			input:    "Less(2, 3)",
 			expected: "True",
 		},
 		{
 			name:     "greater than",
-			input:    "Greater[5, 3]",
+			input:    "Greater(5, 3)",
 			expected: "True",
 		},
 		{
 			name:     "less equal",
-			input:    "LessEqual[3, 3]",
+			input:    "LessEqual(3, 3)",
 			expected: "True",
 		},
 		{
 			name:     "greater equal",
-			input:    "GreaterEqual[4, 3]",
+			input:    "GreaterEqual(4, 3)",
 			expected: "True",
 		},
 		{
 			name:     "unequal",
-			input:    "Unequal[3, 4]",
+			input:    "Unequal(3, 4)",
 			expected: "True",
 		},
 		{
 			name:     "symbolic comparison",
-			input:    "Equal[x, y]",
+			input:    "Equal(x, y)",
 			expected: "False",
 		},
 		{
 			name:     "same symbols",
-			input:    "Equal[x, x]",
+			input:    "Equal(x, x)",
 			expected: "True",
 		},
 	}
@@ -167,42 +167,42 @@ func TestEvaluator_LogicalOperations(t *testing.T) {
 	}{
 		{
 			name:     "and true true",
-			input:    "And[True, True]",
+			input:    "And(True, True)",
 			expected: "True",
 		},
 		{
 			name:     "and true false",
-			input:    "And[True, False]",
+			input:    "And(True, False)",
 			expected: "False",
 		},
 		{
 			name:     "or false true",
-			input:    "Or[False, True]",
+			input:    "Or(False, True)",
 			expected: "True",
 		},
 		{
 			name:     "or false false",
-			input:    "Or[False, False]",
+			input:    "Or(False, False)",
 			expected: "False",
 		},
 		{
 			name:     "not true",
-			input:    "Not[True]",
+			input:    "Not(True)",
 			expected: "False",
 		},
 		{
 			name:     "not false",
-			input:    "Not[False]",
+			input:    "Not(False)",
 			expected: "True",
 		},
 		{
 			name:     "multiple and",
-			input:    "And[True, True, True]",
+			input:    "And(True, True, True)",
 			expected: "True",
 		},
 		{
 			name:     "multiple or",
-			input:    "Or[False, False, True]",
+			input:    "Or(False, False, True)",
 			expected: "True",
 		},
 	}
@@ -232,33 +232,33 @@ func TestEvaluator_AttributeTransformations(t *testing.T) {
 	}{
 		{
 			name:     "flat transformation",
-			input:    "Plus[1, Plus[2, 3]]",
+			input:    "Plus(1, Plus(2, 3))",
 			expected: "6", // Should flatten and evaluate
 		},
 		{
 			name:     "orderless transformation", 
-			input:    "Plus[3, 1, 2]",
+			input:    "Plus(3, 1, 2)",
 			expected: "6", // Should reorder and evaluate
 		},
 		{
 			name:     "one identity",
-			input:    "Plus[5]",
-			expected: "5", // Plus[x] -> x
+			input:    "Plus(5)",
+			expected: "5", // Plus(x) -> x
 		},
 		{
 			name:     "times flat",
-			input:    "Times[2, Times[3, 4]]",
+			input:    "Times(2, Times(3, 4))",
 			expected: "24", // Should flatten and evaluate
 		},
 		{
 			name:     "symbolic flat",
-			input:    "Plus[x, Plus[y, z]]",
-			expected: "Plus[x, y, z]", // Should flatten symbolically
+			input:    "Plus(x, Plus(y, z))",
+			expected: "Plus(x, y, z)", // Should flatten symbolically
 		},
 		{
 			name:     "symbolic orderless",
-			input:    "Plus[z, a, b]",
-			expected: "Plus[a, b, z]", // Should reorder symbolically
+			input:    "Plus(z, a, b)",
+			expected: "Plus(a, b, z)", // Should reorder symbolically
 		},
 	}
 	
@@ -288,29 +288,29 @@ func TestEvaluator_AssignmentOperations(t *testing.T) {
 	}{
 		{
 			name:     "simple assignment",
-			input:    "Set[x, 5]",
+			input:    "Set(x, 5)",
 			expected: "5",
 		},
 		{
 			name:     "use assigned variable",
-			input:    "Plus[x, 3]",
+			input:    "Plus(x, 3)",
 			expected: "8",
 			setup: func() {
-				expr, _ := ParseString("Set[x, 5]")
+				expr, _ := ParseString("Set(x, 5)")
 				eval.Evaluate(expr)
 			},
 		},
 		{
 			name:     "delayed assignment",
-			input:    "SetDelayed[y, Plus[1, 2]]",
+			input:    "SetDelayed(y, Plus(1, 2))",
 			expected: "Null",
 		},
 		{
 			name:     "use delayed variable",
 			input:    "y",
-			expected: "Plus[1, 2]",
+			expected: "Plus(1, 2)",
 			setup: func() {
-				expr, _ := ParseString("SetDelayed[y, Plus[1, 2]]")
+				expr, _ := ParseString("SetDelayed(y, Plus(1, 2))")
 				eval.Evaluate(expr)
 			},
 		},
@@ -345,27 +345,27 @@ func TestEvaluator_ControlStructures(t *testing.T) {
 	}{
 		{
 			name:     "if true",
-			input:    "If[True, 1, 2]",
+			input:    "If(True, 1, 2)",
 			expected: "1",
 		},
 		{
 			name:     "if false",
-			input:    "If[False, 1, 2]",
+			input:    "If(False, 1, 2)",
 			expected: "2",
 		},
 		{
 			name:     "if no else",
-			input:    "If[False, 1]",
+			input:    "If(False, 1)",
 			expected: "Null",
 		},
 		{
 			name:     "hold expression",
-			input:    "Hold[Plus[1, 2]]",
-			expected: "Hold[Plus[1, 2]]",
+			input:    "Hold(Plus(1, 2))",
+			expected: "Hold(Plus(1, 2))",
 		},
 		{
 			name:     "evaluate expression",
-			input:    "Evaluate[Plus[1, 2]]",
+			input:    "Evaluate(Plus(1, 2))",
 			expected: "3",
 		},
 	}
@@ -462,32 +462,32 @@ func TestEvaluator_SameQUnsameQ(t *testing.T) {
 	}{
 		{
 			name:     "same numbers",
-			input:    "SameQ[3, 3]",
+			input:    "SameQ(3, 3)",
 			expected: "True",
 		},
 		{
 			name:     "different numbers",
-			input:    "SameQ[3, 4]",
+			input:    "SameQ(3, 4)",
 			expected: "False",
 		},
 		{
 			name:     "same symbols",
-			input:    "SameQ[x, x]",
+			input:    "SameQ(x, x)",
 			expected: "True",
 		},
 		{
 			name:     "different symbols",
-			input:    "SameQ[x, y]",
+			input:    "SameQ(x, y)",
 			expected: "False",
 		},
 		{
 			name:     "unsame numbers",
-			input:    "UnsameQ[3, 4]",
+			input:    "UnsameQ(3, 4)",
 			expected: "True",
 		},
 		{
 			name:     "unsame same",
-			input:    "UnsameQ[3, 3]",
+			input:    "UnsameQ(3, 3)",
 			expected: "False",
 		},
 	}
@@ -517,22 +517,22 @@ func TestEvaluator_ComplexExpressions(t *testing.T) {
 	}{
 		{
 			name:     "nested arithmetic",
-			input:    "Plus[Times[2, 3], Power[2, 2]]",
+			input:    "Plus(Times(2, 3), Power(2, 2))",
 			expected: "10",
 		},
 		{
 			name:     "comparison with arithmetic",
-			input:    "Greater[Plus[2, 3], 4]",
+			input:    "Greater(Plus(2, 3), 4)",
 			expected: "True",
 		},
 		{
 			name:     "logical with comparison",
-			input:    "And[Greater[5, 3], Less[2, 4]]",
+			input:    "And(Greater(5, 3), Less(2, 4))",
 			expected: "True",
 		},
 		{
 			name:     "conditional with arithmetic",
-			input:    "If[Greater[5, 3], Plus[1, 2], Times[2, 3]]",
+			input:    "If(Greater(5, 3), Plus(1, 2), Times(2, 3))",
 			expected: "3",
 		},
 	}

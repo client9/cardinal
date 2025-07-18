@@ -97,7 +97,7 @@ func TestFunctionRegistry_Evaluator(t *testing.T) {
 	eval.context.RegisterBuiltin("Max", customMax)
 	
 	// Test evaluation with the custom function
-	expr, err := ParseString("Max[1, 5, 3, 9, 2]")
+	expr, err := ParseString("Max(1, 5, 3, 9, 2)")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 	eval.context.RegisterBuiltin("Average", customAverage)
 	
 	// Test with valid arguments
-	expr, err := ParseString("Average[1, 2, 3, 4]")
+	expr, err := ParseString("Average(1, 2, 3, 4)")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}
@@ -193,7 +193,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 	}
 	
 	// Test with an error case (average includes division by zero)
-	expr2, err2 := ParseString("Average[10, Divide[1, 0], 30]")
+	expr2, err2 := ParseString("Average(10, Divide(1, 0), 30)")
 	if err2 != nil {
 		t.Fatalf("Parse error: %v", err2)
 	}
@@ -228,7 +228,7 @@ func TestFunctionRegistry_OverrideBuiltin(t *testing.T) {
 	eval := NewEvaluatorWithContext(ctx)
 	
 	// Test that our custom Plus is used
-	expr, err := ParseString("Plus[1, 2, 3, 4]")
+	expr, err := ParseString("Plus(1, 2, 3, 4)")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}

@@ -16,7 +16,7 @@ func TestErrorExpr_Basic(t *testing.T) {
 		t.Errorf("expected Message 'This is a test error', got '%s'", err.Message)
 	}
 	
-	expected := "$Failed[TestError]"
+	expected := "$Failed(TestError)"
 	if err.String() != expected {
 		t.Errorf("expected String() '%s', got '%s'", expected, err.String())
 	}
@@ -200,7 +200,7 @@ func TestErrorPropagation(t *testing.T) {
 	eval := setupTestEvaluator()
 	
 	// Create an expression that will cause division by zero in nested evaluation
-	expr, err := ParseString("And[True, Equal[1, Divide[1, 0]]]")
+	expr, err := ParseString("And(True, Equal(1, Divide(1, 0)))")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}

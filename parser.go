@@ -117,7 +117,7 @@ func (p *Parser) ParseAtom() Expr {
 	case BOOLEAN:
 		expr = p.parseBoolean()
 		p.nextToken()
-	case LBRACE:
+	case LBRACKET:
 		expr = p.parseListLiteral()
 	case MINUS:
 		expr = p.parsePrefixExpression()
@@ -137,7 +137,7 @@ func (p *Parser) parseSymbolOrList() Expr {
 	symbolToken := p.currentToken
 	p.nextToken()
 	
-	if p.currentToken.Type == LBRACKET {
+	if p.currentToken.Type == LPAREN {
 		return p.parseList(symbolToken.Value)
 	}
 	
@@ -145,12 +145,12 @@ func (p *Parser) parseSymbolOrList() Expr {
 }
 
 func (p *Parser) parseList(head string) Expr {
-	p.nextToken() // consume '['
+	p.nextToken() // consume '('
 	
 	elements := []Expr{NewSymbolAtom(head)}
 	
-	if p.currentToken.Type == RBRACKET {
-		p.nextToken() // consume ']'
+	if p.currentToken.Type == RPAREN {
+		p.nextToken() // consume ')'
 		return NewList(elements...)
 	}
 	
@@ -160,8 +160,8 @@ func (p *Parser) parseList(head string) Expr {
 			elements = append(elements, expr)
 		}
 		
-		if p.currentToken.Type == RBRACKET {
-			p.nextToken() // consume ']'
+		if p.currentToken.Type == RPAREN {
+			p.nextToken() // consume ')'
 			break
 		}
 		
@@ -171,11 +171,11 @@ func (p *Parser) parseList(head string) Expr {
 		}
 		
 		if p.currentToken.Type == EOF {
-			p.addError("unexpected EOF, expected ']'")
+			p.addError("unexpected EOF, expected ')'")
 			break
 		}
 		
-		p.addError(fmt.Sprintf("expected ',' or ']', got %s", p.currentToken.String()))
+		p.addError(fmt.Sprintf("expected ',' or ')', got %s", p.currentToken.String()))
 		p.nextToken()
 	}
 	
@@ -183,14 +183,14 @@ func (p *Parser) parseList(head string) Expr {
 }
 
 func (p *Parser) parseListLiteral() Expr {
-	p.nextToken() // consume '{'
+	p.nextToken() // consume '['
 	
 	// Create a List expression with "List" as the head
 	elements := []Expr{NewSymbolAtom("List")}
 	
-	// Handle empty list {}
-	if p.currentToken.Type == RBRACE {
-		p.nextToken() // consume '}'
+	// Handle empty list []
+	if p.currentToken.Type == RBRACKET {
+		p.nextToken() // consume ']'
 		return NewList(elements...)
 	}
 	
@@ -201,9 +201,9 @@ func (p *Parser) parseListLiteral() Expr {
 			elements = append(elements, expr)
 		}
 		
-		// Check for closing brace
-		if p.currentToken.Type == RBRACE {
-			p.nextToken() // consume '}'
+		// Check for closing bracket
+		if p.currentToken.Type == RBRACKET {
+			p.nextToken() // consume ']'
 			break
 		}
 		
@@ -211,9 +211,9 @@ func (p *Parser) parseListLiteral() Expr {
 		if p.currentToken.Type == COMMA {
 			p.nextToken() // consume ','
 			
-			// Handle optional trailing comma: {1,2,3,}
-			if p.currentToken.Type == RBRACE {
-				p.nextToken() // consume '}'
+			// Handle optional trailing comma: [1,2,3,]
+			if p.currentToken.Type == RBRACKET {
+				p.nextToken() // consume ']'
 				break
 			}
 			continue
@@ -221,12 +221,12 @@ func (p *Parser) parseListLiteral() Expr {
 		
 		// Handle EOF
 		if p.currentToken.Type == EOF {
-			p.addError("unexpected EOF, expected '}'")
+			p.addError("unexpected EOF, expected ']'")
 			break
 		}
 		
 		// Unexpected token
-		p.addError(fmt.Sprintf("expected ',' or '}', got %s", p.currentToken.String()))
+		p.addError(fmt.Sprintf("expected ',' or ']', got %s", p.currentToken.String()))
 		p.nextToken()
 	}
 	

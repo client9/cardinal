@@ -231,7 +231,132 @@ func (e *Evaluator) evaluateList(list *List, ctx *Context) Expr {
 		return result
 	}
 
+	// Try to evaluate as a user-defined function
+	if result := e.evaluateUserDefinedFunction(headName, transformed.Elements[1:], ctx); result != nil {
+		return result
+	}
+
 	return transformed
+}
+
+// evaluateUserDefinedFunction tries to evaluate a user-defined function
+func (e *Evaluator) evaluateUserDefinedFunction(headName string, args []Expr, ctx *Context) Expr {
+	// Look up the function definition
+	if funcDef, exists := ctx.Get(headName); exists {
+		// Check if it's a function list (multiple definitions)
+		if funcList, ok := funcDef.(*List); ok && len(funcList.Elements) > 0 {
+			if head, ok := funcList.Elements[0].(*Atom); ok && 
+				head.AtomType == SymbolAtom && head.Value.(string) == "FunctionList" {
+				
+				// Try each function definition in order
+				for _, def := range funcList.Elements[1:] {
+					if result := e.tryFunctionDefinition(headName, def, args, ctx); result != nil {
+						return result
+					}
+				}
+				
+				// No pattern matched, return unevaluated
+				return &List{Elements: append([]Expr{NewSymbolAtom(headName)}, args...)}
+			}
+		}
+		
+		// Single function definition
+		if result := e.tryFunctionDefinition(headName, funcDef, args, ctx); result != nil {
+			return result
+		}
+	}
+	
+	return nil
+}
+
+// tryFunctionDefinition tries to match and evaluate a single function definition
+func (e *Evaluator) tryFunctionDefinition(headName string, funcDef Expr, args []Expr, ctx *Context) Expr {
+	// Check if it's a function definition (Function[{params}, body])
+	if funcList, ok := funcDef.(*List); ok && len(funcList.Elements) == 3 {
+		if head, ok := funcList.Elements[0].(*Atom); ok && 
+			head.AtomType == SymbolAtom && head.Value.(string) == "Function" {
+			
+			// Extract parameters and body
+			params := funcList.Elements[1]
+			body := funcList.Elements[2]
+			
+			// Create a new context for function evaluation
+			funcCtx := NewChildContext(ctx)
+			
+			// Bind parameters to arguments using pattern matching
+			if paramList, ok := params.(*List); ok {
+				if len(paramList.Elements) != len(args) {
+					// Wrong number of arguments, pattern doesn't match
+					return nil
+				}
+				
+				for i, param := range paramList.Elements {
+					if !e.matchPattern(param, args[i], funcCtx) {
+						// Pattern didn't match, try next definition
+						return nil
+					}
+				}
+			}
+			
+			// All patterns matched, evaluate the function body
+			return e.evaluate(body, funcCtx)
+		}
+	}
+	
+	return nil
+}
+
+// matchPattern matches a pattern against an expression and binds variables
+func (e *Evaluator) matchPattern(pattern Expr, expr Expr, ctx *Context) bool {
+	switch pat := pattern.(type) {
+	case *Atom:
+		if pat.AtomType == SymbolAtom {
+			symbolName := pat.Value.(string)
+			// Check if this is a pattern variable (ends with _)
+			if isPatternVariable(symbolName) {
+				// Extract the variable name (remove the trailing _)
+				varName := symbolName[:len(symbolName)-1]
+				if varName == "" {
+					// Anonymous pattern variable _ matches anything
+					return true
+				}
+				// Bind the variable to the expression
+				ctx.Set(varName, expr)
+				return true
+			} else {
+				// Regular symbol - treat as regular parameter (bind to value)
+				ctx.Set(symbolName, expr)
+				return true
+			}
+		} else {
+			// Literal atom - exact match required
+			if exprAtom, ok := expr.(*Atom); ok {
+				return pat.AtomType == exprAtom.AtomType && pat.Value == exprAtom.Value
+			}
+			return false
+		}
+	case *List:
+		// For now, just handle simple cases - will expand later
+		if exprList, ok := expr.(*List); ok {
+			if len(pat.Elements) != len(exprList.Elements) {
+				return false
+			}
+			for i, patElem := range pat.Elements {
+				if !e.matchPattern(patElem, exprList.Elements[i], ctx) {
+					return false
+				}
+			}
+			return true
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+// isPatternVariable checks if a symbol name represents a pattern variable
+func isPatternVariable(name string) bool {
+	return len(name) > 0 && name[len(name)-1] == '_'
 }
 
 // evaluateArguments evaluates arguments based on hold attributes

@@ -39,8 +39,56 @@ func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
 		return NewSymbolAtom("Null")
 	}
 	
-	// TODO: Handle more complex patterns and delayed evaluation
+	// Handle function definition: f(x) := 2*x
+	if list, ok := lhs.(*List); ok && len(list.Elements) > 0 {
+		if head, ok := list.Elements[0].(*Atom); ok && head.AtomType == SymbolAtom {
+			functionName := head.Value.(string)
+			parameters := list.Elements[1:]
+			
+			// Create a function definition
+			funcDef := &List{Elements: []Expr{
+				NewSymbolAtom("Function"),
+				&List{Elements: parameters},
+				rhs,
+			}}
+			
+			// Support multiple definitions for the same function name
+			if existingDef, exists := ctx.Get(functionName); exists {
+				// Check if it's already a FunctionList
+				if existingList, ok := existingDef.(*List); ok && len(existingList.Elements) > 0 {
+					if headAtom, ok := existingList.Elements[0].(*Atom); ok && 
+						headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "FunctionList" {
+						// Add to existing function list
+						newElements := append(existingList.Elements, funcDef)
+						ctx.Set(functionName, &List{Elements: newElements})
+					} else {
+						// Convert single function to function list
+						functionList := &List{Elements: []Expr{
+							NewSymbolAtom("FunctionList"),
+							existingDef,
+							funcDef,
+						}}
+						ctx.Set(functionName, functionList)
+					}
+				} else {
+					// Create new function list
+					functionList := &List{Elements: []Expr{
+						NewSymbolAtom("FunctionList"),
+						existingDef,
+						funcDef,
+					}}
+					ctx.Set(functionName, functionList)
+				}
+			} else {
+				// First definition for this function name
+				ctx.Set(functionName, funcDef)
+			}
+			
+			return NewSymbolAtom("Null")
+		}
+	}
 	
+	// Handle more complex patterns later
 	return &List{Elements: []Expr{NewSymbolAtom("SetDelayed"), lhs, rhs}}
 }
 

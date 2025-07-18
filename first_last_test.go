@@ -43,7 +43,7 @@ func TestEvaluateFirst(t *testing.T) {
 				}},
 				NewIntAtom(3),
 			}},
-			expected: "Plus[1, 2]",
+			expected: "Plus(1, 2)",
 			hasError: false,
 		},
 		{
@@ -318,66 +318,66 @@ func TestFirstLast_Integration(t *testing.T) {
 		// First tests
 		{
 			name:     "First of simple list",
-			input:    "First[{1, 2, 3}]",
+			input:    "First([1, 2, 3])",
 			expected: "1",
 		},
 		{
 			name:     "First of function call",
-			input:    "First[Plus[a, b, c]]",
+			input:    "First(Plus(a, b, c))",
 			expected: "a",
 		},
 		{
 			name:     "First of nested structure",
-			input:    "First[Equal[Plus[1, 2], 3]]",
-			expected: "$Failed[PartError]", // Equal[3, 3] evaluates to True, First[True] errors
+			input:    "First(Equal(Plus(1, 2), 3))",
+			expected: "$Failed(PartError)", // Equal(3, 3) evaluates to True, First(True) errors
 		},
 		{
 			name:     "First error on atom",
-			input:    "First[42]",
-			expected: "$Failed[PartError]",
+			input:    "First(42)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "First error on empty list",
-			input:    "First[{}]",
-			expected: "$Failed[PartError]",
+			input:    "First([])",
+			expected: "$Failed(PartError)",
 		},
 		
 		// Last tests
 		{
 			name:     "Last of simple list",
-			input:    "Last[{1, 2, 3}]",
+			input:    "Last([1, 2, 3])",
 			expected: "3",
 		},
 		{
 			name:     "Last of function call",
-			input:    "Last[Plus[a, b, c]]",
+			input:    "Last(Plus(a, b, c))",
 			expected: "c",
 		},
 		{
 			name:     "Last of nested structure",
-			input:    "Last[Equal[Plus[1, 2], 3]]",
-			expected: "$Failed[PartError]", // Equal[3, 3] evaluates to True, Last[True] errors
+			input:    "Last(Equal(Plus(1, 2), 3))",
+			expected: "$Failed(PartError)", // Equal(3, 3) evaluates to True, Last(True) errors
 		},
 		{
 			name:     "Last error on atom",
-			input:    "Last[42]",
-			expected: "$Failed[PartError]",
+			input:    "Last(42)",
+			expected: "$Failed(PartError)",
 		},
 		{
 			name:     "Last error on empty list",
-			input:    "Last[{}]",
-			expected: "$Failed[PartError]",
+			input:    "Last([])",
+			expected: "$Failed(PartError)",
 		},
 		
 		// Combined tests
 		{
 			name:     "First of Last result",
-			input:    "First[{Last[{1, 2, 3}], 4, 5}]",
+			input:    "First([Last([1, 2, 3]), 4, 5])",
 			expected: "3",
 		},
 		{
 			name:     "Last of First result",
-			input:    "Last[{1, 2, First[{10, 11, 12}]}]",
+			input:    "Last([1, 2, First([10, 11, 12])])",
 			expected: "10",
 		},
 	}
@@ -421,7 +421,7 @@ func TestFirstLast_ComplexExpressions(t *testing.T) {
 				NewIntAtom(4),
 			}},
 			function: EvaluateFirst,
-			expected: "Inner[Deep[1, 2], 3]",
+			expected: "Inner(Deep(1, 2), 3)",
 		},
 		{
 			name: "Last of deeply nested expression",

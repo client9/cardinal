@@ -69,14 +69,28 @@ type List struct {
 
 func (l *List) String() string {
 	if len(l.Elements) == 0 {
-		return "{}"
+		return "List()"
 	}
 	
+	// Check if this is a List literal (head is "List")
+	if len(l.Elements) > 0 {
+		if headAtom, ok := l.Elements[0].(*Atom); ok && 
+		   headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "List" {
+			// This is a list literal: [element1, element2, ...]
+			var elements []string
+			for _, elem := range l.Elements[1:] {
+				elements = append(elements, elem.String())
+			}
+			return fmt.Sprintf("List(%s)", strings.Join(elements, ", "))
+		}
+	}
+	
+	// This is a function call: head(arg1, arg2, ...)
 	var elements []string
 	for _, elem := range l.Elements {
 		elements = append(elements, elem.String())
 	}
-	return fmt.Sprintf("%s[%s]", l.Elements[0].String(), strings.Join(elements[1:], ", "))
+	return fmt.Sprintf("%s(%s)", l.Elements[0].String(), strings.Join(elements[1:], ", "))
 }
 
 func (l *List) Type() string {
@@ -99,7 +113,7 @@ type ErrorExpr struct {
 }
 
 func (e *ErrorExpr) String() string {
-	return fmt.Sprintf("$Failed[%s]", e.ErrorType)
+	return fmt.Sprintf("$Failed(%s)", e.ErrorType)
 }
 
 func (e *ErrorExpr) Type() string {

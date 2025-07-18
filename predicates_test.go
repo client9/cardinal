@@ -499,134 +499,134 @@ func TestPredicates_Integration(t *testing.T) {
 		// Length tests
 		{
 			name:     "Length of empty list",
-			input:    "Length[{}]",
+			input:    "Length([])",
 			expected: "0",
 		},
 		{
 			name:     "Length of evaluated function call",
-			input:    "Length[Plus[1, 2, 3]]",
-			expected: "0", // Plus[1,2,3] evaluates to 6, Length[6] = 0
+			input:    "Length(Plus(1, 2, 3))",
+			expected: "0", // Plus(1,2,3) evaluates to 6, Length(6) = 0
 		},
 		{
 			name:     "Length of atom",
-			input:    "Length[42]",
+			input:    "Length(42)",
 			expected: "0",
 		},
 		
 		// ListQ tests
 		{
 			name:     "ListQ on empty list",
-			input:    "ListQ[{}]",
+			input:    "ListQ([])",
 			expected: "True",
 		},
 		{
 			name:     "ListQ on evaluated function call",
-			input:    "ListQ[Plus[1, 2]]",
-			expected: "False", // Plus[1,2] evaluates to 3, ListQ[3] = False
+			input:    "ListQ(Plus(1, 2))",
+			expected: "False", // Plus(1,2) evaluates to 3, ListQ(3) = False
 		},
 		{
 			name:     "ListQ on atom",
-			input:    "ListQ[42]",
+			input:    "ListQ(42)",
 			expected: "False",
 		},
 		
 		// NumberQ tests
 		{
 			name:     "NumberQ on integer",
-			input:    "NumberQ[42]",
+			input:    "NumberQ(42)",
 			expected: "True",
 		},
 		{
 			name:     "NumberQ on float",
-			input:    "NumberQ[3.14]",
+			input:    "NumberQ(3.14)",
 			expected: "True",
 		},
 		{
 			name:     "NumberQ on string",
-			input:    "NumberQ[\"hello\"]",
+			input:    "NumberQ(\"hello\")",
 			expected: "False",
 		},
 		
 		// BooleanQ tests
 		{
 			name:     "BooleanQ on True",
-			input:    "BooleanQ[True]",
+			input:    "BooleanQ(True)",
 			expected: "True",
 		},
 		{
 			name:     "BooleanQ on False",
-			input:    "BooleanQ[False]",
+			input:    "BooleanQ(False)",
 			expected: "True",
 		},
 		{
 			name:     "BooleanQ on integer",
-			input:    "BooleanQ[1]",
+			input:    "BooleanQ(1)",
 			expected: "False",
 		},
 		
 		// IntegerQ tests
 		{
 			name:     "IntegerQ on integer",
-			input:    "IntegerQ[42]",
+			input:    "IntegerQ(42)",
 			expected: "True",
 		},
 		{
 			name:     "IntegerQ on float",
-			input:    "IntegerQ[3.14]",
+			input:    "IntegerQ(3.14)",
 			expected: "False",
 		},
 		{
 			name:     "IntegerQ on symbol",
-			input:    "IntegerQ[x]",
+			input:    "IntegerQ(x)",
 			expected: "False",
 		},
 		
 		// AtomQ tests
 		{
 			name:     "AtomQ on integer",
-			input:    "AtomQ[42]",
+			input:    "AtomQ(42)",
 			expected: "True",
 		},
 		{
 			name:     "AtomQ on symbol",
-			input:    "AtomQ[x]",
+			input:    "AtomQ(x)",
 			expected: "True",
 		},
 		{
 			name:     "AtomQ on evaluated function call",
-			input:    "AtomQ[Plus[1, 2]]",
-			expected: "True", // Plus[1,2] evaluates to 3, AtomQ[3] = True
+			input:    "AtomQ(Plus(1, 2))",
+			expected: "True", // Plus(1,2) evaluates to 3, AtomQ(3) = True
 		},
 		{
 			name:     "AtomQ on held expression",
-			input:    "AtomQ[Hold[Plus[1, 2]]]",
-			expected: "False", // Hold[Plus[1,2]] is a list, AtomQ = False
+			input:    "AtomQ(Hold(Plus(1, 2)))",
+			expected: "False", // Hold[Plus(1,2)) is a list, AtomQ = False
 		},
 		{
 			name:     "ListQ on held expression",
-			input:    "ListQ[Hold[Plus[1, 2]]]",
-			expected: "True", // Hold[Plus[1,2]] is a list, ListQ = True
+			input:    "ListQ(Hold(Plus(1, 2)))",
+			expected: "True", // Hold[Plus(1,2)) is a list, ListQ = True
 		},
 		{
 			name:     "Length of held expression",
-			input:    "Length[Hold[Plus[1, 2]]]",
-			expected: "1", // Hold[Plus[1,2]] has 1 argument
+			input:    "Length(Hold(Plus(1, 2)))",
+			expected: "1", // Hold(Plus(1,2)) has 1 argument
 		},
 		
 		// SymbolQ tests
 		{
 			name:     "SymbolQ on symbol",
-			input:    "SymbolQ[x]",
+			input:    "SymbolQ(x)",
 			expected: "True",
 		},
 		{
 			name:     "SymbolQ on integer",
-			input:    "SymbolQ[42]",
+			input:    "SymbolQ(42)",
 			expected: "False",
 		},
 		{
 			name:     "SymbolQ on string",
-			input:    "SymbolQ[\"hello\"]",
+			input:    "SymbolQ(\"hello\")",
 			expected: "False",
 		},
 	}

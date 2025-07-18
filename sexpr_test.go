@@ -129,32 +129,32 @@ func TestList_String(t *testing.T) {
 		{
 			name:     "empty list",
 			list:     NewList(),
-			expected: "{}",
+			expected: "List()",
 		},
 		{
 			name:     "single element list",
 			list:     NewList(NewSymbolAtom("Plus")),
-			expected: "Plus[]",
+			expected: "Plus()",
 		},
 		{
 			name:     "simple function call",
 			list:     NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-			expected: "Plus[1, 2]",
+			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "mixed types",
 			list:     NewList(NewSymbolAtom("List"), NewIntAtom(1), NewFloatAtom(2.5), NewStringAtom("hello"), NewBoolAtom(true)),
-			expected: `List[1, 2.5, "hello", True]`,
+			expected: `List(1, 2.5, "hello", True)`,
 		},
 		{
 			name:     "nested list",
 			list:     NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewList(NewSymbolAtom("Times"), NewIntAtom(2), NewIntAtom(3))),
-			expected: "Plus[1, Times[2, 3]]",
+			expected: "Plus(1, Times(2, 3))",
 		},
 		{
 			name:     "deeply nested",
 			list:     NewList(NewSymbolAtom("f"), NewList(NewSymbolAtom("g"), NewList(NewSymbolAtom("h"), NewIntAtom(1)))),
-			expected: "f[g[h[1]]]",
+			expected: "f(g(h(1)))",
 		},
 	}
 
@@ -323,7 +323,7 @@ func TestComplexExpressions(t *testing.T) {
 				NewList(NewSymbolAtom("Times"), NewIntAtom(2), NewSymbolAtom("x")),
 				NewIntAtom(5),
 			),
-			expected: "Plus[Times[2, x], 5]",
+			expected: "Plus(Times(2, x), 5)",
 		},
 		{
 			name: "function definition",
@@ -332,7 +332,7 @@ func TestComplexExpressions(t *testing.T) {
 				NewStringAtom("x"),
 				NewList(NewSymbolAtom("Power"), NewSymbolAtom("x"), NewIntAtom(2)),
 			),
-			expected: `Function["x", Power[x, 2]]`,
+			expected: `Function("x", Power(x, 2))`,
 		},
 		{
 			name: "conditional expression",
@@ -342,7 +342,7 @@ func TestComplexExpressions(t *testing.T) {
 				NewSymbolAtom("x"),
 				NewList(NewSymbolAtom("Minus"), NewSymbolAtom("x")),
 			),
-			expected: "If[Greater[x, 0], x, Minus[x]]",
+			expected: "If(Greater(x, 0), x, Minus(x))",
 		},
 		{
 			name: "list with mixed types",
@@ -355,7 +355,7 @@ func TestComplexExpressions(t *testing.T) {
 				NewBoolAtom(false),
 				NewSymbolAtom("x"),
 			),
-			expected: `List[1, 2.5, "hello", True, False, x]`,
+			expected: `List(1, 2.5, "hello", True, False, x)`,
 		},
 	}
 

@@ -49,12 +49,12 @@ func TestREPL_EvaluateString(t *testing.T) {
 		},
 		{
 			name:     "function call",
-			input:    "Plus[1, 2, 3]",
+			input:    "Plus(1, 2, 3)",
 			expected: "6",
 		},
 		{
 			name:     "comparison",
-			input:    "Greater[5, 3]",
+			input:    "Greater(5, 3)",
 			expected: "True",
 		},
 		{
@@ -114,7 +114,7 @@ func TestREPL_EvaluateString_Errors(t *testing.T) {
 	}{
 		{
 			name:  "unclosed bracket",
-			input: "Plus[1, 2",
+			input: "Plus(1, 2",
 		},
 		{
 			name:  "invalid token",
@@ -122,7 +122,7 @@ func TestREPL_EvaluateString_Errors(t *testing.T) {
 		},
 		{
 			name:  "invalid expression",
-			input: "Plus[1 2]", // Missing comma
+			input: "Plus(1 2)", // Missing comma
 		},
 	}
 	
@@ -228,7 +228,7 @@ func Example_repl() {
 	result, _ = repl.EvaluateString("x * 2")
 	fmt.Println("x * 2 =", result)
 	
-	result, _ = repl.EvaluateString("Greater[10, 5]")
+	result, _ = repl.EvaluateString("Greater(10, 5)")
 	fmt.Println("Greater[10, 5] =", result)
 	
 	// Output:

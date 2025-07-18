@@ -157,58 +157,58 @@ func TestHead_Integration(t *testing.T) {
 	}{
 		{
 			name:     "Head of integer",
-			input:    "Head[42]",
+			input:    "Head(42)",
 			expected: "Integer",
 		},
 		{
 			name:     "Head of float",
-			input:    "Head[3.14]",
+			input:    "Head(3.14)",
 			expected: "Real",
 		},
 		{
 			name:     "Head of string",
-			input:    "Head[\"test\"]",
+			input:    "Head(\"test\")",
 			expected: "String",
 		},
 		{
 			name:     "Head of boolean",
-			input:    "Head[True]",
+			input:    "Head(True)",
 			expected: "Boolean",
 		},
 		{
 			name:     "Head of symbol",
-			input:    "Head[x]",
+			input:    "Head(x)",
 			expected: "Symbol",
 		},
 		{
 			name:     "Head of empty list",
-			input:    "Head[{}]",
+			input:    "Head([])",
 			expected: "List",
 		},
 		{
 			name:     "Head of unevaluated function",
-			input:    "Head[Plus[x, y]]",
+			input:    "Head(Plus(x, y))",
 			expected: "Plus",
 		},
 		{
 			name:     "Head of evaluated function",
-			input:    "Head[Plus[1, 2]]",
-			expected: "Integer", // Plus[1,2] evaluates to 3, head of 3 is Integer
+			input:    "Head(Plus(1, 2))",
+			expected: "Integer", // Plus(1,2) evaluates to 3, head of 3 is Integer
 		},
 		{
 			name:     "Head of held expression",
-			input:    "Head[Hold[Plus[1, 2]]]",
+			input:    "Head(Hold(Plus(1, 2)))",
 			expected: "Hold",
 		},
 		{
 			name:     "Head of comparison",
-			input:    "Head[Equal[1, 2]]",
-			expected: "Boolean", // Equal[1,2] evaluates to False, head of False is Boolean
+			input:    "Head(Equal(1, 2))",
+			expected: "Boolean", // Equal(1,2) evaluates to False, head of False is Boolean
 		},
 		{
 			name:     "Head of symbolic comparison",
-			input:    "Head[Equal[x, y]]",
-			expected: "Boolean", // Equal[x,y] evaluates to False (string comparison), so head is Boolean
+			input:    "Head(Equal(x, y))",
+			expected: "Boolean", // Equal(x,y) evaluates to False (string comparison), so head is Boolean
 		},
 	}
 	
@@ -231,7 +231,7 @@ func TestHead_ErrorPropagation(t *testing.T) {
 	eval := setupTestEvaluator()
 	
 	// Test that Head propagates errors
-	expr, err := ParseString("Head[Divide[1, 0]]")
+	expr, err := ParseString("Head(Divide(1, 0))")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}

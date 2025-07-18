@@ -12,38 +12,38 @@ func TestParseListLiteral_Basic(t *testing.T) {
 	}{
 		{
 			name:     "Empty list",
-			input:    "{}",
-			expected: "List[]",
+			input:    "[]",
+			expected: "List()",
 		},
 		{
 			name:     "Single element",
-			input:    "{1}",
-			expected: "List[1]",
+			input:    "[1]",
+			expected: "List(1)",
 		},
 		{
 			name:     "Multiple integers",
-			input:    "{1, 2, 3}",
-			expected: "List[1, 2, 3]",
+			input:    "[1, 2, 3]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name:     "Mixed types",
-			input:    "{1, \"hello\", True}",
-			expected: "List[1, \"hello\", True]",
+			input:    "[1, \"hello\", True]",
+			expected: "List(1, \"hello\", True)",
 		},
 		{
 			name:     "Floating point numbers",
-			input:    "{3.14, 2.71}",
-			expected: "List[3.14, 2.71]",
+			input:    "[3.14, 2.71]",
+			expected: "List(3.14, 2.71)",
 		},
 		{
 			name:     "Symbols",
-			input:    "{x, y, z}",
-			expected: "List[x, y, z]",
+			input:    "[x, y, z]",
+			expected: "List(x, y, z)",
 		},
 		{
 			name:     "Nested expressions",
-			input:    "{Plus[1, 2], Times[3, 4]}",
-			expected: "List[Plus[1, 2], Times[3, 4]]",
+			input:    "[Plus(1, 2), Times(3, 4)]",
+			expected: "List(Plus(1, 2), Times(3, 4))",
 		},
 	}
 
@@ -69,23 +69,23 @@ func TestParseListLiteral_TrailingComma(t *testing.T) {
 	}{
 		{
 			name:     "Single element with trailing comma",
-			input:    "{1,}",
-			expected: "List[1]",
+			input:    "[1,]",
+			expected: "List(1)",
 		},
 		{
 			name:     "Multiple elements with trailing comma",
-			input:    "{1, 2, 3,}",
-			expected: "List[1, 2, 3]",
+			input:    "[1, 2, 3,]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name:     "Mixed types with trailing comma",
-			input:    "{\"hello\", True, 42,}",
-			expected: "List[\"hello\", True, 42]",
+			input:    "[\"hello\", True, 42,]",
+			expected: "List(\"hello\", True, 42)",
 		},
 		{
 			name:     "Nested expressions with trailing comma",
-			input:    "{Plus[1, 2], x,}",
-			expected: "List[Plus[1, 2], x]",
+			input:    "[Plus(1, 2), x,]",
+			expected: "List(Plus(1, 2), x)",
 		},
 	}
 
@@ -111,28 +111,28 @@ func TestParseListLiteral_NestedLists(t *testing.T) {
 	}{
 		{
 			name:     "List containing empty list",
-			input:    "{{}}",
-			expected: "List[List[]]",
+			input:    "[[]]",
+			expected: "List(List())",
 		},
 		{
 			name:     "List containing multiple lists",
-			input:    "{{1, 2}, {3, 4}}",
-			expected: "List[List[1, 2], List[3, 4]]",
+			input:    "[[1, 2], [3, 4]]",
+			expected: "List(List(1, 2), List(3, 4))",
 		},
 		{
 			name:     "Deeply nested lists",
-			input:    "{{{1}}}",
-			expected: "List[List[List[1]]]",
+			input:    "[[[1]]]",
+			expected: "List(List(List(1)))",
 		},
 		{
 			name:     "Mixed nested structures",
-			input:    "{1, {2, 3}, 4}",
-			expected: "List[1, List[2, 3], 4]",
+			input:    "[1, [2, 3], 4]",
+			expected: "List(1, List(2, 3), 4)",
 		},
 		{
 			name:     "Complex nested with trailing commas",
-			input:    "{{1, 2,}, {3,}, {}}",
-			expected: "List[List[1, 2], List[3], List[]]",
+			input:    "[[1, 2,], [3,], []]",
+			expected: "List(List(1, 2), List(3), List())",
 		},
 	}
 
@@ -158,18 +158,18 @@ func TestParseListLiteral_WithArithmetic(t *testing.T) {
 	}{
 		{
 			name:     "List with arithmetic expressions",
-			input:    "{1 + 2, 3 * 4}",
-			expected: "List[Plus[1, 2], Times[3, 4]]",
+			input:    "[1 + 2, 3 * 4]",
+			expected: "List(Plus(1, 2), Times(3, 4))",
 		},
 		{
 			name:     "List with complex expressions",
-			input:    "{x + y, z * 2, True && False}",
-			expected: "List[Plus[x, y], Times[z, 2], And[True, False]]",
+			input:    "[x + y, z * 2, True && False]",
+			expected: "List(Plus(x, y), Times(z, 2), And(True, False))",
 		},
 		{
 			name:     "List with comparisons",
-			input:    "{1 == 2, 3 > 4, x <= y}",
-			expected: "List[Equal[1, 2], Greater[3, 4], LessEqual[x, y]]",
+			input:    "[1 == 2, 3 > 4, x <= y]",
+			expected: "List(Equal(1, 2), Greater(3, 4), LessEqual(x, y))",
 		},
 	}
 
@@ -235,43 +235,43 @@ func TestListLiteral_Integration(t *testing.T) {
 	}{
 		{
 			name:     "Empty list evaluation",
-			input:    "{}",
-			expected: "List[]",
+			input:    "[]",
+			expected: "List()",
 		},
 		{
 			name:     "Simple list evaluation",
-			input:    "{1, 2, 3}",
-			expected: "List[1, 2, 3]",
+			input:    "[1, 2, 3]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name:     "List with expressions",
-			input:    "{1 + 2, 3 * 4}",
-			expected: "List[3, 12]", // Expressions are evaluated
+			input:    "[1 + 2, 3 * 4]",
+			expected: "List(3, 12)", // Expressions are evaluated
 		},
 		{
 			name:     "Length of list literal",
-			input:    "Length[{1, 2, 3, 4}]",
+			input:    "Length([1, 2, 3, 4])",
 			expected: "4",
 		},
 		{
 			name:     "ListQ on list literal",
-			input:    "ListQ[{1, 2, 3}]",
+			input:    "ListQ([1, 2, 3])",
 			expected: "True",
 		},
 		{
 			name:     "Head of list literal",
-			input:    "Head[{1, 2, 3}]",
+			input:    "Head([1, 2, 3])",
 			expected: "List",
 		},
 		{
 			name:     "Nested list evaluation",
-			input:    "{{1, 2}, {3, 4}}",
-			expected: "List[List[1, 2], List[3, 4]]",
+			input:    "[[1, 2], [3, 4]]",
+			expected: "List(List(1, 2), List(3, 4))",
 		},
 		{
 			name:     "List with mixed types",
-			input:    "{42, \"hello\", True, x}",
-			expected: "List[42, \"hello\", True, x]",
+			input:    "[42, \"hello\", True, x]",
+			expected: "List(42, \"hello\", True, x)",
 		},
 	}
 	
@@ -301,18 +301,18 @@ func TestListLiteral_WithHold(t *testing.T) {
 	}{
 		{
 			name:     "Hold list literal",
-			input:    "Hold[{1, 2, 3}]",
-			expected: "Hold[List[1, 2, 3]]",
+			input:    "Hold([1, 2, 3])",
+			expected: "Hold(List(1, 2, 3))",
 		},
 		{
 			name:     "Hold list with expressions",
-			input:    "Hold[{1 + 2, 3 * 4}]",
-			expected: "Hold[List[Plus[1, 2], Times[3, 4]]]",
+			input:    "Hold([1 + 2, 3 * 4])",
+			expected: "Hold(List(Plus(1, 2), Times(3, 4)))",
 		},
 		{
 			name:     "List containing Hold",
-			input:    "{Hold[1 + 2], 3}",
-			expected: "List[Hold[Plus[1, 2]], 3]",
+			input:    "[ Hold(1 + 2), 3]",
+			expected: "List(Hold(Plus(1, 2)), 3)",
 		},
 	}
 	
@@ -340,23 +340,23 @@ func TestListLiteral_Whitespace(t *testing.T) {
 	}{
 		{
 			name:     "Extra spaces",
-			input:    "{ 1 , 2 , 3 }",
-			expected: "List[1, 2, 3]",
+			input:    "[ 1 , 2 , 3 ]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name:     "Newlines in list",
-			input:    "{\n1,\n2,\n3\n}",
-			expected: "List[1, 2, 3]",
+			input:    "[\n1,\n2,\n3\n]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name:     "Tabs and spaces",
-			input:    "{\t1,\t\t2,   3\t}",
-			expected: "List[1, 2, 3]",
+			input:    "[\t1,\t\t2,   3\t]",
+			expected: "List(1, 2, 3)",
 		},
 		{
 			name:     "No spaces",
-			input:    "{1,2,3}",
-			expected: "List[1, 2, 3]",
+			input:    "[1,2,3]",
+			expected: "List(1, 2, 3)",
 		},
 	}
 

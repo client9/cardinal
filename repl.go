@@ -169,7 +169,6 @@ Operators:
 func (r *REPL) clearContext() {
 	r.evaluator = NewEvaluator()
 	setupBuiltinAttributes(r.evaluator.context.symbolTable)
-	fmt.Fprintf(r.output, "Context cleared.\n")
 }
 
 // printAttributes prints all symbols with their attributes

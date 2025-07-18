@@ -47,7 +47,7 @@ func main() {
     result, _ = repl.EvaluateString("x = 5")
     fmt.Println("x =", result) // Output: 5
     
-    result, _ = repl.EvaluateString("If[x > 3, \"big\", \"small\"]")
+    result, _ = repl.EvaluateString("If(x > 3, \"big\", \"small\")")
     fmt.Println("Result:", result) // Output: "big"
 }
 ```
@@ -72,14 +72,14 @@ sexpr> x = 10
 10
 sexpr> y = 20
 20
-sexpr> And[x > 5, y < 25]
+sexpr> And(x > 5, y < 25)
 True
-sexpr> If[x > y, "x wins", "y wins"]
+sexpr> If(x > y, "x wins", "y wins")
 "y wins"
-sexpr> Plus[1, 2, 3, 4, 5]
+sexpr> Plus(1, 2, 3, 4, 5)
 15
-sexpr> Hold[1 + 2]
-Hold[Plus[1, 2]]
+sexpr> Hold(1 + 2)
+Hold(Plus(1, 2))
 sexpr> Pi
 3.141592653589793
 sexpr> quit
@@ -105,9 +105,9 @@ Execute expressions from a file:
 
 ### Function Calls
 ```
-Plus[1, 2, 3]
-Times[2, x, 4]
-Greater[5, 3]
+Plus(1, 2, 3)
+Times(2, x, 4)
+Greater(5, 3)
 ```
 
 ### Infix Notation
@@ -125,42 +125,42 @@ y := 2 * x       # Delayed assignment
 
 ### Control Structures
 ```
-If[condition, then, else]
-Hold[expression]
-Evaluate[expression]
+If(condition, then, else)
+Hold(expression)
+Evaluate(expression)
 ```
 
 ### Built-in Functions
 
 #### Arithmetic
-- `Plus[...]` - Addition
-- `Times[...]` - Multiplication  
-- `Subtract[a, b]` - Subtraction
-- `Divide[a, b]` - Division
-- `Power[base, exp]` - Exponentiation
+- `Plus(...)` - Addition
+- `Times(...)` - Multiplication  
+- `Subtract(a, b)` - Subtraction
+- `Divide(a, b)` - Division
+- `Power(base, exp)` - Exponentiation
 
 #### Comparison
-- `Equal[a, b]` - Equality test
-- `Less[a, b]` - Less than
-- `Greater[a, b]` - Greater than
-- `LessEqual[a, b]` - Less than or equal
-- `GreaterEqual[a, b]` - Greater than or equal
-- `SameQ[a, b]` - Identity test
+- `Equal(a, b)` - Equality test
+- `Less(a, b)` - Less than
+- `Greater(a, b)` - Greater than
+- `LessEqual(a, b)` - Less than or equal
+- `GreaterEqual(a, b)` - Greater than or equal
+- `SameQ(a, b)` - Identity test
 
 #### Logical
-- `And[...]` - Logical AND
-- `Or[...]` - Logical OR
-- `Not[x]` - Logical NOT
+- `And(...)` - Logical AND
+- `Or(...)` - Logical OR
+- `Not(x)` - Logical NOT
 
 #### Control
-- `If[cond, then, else]` - Conditional expression
-- `Hold[expr]` - Prevent evaluation
-- `Evaluate[expr]` - Force evaluation
+- `If(cond, then, else)` - Conditional expression
+- `Hold(expr)` - Prevent evaluation
+- `Evaluate(expr)` - Force evaluation
 
 #### Assignment
-- `Set[var, value]` - Immediate assignment
-- `SetDelayed[var, value]` - Delayed assignment
-- `Unset[var]` - Remove variable
+- `Set(var, value)` - Immediate assignment
+- `SetDelayed(var, value)` - Delayed assignment
+- `Unset(var)` - Remove variable
 
 ### Attributes
 
@@ -171,7 +171,7 @@ The system supports Mathematica-style attributes that control evaluation:
 - **HoldRest** - Prevent evaluation of all but first argument
 - **Flat** - Flatten nested applications (associativity)
 - **Orderless** - Sort arguments (commutativity)
-- **OneIdentity** - f[x] → x for single arguments
+- **OneIdentity** - f[x) → x for single arguments
 
 Example:
 ```
@@ -207,7 +207,7 @@ See `examples.sexpr` for more examples:
 1 + 2 * 3                    # → 7
 
 # Function calls
-Plus[1, 2, 3, 4, 5]          # → 15
+Plus(1, 2, 3, 4, 5)          # → 15
 
 # Variables and assignments
 x = 10                       # → 10
@@ -216,27 +216,27 @@ z = x + y                    # → 30
 
 # Comparisons
 x > y                        # → False
-Equal[x, 10]                 # → True
+Equal(x, 10)                 # → True
 
 # Logical operations
-And[True, False]             # → False
-Or[False, True]              # → True
-And[x > 5, y < 25]          # → True
+And(True, False)             # → False
+Or(False, True)              # → True
+And(x > 5, y < 25)          # → True
 
 # Conditionals
-If[x > y, "x is greater", "y is greater"]  # → "y is greater"
+If(x > y, "x is greater", "y is greater")  # → "y is greater"
 
 # Mathematical constants
 Pi                           # → 3.141592653589793
 E                            # → 2.718281828459045
 
 # Attribute demonstrations
-Plus[1, Plus[2, 3]]          # → 6 (Flat attribute)
-Plus[3, 1, 2]                # → 6 (Orderless attribute)
-Plus[42]                     # → 42 (OneIdentity attribute)
+Plus(1, Plus(2, 3))          # → 6 (Flat attribute)
+Plus(3, 1, 2)                # → 6 (Orderless attribute)
+Plus(42)                     # → 42 (OneIdentity attribute)
 
 # Hold expressions
-Hold[1 + 2]                  # → Hold[Plus[1, 2]]
+Hold(1 + 2)                  # → Hold(Plus(1, 2))
 ```
 
 ## Testing
