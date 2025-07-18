@@ -143,15 +143,15 @@ Commands:
 
 Examples:
   1 + 2 * 3                    # Arithmetic with infix notation
-  Plus[1, 2, 3]                # Function call syntax
+  Plus(1, 2, 3)                # Function call syntax
   x = 5                        # Variable assignment
   y := 2 * x                   # Delayed assignment
-  If[x > 3, "big", "small"]    # Conditional expression
-  And[True, False]             # Logical operations
-  Greater[5, 3]                # Comparison operations
-  Hold[1 + 2]                  # Prevent evaluation
+  If(x > 3, "big", "small")    # Conditional expression
+  And(True, False)             # Logical operations
+  Greater(5, 3)                # Comparison operations
+  Hold(1 + 2)                  # Prevent evaluation
   Pi                           # Mathematical constants
-  SameQ[3, 3]                  # Identity comparison
+  SameQ(3, 3)                  # Identity comparison
 
 Operators:
   +, -, *, /     - Arithmetic operators

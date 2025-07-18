@@ -101,7 +101,7 @@ func executeFile(repl *sexpr.REPL, filename string) error {
 		}
 		
 		// Show what we're executing
-		fmt.Printf("In[%d): %s\n", lineNum+1, line)
+		fmt.Printf("In(%d): %s\n", lineNum+1, line)
 		
 		// Execute the line
 		result, err := repl.EvaluateString(line)
@@ -110,7 +110,7 @@ func executeFile(repl *sexpr.REPL, filename string) error {
 		}
 		
 		// Show the result
-		fmt.Printf("Out[%d): %s\n", lineNum+1, result)
+		fmt.Printf("Out(%d): %s\n", lineNum+1, result)
 	}
 	
 	return nil
