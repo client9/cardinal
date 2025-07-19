@@ -349,11 +349,7 @@ func (l *Lexer) NextToken() Token {
 		if isLetter(l.ch) {
 			tok.Position = l.position - 1
 			tok.Value = l.readIdentifier()
-			if tok.Value == "True" || tok.Value == "False" {
-				tok.Type = BOOLEAN
-			} else {
-				tok.Type = SYMBOL
-			}
+			tok.Type = SYMBOL
 			return tok
 		} else if isDigit(l.ch) {
 			tok.Position = l.position - 1

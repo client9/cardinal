@@ -6,3 +6,6 @@ lint:
 	golangci-lint run .
 test:
 	go test
+
+clean:
+	rm -f *.bak*

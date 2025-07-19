@@ -3,6 +3,7 @@ package sexpr
 import (
 	"bufio"
 	"fmt"
+	"golang.org/x/term"
 	"io"
 	"os"
 	"strings"
@@ -49,17 +50,30 @@ func (r *REPL) SetPrompt(prompt string) {
 	r.prompt = prompt
 }
 
+// isInteractive returns true if the REPL is running in interactive mode
+func (r *REPL) isInteractive() bool {
+	// Check if input is stdin and if stdin is a terminal
+	if r.input == os.Stdin {
+		return term.IsTerminal(int(os.Stdin.Fd()))
+	}
+	return false
+}
+
 // Run starts the REPL loop
 func (r *REPL) Run() error {
 	scanner := bufio.NewScanner(r.input)
 
-	// Print welcome message
-	fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
-	fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n\n")
+	// Print welcome message only in interactive mode (when stdin is a terminal)
+	if r.isInteractive() {
+		fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
+		fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n\n")
+	}
 
 	for {
-		// Print prompt
-		fmt.Fprint(r.output, r.prompt)
+		// Print prompt only in interactive mode
+		if r.isInteractive() {
+			fmt.Fprint(r.output, r.prompt)
+		}
 
 		// Read input
 		if !scanner.Scan() {
@@ -95,7 +109,9 @@ func (r *REPL) Run() error {
 func (r *REPL) handleSpecialCommands(line string) bool {
 	switch line {
 	case "quit", "exit":
-		fmt.Fprintf(r.output, "Goodbye!\n")
+		if r.isInteractive() {
+			fmt.Fprintf(r.output, "Goodbye!\n")
+		}
 		os.Exit(0)
 		return true
 	case "help":

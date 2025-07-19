@@ -458,7 +458,7 @@ func TestEvaluateSymbolQ(t *testing.T) {
 		{
 			name:     "Boolean atom",
 			arg:      NewBoolAtom(true),
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "List",

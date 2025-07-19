@@ -407,14 +407,14 @@ func TestParser_ParseAtoms(t *testing.T) {
 		{
 			name:         "boolean true atom",
 			input:        "True",
-			expectedType: "bool",
-			expectedVal:  true,
+			expectedType: "symbol",
+			expectedVal:  "True",
 		},
 		{
 			name:         "boolean false atom",
 			input:        "False",
-			expectedType: "bool",
-			expectedVal:  false,
+			expectedType: "symbol",
+			expectedVal:  "False",
 		},
 	}
 

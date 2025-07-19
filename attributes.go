@@ -111,9 +111,9 @@ func (st *SymbolTable) Attributes(symbol string) []Attribute {
 		attrs = append(attrs, attr)
 	}
 
-	// Sort for consistent output
+	// Sort for consistent output (alphabetically by name)
 	sort.Slice(attrs, func(i, j int) bool {
-		return attrs[i] < attrs[j]
+		return attrs[i].String() < attrs[j].String()
 	})
 
 	return attrs

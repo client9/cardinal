@@ -17,7 +17,6 @@ const (
 	StringAtom AtomType = iota
 	IntAtom
 	FloatAtom
-	BoolAtom
 	SymbolAtom
 )
 
@@ -34,11 +33,6 @@ func (a Atom) String() string {
 		return strconv.Itoa(a.Value.(int))
 	case FloatAtom:
 		return strconv.FormatFloat(a.Value.(float64), 'f', -1, 64)
-	case BoolAtom:
-		if a.Value.(bool) {
-			return "True"
-		}
-		return "False"
 	case SymbolAtom:
 		return a.Value.(string)
 	default:
@@ -54,8 +48,6 @@ func (a Atom) Type() string {
 		return "int"
 	case FloatAtom:
 		return "float64"
-	case BoolAtom:
-		return "bool"
 	case SymbolAtom:
 		return "symbol"
 	default:
@@ -182,7 +174,13 @@ func NewFloatAtom(value float64) Atom {
 }
 
 func NewBoolAtom(value bool) Atom {
-	return Atom{AtomType: BoolAtom, Value: value}
+	// Return True/False symbols instead of BoolAtom for Mathematica compatibility
+	// This makes our system fully symbolic like Mathematica
+	if value {
+		return NewSymbolAtom("True")
+	} else {
+		return NewSymbolAtom("False")
+	}
 }
 
 func NewSymbolAtom(value string) Atom {

@@ -101,7 +101,7 @@ func TestAtom_Type(t *testing.T) {
 		{
 			name:     "boolean atom type",
 			atom:     NewBoolAtom(true),
-			expected: "bool",
+			expected: "symbol",
 		},
 		{
 			name:     "symbol atom type",
@@ -224,14 +224,14 @@ func TestConstructorFunctions(t *testing.T) {
 		{
 			name:          "NewBoolAtom true",
 			constructor:   func() Expr { return NewBoolAtom(true) },
-			expectedType:  "bool",
-			expectedValue: true,
+			expectedType:  "symbol",
+			expectedValue: "True",
 		},
 		{
 			name:          "NewBoolAtom false",
 			constructor:   func() Expr { return NewBoolAtom(false) },
-			expectedType:  "bool",
-			expectedValue: false,
+			expectedType:  "symbol",
+			expectedValue: "False",
 		},
 		{
 			name:          "NewSymbolAtom",

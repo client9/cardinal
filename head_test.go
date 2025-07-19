@@ -28,12 +28,12 @@ func TestEvaluateHead_Atoms(t *testing.T) {
 		{
 			name:     "Boolean true",
 			arg:      NewBoolAtom(true),
-			expected: "Boolean",
+			expected: "Symbol",
 		},
 		{
 			name:     "Boolean false",
 			arg:      NewBoolAtom(false),
-			expected: "Boolean",
+			expected: "Symbol",
 		},
 		{
 			name:     "Symbol",
@@ -173,7 +173,7 @@ func TestHead_Integration(t *testing.T) {
 		{
 			name:     "Head of boolean",
 			input:    "Head(True)",
-			expected: "Boolean",
+			expected: "Symbol",
 		},
 		{
 			name:     "Head of symbol",
@@ -203,12 +203,12 @@ func TestHead_Integration(t *testing.T) {
 		{
 			name:     "Head of comparison",
 			input:    "Head(Equal(1, 2))",
-			expected: "Boolean", // Equal(1,2) evaluates to False, head of False is Boolean
+			expected: "Symbol", // Equal(1,2) evaluates to False, head of False is Symbol
 		},
 		{
 			name:     "Head of symbolic comparison",
 			input:    "Head(Equal(x, y))",
-			expected: "Boolean", // Equal(x,y) evaluates to False (string comparison), so head is Boolean
+			expected: "Symbol", // Equal(x,y) evaluates to False (string comparison), so head is Symbol
 		},
 	}
 

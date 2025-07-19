@@ -418,8 +418,9 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "true constant",
 			input: "True",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(Atom); ok && atom.AtomType == BoolAtom {
-					return atom.Value.(bool) == true
+				// True is now a symbol, not a BoolAtom (Mathematica compatibility)
+				if atom, ok := result.(Atom); ok && atom.AtomType == SymbolAtom {
+					return atom.Value.(string) == "True"
 				}
 				return false
 			},
@@ -428,8 +429,9 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "false constant",
 			input: "False",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(Atom); ok && atom.AtomType == BoolAtom {
-					return atom.Value.(bool) == false
+				// False is now a symbol, not a BoolAtom (Mathematica compatibility)
+				if atom, ok := result.(Atom); ok && atom.AtomType == SymbolAtom {
+					return atom.Value.(string) == "False"
 				}
 				return false
 			},

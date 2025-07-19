@@ -353,3 +353,271 @@ func stringSlicesEqual(a, b []string) bool {
 
 	return true
 }
+
+// Test SetAttributes builtin function
+func TestSetAttributesBuiltin(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expected    string
+		shouldError bool
+	}{
+		{
+			name:     "Set single attribute",
+			input:    "SetAttributes(myFunc, Protected)",
+			expected: "Null",
+		},
+		{
+			name:     "Set multiple attributes with list",
+			input:    "SetAttributes(myFunc, List(Protected, HoldFirst))",
+			expected: "Null",
+		},
+		{
+			name:        "Error: invalid symbol",
+			input:       "SetAttributes(42, Protected)",
+			shouldError: true,
+		},
+		{
+			name:        "Error: invalid attribute",
+			input:       "SetAttributes(myFunc, InvalidAttribute)",
+			shouldError: true,
+		},
+		{
+			name:     "Wrong number of arguments returns unevaluated",
+			input:    "SetAttributes(myFunc)",
+			expected: "SetAttributes(myFunc)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewEvaluator()
+			setupBuiltinAttributes(evaluator.context.symbolTable)
+
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+
+			result := evaluator.Evaluate(expr)
+
+			if tt.shouldError {
+				if !IsError(result) {
+					t.Errorf("Expected error, but got: %s", result.String())
+				}
+			} else {
+				if IsError(result) {
+					t.Errorf("Unexpected error: %s", result.String())
+				} else if result.String() != tt.expected {
+					t.Errorf("Expected %s, got %s", tt.expected, result.String())
+				}
+			}
+		})
+	}
+}
+
+// Test ClearAttributes builtin function
+func TestClearAttributesBuiltin(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       []string
+		input       string
+		expected    string
+		shouldError bool
+	}{
+		{
+			name: "Clear single attribute",
+			setup: []string{
+				"SetAttributes(testFunc, List(Protected, HoldFirst))",
+			},
+			input:    "ClearAttributes(testFunc, Protected)",
+			expected: "Null",
+		},
+		{
+			name: "Clear all attributes",
+			setup: []string{
+				"SetAttributes(testFunc, List(Protected, HoldFirst))",
+			},
+			input:    "ClearAttributes(testFunc)",
+			expected: "Null",
+		},
+		{
+			name:        "Error: invalid symbol",
+			input:       "ClearAttributes(42, Protected)",
+			shouldError: true,
+		},
+		{
+			name:     "No arguments returns unevaluated",
+			input:    "ClearAttributes()",
+			expected: "ClearAttributes()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewEvaluator()
+			setupBuiltinAttributes(evaluator.context.symbolTable)
+
+			// Run setup commands
+			for _, setupCmd := range tt.setup {
+				setupExpr, err := ParseString(setupCmd)
+				if err != nil {
+					t.Fatalf("Setup parse error: %v", err)
+				}
+				evaluator.Evaluate(setupExpr)
+			}
+
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+
+			result := evaluator.Evaluate(expr)
+
+			if tt.shouldError {
+				if !IsError(result) {
+					t.Errorf("Expected error, but got: %s", result.String())
+				}
+			} else {
+				if IsError(result) {
+					t.Errorf("Unexpected error: %s", result.String())
+				} else if result.String() != tt.expected {
+					t.Errorf("Expected %s, got %s", tt.expected, result.String())
+				}
+			}
+		})
+	}
+}
+
+// Test Attributes builtin function
+func TestAttributesBuiltin(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       []string
+		input       string
+		expected    string
+		shouldError bool
+	}{
+		{
+			name:     "Get attributes of symbol with no attributes",
+			input:    "Attributes(newSymbol)",
+			expected: "List()",
+		},
+		{
+			name: "Get attributes of symbol with single attribute",
+			setup: []string{
+				"SetAttributes(testFunc, Protected)",
+			},
+			input:    "Attributes(testFunc)",
+			expected: "List(Protected)",
+		},
+		{
+			name: "Get attributes of symbol with multiple attributes",
+			setup: []string{
+				"SetAttributes(testFunc, List(Protected, HoldFirst, Constant))",
+			},
+			input:    "Attributes(testFunc)",
+			expected: "List(Constant, HoldFirst, Protected)", // Alphabetically sorted
+		},
+		{
+			name:     "Get attributes of builtin function",
+			input:    "Attributes(Plus)",
+			expected: "List(Flat, Listable, NumericFunction, OneIdentity, Orderless, Protected)",
+		},
+		{
+			name:        "Error: invalid symbol",
+			input:       "Attributes(42)",
+			shouldError: true,
+		},
+		{
+			name:     "Wrong number of arguments returns unevaluated",
+			input:    "Attributes()",
+			expected: "Attributes()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewEvaluator()
+			setupBuiltinAttributes(evaluator.context.symbolTable)
+
+			// Run setup commands
+			for _, setupCmd := range tt.setup {
+				setupExpr, err := ParseString(setupCmd)
+				if err != nil {
+					t.Fatalf("Setup parse error: %v", err)
+				}
+				evaluator.Evaluate(setupExpr)
+			}
+
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+
+			result := evaluator.Evaluate(expr)
+
+			if tt.shouldError {
+				if !IsError(result) {
+					t.Errorf("Expected error, but got: %s", result.String())
+				}
+			} else {
+				if IsError(result) {
+					t.Errorf("Unexpected error: %s", result.String())
+				} else if result.String() != tt.expected {
+					t.Errorf("Expected %s, got %s", tt.expected, result.String())
+				}
+			}
+		})
+	}
+}
+
+// Test integration of all attribute functions
+func TestAttributeFunctionsIntegration(t *testing.T) {
+	evaluator := NewEvaluator()
+
+	// Test setting attributes
+	expr1, _ := ParseString("SetAttributes(myFunc, List(Protected, HoldFirst))")
+	result1 := evaluator.Evaluate(expr1)
+	if result1.String() != "Null" {
+		t.Errorf("SetAttributes failed: %s", result1.String())
+	}
+
+	// Test getting attributes
+	expr2, _ := ParseString("Attributes(myFunc)")
+	result2 := evaluator.Evaluate(expr2)
+	expected2 := "List(HoldFirst, Protected)" // Should be sorted
+	if result2.String() != expected2 {
+		t.Errorf("Attributes: expected %s, got %s", expected2, result2.String())
+	}
+
+	// Test clearing specific attribute
+	expr3, _ := ParseString("ClearAttributes(myFunc, Protected)")
+	result3 := evaluator.Evaluate(expr3)
+	if result3.String() != "Null" {
+		t.Errorf("ClearAttributes failed: %s", result3.String())
+	}
+
+	// Verify attribute was cleared
+	expr4, _ := ParseString("Attributes(myFunc)")
+	result4 := evaluator.Evaluate(expr4)
+	expected4 := "List(HoldFirst)"
+	if result4.String() != expected4 {
+		t.Errorf("After clearing: expected %s, got %s", expected4, result4.String())
+	}
+
+	// Test clearing all attributes
+	expr5, _ := ParseString("ClearAttributes(myFunc)")
+	result5 := evaluator.Evaluate(expr5)
+	if result5.String() != "Null" {
+		t.Errorf("ClearAttributes all failed: %s", result5.String())
+	}
+
+	// Verify all attributes were cleared
+	expr6, _ := ParseString("Attributes(myFunc)")
+	result6 := evaluator.Evaluate(expr6)
+	expected6 := "List()"
+	if result6.String() != expected6 {
+		t.Errorf("After clearing all: expected %s, got %s", expected6, result6.String())
+	}
+}

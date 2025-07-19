@@ -29,6 +29,56 @@ func NewFunctionRegistry() *FunctionRegistry {
 	}
 }
 
+// matchBlankExpression matches a blank expression (Blank[], BlankSequence[], BlankNullSequence[]) against an expression
+func matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
+	if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
+		// Check type constraint if present
+		if typeExpr != nil {
+			var typeName string
+			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
+				typeName = typeAtom.Value.(string)
+			}
+			if !matchesType(expr, typeName) {
+				return false
+			}
+		}
+
+		// For now, single blank expressions always match single expressions
+		// BlankSequence and BlankNullSequence handling for sequences happens elsewhere
+		switch blankType {
+		case "Blank":
+			return true // Single expression always matches Blank[]
+		case "BlankSequence":
+			return true // Single expression matches BlankSequence[] (at least one)
+		case "BlankNullSequence":
+			return true // Single expression matches BlankNullSequence[] (zero or more)
+		}
+	}
+	return false
+}
+
+// convertParsedPatternToSymbolic converts a parsed pattern to use symbolic pattern representation
+func convertParsedPatternToSymbolic(pattern Expr) Expr {
+	switch p := pattern.(type) {
+	case Atom:
+		if p.AtomType == SymbolAtom {
+			patternStr := p.Value.(string)
+			// Convert pattern strings like "x_", "_Integer", etc. to symbolic
+			return ConvertPatternStringToSymbolic(patternStr)
+		}
+		return p
+	case List:
+		// Convert all elements in the list
+		newElements := make([]Expr, len(p.Elements))
+		for i, elem := range p.Elements {
+			newElements[i] = convertParsedPatternToSymbolic(elem)
+		}
+		return List{Elements: newElements}
+	default:
+		return pattern
+	}
+}
+
 // RegisterPatternBuiltin registers a built-in function with a pattern from Go code
 func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl PatternFunc) error {
 	// Parse the pattern string
@@ -37,21 +87,25 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		return fmt.Errorf("invalid pattern syntax: %v", err)
 	}
 
-	// Debug: print what was parsed
-	// fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
+	// Convert parsed pattern to symbolic representation
+	symbolicPattern := convertParsedPatternToSymbolic(pattern)
 
-	// Extract function name from pattern
+	// Debug: print what was parsed and converted
+	// fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
+	// fmt.Printf("DEBUG: Symbolic pattern -> %v\n", symbolicPattern)
+
+	// Extract function name from original pattern (before conversion)
 	functionName, err := extractFunctionName(pattern)
 	if err != nil {
 		return fmt.Errorf("cannot extract function name from pattern: %v", err)
 	}
 
-	// Create function definition
+	// Create function definition with symbolic pattern
 	funcDef := FunctionDef{
-		Pattern:     pattern,
+		Pattern:     symbolicPattern,
 		Body:        nil,
 		GoImpl:      impl,
-		Specificity: calculatePatternSpecificity(pattern),
+		Specificity: calculatePatternSpecificity(symbolicPattern),
 		IsBuiltin:   true,
 	}
 
@@ -225,6 +279,32 @@ func directMatchPattern(pattern Expr, expr Expr, ctx *Context) bool {
 // directMatchPatternWithContext handles pattern matching with context about parameter vs literal positions
 func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isParameter bool) bool {
 	// fmt.Printf("DEBUG: directMatchPattern: pattern=%v (%T), expr=%v (%T)\\n", pattern, pattern, expr, expr)
+
+	// First, check if this is a symbolic pattern (new system)
+	if isPattern, nameExpr, blankExpr := isSymbolicPattern(pattern); isPattern {
+		// Handle Pattern[name, blank] - extract the name and match the blank
+		varName := ""
+		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
+			varName = nameAtom.Value.(string)
+		}
+
+		// Match the blank part
+		if matchBlankExpression(blankExpr, expr, ctx) {
+			// Bind the variable if we have a name
+			if varName != "" {
+				ctx.Set(varName, expr)
+			}
+			return true
+		}
+		return false
+	}
+
+	// Check if this is a direct symbolic blank (new system)
+	if isBlank, _, _ := isSymbolicBlank(pattern); isBlank {
+		return matchBlankExpression(pattern, expr, ctx)
+	}
+
+	// Fall back to string-based pattern matching (legacy system)
 	switch p := pattern.(type) {
 	case Atom:
 		if p.AtomType == SymbolAtom {
@@ -311,7 +391,64 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 	for patternIdx < len(patternList.Elements) && exprIdx < len(exprList.Elements) {
 		patternElem := patternList.Elements[patternIdx]
 
-		// Check if this pattern element is a sequence pattern
+		// Check if this pattern element is a sequence pattern (symbolic or string-based)
+
+		// First check for symbolic Pattern[name, BlankSequence/BlankNullSequence]
+		if isPattern, nameExpr, blankExpr := isSymbolicPattern(patternElem); isPattern {
+			if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
+				varName := ""
+				if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
+					varName = nameAtom.Value.(string)
+				}
+
+				typeName := ""
+				if typeExpr != nil {
+					if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
+						typeName = typeAtom.Value.(string)
+					}
+				}
+
+				// Create PatternInfo for compatibility with existing sequence matching
+				info := PatternInfo{
+					VarName:  varName,
+					TypeName: typeName,
+				}
+
+				if blankType == "BlankNullSequence" {
+					info.Type = BlankNullSequencePattern
+					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, true)
+				} else if blankType == "BlankSequence" {
+					info.Type = BlankSequencePattern
+					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, false)
+				}
+			}
+		}
+
+		// Check for direct symbolic BlankSequence/BlankNullSequence
+		if isBlank, blankType, typeExpr := isSymbolicBlank(patternElem); isBlank {
+			typeName := ""
+			if typeExpr != nil {
+				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
+					typeName = typeAtom.Value.(string)
+				}
+			}
+
+			// Create PatternInfo for compatibility
+			info := PatternInfo{
+				VarName:  "", // Anonymous sequence
+				TypeName: typeName,
+			}
+
+			if blankType == "BlankNullSequence" {
+				info.Type = BlankNullSequencePattern
+				return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, true)
+			} else if blankType == "BlankSequence" {
+				info.Type = BlankSequencePattern
+				return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, false)
+			}
+		}
+
+		// Fall back to string-based sequence pattern detection
 		if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
 			varName := atom.Value.(string)
 			if isPatternVariable(varName) {
@@ -342,7 +479,32 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 	if patternIdx < len(patternList.Elements) {
 		// Remaining pattern elements - check if they're optional (null sequence patterns)
 		for patternIdx < len(patternList.Elements) {
-			if atom, ok := patternList.Elements[patternIdx].(Atom); ok && atom.AtomType == SymbolAtom {
+			patternElem := patternList.Elements[patternIdx]
+
+			// Check for symbolic null sequence patterns
+			if isPattern, nameExpr, blankExpr := isSymbolicPattern(patternElem); isPattern {
+				if isBlank, blankType, _ := isSymbolicBlank(blankExpr); isBlank && blankType == "BlankNullSequence" {
+					// Bind to empty list
+					if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
+						varName := nameAtom.Value.(string)
+						if varName != "" {
+							ctx.Set(varName, List{Elements: []Expr{}})
+						}
+					}
+					patternIdx++
+					continue
+				}
+			}
+
+			// Check for direct symbolic BlankNullSequence
+			if isBlank, blankType, _ := isSymbolicBlank(patternElem); isBlank && blankType == "BlankNullSequence" {
+				// Anonymous null sequence - just continue
+				patternIdx++
+				continue
+			}
+
+			// Fall back to string-based null sequence patterns
+			if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
 				varName := atom.Value.(string)
 				if isPatternVariable(varName) {
 					info := parsePatternInfo(varName)

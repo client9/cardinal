@@ -146,10 +146,10 @@ func TestBlankPatternsWithTypes(t *testing.T) {
 		{"BlankSequence String", "f(x__String) := x; f(\"hello\", \"world\")", "List(\"hello\", \"world\")"},
 		{"BlankNullSequence String", "f(x___String) := x; f(\"hello\", \"world\")", "List(\"hello\", \"world\")"},
 
-		// Boolean types
-		{"Blank Boolean", "f(x_Boolean) := x; f(True)", "True"},
-		{"BlankSequence Boolean", "f(x__Boolean) := x; f(True, False)", "List(True, False)"},
-		{"BlankNullSequence Boolean", "f(x___Boolean) := x; f(True, False)", "List(True, False)"},
+		// Boolean symbols (True/False are symbols in our Mathematica-compatible system)
+		{"Blank Boolean as Symbol", "f(x_Symbol) := x; f(True)", "True"},
+		{"BlankSequence Boolean as Symbol", "f(x__Symbol) := x; f(True, False)", "List(True, False)"},
+		{"BlankNullSequence Boolean as Symbol", "f(x___Symbol) := x; f(True, False)", "List(True, False)"},
 
 		// Symbol types
 		{"Blank Symbol", "f(x_Symbol) := x; f(abc)", "abc"},
