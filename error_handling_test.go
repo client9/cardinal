@@ -30,7 +30,7 @@ func TestIsError(t *testing.T) {
 	// Test IsError function
 	errorExpr := NewErrorExpr("TestError", "test", nil)
 	intExpr := NewIntAtom(42)
-	listExpr := &List{Elements: []Expr{NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)}}
+	listExpr := List{Elements: []Expr{NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)}}
 	
 	if !IsError(errorExpr) {
 		t.Error("IsError should return true for ErrorExpr")

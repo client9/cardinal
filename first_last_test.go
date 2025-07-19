@@ -14,7 +14,7 @@ func TestEvaluateFirst(t *testing.T) {
 	}{
 		{
 			name: "First of simple function",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -25,7 +25,7 @@ func TestEvaluateFirst(t *testing.T) {
 		},
 		{
 			name: "First of two-element list",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewStringAtom("hello"),
 			}},
@@ -34,9 +34,9 @@ func TestEvaluateFirst(t *testing.T) {
 		},
 		{
 			name: "First of nested expression",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Equal"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Plus"),
 					NewIntAtom(1),
 					NewIntAtom(2),
@@ -48,7 +48,7 @@ func TestEvaluateFirst(t *testing.T) {
 		},
 		{
 			name: "First of list with mixed types",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Mixed"),
 				NewIntAtom(42),
 				NewFloatAtom(3.14),
@@ -60,14 +60,14 @@ func TestEvaluateFirst(t *testing.T) {
 		},
 		{
 			name: "First of empty list - should error",
-			input: &List{Elements: []Expr{}},
+			input: List{Elements: []Expr{}},
 			expected: "",
 			hasError: true,
 			errorType: "PartError",
 		},
 		{
 			name: "First of single element list (head only) - should error",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
 			expected: "",
@@ -142,7 +142,7 @@ func TestEvaluateLast(t *testing.T) {
 	}{
 		{
 			name: "Last of simple function",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -153,7 +153,7 @@ func TestEvaluateLast(t *testing.T) {
 		},
 		{
 			name: "Last of two-element list",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewStringAtom("hello"),
 			}},
@@ -162,9 +162,9 @@ func TestEvaluateLast(t *testing.T) {
 		},
 		{
 			name: "Last of nested expression",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Equal"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Plus"),
 					NewIntAtom(1),
 					NewIntAtom(2),
@@ -176,7 +176,7 @@ func TestEvaluateLast(t *testing.T) {
 		},
 		{
 			name: "Last of list with mixed types",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Mixed"),
 				NewIntAtom(42),
 				NewFloatAtom(3.14),
@@ -188,7 +188,7 @@ func TestEvaluateLast(t *testing.T) {
 		},
 		{
 			name: "Last of function with single argument",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Head"),
 				NewSymbolAtom("x"),
 			}},
@@ -197,14 +197,14 @@ func TestEvaluateLast(t *testing.T) {
 		},
 		{
 			name: "Last of empty list - should error",
-			input: &List{Elements: []Expr{}},
+			input: List{Elements: []Expr{}},
 			expected: "",
 			hasError: true,
 			errorType: "PartError",
 		},
 		{
 			name: "Last of single element list (head only) - should error",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
 			expected: "",
@@ -407,11 +407,11 @@ func TestFirstLast_ComplexExpressions(t *testing.T) {
 	}{
 		{
 			name: "First of deeply nested expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Outer"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Inner"),
-					&List{Elements: []Expr{
+					List{Elements: []Expr{
 						NewSymbolAtom("Deep"),
 						NewIntAtom(1),
 						NewIntAtom(2),
@@ -425,11 +425,11 @@ func TestFirstLast_ComplexExpressions(t *testing.T) {
 		},
 		{
 			name: "Last of deeply nested expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Outer"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Inner"),
-					&List{Elements: []Expr{
+					List{Elements: []Expr{
 						NewSymbolAtom("Deep"),
 						NewIntAtom(1),
 						NewIntAtom(2),
@@ -443,7 +443,7 @@ func TestFirstLast_ComplexExpressions(t *testing.T) {
 		},
 		{
 			name: "First of list with string elements",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("StringList"),
 				NewStringAtom("hello"),
 				NewStringAtom("world"),
@@ -454,7 +454,7 @@ func TestFirstLast_ComplexExpressions(t *testing.T) {
 		},
 		{
 			name: "Last of list with mixed atom types",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Mixed"),
 				NewIntAtom(42),
 				NewFloatAtom(3.14159),

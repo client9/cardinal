@@ -229,7 +229,17 @@ func (l *Lexer) NextToken() Token {
 	case '+':
 		tok = Token{Type: PLUS, Value: string(l.ch), Position: l.position - 1}
 	case '-':
-		tok = Token{Type: MINUS, Value: string(l.ch), Position: l.position - 1}
+		// Check if this is a negative number literal
+		if isDigit(l.peekChar()) {
+			tok.Position = l.position - 1
+			l.readChar() // consume the '-'
+			value, tokenType := l.readNumber()
+			tok.Value = "-" + value
+			tok.Type = tokenType
+			return tok
+		} else {
+			tok = Token{Type: MINUS, Value: string(l.ch), Position: l.position - 1}
+		}
 	case '*':
 		tok = Token{Type: MULTIPLY, Value: string(l.ch), Position: l.position - 1}
 	case '/':

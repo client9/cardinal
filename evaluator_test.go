@@ -397,7 +397,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "pi constant",
 			input: "Pi",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(*Atom); ok && atom.AtomType == FloatAtom {
+				if atom, ok := result.(Atom); ok && atom.AtomType == FloatAtom {
 					val := atom.Value.(float64)
 					return val > 3.14 && val < 3.15 // Approximate check
 				}
@@ -408,7 +408,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "e constant",
 			input: "E",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(*Atom); ok && atom.AtomType == FloatAtom {
+				if atom, ok := result.(Atom); ok && atom.AtomType == FloatAtom {
 					val := atom.Value.(float64)
 					return val > 2.71 && val < 2.72 // Approximate check
 				}
@@ -419,7 +419,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "true constant",
 			input: "True",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(*Atom); ok && atom.AtomType == BoolAtom {
+				if atom, ok := result.(Atom); ok && atom.AtomType == BoolAtom {
 					return atom.Value.(bool) == true
 				}
 				return false
@@ -429,7 +429,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "false constant",
 			input: "False",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(*Atom); ok && atom.AtomType == BoolAtom {
+				if atom, ok := result.(Atom); ok && atom.AtomType == BoolAtom {
 					return atom.Value.(bool) == false
 				}
 				return false

@@ -12,12 +12,12 @@ func TestEvaluateLength(t *testing.T) {
 	}{
 		{
 			name:     "Empty list",
-			arg:      &List{Elements: []Expr{}},
+			arg:      List{Elements: []Expr{}},
 			expected: 0,
 		},
 		{
 			name: "Single element list",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(42),
 			}},
@@ -25,7 +25,7 @@ func TestEvaluateLength(t *testing.T) {
 		},
 		{
 			name: "Multiple element list",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -101,12 +101,12 @@ func TestEvaluateListQ(t *testing.T) {
 	}{
 		{
 			name:     "Empty list",
-			arg:      &List{Elements: []Expr{}},
+			arg:      List{Elements: []Expr{}},
 			expected: true,
 		},
 		{
 			name: "Non-empty list",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -200,7 +200,7 @@ func TestEvaluateNumberQ(t *testing.T) {
 		},
 		{
 			name: "List",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 			}},
@@ -263,7 +263,7 @@ func TestEvaluateBooleanQ(t *testing.T) {
 		},
 		{
 			name: "List",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 			}},
@@ -336,7 +336,7 @@ func TestEvaluateIntegerQ(t *testing.T) {
 		},
 		{
 			name: "List",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 			}},
@@ -394,12 +394,12 @@ func TestEvaluateAtomQ(t *testing.T) {
 		},
 		{
 			name: "Empty list",
-			arg:  &List{Elements: []Expr{}},
+			arg:  List{Elements: []Expr{}},
 			expected: false,
 		},
 		{
 			name: "Non-empty list",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 			}},
@@ -462,7 +462,7 @@ func TestEvaluateSymbolQ(t *testing.T) {
 		},
 		{
 			name: "List",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 			}},

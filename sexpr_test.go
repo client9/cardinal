@@ -7,7 +7,7 @@ import (
 func TestAtom_String(t *testing.T) {
 	tests := []struct {
 		name     string
-		atom     *Atom
+		atom     Atom
 		expected string
 	}{
 		{
@@ -80,7 +80,7 @@ func TestAtom_String(t *testing.T) {
 func TestAtom_Type(t *testing.T) {
 	tests := []struct {
 		name     string
-		atom     *Atom
+		atom     Atom
 		expected string
 	}{
 		{
@@ -123,7 +123,7 @@ func TestAtom_Type(t *testing.T) {
 func TestList_String(t *testing.T) {
 	tests := []struct {
 		name     string
-		list     *List
+		list     List
 		expected string
 	}{
 		{
@@ -171,7 +171,7 @@ func TestList_String(t *testing.T) {
 func TestList_Type(t *testing.T) {
 	tests := []struct {
 		name     string
-		list     *List
+		list     List
 		expected string
 	}{
 		{
@@ -249,7 +249,7 @@ func TestConstructorFunctions(t *testing.T) {
 				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
 			}
 			
-			atom, ok := expr.(*Atom)
+			atom, ok := expr.(Atom)
 			if !ok {
 				t.Errorf("expected Atom, got %T", expr)
 				return

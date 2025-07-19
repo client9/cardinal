@@ -16,7 +16,7 @@ func TestEvaluatePart(t *testing.T) {
 	}{
 		{
 			name: "Part 1 of simple list",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -28,7 +28,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part 2 of simple list",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -40,7 +40,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part 3 of simple list",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -52,7 +52,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part 1 of function expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewSymbolAtom("a"),
 				NewSymbolAtom("b"),
@@ -64,7 +64,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part 2 of function expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewSymbolAtom("a"),
 				NewSymbolAtom("b"),
@@ -76,7 +76,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part with mixed types",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Mixed"),
 				NewIntAtom(42),
 				NewStringAtom("hello"),
@@ -89,9 +89,9 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part with nested expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Outer"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Inner"),
 					NewIntAtom(1),
 					NewIntAtom(2),
@@ -104,7 +104,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part -1 (last element)",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -116,7 +116,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part -2 (second to last)",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -128,7 +128,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part -3 (third to last)",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -140,7 +140,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part of single element list",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewStringAtom("only"),
 			}},
@@ -151,7 +151,7 @@ func TestEvaluatePart(t *testing.T) {
 		// Error cases
 		{
 			name: "Part index 0 - should error",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -163,7 +163,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part index out of bounds (positive)",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -175,7 +175,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part index out of bounds (negative)",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(10),
 				NewIntAtom(20),
@@ -187,7 +187,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part of empty list - should error",
-			expr: &List{Elements: []Expr{}},
+			expr: List{Elements: []Expr{}},
 			index:     1,
 			expected:  "",
 			hasError:  true,
@@ -195,7 +195,7 @@ func TestEvaluatePart(t *testing.T) {
 		},
 		{
 			name: "Part of single element list (head only) - should error",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
 			index:     1,
@@ -234,7 +234,7 @@ func TestEvaluatePart(t *testing.T) {
 }
 
 func TestEvaluatePart_NonIntegerIndex(t *testing.T) {
-	testList := &List{Elements: []Expr{
+	testList := List{Elements: []Expr{
 		NewSymbolAtom("List"),
 		NewIntAtom(1),
 		NewIntAtom(2),
@@ -267,7 +267,7 @@ func TestEvaluatePart_NonIntegerIndex(t *testing.T) {
 		},
 		{
 			name: "List index",
-			index: &List{Elements: []Expr{
+			index: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(1),
 			}},
@@ -342,7 +342,7 @@ func TestEvaluatePart_NonListExpression(t *testing.T) {
 
 // Test argument validation for Part
 func TestPart_ArgumentValidation(t *testing.T) {
-	testList := &List{Elements: []Expr{
+	testList := List{Elements: []Expr{
 		NewSymbolAtom("List"),
 		NewIntAtom(1),
 		NewIntAtom(2),
@@ -530,11 +530,11 @@ func TestPart_ComplexExpressions(t *testing.T) {
 	}{
 		{
 			name: "Part of deeply nested expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Outer"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Level1"),
-					&List{Elements: []Expr{
+					List{Elements: []Expr{
 						NewSymbolAtom("Level2"),
 						NewIntAtom(1),
 						NewIntAtom(2),
@@ -549,7 +549,7 @@ func TestPart_ComplexExpressions(t *testing.T) {
 		},
 		{
 			name: "Part of expression with string elements",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("StringList"),
 				NewStringAtom("first"),
 				NewStringAtom("second"),
@@ -560,7 +560,7 @@ func TestPart_ComplexExpressions(t *testing.T) {
 		},
 		{
 			name: "Part of expression with mixed atom types",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Mixed"),
 				NewIntAtom(42),
 				NewFloatAtom(3.14159),
@@ -573,7 +573,7 @@ func TestPart_ComplexExpressions(t *testing.T) {
 		},
 		{
 			name: "Part with negative index on complex expression",
-			expr: &List{Elements: []Expr{
+			expr: List{Elements: []Expr{
 				NewSymbolAtom("Complex"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -615,7 +615,7 @@ func TestPart_BoundaryConditions(t *testing.T) {
 			for i := 1; i <= size; i++ {
 				elements[i] = NewIntAtom(i * 10)
 			}
-			list := &List{Elements: elements}
+			list := List{Elements: elements}
 			
 			// Test first element
 			result := EvaluatePart([]Expr{list, NewIntAtom(1)})

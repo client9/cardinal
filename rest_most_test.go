@@ -14,7 +14,7 @@ func TestEvaluateRest_Basic(t *testing.T) {
 	}{
 		{
 			name: "Rest of simple function",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -25,7 +25,7 @@ func TestEvaluateRest_Basic(t *testing.T) {
 		},
 		{
 			name: "Rest of two-element list",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewStringAtom("hello"),
 			}},
@@ -34,14 +34,14 @@ func TestEvaluateRest_Basic(t *testing.T) {
 		},
 		{
 			name: "Rest of empty list - should error",
-			input: &List{Elements: []Expr{}},
+			input: List{Elements: []Expr{}},
 			expected: "",
 			hasError: true,
 			errorType: "PartError",
 		},
 		{
 			name: "Rest of single element list (head only) - should error",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
 			expected: "",
@@ -88,7 +88,7 @@ func TestEvaluateMost_Basic(t *testing.T) {
 	}{
 		{
 			name: "Most of simple function",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -99,7 +99,7 @@ func TestEvaluateMost_Basic(t *testing.T) {
 		},
 		{
 			name: "Most of two-element list",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewStringAtom("hello"),
 			}},
@@ -108,14 +108,14 @@ func TestEvaluateMost_Basic(t *testing.T) {
 		},
 		{
 			name: "Most of empty list - should error",
-			input: &List{Elements: []Expr{}},
+			input: List{Elements: []Expr{}},
 			expected: "",
 			hasError: true,
 			errorType: "PartError",
 		},
 		{
 			name: "Most of single element list (head only) - should error",
-			input: &List{Elements: []Expr{
+			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
 			expected: "",

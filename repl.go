@@ -205,3 +205,38 @@ func (r *REPL) GetEvaluator() *Evaluator {
 	return r.evaluator
 }
 
+// ExecuteFile executes expressions from a file
+func (r *REPL) ExecuteFile(filename string) error {
+	// Read file content
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %v", err)
+	}
+	
+	// Split into lines and process each one
+	lines := strings.Split(string(content), "\n")
+	
+	for lineNum, line := range lines {
+		line = strings.TrimSpace(line)
+		
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		
+		// Show what we're executing
+		fmt.Fprintf(r.output, "In(%d): %s\n", lineNum+1, line)
+		
+		// Execute the line
+		result, err := r.EvaluateString(line)
+		if err != nil {
+			return fmt.Errorf("error at line %d: %v", lineNum+1, err)
+		}
+		
+		// Show the result
+		fmt.Fprintf(r.output, "Out(%d): %s\n", lineNum+1, result)
+	}
+	
+	return nil
+}
+

@@ -66,12 +66,12 @@ func TestEvaluateHead_Lists(t *testing.T) {
 	}{
 		{
 			name:     "Empty list",
-			arg:      &List{Elements: []Expr{}},
+			arg:      List{Elements: []Expr{}},
 			expected: "List",
 		},
 		{
 			name: "Function call",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -80,10 +80,10 @@ func TestEvaluateHead_Lists(t *testing.T) {
 		},
 		{
 			name: "Nested expression", 
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Times"),
 				NewIntAtom(2),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Plus"),
 					NewIntAtom(1),
 					NewIntAtom(3),
@@ -258,8 +258,8 @@ func TestHead_CompareWithCurrentType(t *testing.T) {
 		NewStringAtom("hello"),
 		NewBoolAtom(true),
 		NewSymbolAtom("x"),
-		&List{Elements: []Expr{}},
-		&List{Elements: []Expr{NewSymbolAtom("Plus"), NewIntAtom(1)}},
+		List{Elements: []Expr{}},
+		List{Elements: []Expr{NewSymbolAtom("Plus"), NewIntAtom(1)}},
 		NewErrorExpr("TestError", "test", nil),
 	}
 	

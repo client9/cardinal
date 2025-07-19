@@ -26,7 +26,7 @@ type Atom struct {
 	Value    interface{}
 }
 
-func (a *Atom) String() string {
+func (a Atom) String() string {
 	switch a.AtomType {
 	case StringAtom:
 		return fmt.Sprintf("\"%s\"", a.Value.(string))
@@ -46,7 +46,7 @@ func (a *Atom) String() string {
 	}
 }
 
-func (a *Atom) Type() string {
+func (a Atom) Type() string {
 	switch a.AtomType {
 	case StringAtom:
 		return "string"
@@ -67,14 +67,14 @@ type List struct {
 	Elements []Expr
 }
 
-func (l *List) String() string {
+func (l List) String() string {
 	if len(l.Elements) == 0 {
 		return "List()"
 	}
 	
 	// Check if this is a List literal (head is "List")
 	if len(l.Elements) > 0 {
-		if headAtom, ok := l.Elements[0].(*Atom); ok && 
+		if headAtom, ok := l.Elements[0].(Atom); ok && 
 		   headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "List" {
 			// This is a list literal: [element1, element2, ...]
 			var elements []string
@@ -93,7 +93,7 @@ func (l *List) String() string {
 	return fmt.Sprintf("%s(%s)", l.Elements[0].String(), strings.Join(elements[1:], ", "))
 }
 
-func (l *List) Type() string {
+func (l List) Type() string {
 	return "list"
 }
 
@@ -169,26 +169,26 @@ func IsError(expr Expr) bool {
 	return ok
 }
 
-func NewStringAtom(value string) *Atom {
-	return &Atom{AtomType: StringAtom, Value: value}
+func NewStringAtom(value string) Atom {
+	return Atom{AtomType: StringAtom, Value: value}
 }
 
-func NewIntAtom(value int) *Atom {
-	return &Atom{AtomType: IntAtom, Value: value}
+func NewIntAtom(value int) Atom {
+	return Atom{AtomType: IntAtom, Value: value}
 }
 
-func NewFloatAtom(value float64) *Atom {
-	return &Atom{AtomType: FloatAtom, Value: value}
+func NewFloatAtom(value float64) Atom {
+	return Atom{AtomType: FloatAtom, Value: value}
 }
 
-func NewBoolAtom(value bool) *Atom {
-	return &Atom{AtomType: BoolAtom, Value: value}
+func NewBoolAtom(value bool) Atom {
+	return Atom{AtomType: BoolAtom, Value: value}
 }
 
-func NewSymbolAtom(value string) *Atom {
-	return &Atom{AtomType: SymbolAtom, Value: value}
+func NewSymbolAtom(value string) Atom {
+	return Atom{AtomType: SymbolAtom, Value: value}
 }
 
-func NewList(elements ...Expr) *List {
-	return &List{Elements: elements}
+func NewList(elements ...Expr) List {
+	return List{Elements: elements}
 }

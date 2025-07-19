@@ -195,7 +195,7 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "unary minus",
 			input:    "-5",
-			expected: "Minus(5)",
+			expected: "-5",
 			hasError: false,
 		},
 		{
@@ -430,7 +430,7 @@ func TestParser_ParseAtoms(t *testing.T) {
 				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
 			}
 			
-			atom, ok := expr.(*Atom)
+			atom, ok := expr.(Atom)
 			if !ok {
 				t.Errorf("expected Atom, got %T", expr)
 				return
@@ -490,7 +490,7 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 			
-			list, ok := expr.(*List)
+			list, ok := expr.(List)
 			if !ok {
 				t.Errorf("expected List, got %T", expr)
 				return
@@ -502,7 +502,7 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 			
-			head, ok := list.Elements[0].(*Atom)
+			head, ok := list.Elements[0].(Atom)
 			if !ok {
 				t.Errorf("expected head to be Atom, got %T", list.Elements[0])
 				return

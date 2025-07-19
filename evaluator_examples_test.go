@@ -112,11 +112,11 @@ func Example_evaluatorConstants() {
 	// Mathematical constants
 	expr, _ := ParseString("Pi")
 	result := eval.Evaluate(expr)
-	fmt.Printf("Pi = %.6f\n", result.(*Atom).Value.(float64))
+	fmt.Printf("Pi = %.6f\n", result.(Atom).Value.(float64))
 	
 	expr, _ = ParseString("E")
 	result = eval.Evaluate(expr)
-	fmt.Printf("E = %.6f\n", result.(*Atom).Value.(float64))
+	fmt.Printf("E = %.6f\n", result.(Atom).Value.(float64))
 	
 	// Boolean constants
 	expr, _ = ParseString("True")

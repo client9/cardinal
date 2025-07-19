@@ -36,7 +36,7 @@ func TestFunctionRegistry_CustomFunction(t *testing.T) {
 		}
 		
 		// Return symbolic form if not numeric
-		return &List{Elements: []Expr{NewSymbolAtom("Double"), args[0]}}
+		return List{Elements: []Expr{NewSymbolAtom("Double"), args[0]}}
 	}
 	
 	// Register the custom function
@@ -77,7 +77,7 @@ func TestFunctionRegistry_Evaluator(t *testing.T) {
 				elements := make([]Expr, len(args)+1)
 				elements[0] = NewSymbolAtom("Max")
 				copy(elements[1:], args)
-				return &List{Elements: elements}
+				return List{Elements: elements}
 			}
 		}
 		
@@ -123,7 +123,7 @@ func TestFunctionRegistry_ChildContextInheritance(t *testing.T) {
 			return createNumericResult(val * val)
 		}
 		
-		return &List{Elements: []Expr{NewSymbolAtom("Square"), args[0]}}
+		return List{Elements: []Expr{NewSymbolAtom("Square"), args[0]}}
 	}
 	
 	parentCtx.RegisterBuiltin("Square", customSquare)

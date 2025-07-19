@@ -52,7 +52,7 @@ func TestEvaluateStringQ(t *testing.T) {
 		},
 		{
 			name: "List",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -61,7 +61,7 @@ func TestEvaluateStringQ(t *testing.T) {
 		},
 		{
 			name: "Empty list",
-			arg:  &List{Elements: []Expr{}},
+			arg:  List{Elements: []Expr{}},
 			expected: false,
 		},
 	}
@@ -158,7 +158,7 @@ func TestEvaluateStringLength(t *testing.T) {
 		},
 		{
 			name: "List - should error",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 			}},
@@ -234,7 +234,7 @@ func TestEvaluateFullForm(t *testing.T) {
 		},
 		{
 			name: "Simple function call",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -243,12 +243,12 @@ func TestEvaluateFullForm(t *testing.T) {
 		},
 		{
 			name:     "Empty list",
-			arg:      &List{Elements: []Expr{}},
+			arg:      List{Elements: []Expr{}},
 			expected: "List()",
 		},
 		{
 			name: "List literal",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("List"),
 				NewIntAtom(1),
 				NewIntAtom(2),
@@ -258,10 +258,10 @@ func TestEvaluateFullForm(t *testing.T) {
 		},
 		{
 			name: "Nested expression",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Plus"),
 				NewIntAtom(1),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Times"),
 					NewIntAtom(2),
 					NewIntAtom(3),
@@ -271,9 +271,9 @@ func TestEvaluateFullForm(t *testing.T) {
 		},
 		{
 			name: "Complex expression",
-			arg: &List{Elements: []Expr{
+			arg: List{Elements: []Expr{
 				NewSymbolAtom("Equal"),
-				&List{Elements: []Expr{
+				List{Elements: []Expr{
 					NewSymbolAtom("Plus"),
 					NewSymbolAtom("x"),
 					NewIntAtom(1),
@@ -294,7 +294,7 @@ func TestEvaluateFullForm(t *testing.T) {
 			}
 			
 			// FullForm should return a string atom
-			if atom, ok := result.(*Atom); ok && atom.AtomType == StringAtom {
+			if atom, ok := result.(Atom); ok && atom.AtomType == StringAtom {
 				val := atom.Value.(string)
 				if val != tt.expected {
 					t.Errorf("expected %q, got %q", tt.expected, val)
