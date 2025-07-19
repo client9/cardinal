@@ -36,16 +36,16 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 	if err != nil {
 		return fmt.Errorf("invalid pattern syntax: %v", err)
 	}
-	
+
 	// Debug: print what was parsed
 	// fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
-	
+
 	// Extract function name from pattern
 	functionName, err := extractFunctionName(pattern)
 	if err != nil {
 		return fmt.Errorf("cannot extract function name from pattern: %v", err)
 	}
-	
+
 	// Create function definition
 	funcDef := FunctionDef{
 		Pattern:     pattern,
@@ -54,7 +54,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		Specificity: calculatePatternSpecificity(pattern),
 		IsBuiltin:   true,
 	}
-	
+
 	// Register the function definition
 	r.registerFunctionDef(functionName, funcDef)
 	return nil
@@ -77,9 +77,9 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 	if err != nil {
 		return fmt.Errorf("cannot extract function name from pattern: %v", err)
 	}
-	
+
 	// fmt.Printf("DEBUG: RegisterUserFunction: function=%s, pattern=%v, body=%v\\n", functionName, pattern, body)
-	
+
 	// Create function definition
 	funcDef := FunctionDef{
 		Pattern:     pattern,
@@ -88,7 +88,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 		Specificity: calculatePatternSpecificity(pattern),
 		IsBuiltin:   false,
 	}
-	
+
 	// Register the function definition (will replace equivalent patterns)
 	r.registerFunctionDef(functionName, funcDef)
 	return nil
@@ -102,7 +102,7 @@ func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []Expr
 		return nil, nil
 	}
 	// fmt.Printf("DEBUG: Found %d definitions for function '%s'\\n", len(definitions), functionName)
-	
+
 	// Try each definition in order (most specific first)
 	for _, def := range definitions {
 		// fmt.Printf("DEBUG: Trying to match pattern %v against %s(%v)\\n", def.Pattern, functionName, args)
@@ -139,7 +139,7 @@ func (r *FunctionRegistry) GetAllFunctionNames() []string {
 // registerFunctionDef adds or replaces a function definition
 func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef FunctionDef) {
 	definitions := r.functions[functionName]
-	
+
 	// Check if we need to replace an existing equivalent pattern
 	for i, existingDef := range definitions {
 		if patternsEquivalent(existingDef.Pattern, newDef.Pattern) {
@@ -149,14 +149,14 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 			return
 		}
 	}
-	
+
 	// Add new definition and re-sort by specificity
 	definitions = append(definitions, newDef)
 	sort.Slice(definitions, func(i, j int) bool {
 		// Higher specificity comes first
 		return definitions[i].Specificity > definitions[j].Specificity
 	})
-	
+
 	r.functions[functionName] = definitions
 }
 
@@ -187,22 +187,22 @@ func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[s
 	mockCall := List{Elements: make([]Expr, len(args)+1)}
 	mockCall.Elements[0] = NewSymbolAtom(functionName)
 	copy(mockCall.Elements[1:], args)
-	
+
 	// fmt.Printf("DEBUG: matchesPattern: pattern=%v, mockCall=%v\\n", pattern, mockCall)
-	
+
 	// Use a simple pattern matching approach without creating a new evaluator
 	// This avoids infinite recursion from evaluator creation
 	ctx := NewContext()
-	
+
 	// Store the initial variable names to track what gets bound
 	initialVars := make(map[string]bool)
 	for varName := range ctx.variables {
 		initialVars[varName] = true
 	}
-	
+
 	// Use the direct pattern matching function
 	matches := directMatchPattern(pattern, mockCall, ctx)
-	
+
 	if matches {
 		// Extract the variable bindings that were created during pattern matching
 		bindings := make(map[string]Expr)
@@ -238,7 +238,7 @@ func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isPara
 					// This should not happen for single expressions - sequence patterns need special handling
 					return false
 				} else if info.Type == BlankSequencePattern {
-					// This should not happen for single expressions - sequence patterns need special handling 
+					// This should not happen for single expressions - sequence patterns need special handling
 					return false
 				} else if info.Type == BlankPattern {
 					// Check type constraint if present
@@ -273,21 +273,21 @@ func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isPara
 		}
 		// For literal atoms, they must be exactly equal
 		if exprAtom, ok := expr.(Atom); ok {
-			// fmt.Printf("DEBUG: Comparing literal atoms: pattern %v (%T, type=%v, value=%v) vs expr %v (%T, type=%v, value=%v)\\n", 
+			// fmt.Printf("DEBUG: Comparing literal atoms: pattern %v (%T, type=%v, value=%v) vs expr %v (%T, type=%v, value=%v)\\n",
 			//	p, p, p.AtomType, p.Value, exprAtom, exprAtom, exprAtom.AtomType, exprAtom.Value)
 			result := p.AtomType == exprAtom.AtomType && p.Value == exprAtom.Value
 			// fmt.Printf("DEBUG: Literal atom comparison result: %v\\n", result)
 			return result
 		}
 		return false
-	
+
 	case List:
 		if exprList, ok := expr.(List); ok {
 			// Both are lists - need to match structure and handle sequence patterns
 			return matchListPatternWithContext(p, exprList, ctx, isParameter)
 		}
 		return false
-	
+
 	default:
 		return false
 	}
@@ -304,19 +304,19 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 	if len(patternList.Elements) == 0 {
 		return len(exprList.Elements) == 0
 	}
-	
+
 	patternIdx := 0
 	exprIdx := 0
-	
+
 	for patternIdx < len(patternList.Elements) && exprIdx < len(exprList.Elements) {
 		patternElem := patternList.Elements[patternIdx]
-		
+
 		// Check if this pattern element is a sequence pattern
 		if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
 			varName := atom.Value.(string)
 			if isPatternVariable(varName) {
 				info := parsePatternInfo(varName)
-				
+
 				if info.Type == BlankNullSequencePattern {
 					// Handle x___ pattern - match zero or more elements
 					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, true)
@@ -326,18 +326,18 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 				}
 			}
 		}
-		
+
 		// Regular pattern element - must match exactly one expression element
 		// Element 0 is head (literal), elements 1+ are parameters (bind)
 		isParameterPosition := exprIdx > 0
 		if !directMatchPatternWithContext(patternElem, exprList.Elements[exprIdx], ctx, isParameterPosition) {
 			return false
 		}
-		
+
 		patternIdx++
 		exprIdx++
 	}
-	
+
 	// Check if we've consumed all elements appropriately
 	if patternIdx < len(patternList.Elements) {
 		// Remaining pattern elements - check if they're optional (null sequence patterns)
@@ -359,7 +359,7 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 			return false // Non-optional pattern element without matching expression
 		}
 	}
-	
+
 	return exprIdx == len(exprList.Elements) // All expression elements consumed
 }
 
@@ -368,25 +368,25 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 	// Calculate how many elements this sequence pattern should consume
 	remainingPatterns := len(patternList.Elements) - patternIdx - 1
 	remainingExprs := len(exprList.Elements) - exprIdx
-	
+
 	// Minimum elements this sequence must consume
 	minConsume := 0
 	if !allowZero {
 		minConsume = 1
 	}
-	
+
 	// Maximum elements this sequence can consume
 	maxConsume := remainingExprs - remainingPatterns
-	
+
 	if maxConsume < minConsume {
 		return false
 	}
-	
+
 	// Try consuming different numbers of elements (greedy approach)
 	for consume := maxConsume; consume >= minConsume; consume-- {
 		// Create a copy of context for this attempt
 		testCtx := NewChildContext(ctx)
-		
+
 		// Collect the elements to bind to this sequence
 		var seqElements []Expr
 		for i := 0; i < consume; i++ {
@@ -394,7 +394,7 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 				seqElements = append(seqElements, exprList.Elements[exprIdx+i])
 			}
 		}
-		
+
 		// Check type constraints for sequence elements
 		if info.TypeName != "" {
 			allMatch := true
@@ -408,7 +408,7 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 				continue // Try with fewer elements - this attempt fails
 			}
 		}
-		
+
 		// Bind the sequence variable
 		if info.VarName != "" {
 			// fmt.Printf("DEBUG: Binding sequence var '%s' to List with %d elements: %v\n", info.VarName, len(seqElements), seqElements)
@@ -416,7 +416,7 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 			listElements := append([]Expr{NewSymbolAtom("List")}, seqElements...)
 			testCtx.Set(info.VarName, List{Elements: listElements})
 		}
-		
+
 		// Try to match remaining patterns
 		if patternIdx+1 >= len(patternList.Elements) {
 			// This was the last pattern - check if we consumed all expressions
@@ -434,7 +434,7 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 			// Try to match remaining patterns
 			remainingPattern := List{Elements: patternList.Elements[patternIdx+1:]}
 			remainingExpr := List{Elements: exprList.Elements[exprIdx+consume:]}
-			
+
 			if matchListPatternWithContext(remainingPattern, remainingExpr, testCtx, true) {
 				// Copy bindings to original context
 				for varName, value := range testCtx.variables {
@@ -446,7 +446,7 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 			}
 		}
 	}
-	
+
 	return false
 }
 

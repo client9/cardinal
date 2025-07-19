@@ -11,14 +11,14 @@ type Precedence int
 const (
 	_ Precedence = iota
 	LOWEST
-	ASSIGN     // =, :=, =.
-	LOGICAL_OR // ||
+	ASSIGN      // =, :=, =.
+	LOGICAL_OR  // ||
 	LOGICAL_AND // &&
-	EQUALITY   // ==, !=
-	COMPARISON // <, >, <=, >=
-	SUM        // +, -
-	PRODUCT    // *, /
-	PREFIX     // -x, +x
+	EQUALITY    // ==, !=
+	COMPARISON  // <, >, <=, >=
+	SUM         // +, -
+	PRODUCT     // *, /
+	PREFIX      // -x, +x
 )
 
 var precedences = map[TokenType]Precedence{
@@ -53,10 +53,10 @@ func NewParser(lexer *Lexer) *Parser {
 		lexer:  lexer,
 		errors: []string{},
 	}
-	
+
 	p.nextToken()
 	p.nextToken()
-	
+
 	return p
 }
 
@@ -87,21 +87,21 @@ func (p *Parser) parseExpression() Expr {
 
 func (p *Parser) parseInfixExpression(precedence Precedence) Expr {
 	left := p.ParseAtom()
-	
+
 	for p.currentToken.Type != EOF && precedence < p.currentPrecedence() {
 		if !p.IsInfixOperator(p.currentToken.Type) {
 			break
 		}
-		
+
 		left = p.parseInfixOperation(left)
 	}
-	
+
 	return left
 }
 
 func (p *Parser) ParseAtom() Expr {
 	var expr Expr
-	
+
 	switch p.currentToken.Type {
 	case SYMBOL:
 		expr = p.parseSymbolOrList()
@@ -129,88 +129,88 @@ func (p *Parser) ParseAtom() Expr {
 		p.addError(fmt.Sprintf("unexpected token: %s", p.currentToken.String()))
 		return nil
 	}
-	
+
 	return expr
 }
 
 func (p *Parser) parseSymbolOrList() Expr {
 	symbolToken := p.currentToken
 	p.nextToken()
-	
+
 	if p.currentToken.Type == LPAREN {
 		return p.parseList(symbolToken.Value)
 	}
-	
+
 	return NewSymbolAtom(symbolToken.Value)
 }
 
 func (p *Parser) parseList(head string) Expr {
 	p.nextToken() // consume '('
-	
+
 	elements := []Expr{NewSymbolAtom(head)}
-	
+
 	if p.currentToken.Type == RPAREN {
 		p.nextToken() // consume ')'
 		return NewList(elements...)
 	}
-	
+
 	for {
 		expr := p.parseExpression()
 		if expr != nil {
 			elements = append(elements, expr)
 		}
-		
+
 		if p.currentToken.Type == RPAREN {
 			p.nextToken() // consume ')'
 			break
 		}
-		
+
 		if p.currentToken.Type == COMMA {
 			p.nextToken() // consume ','
 			continue
 		}
-		
+
 		if p.currentToken.Type == EOF {
 			p.addError("unexpected EOF, expected ')'")
 			break
 		}
-		
+
 		p.addError(fmt.Sprintf("expected ',' or ')', got %s", p.currentToken.String()))
 		p.nextToken()
 	}
-	
+
 	return NewList(elements...)
 }
 
 func (p *Parser) parseListLiteral() Expr {
 	p.nextToken() // consume '['
-	
+
 	// Create a List expression with "List" as the head
 	elements := []Expr{NewSymbolAtom("List")}
-	
+
 	// Handle empty list []
 	if p.currentToken.Type == RBRACKET {
 		p.nextToken() // consume ']'
 		return NewList(elements...)
 	}
-	
+
 	// Parse list elements
 	for {
 		expr := p.parseExpression()
 		if expr != nil {
 			elements = append(elements, expr)
 		}
-		
+
 		// Check for closing bracket
 		if p.currentToken.Type == RBRACKET {
 			p.nextToken() // consume ']'
 			break
 		}
-		
+
 		// Check for comma separator
 		if p.currentToken.Type == COMMA {
 			p.nextToken() // consume ','
-			
+
 			// Handle optional trailing comma: [1,2,3,]
 			if p.currentToken.Type == RBRACKET {
 				p.nextToken() // consume ']'
@@ -218,18 +218,18 @@ func (p *Parser) parseListLiteral() Expr {
 			}
 			continue
 		}
-		
+
 		// Handle EOF
 		if p.currentToken.Type == EOF {
 			p.addError("unexpected EOF, expected ']'")
 			break
 		}
-		
+
 		// Unexpected token
 		p.addError(fmt.Sprintf("expected ',' or ']', got %s", p.currentToken.String()))
 		p.nextToken()
 	}
-	
+
 	return NewList(elements...)
 }
 
@@ -239,7 +239,7 @@ func (p *Parser) parseInteger() Expr {
 		p.addError(fmt.Sprintf("invalid integer: %s", p.currentToken.Value))
 		return nil
 	}
-	
+
 	return NewIntAtom(value)
 }
 
@@ -249,7 +249,7 @@ func (p *Parser) parseFloat() Expr {
 		p.addError(fmt.Sprintf("invalid float: %s", p.currentToken.Value))
 		return nil
 	}
-	
+
 	return NewFloatAtom(value)
 }
 
@@ -317,16 +317,16 @@ func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
 func (p *Parser) parseInfixOperation(left Expr) Expr {
 	operator := p.currentToken
 	precedence := p.currentPrecedence()
-	
+
 	// Special case for UNSET: it's a postfix unary operator
 	if operator.Type == UNSET {
 		p.nextToken()
 		return p.createInfixExpr(operator.Type, left, nil)
 	}
-	
+
 	p.nextToken()
 	right := p.parseInfixExpression(precedence)
-	
+
 	return p.createInfixExpr(operator.Type, left, right)
 }
 
@@ -334,7 +334,7 @@ func (p *Parser) parsePrefixExpression() Expr {
 	operator := p.currentToken
 	p.nextToken()
 	right := p.parseInfixExpression(PREFIX)
-	
+
 	return p.createPrefixExpr(operator.Type, right)
 }
 
@@ -394,14 +394,14 @@ func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 
 func (p *Parser) parseGroupedExpression() Expr {
 	p.nextToken() // consume '('
-	
+
 	expr := p.parseExpression()
-	
+
 	if p.currentToken.Type != RPAREN {
 		p.addError("expected ')' after grouped expression")
 		return nil
 	}
-	
+
 	p.nextToken() // consume ')'
 	return expr
 }

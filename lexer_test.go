@@ -300,14 +300,14 @@ func TestLexer_NextToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lexer := NewLexer(tt.input)
-			
+
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				
+
 				if token.Type != expectedToken.Type {
 					t.Errorf("test[%d] - token type wrong. expected=%v, got=%v", i, expectedToken.Type, token.Type)
 				}
-				
+
 				if token.Value != expectedToken.Value {
 					t.Errorf("test[%d] - token value wrong. expected=%q, got=%q", i, expectedToken.Value, token.Value)
 				}
@@ -343,11 +343,11 @@ func TestLexer_Tokenize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			lexer := NewLexer(tt.input)
 			tokens := lexer.Tokenize()
-			
+
 			if len(tokens) != tt.expectedCount {
 				t.Errorf("expected %d tokens, got %d", tt.expectedCount, len(tokens))
 			}
-			
+
 			// Last token should always be EOF
 			if len(tokens) > 0 && tokens[len(tokens)-1].Type != EOF {
 				t.Errorf("expected last token to be EOF, got %v", tokens[len(tokens)-1].Type)

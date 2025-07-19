@@ -53,12 +53,12 @@ func TestEvaluateLength(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateLength([]Expr{tt.arg})
-			
+
 			if !isNumeric(result) {
 				t.Errorf("expected numeric result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getNumericValue(result)
 			if int(val) != tt.expected {
 				t.Errorf("expected %d, got %d", tt.expected, int(val))
@@ -85,7 +85,7 @@ func TestEvaluateLength_ArgumentValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateLength(tt.args)
-			
+
 			if !IsError(result) {
 				t.Errorf("expected error for %s, got %s", tt.name, result.String())
 			}
@@ -143,12 +143,12 @@ func TestEvaluateListQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateListQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -211,12 +211,12 @@ func TestEvaluateNumberQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateNumberQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -274,12 +274,12 @@ func TestEvaluateBooleanQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateBooleanQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -347,12 +347,12 @@ func TestEvaluateIntegerQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateIntegerQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -393,8 +393,8 @@ func TestEvaluateAtomQ(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "Empty list",
-			arg:  List{Elements: []Expr{}},
+			name:     "Empty list",
+			arg:      List{Elements: []Expr{}},
 			expected: false,
 		},
 		{
@@ -410,12 +410,12 @@ func TestEvaluateAtomQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateAtomQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -473,12 +473,12 @@ func TestEvaluateSymbolQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateSymbolQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -490,7 +490,7 @@ func TestEvaluateSymbolQ(t *testing.T) {
 // Integration tests with the evaluator
 func TestPredicates_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -512,7 +512,7 @@ func TestPredicates_Integration(t *testing.T) {
 			input:    "Length(42)",
 			expected: "0",
 		},
-		
+
 		// ListQ tests
 		{
 			name:     "ListQ on empty list",
@@ -529,7 +529,7 @@ func TestPredicates_Integration(t *testing.T) {
 			input:    "ListQ(42)",
 			expected: "False",
 		},
-		
+
 		// NumberQ tests
 		{
 			name:     "NumberQ on integer",
@@ -546,7 +546,7 @@ func TestPredicates_Integration(t *testing.T) {
 			input:    "NumberQ(\"hello\")",
 			expected: "False",
 		},
-		
+
 		// BooleanQ tests
 		{
 			name:     "BooleanQ on True",
@@ -563,7 +563,7 @@ func TestPredicates_Integration(t *testing.T) {
 			input:    "BooleanQ(1)",
 			expected: "False",
 		},
-		
+
 		// IntegerQ tests
 		{
 			name:     "IntegerQ on integer",
@@ -580,7 +580,7 @@ func TestPredicates_Integration(t *testing.T) {
 			input:    "IntegerQ(x)",
 			expected: "False",
 		},
-		
+
 		// AtomQ tests
 		{
 			name:     "AtomQ on integer",
@@ -612,7 +612,7 @@ func TestPredicates_Integration(t *testing.T) {
 			input:    "Length(Hold(Plus(1, 2)))",
 			expected: "1", // Hold(Plus(1,2)) has 1 argument
 		},
-		
+
 		// SymbolQ tests
 		{
 			name:     "SymbolQ on symbol",
@@ -630,14 +630,14 @@ func TestPredicates_Integration(t *testing.T) {
 			expected: "False",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -659,7 +659,7 @@ func TestPredicates_ArgumentValidation(t *testing.T) {
 		{"AtomQ", EvaluateAtomQ},
 		{"SymbolQ", EvaluateSymbolQ},
 	}
-	
+
 	for _, fn := range functions {
 		t.Run(fn.name+"_no_args", func(t *testing.T) {
 			result := fn.fn([]Expr{})
@@ -667,7 +667,7 @@ func TestPredicates_ArgumentValidation(t *testing.T) {
 				t.Errorf("expected error for no arguments, got %s", result.String())
 			}
 		})
-		
+
 		t.Run(fn.name+"_too_many_args", func(t *testing.T) {
 			result := fn.fn([]Expr{NewIntAtom(1), NewIntAtom(2)})
 			if !IsError(result) {

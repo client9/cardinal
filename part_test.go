@@ -186,8 +186,8 @@ func TestEvaluatePart(t *testing.T) {
 			errorType: "PartError",
 		},
 		{
-			name: "Part of empty list - should error",
-			expr: List{Elements: []Expr{}},
+			name:      "Part of empty list - should error",
+			expr:      List{Elements: []Expr{}},
 			index:     1,
 			expected:  "",
 			hasError:  true,
@@ -208,13 +208,13 @@ func TestEvaluatePart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluatePart([]Expr{tt.expr, NewIntAtom(tt.index)})
-			
+
 			if tt.hasError {
 				if !IsError(result) {
 					t.Errorf("expected error for %s, got %s", tt.name, result.String())
 					return
 				}
-				
+
 				errorExpr := result.(*ErrorExpr)
 				if errorExpr.ErrorType != tt.errorType {
 					t.Errorf("expected error type %s, got %s", tt.errorType, errorExpr.ErrorType)
@@ -224,7 +224,7 @@ func TestEvaluatePart(t *testing.T) {
 					t.Errorf("unexpected error: %s", result.String())
 					return
 				}
-				
+
 				if result.String() != tt.expected {
 					t.Errorf("expected %s, got %s", tt.expected, result.String())
 				}
@@ -278,12 +278,12 @@ func TestEvaluatePart_NonIntegerIndex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluatePart([]Expr{testList, tt.index})
-			
+
 			if !IsError(result) {
 				t.Errorf("expected error for non-integer index, got %s", result.String())
 				return
 			}
-			
+
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
 			}
@@ -327,12 +327,12 @@ func TestEvaluatePart_NonListExpression(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluatePart([]Expr{tt.expr, NewIntAtom(1)})
-			
+
 			if !IsError(result) {
 				t.Errorf("expected error for non-list expression, got %s", result.String())
 				return
 			}
-			
+
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
 			}
@@ -353,31 +353,31 @@ func TestPart_ArgumentValidation(t *testing.T) {
 		if !IsError(result) {
 			t.Errorf("expected error for no arguments, got %s", result.String())
 		}
-		
+
 		errorExpr := result.(*ErrorExpr)
 		if errorExpr.ErrorType != "ArgumentError" {
 			t.Errorf("expected ArgumentError, got %s", errorExpr.ErrorType)
 		}
 	})
-	
+
 	t.Run("Part_one_arg", func(t *testing.T) {
 		result := EvaluatePart([]Expr{testList})
 		if !IsError(result) {
 			t.Errorf("expected error for one argument, got %s", result.String())
 		}
-		
+
 		errorExpr := result.(*ErrorExpr)
 		if errorExpr.ErrorType != "ArgumentError" {
 			t.Errorf("expected ArgumentError, got %s", errorExpr.ErrorType)
 		}
 	})
-	
+
 	t.Run("Part_too_many_args", func(t *testing.T) {
 		result := EvaluatePart([]Expr{testList, NewIntAtom(1), NewIntAtom(2)})
 		if !IsError(result) {
 			t.Errorf("expected error for too many arguments, got %s", result.String())
 		}
-		
+
 		errorExpr := result.(*ErrorExpr)
 		if errorExpr.ErrorType != "ArgumentError" {
 			t.Errorf("expected ArgumentError, got %s", errorExpr.ErrorType)
@@ -388,7 +388,7 @@ func TestPart_ArgumentValidation(t *testing.T) {
 // Integration tests with the evaluator
 func TestPart_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -420,7 +420,7 @@ func TestPart_Integration(t *testing.T) {
 			input:    "Part([10, 20, 30, 40], 3)",
 			expected: "30",
 		},
-		
+
 		// Negative indexing
 		{
 			name:     "Part -1 (last element)",
@@ -437,7 +437,7 @@ func TestPart_Integration(t *testing.T) {
 			input:    "Part([a, b, c], -3)",
 			expected: "a",
 		},
-		
+
 		// Single element lists
 		{
 			name:     "Part of single element list",
@@ -449,7 +449,7 @@ func TestPart_Integration(t *testing.T) {
 			input:    "Part([x], -1)",
 			expected: "x",
 		},
-		
+
 		// Error cases
 		{
 			name:     "Part index 0 - should error",
@@ -481,7 +481,7 @@ func TestPart_Integration(t *testing.T) {
 			input:    "Part([a, b, c], \"hello\")",
 			expected: "$Failed(PartError)",
 		},
-		
+
 		// Combination with other functions
 		{
 			name:     "Part of Rest result",
@@ -504,14 +504,14 @@ func TestPart_Integration(t *testing.T) {
 			expected: "True",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -589,12 +589,12 @@ func TestPart_ComplexExpressions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluatePart([]Expr{tt.expr, NewIntAtom(tt.index)})
-			
+
 			if IsError(result) {
 				t.Errorf("unexpected error: %s", result.String())
 				return
 			}
-			
+
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
 			}
@@ -606,7 +606,7 @@ func TestPart_ComplexExpressions(t *testing.T) {
 func TestPart_BoundaryConditions(t *testing.T) {
 	// Test various list sizes
 	sizes := []int{1, 2, 3, 5, 10}
-	
+
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("List_size_%d", size), func(t *testing.T) {
 			// Create a list of the specified size
@@ -616,7 +616,7 @@ func TestPart_BoundaryConditions(t *testing.T) {
 				elements[i] = NewIntAtom(i * 10)
 			}
 			list := List{Elements: elements}
-			
+
 			// Test first element
 			result := EvaluatePart([]Expr{list, NewIntAtom(1)})
 			if IsError(result) {
@@ -624,7 +624,7 @@ func TestPart_BoundaryConditions(t *testing.T) {
 			} else if result.String() != "10" {
 				t.Errorf("expected 10, got %s", result.String())
 			}
-			
+
 			// Test last element (positive index)
 			result = EvaluatePart([]Expr{list, NewIntAtom(size)})
 			if IsError(result) {
@@ -635,7 +635,7 @@ func TestPart_BoundaryConditions(t *testing.T) {
 					t.Errorf("expected %s, got %s", expected, result.String())
 				}
 			}
-			
+
 			// Test last element (negative index)
 			result = EvaluatePart([]Expr{list, NewIntAtom(-1)})
 			if IsError(result) {
@@ -646,13 +646,13 @@ func TestPart_BoundaryConditions(t *testing.T) {
 					t.Errorf("expected %s, got %s", expected, result.String())
 				}
 			}
-			
+
 			// Test out of bounds (positive)
 			result = EvaluatePart([]Expr{list, NewIntAtom(size + 1)})
 			if !IsError(result) {
 				t.Errorf("expected error for out of bounds access, got %s", result.String())
 			}
-			
+
 			// Test out of bounds (negative)
 			result = EvaluatePart([]Expr{list, NewIntAtom(-(size + 1))})
 			if !IsError(result) {

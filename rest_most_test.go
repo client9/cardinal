@@ -33,10 +33,10 @@ func TestEvaluateRest_Basic(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "Rest of empty list - should error",
-			input: List{Elements: []Expr{}},
-			expected: "",
-			hasError: true,
+			name:      "Rest of empty list - should error",
+			input:     List{Elements: []Expr{}},
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
@@ -44,8 +44,8 @@ func TestEvaluateRest_Basic(t *testing.T) {
 			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
-			expected: "",
-			hasError: true,
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 	}
@@ -53,13 +53,13 @@ func TestEvaluateRest_Basic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateRest([]Expr{tt.input})
-			
+
 			if tt.hasError {
 				if !IsError(result) {
 					t.Errorf("expected error for %s, got %s", tt.name, result.String())
 					return
 				}
-				
+
 				errorExpr := result.(*ErrorExpr)
 				if errorExpr.ErrorType != tt.errorType {
 					t.Errorf("expected error type %s, got %s", tt.errorType, errorExpr.ErrorType)
@@ -69,7 +69,7 @@ func TestEvaluateRest_Basic(t *testing.T) {
 					t.Errorf("unexpected error: %s", result.String())
 					return
 				}
-				
+
 				if result.String() != tt.expected {
 					t.Errorf("expected %s, got %s", tt.expected, result.String())
 				}
@@ -107,10 +107,10 @@ func TestEvaluateMost_Basic(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "Most of empty list - should error",
-			input: List{Elements: []Expr{}},
-			expected: "",
-			hasError: true,
+			name:      "Most of empty list - should error",
+			input:     List{Elements: []Expr{}},
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
@@ -118,8 +118,8 @@ func TestEvaluateMost_Basic(t *testing.T) {
 			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
-			expected: "",
-			hasError: true,
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 	}
@@ -127,13 +127,13 @@ func TestEvaluateMost_Basic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateMost([]Expr{tt.input})
-			
+
 			if tt.hasError {
 				if !IsError(result) {
 					t.Errorf("expected error for %s, got %s", tt.name, result.String())
 					return
 				}
-				
+
 				errorExpr := result.(*ErrorExpr)
 				if errorExpr.ErrorType != tt.errorType {
 					t.Errorf("expected error type %s, got %s", tt.errorType, errorExpr.ErrorType)
@@ -143,7 +143,7 @@ func TestEvaluateMost_Basic(t *testing.T) {
 					t.Errorf("unexpected error: %s", result.String())
 					return
 				}
-				
+
 				if result.String() != tt.expected {
 					t.Errorf("expected %s, got %s", tt.expected, result.String())
 				}
@@ -154,7 +154,7 @@ func TestEvaluateMost_Basic(t *testing.T) {
 
 func TestRestMost_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -191,7 +191,7 @@ func TestRestMost_Integration(t *testing.T) {
 			input:    "Rest([])",
 			expected: "$Failed(PartError)",
 		},
-		
+
 		// Most tests
 		{
 			name:     "Most of simple list",
@@ -223,7 +223,7 @@ func TestRestMost_Integration(t *testing.T) {
 			input:    "Most([])",
 			expected: "$Failed(PartError)",
 		},
-		
+
 		// Combined tests
 		{
 			name:     "Rest of Most result",
@@ -236,14 +236,14 @@ func TestRestMost_Integration(t *testing.T) {
 			expected: "List(2, 3)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())

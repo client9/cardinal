@@ -53,7 +53,7 @@ func TestParseListLiteral_Basic(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			if expr.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, expr.String())
 			}
@@ -95,7 +95,7 @@ func TestParseListLiteral_TrailingComma(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			if expr.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, expr.String())
 			}
@@ -142,7 +142,7 @@ func TestParseListLiteral_NestedLists(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			if expr.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, expr.String())
 			}
@@ -179,7 +179,7 @@ func TestParseListLiteral_WithArithmetic(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			if expr.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, expr.String())
 			}
@@ -227,7 +227,7 @@ func TestParseListLiteral_ErrorCases(t *testing.T) {
 // Integration tests with the evaluator
 func TestListLiteral_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -274,14 +274,14 @@ func TestListLiteral_Integration(t *testing.T) {
 			expected: "List(42, \"hello\", True, x)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -293,7 +293,7 @@ func TestListLiteral_Integration(t *testing.T) {
 // Test that list literals work correctly with Hold
 func TestListLiteral_WithHold(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -315,14 +315,14 @@ func TestListLiteral_WithHold(t *testing.T) {
 			expected: "List(Hold(Plus(1, 2)), 3)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -366,7 +366,7 @@ func TestListLiteral_Whitespace(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			if expr.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, expr.String())
 			}

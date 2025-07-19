@@ -60,8 +60,8 @@ func TestEvaluateStringQ(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "Empty list",
-			arg:  List{Elements: []Expr{}},
+			name:     "Empty list",
+			arg:      List{Elements: []Expr{}},
 			expected: false,
 		},
 	}
@@ -69,12 +69,12 @@ func TestEvaluateStringQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateStringQ([]Expr{tt.arg})
-			
+
 			if !isBool(result) {
 				t.Errorf("expected boolean result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getBoolValue(result)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
@@ -170,24 +170,24 @@ func TestEvaluateStringLength(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateStringLength([]Expr{tt.arg})
-			
+
 			if tt.hasError {
 				if !IsError(result) {
 					t.Errorf("expected error for %s, got %s", tt.name, result.String())
 				}
 				return
 			}
-			
+
 			if IsError(result) {
 				t.Errorf("unexpected error: %s", result.String())
 				return
 			}
-			
+
 			if !isNumeric(result) {
 				t.Errorf("expected numeric result, got %T", result)
 				return
 			}
-			
+
 			val, _ := getNumericValue(result)
 			if int(val) != tt.expected {
 				t.Errorf("expected %d, got %d", tt.expected, int(val))
@@ -287,12 +287,12 @@ func TestEvaluateFullForm(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateFullForm([]Expr{tt.arg})
-			
+
 			if IsError(result) {
 				t.Errorf("unexpected error: %s", result.String())
 				return
 			}
-			
+
 			// FullForm should return a string atom
 			if atom, ok := result.(Atom); ok && atom.AtomType == StringAtom {
 				val := atom.Value.(string)
@@ -316,7 +316,7 @@ func TestStringFunctions_ArgumentValidation(t *testing.T) {
 		{"StringLength", EvaluateStringLength},
 		{"FullForm", EvaluateFullForm},
 	}
-	
+
 	for _, fn := range functions {
 		t.Run(fn.name+"_no_args", func(t *testing.T) {
 			result := fn.fn([]Expr{})
@@ -324,7 +324,7 @@ func TestStringFunctions_ArgumentValidation(t *testing.T) {
 				t.Errorf("expected error for no arguments, got %s", result.String())
 			}
 		})
-		
+
 		t.Run(fn.name+"_too_many_args", func(t *testing.T) {
 			result := fn.fn([]Expr{NewIntAtom(1), NewIntAtom(2)})
 			if !IsError(result) {
@@ -337,7 +337,7 @@ func TestStringFunctions_ArgumentValidation(t *testing.T) {
 // Integration tests with the evaluator
 func TestStringFunctions_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -364,7 +364,7 @@ func TestStringFunctions_Integration(t *testing.T) {
 			input:    "StringQ([1, 2, 3])",
 			expected: "False",
 		},
-		
+
 		// StringLength tests
 		{
 			name:     "StringLength empty string",
@@ -386,7 +386,7 @@ func TestStringFunctions_Integration(t *testing.T) {
 			input:    "StringLength(42)",
 			expected: "$Failed(ArgumentError)",
 		},
-		
+
 		// FullForm tests
 		{
 			name:     "FullForm integer",
@@ -418,7 +418,7 @@ func TestStringFunctions_Integration(t *testing.T) {
 			input:    "FullForm([1, 2, 3])",
 			expected: "\"List(1, 2, 3)\"",
 		},
-		
+
 		// Combined tests
 		{
 			name:     "StringLength of FullForm",
@@ -431,14 +431,14 @@ func TestStringFunctions_Integration(t *testing.T) {
 			expected: "True",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -450,7 +450,7 @@ func TestStringFunctions_Integration(t *testing.T) {
 // Test FullForm with complex expressions
 func TestFullForm_ComplexExpressions(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -477,14 +477,14 @@ func TestFullForm_ComplexExpressions(t *testing.T) {
 			expected: "\"Hold(Equal(x, y))\"",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())

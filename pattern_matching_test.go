@@ -123,7 +123,7 @@ func TestLiteralPatterns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -131,7 +131,7 @@ func TestLiteralPatterns(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
@@ -196,7 +196,7 @@ func TestPatternPriority(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -204,7 +204,7 @@ func TestPatternPriority(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
@@ -284,20 +284,20 @@ func TestPatternMatching(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
 			ctx := NewContext()
-			
+
 			// Parse pattern and expression
 			parser := NewParser(NewLexer(tt.pattern))
 			pattern, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing pattern: %v", err)
 			}
-			
+
 			parser = NewParser(NewLexer(tt.expr))
 			expr, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing expression: %v", err)
 			}
-			
+
 			// Test pattern matching
 			result := evaluator.matchPattern(pattern, expr, ctx)
 			if result != tt.expected {
@@ -342,26 +342,26 @@ func TestPatternVariableBinding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
 			ctx := NewContext()
-			
+
 			// Parse pattern and expression
 			parser := NewParser(NewLexer(tt.pattern))
 			pattern, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing pattern: %v", err)
 			}
-			
+
 			parser = NewParser(NewLexer(tt.expr))
 			expr, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing expression: %v", err)
 			}
-			
+
 			// Test pattern matching (use parameter context for regular symbols)
 			matched := evaluator.matchPatternInternal(pattern, expr, ctx, true)
 			if !matched {
 				t.Fatalf("Pattern should have matched")
 			}
-			
+
 			// Check if variable was bound correctly
 			if value, exists := ctx.Get(tt.varName); exists {
 				if value.String() != tt.expected {
@@ -416,7 +416,7 @@ func TestMultipleFunctionDefinitions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -424,7 +424,7 @@ func TestMultipleFunctionDefinitions(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
@@ -442,26 +442,26 @@ func evaluateExpression(evaluator *Evaluator, input string) (string, error) {
 	// Split by semicolon and evaluate each part
 	parts := splitBySemicolon(input)
 	var result Expr
-	
+
 	for _, part := range parts {
 		part = trimSpaces(part)
 		if part == "" {
 			continue
 		}
-		
+
 		parser := NewParser(NewLexer(part))
 		expr, err := parser.Parse()
 		if err != nil {
 			return "", err
 		}
-		
+
 		result = evaluator.Evaluate(expr)
 	}
-	
+
 	if result == nil {
 		return "", nil
 	}
-	
+
 	return result.String(), nil
 }
 
@@ -469,7 +469,7 @@ func evaluateExpression(evaluator *Evaluator, input string) (string, error) {
 func splitBySemicolon(input string) []string {
 	parts := []string{}
 	current := ""
-	
+
 	for _, char := range input {
 		if char == ';' {
 			parts = append(parts, current)
@@ -478,11 +478,11 @@ func splitBySemicolon(input string) []string {
 			current += string(char)
 		}
 	}
-	
+
 	if current != "" {
 		parts = append(parts, current)
 	}
-	
+
 	return parts
 }
 
@@ -490,15 +490,15 @@ func splitBySemicolon(input string) []string {
 func trimSpaces(s string) string {
 	start := 0
 	end := len(s)
-	
+
 	for start < end && s[start] == ' ' {
 		start++
 	}
-	
+
 	for end > start && s[end-1] == ' ' {
 		end--
 	}
-	
+
 	return s[start:end]
 }
 
@@ -661,7 +661,7 @@ func TestNamedPatterns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -669,7 +669,7 @@ func TestNamedPatterns(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
@@ -773,20 +773,20 @@ func TestNamedPatternMatching(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
 			ctx := NewContext()
-			
+
 			// Parse pattern and expression
 			parser := NewParser(NewLexer(tt.pattern))
 			pattern, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing pattern: %v", err)
 			}
-			
+
 			parser = NewParser(NewLexer(tt.expr))
 			expr, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing expression: %v", err)
 			}
-			
+
 			// Test pattern matching (use parameter context for pattern variables)
 			result := evaluator.matchPatternInternal(pattern, expr, ctx, true)
 			if result != tt.expected {
@@ -838,26 +838,26 @@ func TestNamedPatternVariableBinding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
 			ctx := NewContext()
-			
+
 			// Parse pattern and expression
 			parser := NewParser(NewLexer(tt.pattern))
 			pattern, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing pattern: %v", err)
 			}
-			
+
 			parser = NewParser(NewLexer(tt.expr))
 			expr, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing expression: %v", err)
 			}
-			
+
 			// Test pattern matching (use parameter context for pattern variables)
 			matched := evaluator.matchPatternInternal(pattern, expr, ctx, true)
 			if !matched {
 				t.Fatalf("Pattern should have matched")
 			}
-			
+
 			// Check if variable was bound correctly
 			if value, exists := ctx.Get(tt.varName); exists {
 				if value.String() != tt.expected {
@@ -872,10 +872,10 @@ func TestNamedPatternVariableBinding(t *testing.T) {
 
 func TestSameFunctionNameDifferentPatterns(t *testing.T) {
 	tests := []struct {
-		name     string
-		setup    []string
-		input    string
-		expected string
+		name      string
+		setup     []string
+		input     string
+		expected  string
 		checkType func(string) bool
 	}{
 		{
@@ -1031,7 +1031,7 @@ func TestSameFunctionNameDifferentPatterns(t *testing.T) {
 			name: "convert function - multiple numeric types",
 			setup: []string{
 				"convert(x_Integer) := \"int: \" + x",
-				"convert(x_Real) := \"real: \" + x", 
+				"convert(x_Real) := \"real: \" + x",
 				"convert(x_Number) := \"number: \" + x",
 				"convert(x_) := \"other: \" + x",
 			},
@@ -1046,7 +1046,7 @@ func TestSameFunctionNameDifferentPatterns(t *testing.T) {
 			name: "convert function - real matches Real not Number",
 			setup: []string{
 				"convert(x_Integer) := \"int: \" + x",
-				"convert(x_Real) := \"real: \" + x", 
+				"convert(x_Real) := \"real: \" + x",
 				"convert(x_Number) := \"number: \" + x",
 				"convert(x_) := \"other: \" + x",
 			},
@@ -1062,7 +1062,7 @@ func TestSameFunctionNameDifferentPatterns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -1070,17 +1070,17 @@ func TestSameFunctionNameDifferentPatterns(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
 				t.Fatalf("Error evaluating expression: %v", err)
 			}
-			
+
 			if result != tt.expected {
 				t.Errorf("Expected %s, got %s", tt.expected, result)
 			}
-			
+
 			// Additional type check if provided
 			if tt.checkType != nil && !tt.checkType(result) {
 				t.Errorf("Type check failed for result: %s", result)
@@ -1164,7 +1164,7 @@ func TestNegativeNumberLiterals(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -1172,7 +1172,7 @@ func TestNegativeNumberLiterals(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
@@ -1291,7 +1291,7 @@ func TestHeadPatterns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			
+
 			// Setup function definitions
 			for _, setup := range tt.setup {
 				_, err := evaluateExpression(evaluator, setup)
@@ -1299,7 +1299,7 @@ func TestHeadPatterns(t *testing.T) {
 					t.Fatalf("Error setting up expression '%s': %v", setup, err)
 				}
 			}
-			
+
 			// Test the actual expression
 			result, err := evaluateExpression(evaluator, tt.input)
 			if err != nil {
@@ -1373,20 +1373,20 @@ func TestHeadPatternMatching(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
 			ctx := NewContext()
-			
+
 			// Parse pattern and expression
 			parser := NewParser(NewLexer(tt.pattern))
 			pattern, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing pattern: %v", err)
 			}
-			
+
 			parser = NewParser(NewLexer(tt.expr))
 			expr, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing expression: %v", err)
 			}
-			
+
 			// Test pattern matching
 			result := evaluator.matchPattern(pattern, expr, ctx)
 			if result != tt.expected {
@@ -1436,26 +1436,26 @@ func TestHeadPatternVariableBinding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
 			ctx := NewContext()
-			
+
 			// Parse pattern and expression
 			parser := NewParser(NewLexer(tt.pattern))
 			pattern, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing pattern: %v", err)
 			}
-			
+
 			parser = NewParser(NewLexer(tt.expr))
 			expr, err := parser.Parse()
 			if err != nil {
 				t.Fatalf("Error parsing expression: %v", err)
 			}
-			
+
 			// Test pattern matching (use parameter context for regular symbols)
 			matched := evaluator.matchPatternInternal(pattern, expr, ctx, true)
 			if !matched {
 				t.Fatalf("Pattern should have matched")
 			}
-			
+
 			// Check if variables were bound correctly
 			for varName, expectedValue := range tt.bindings {
 				if value, exists := ctx.Get(varName); exists {

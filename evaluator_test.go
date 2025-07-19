@@ -11,10 +11,9 @@ func setupTestEvaluator() *Evaluator {
 	return eval
 }
 
-
 func TestEvaluator_ArithmeticOperations(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -71,14 +70,14 @@ func TestEvaluator_ArithmeticOperations(t *testing.T) {
 			expected: "$Failed(DivisionByZero)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -89,7 +88,7 @@ func TestEvaluator_ArithmeticOperations(t *testing.T) {
 
 func TestEvaluator_ComparisonOperations(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -141,14 +140,14 @@ func TestEvaluator_ComparisonOperations(t *testing.T) {
 			expected: "True",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -159,7 +158,7 @@ func TestEvaluator_ComparisonOperations(t *testing.T) {
 
 func TestEvaluator_LogicalOperations(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -206,14 +205,14 @@ func TestEvaluator_LogicalOperations(t *testing.T) {
 			expected: "True",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -224,7 +223,7 @@ func TestEvaluator_LogicalOperations(t *testing.T) {
 
 func TestEvaluator_AttributeTransformations(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -236,7 +235,7 @@ func TestEvaluator_AttributeTransformations(t *testing.T) {
 			expected: "6", // Should flatten and evaluate
 		},
 		{
-			name:     "orderless transformation", 
+			name:     "orderless transformation",
 			input:    "Plus(3, 1, 2)",
 			expected: "6", // Should reorder and evaluate
 		},
@@ -261,14 +260,14 @@ func TestEvaluator_AttributeTransformations(t *testing.T) {
 			expected: "Plus(a, b, z)", // Should reorder symbolically
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -279,7 +278,7 @@ func TestEvaluator_AttributeTransformations(t *testing.T) {
 
 func TestEvaluator_AssignmentOperations(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -315,18 +314,18 @@ func TestEvaluator_AssignmentOperations(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.setup != nil {
 				tt.setup()
 			}
-			
+
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -337,7 +336,7 @@ func TestEvaluator_AssignmentOperations(t *testing.T) {
 
 func TestEvaluator_ControlStructures(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -369,14 +368,14 @@ func TestEvaluator_ControlStructures(t *testing.T) {
 			expected: "3",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -387,10 +386,10 @@ func TestEvaluator_ControlStructures(t *testing.T) {
 
 func TestEvaluator_BuiltinConstants(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
-		name     string
-		input    string
+		name      string
+		input     string
 		checkFunc func(result Expr) bool
 	}{
 		{
@@ -436,14 +435,14 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if !tt.checkFunc(result) {
 				t.Errorf("constant %s did not evaluate correctly: %s", tt.input, result.String())
@@ -454,7 +453,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 
 func TestEvaluator_SameQUnsameQ(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -491,14 +490,14 @@ func TestEvaluator_SameQUnsameQ(t *testing.T) {
 			expected: "False",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -509,7 +508,7 @@ func TestEvaluator_SameQUnsameQ(t *testing.T) {
 
 func TestEvaluator_ComplexExpressions(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -536,14 +535,14 @@ func TestEvaluator_ComplexExpressions(t *testing.T) {
 			expected: "3",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())
@@ -554,7 +553,7 @@ func TestEvaluator_ComplexExpressions(t *testing.T) {
 
 func TestEvaluator_InfixNotation(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -611,14 +610,14 @@ func TestEvaluator_InfixNotation(t *testing.T) {
 			expected: "True",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result.String())

@@ -64,83 +64,78 @@ func NewSymbolTable() *SymbolTable {
 	}
 }
 
-
 // SetAttributes sets one or more attributes for a symbol
 func (st *SymbolTable) SetAttributes(symbol string, attrs []Attribute) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	
+
 	if st.attributes[symbol] == nil {
 		st.attributes[symbol] = make(map[Attribute]bool)
 	}
-	
+
 	for _, attr := range attrs {
 		st.attributes[symbol][attr] = true
 	}
 }
 
-
 // ClearAttributes removes one or more attributes from a symbol
 func (st *SymbolTable) ClearAttributes(symbol string, attrs []Attribute) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	
+
 	if st.attributes[symbol] == nil {
 		return
 	}
-	
+
 	for _, attr := range attrs {
 		delete(st.attributes[symbol], attr)
 	}
-	
+
 	// Clean up empty attribute maps
 	if len(st.attributes[symbol]) == 0 {
 		delete(st.attributes, symbol)
 	}
 }
 
-
 // Attributes returns all attributes for a symbol
 func (st *SymbolTable) Attributes(symbol string) []Attribute {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
-	
+
 	if st.attributes[symbol] == nil {
 		return nil
 	}
-	
+
 	var attrs []Attribute
 	for attr := range st.attributes[symbol] {
 		attrs = append(attrs, attr)
 	}
-	
+
 	// Sort for consistent output
 	sort.Slice(attrs, func(i, j int) bool {
 		return attrs[i] < attrs[j]
 	})
-	
+
 	return attrs
 }
-
 
 // HasAttribute checks if a symbol has a specific attribute
 func (st *SymbolTable) HasAttribute(symbol string, attr Attribute) bool {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
-	
+
 	if st.attributes[symbol] == nil {
 		return false
 	}
-	
+
 	return st.attributes[symbol][attr]
 }
-
 
 // ClearAllAttributes removes all attributes from a symbol
 func (st *SymbolTable) ClearAllAttributes(symbol string) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	
+
 	delete(st.attributes, symbol)
 }
 
@@ -149,28 +144,27 @@ func AttributesToString(attrs []Attribute) string {
 	if len(attrs) == 0 {
 		return "{}"
 	}
-	
+
 	var names []string
 	for _, attr := range attrs {
 		names = append(names, attr.String())
 	}
-	
+
 	return fmt.Sprintf("{%s}", strings.Join(names, ", "))
 }
-
 
 // AllSymbolsWithAttributes returns all symbols that have attributes
 func (st *SymbolTable) AllSymbolsWithAttributes() []string {
 	st.mu.RLock()
 	defer st.mu.RUnlock()
-	
+
 	var symbols []string
 	for symbol := range st.attributes {
 		if len(st.attributes[symbol]) > 0 {
 			symbols = append(symbols, symbol)
 		}
 	}
-	
+
 	sort.Strings(symbols)
 	return symbols
 }
@@ -179,7 +173,6 @@ func (st *SymbolTable) AllSymbolsWithAttributes() []string {
 func (st *SymbolTable) Reset() {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	
+
 	st.attributes = make(map[string]map[Attribute]bool)
 }
-

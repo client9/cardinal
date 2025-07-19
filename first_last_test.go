@@ -59,10 +59,10 @@ func TestEvaluateFirst(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "First of empty list - should error",
-			input: List{Elements: []Expr{}},
-			expected: "",
-			hasError: true,
+			name:      "First of empty list - should error",
+			input:     List{Elements: []Expr{}},
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
@@ -70,36 +70,36 @@ func TestEvaluateFirst(t *testing.T) {
 			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
-			expected: "",
-			hasError: true,
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "First of integer atom - should error",
-			input: NewIntAtom(42),
-			expected: "",
-			hasError: true,
+			name:      "First of integer atom - should error",
+			input:     NewIntAtom(42),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "First of string atom - should error",
-			input: NewStringAtom("hello"),
-			expected: "",
-			hasError: true,
+			name:      "First of string atom - should error",
+			input:     NewStringAtom("hello"),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "First of symbol atom - should error",
-			input: NewSymbolAtom("x"),
-			expected: "",
-			hasError: true,
+			name:      "First of symbol atom - should error",
+			input:     NewSymbolAtom("x"),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "First of boolean atom - should error",
-			input: NewBoolAtom(true),
-			expected: "",
-			hasError: true,
+			name:      "First of boolean atom - should error",
+			input:     NewBoolAtom(true),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 	}
@@ -107,13 +107,13 @@ func TestEvaluateFirst(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateFirst([]Expr{tt.input})
-			
+
 			if tt.hasError {
 				if !IsError(result) {
 					t.Errorf("expected error for %s, got %s", tt.name, result.String())
 					return
 				}
-				
+
 				errorExpr := result.(*ErrorExpr)
 				if errorExpr.ErrorType != tt.errorType {
 					t.Errorf("expected error type %s, got %s", tt.errorType, errorExpr.ErrorType)
@@ -123,7 +123,7 @@ func TestEvaluateFirst(t *testing.T) {
 					t.Errorf("unexpected error: %s", result.String())
 					return
 				}
-				
+
 				if result.String() != tt.expected {
 					t.Errorf("expected %s, got %s", tt.expected, result.String())
 				}
@@ -196,10 +196,10 @@ func TestEvaluateLast(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "Last of empty list - should error",
-			input: List{Elements: []Expr{}},
-			expected: "",
-			hasError: true,
+			name:      "Last of empty list - should error",
+			input:     List{Elements: []Expr{}},
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
@@ -207,36 +207,36 @@ func TestEvaluateLast(t *testing.T) {
 			input: List{Elements: []Expr{
 				NewSymbolAtom("OnlyHead"),
 			}},
-			expected: "",
-			hasError: true,
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "Last of integer atom - should error",
-			input: NewIntAtom(42),
-			expected: "",
-			hasError: true,
+			name:      "Last of integer atom - should error",
+			input:     NewIntAtom(42),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "Last of string atom - should error",
-			input: NewStringAtom("hello"),
-			expected: "",
-			hasError: true,
+			name:      "Last of string atom - should error",
+			input:     NewStringAtom("hello"),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "Last of symbol atom - should error",
-			input: NewSymbolAtom("x"),
-			expected: "",
-			hasError: true,
+			name:      "Last of symbol atom - should error",
+			input:     NewSymbolAtom("x"),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 		{
-			name: "Last of boolean atom - should error",
-			input: NewBoolAtom(false),
-			expected: "",
-			hasError: true,
+			name:      "Last of boolean atom - should error",
+			input:     NewBoolAtom(false),
+			expected:  "",
+			hasError:  true,
 			errorType: "PartError",
 		},
 	}
@@ -244,13 +244,13 @@ func TestEvaluateLast(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateLast([]Expr{tt.input})
-			
+
 			if tt.hasError {
 				if !IsError(result) {
 					t.Errorf("expected error for %s, got %s", tt.name, result.String())
 					return
 				}
-				
+
 				errorExpr := result.(*ErrorExpr)
 				if errorExpr.ErrorType != tt.errorType {
 					t.Errorf("expected error type %s, got %s", tt.errorType, errorExpr.ErrorType)
@@ -260,7 +260,7 @@ func TestEvaluateLast(t *testing.T) {
 					t.Errorf("unexpected error: %s", result.String())
 					return
 				}
-				
+
 				if result.String() != tt.expected {
 					t.Errorf("expected %s, got %s", tt.expected, result.String())
 				}
@@ -278,26 +278,26 @@ func TestFirstLast_ArgumentValidation(t *testing.T) {
 		{"First", EvaluateFirst},
 		{"Last", EvaluateLast},
 	}
-	
+
 	for _, fn := range functions {
 		t.Run(fn.name+"_no_args", func(t *testing.T) {
 			result := fn.fn([]Expr{})
 			if !IsError(result) {
 				t.Errorf("expected error for no arguments, got %s", result.String())
 			}
-			
+
 			errorExpr := result.(*ErrorExpr)
 			if errorExpr.ErrorType != "ArgumentError" {
 				t.Errorf("expected ArgumentError, got %s", errorExpr.ErrorType)
 			}
 		})
-		
+
 		t.Run(fn.name+"_too_many_args", func(t *testing.T) {
 			result := fn.fn([]Expr{NewIntAtom(1), NewIntAtom(2)})
 			if !IsError(result) {
 				t.Errorf("expected error for too many arguments, got %s", result.String())
 			}
-			
+
 			errorExpr := result.(*ErrorExpr)
 			if errorExpr.ErrorType != "ArgumentError" {
 				t.Errorf("expected ArgumentError, got %s", errorExpr.ErrorType)
@@ -309,7 +309,7 @@ func TestFirstLast_ArgumentValidation(t *testing.T) {
 // Integration tests with the evaluator
 func TestFirstLast_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -341,7 +341,7 @@ func TestFirstLast_Integration(t *testing.T) {
 			input:    "First([])",
 			expected: "$Failed(PartError)",
 		},
-		
+
 		// Last tests
 		{
 			name:     "Last of simple list",
@@ -368,7 +368,7 @@ func TestFirstLast_Integration(t *testing.T) {
 			input:    "Last([])",
 			expected: "$Failed(PartError)",
 		},
-		
+
 		// Combined tests
 		{
 			name:     "First of Last result",
@@ -381,14 +381,14 @@ func TestFirstLast_Integration(t *testing.T) {
 			expected: "10",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -469,12 +469,12 @@ func TestFirstLast_ComplexExpressions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.function([]Expr{tt.expr})
-			
+
 			if IsError(result) {
 				t.Errorf("unexpected error: %s", result.String())
 				return
 			}
-			
+
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
 			}

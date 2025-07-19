@@ -41,15 +41,15 @@ func TestEvaluateHead_Atoms(t *testing.T) {
 			expected: "Symbol",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateHead([]Expr{tt.arg})
-			
+
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
 			}
-			
+
 			// Verify it returns a Symbol
 			if !isSymbol(result) {
 				t.Errorf("Head should return a Symbol, got %T", result)
@@ -79,7 +79,7 @@ func TestEvaluateHead_Lists(t *testing.T) {
 			expected: "Plus",
 		},
 		{
-			name: "Nested expression", 
+			name: "Nested expression",
 			arg: List{Elements: []Expr{
 				NewSymbolAtom("Times"),
 				NewIntAtom(2),
@@ -92,11 +92,11 @@ func TestEvaluateHead_Lists(t *testing.T) {
 			expected: "Times",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateHead([]Expr{tt.arg})
-			
+
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
 			}
@@ -108,7 +108,7 @@ func TestEvaluateHead_Errors(t *testing.T) {
 	// Test error expressions
 	errorExpr := NewErrorExpr("TestError", "test message", nil)
 	result := EvaluateHead([]Expr{errorExpr})
-	
+
 	expected := "Error"
 	if result.String() != expected {
 		t.Errorf("expected %s, got %s", expected, result.String())
@@ -129,16 +129,16 @@ func TestEvaluateHead_ArgumentValidation(t *testing.T) {
 			args: []Expr{NewIntAtom(1), NewIntAtom(2)},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := EvaluateHead(tt.args)
-			
+
 			if !IsError(result) {
 				t.Errorf("expected error for %s, got %s", tt.name, result.String())
 				return
 			}
-			
+
 			errorExpr := result.(*ErrorExpr)
 			if errorExpr.ErrorType != "ArgumentError" {
 				t.Errorf("expected ArgumentError, got %s", errorExpr.ErrorType)
@@ -149,7 +149,7 @@ func TestEvaluateHead_ArgumentValidation(t *testing.T) {
 
 func TestHead_Integration(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -211,14 +211,14 @@ func TestHead_Integration(t *testing.T) {
 			expected: "Boolean", // Equal(x,y) evaluates to False (string comparison), so head is Boolean
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			
+
 			result := eval.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result.String())
@@ -229,21 +229,21 @@ func TestHead_Integration(t *testing.T) {
 
 func TestHead_ErrorPropagation(t *testing.T) {
 	eval := setupTestEvaluator()
-	
+
 	// Test that Head propagates errors
 	expr, err := ParseString("Head(Divide(1, 0))")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}
-	
+
 	result := eval.Evaluate(expr)
-	
+
 	// Should get the DivisionByZero error, not the head of the error
 	if !IsError(result) {
 		t.Errorf("expected error propagation, got %s", result.String())
 		return
 	}
-	
+
 	errorExpr := result.(*ErrorExpr)
 	if errorExpr.ErrorType != "DivisionByZero" {
 		t.Errorf("expected DivisionByZero error, got %s", errorExpr.ErrorType)
@@ -262,11 +262,11 @@ func TestHead_CompareWithCurrentType(t *testing.T) {
 		List{Elements: []Expr{NewSymbolAtom("Plus"), NewIntAtom(1)}},
 		NewErrorExpr("TestError", "test", nil),
 	}
-	
+
 	for _, expr := range testExprs {
 		head := EvaluateHead([]Expr{expr})
 		currentType := expr.Type()
-		
+
 		t.Logf("Expression: %s", expr.String())
 		t.Logf("  Head(): %s", head.String())
 		t.Logf("  Type(): %s", currentType)

@@ -19,7 +19,7 @@ func TestBlankPatterns(t *testing.T) {
 		{"Anonymous blank pattern with type", "f(_Integer) := \"matched\"; f(42)", "\"matched\""},
 		{"Anonymous blank pattern with type fail", "f(_Integer) := \"matched\"; f(\"hello\")", "f(\"hello\")"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator() // Create fresh evaluator for each test
@@ -49,7 +49,7 @@ func TestBlankSequencePatterns(t *testing.T) {
 		{"Anonymous BlankSequence with type", "f(__Integer) := \"matched\"; f(42, 43)", "\"matched\""},
 		{"BlankSequence with following pattern", "f(x__, y_) := Subtract(x, y); f(1, 2, 3)", "Subtract(List(1, 2), 3)"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator() // Create fresh evaluator for each test
@@ -80,7 +80,7 @@ func TestBlankNullSequencePatterns(t *testing.T) {
 		{"BlankNullSequence with following pattern", "f(x___, y_) := Subtract(x, y); f(1, 2, 3)", "Subtract(List(1, 2), 3)"},
 		{"BlankNullSequence empty with following pattern", "f(x___, y_) := Subtract(x, y); f(42)", "Subtract(List(), 42)"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator() // Create fresh evaluator for each test
@@ -107,7 +107,7 @@ func TestMixedBlankPatterns(t *testing.T) {
 		{"Blank + Blank + BlankNullSequence", "f(x_, y_, z___) := [x, y, z]; f(1, 2, 3, 4)", "List(1, 2, List(3, 4))"},
 		{"Blank + Blank + BlankNullSequence empty", "f(x_, y_, z___) := [x, y, z]; f(1, 2)", "List(1, 2, List())"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator() // Create fresh evaluator for each test
@@ -130,43 +130,43 @@ func TestBlankPatternsWithTypes(t *testing.T) {
 		{"Blank Integer", "f(x_Integer) := x; f(42)", "42"},
 		{"BlankSequence Integer", "f(x__Integer) := x; f(42, 43)", "List(42, 43)"},
 		{"BlankNullSequence Integer", "f(x___Integer) := x; f(42, 43)", "List(42, 43)"},
-		
+
 		// Real types
 		{"Blank Real", "f(x_Real) := x; f(3.14)", "3.14"},
 		{"BlankSequence Real", "f(x__Real) := x; f(3.14, 2.71)", "List(3.14, 2.71)"},
 		{"BlankNullSequence Real", "f(x___Real) := x; f(3.14, 2.71)", "List(3.14, 2.71)"},
-		
+
 		// Number types (Integer or Real)
 		{"Blank Number", "f(x_Number) := x; f(42)", "42"},
 		{"BlankSequence Number", "f(x__Number) := x; f(42, 3.14)", "List(42, 3.14)"},
 		{"BlankNullSequence Number", "f(x___Number) := x; f(42, 3.14)", "List(42, 3.14)"},
-		
+
 		// String types
 		{"Blank String", "f(x_String) := x; f(\"hello\")", "\"hello\""},
 		{"BlankSequence String", "f(x__String) := x; f(\"hello\", \"world\")", "List(\"hello\", \"world\")"},
 		{"BlankNullSequence String", "f(x___String) := x; f(\"hello\", \"world\")", "List(\"hello\", \"world\")"},
-		
+
 		// Boolean types
 		{"Blank Boolean", "f(x_Boolean) := x; f(True)", "True"},
 		{"BlankSequence Boolean", "f(x__Boolean) := x; f(True, False)", "List(True, False)"},
 		{"BlankNullSequence Boolean", "f(x___Boolean) := x; f(True, False)", "List(True, False)"},
-		
+
 		// Symbol types
 		{"Blank Symbol", "f(x_Symbol) := x; f(abc)", "abc"},
 		{"BlankSequence Symbol", "f(x__Symbol) := x; f(abc, def)", "List(abc, def)"},
 		{"BlankNullSequence Symbol", "f(x___Symbol) := x; f(abc, def)", "List(abc, def)"},
-		
+
 		// List types
 		{"Blank List", "f(x_List) := x; f([1, 2, 3])", "List(1, 2, 3)"},
 		{"BlankSequence List", "f(x__List) := x; f([1, 2], [3, 4])", "List(List(1, 2), List(3, 4))"},
 		{"BlankNullSequence List", "f(x___List) := x; f([1, 2], [3, 4])", "List(List(1, 2), List(3, 4))"},
-		
+
 		// Atom types
 		{"Blank Atom", "f(x_Atom) := x; f(42)", "42"},
 		{"BlankSequence Atom", "f(x__Atom) := x; f(42, \"hello\")", "List(42, \"hello\")"},
 		{"BlankNullSequence Atom", "f(x___Atom) := x; f(42, \"hello\")", "List(42, \"hello\")"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator() // Create fresh evaluator for each test
@@ -189,15 +189,15 @@ func TestBlankPatternFailures(t *testing.T) {
 		{"Blank Integer fail", "f(x_Integer) := x; f(\"hello\")", "f(\"hello\")"},
 		{"BlankSequence Integer fail", "f(x__Integer) := x; f(42, \"hello\")", "f(42, \"hello\")"},
 		{"BlankNullSequence Integer fail", "f(x___Integer) := x; f(42, \"hello\")", "f(42, \"hello\")"},
-		
+
 		// BlankSequence with no arguments
 		{"BlankSequence no args", "f(x__) := x; f()", "f()"},
 		{"BlankSequence Integer no args", "f(x__Integer) := x; f()", "f()"},
-		
+
 		// Complex type constraints
 		{"Mixed types fail", "f(x__Integer, y_String) := Plus(x, y); f(42, \"hello\", 3.14)", "f(42, \"hello\", 3.14)"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator() // Create fresh evaluator for each test
@@ -220,18 +220,18 @@ func TestBlankPatternParsing(t *testing.T) {
 		{"Named blank", "x_", PatternInfo{Type: BlankPattern, VarName: "x", TypeName: ""}},
 		{"Typed blank", "_Integer", PatternInfo{Type: BlankPattern, VarName: "", TypeName: "Integer"}},
 		{"Named typed blank", "x_Integer", PatternInfo{Type: BlankPattern, VarName: "x", TypeName: "Integer"}},
-		
+
 		{"Simple blank sequence", "__", PatternInfo{Type: BlankSequencePattern, VarName: "", TypeName: ""}},
 		{"Named blank sequence", "x__", PatternInfo{Type: BlankSequencePattern, VarName: "x", TypeName: ""}},
 		{"Typed blank sequence", "__Integer", PatternInfo{Type: BlankSequencePattern, VarName: "", TypeName: "Integer"}},
 		{"Named typed blank sequence", "x__Integer", PatternInfo{Type: BlankSequencePattern, VarName: "x", TypeName: "Integer"}},
-		
+
 		{"Simple blank null sequence", "___", PatternInfo{Type: BlankNullSequencePattern, VarName: "", TypeName: ""}},
 		{"Named blank null sequence", "x___", PatternInfo{Type: BlankNullSequencePattern, VarName: "x", TypeName: ""}},
 		{"Typed blank null sequence", "___Integer", PatternInfo{Type: BlankNullSequencePattern, VarName: "", TypeName: "Integer"}},
 		{"Named typed blank null sequence", "x___Integer", PatternInfo{Type: BlankNullSequencePattern, VarName: "x", TypeName: "Integer"}},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := parsePatternInfo(tt.input)
@@ -247,20 +247,20 @@ func evaluateString(t *testing.T, evaluator *Evaluator, input string) string {
 	// Split by semicolon and evaluate each part
 	parts := strings.Split(input, ";")
 	var result Expr
-	
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		expr, err := ParseString(part)
 		if err != nil {
 			t.Fatalf("Parse error: %v", err)
 		}
-		
+
 		result = evaluator.Evaluate(expr)
 	}
-	
+
 	return result.String()
 }

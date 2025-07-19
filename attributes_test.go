@@ -67,14 +67,14 @@ func TestSetAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			st := NewSymbolTable()
-			
+
 			// For the "adding to existing" test, set up initial state
 			if tt.name == "adding to existing attributes" {
 				st.SetAttributes(tt.symbol, []Attribute{Flat})
 			}
-			
+
 			st.SetAttributes(tt.symbol, tt.attributes)
-			
+
 			result := st.Attributes(tt.symbol)
 			if !attributeSlicesEqual(result, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
@@ -124,9 +124,9 @@ func TestClearAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st := NewSymbolTable()
 			tt.setup(st)
-			
+
 			st.ClearAttributes(tt.symbol, tt.clearAttrs)
-			
+
 			result := st.Attributes(tt.symbol)
 			if !attributeSlicesEqual(result, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
@@ -178,15 +178,15 @@ func TestHasAttribute(t *testing.T) {
 func TestClearAllAttributes(t *testing.T) {
 	st := NewSymbolTable()
 	st.SetAttributes("TestSymbol", []Attribute{Flat, Orderless, OneIdentity})
-	
+
 	// Verify attributes are set
 	if len(st.Attributes("TestSymbol")) == 0 {
 		t.Fatal("Expected attributes to be set")
 	}
-	
+
 	// Clear all attributes
 	st.ClearAllAttributes("TestSymbol")
-	
+
 	// Verify all attributes are cleared
 	result := st.Attributes("TestSymbol")
 	if len(result) != 0 {
@@ -232,9 +232,9 @@ func TestAllSymbolsWithAttributes(t *testing.T) {
 	st.SetAttributes("Plus", []Attribute{Flat})
 	st.SetAttributes("Times", []Attribute{Orderless})
 	st.SetAttributes("Power", []Attribute{OneIdentity})
-	
+
 	symbols := st.AllSymbolsWithAttributes()
-	
+
 	expected := []string{"Plus", "Power", "Times"} // sorted
 	if !stringSlicesEqual(symbols, expected) {
 		t.Errorf("expected %v, got %v", expected, symbols)
@@ -244,7 +244,7 @@ func TestAllSymbolsWithAttributes(t *testing.T) {
 func TestSymbolTable_ThreadSafety(t *testing.T) {
 	st := NewSymbolTable()
 	var wg sync.WaitGroup
-	
+
 	// Test concurrent access
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -258,7 +258,7 @@ func TestSymbolTable_ThreadSafety(t *testing.T) {
 			}
 		}(i)
 	}
-	
+
 	wg.Wait()
 	// If we get here without data races, the test passed
 }
@@ -266,15 +266,15 @@ func TestSymbolTable_ThreadSafety(t *testing.T) {
 func TestSymbolTable_Reset(t *testing.T) {
 	st := NewSymbolTable()
 	st.SetAttributes("TestSymbol", []Attribute{Flat, Orderless})
-	
+
 	// Verify attributes are set
 	if len(st.AllSymbolsWithAttributes()) == 0 {
 		t.Fatal("Expected symbols with attributes")
 	}
-	
+
 	// Reset the symbol table
 	st.Reset()
-	
+
 	// Verify all symbols are cleared
 	symbols := st.AllSymbolsWithAttributes()
 	if len(symbols) != 0 {
@@ -284,25 +284,25 @@ func TestSymbolTable_Reset(t *testing.T) {
 
 func TestMathematicaStyleUsage(t *testing.T) {
 	st := NewSymbolTable()
-	
+
 	// Set up typical Mathematica built-ins
 	st.SetAttributes("Plus", []Attribute{Flat, Orderless, OneIdentity})
 	st.SetAttributes("Times", []Attribute{Flat, Orderless, OneIdentity})
 	st.SetAttributes("Hold", []Attribute{HoldAll})
 	st.SetAttributes("Sin", []Attribute{Listable, NumericFunction})
 	st.SetAttributes("Pi", []Attribute{Constant, Protected})
-	
+
 	// Test typical queries
 	if !st.HasAttribute("Plus", Flat) {
 		t.Error("Plus should have Flat attribute")
 	}
-	
+
 	// Test clearing protected symbols (should still work at the table level)
 	st.ClearAllAttributes("Pi")
 	if st.HasAttribute("Pi", Flat) {
 		t.Error("Pi should not have any attributes after clearing")
 	}
-	
+
 	// Test attribute combinations
 	attrs := st.Attributes("Sin")
 	expectedAttrs := []Attribute{Listable, NumericFunction}
@@ -317,26 +317,26 @@ func attributeSlicesEqual(a, b []Attribute) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	// Sort both slices for comparison
 	aCopy := make([]Attribute, len(a))
 	bCopy := make([]Attribute, len(b))
 	copy(aCopy, a)
 	copy(bCopy, b)
-	
+
 	sort.Slice(aCopy, func(i, j int) bool {
 		return aCopy[i] < aCopy[j]
 	})
 	sort.Slice(bCopy, func(i, j int) bool {
 		return bCopy[i] < bCopy[j]
 	})
-	
+
 	for i := range aCopy {
 		if aCopy[i] != bCopy[i] {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -344,12 +344,12 @@ func stringSlicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
 	}
-	
+
 	return true
 }

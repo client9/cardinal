@@ -21,7 +21,7 @@ func BenchmarkNewContext_Imperative(b *testing.B) {
 			symbolTable: NewSymbolTable(),
 			builtins:    make(map[string]BuiltinFunc),
 		}
-		
+
 		// Simulate the old imperative setup
 		ctx.builtins["Plus"] = EvaluatePlus
 		ctx.builtins["Times"] = EvaluateTimes
@@ -37,7 +37,7 @@ func BenchmarkNewContext_Imperative(b *testing.B) {
 		ctx.builtins["Not"] = EvaluateNot
 		ctx.builtins["SameQ"] = EvaluateSameQ
 		ctx.builtins["UnsameQ"] = EvaluateUnsameQ
-		
+
 		_ = ctx
 	}
 }
@@ -45,7 +45,7 @@ func BenchmarkNewContext_Imperative(b *testing.B) {
 // BenchmarkFunctionLookup benchmarks function lookup performance
 func BenchmarkFunctionLookup(b *testing.B) {
 	ctx := NewContext()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Test lookup of different functions

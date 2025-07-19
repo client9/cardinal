@@ -12,8 +12,8 @@ type BuiltinFunc func([]Expr) Expr
 
 // EvaluationStack represents the current evaluation call stack
 type EvaluationStack struct {
-	frames []StackFrame
-	depth  int
+	frames   []StackFrame
+	depth    int
 	maxDepth int
 }
 
@@ -31,13 +31,13 @@ func (s *EvaluationStack) Push(function, expression string) error {
 	if s.depth >= s.maxDepth {
 		return fmt.Errorf("maximum recursion depth exceeded: %d", s.maxDepth)
 	}
-	
+
 	frame := StackFrame{
 		Function:   function,
 		Expression: expression,
 		Location:   "", // Can be set later if needed
 	}
-	
+
 	s.frames = append(s.frames, frame)
 	s.depth++
 	return nil
@@ -83,10 +83,10 @@ func NewContext() *Context {
 		functionRegistry: NewFunctionRegistry(),
 		stack:            NewEvaluationStack(1000), // Default max depth of 1000
 	}
-	
+
 	// Register default built-in functions with patterns
 	registerDefaultBuiltins(ctx.functionRegistry)
-	
+
 	return ctx
 }
 
@@ -171,17 +171,17 @@ func (e *Evaluator) evaluateAtom(atom Atom, ctx *Context) Expr {
 	switch atom.AtomType {
 	case SymbolAtom:
 		symbolName := atom.Value.(string)
-		
+
 		// Check for built-in constants
 		if value, ok := e.getBuiltinConstant(symbolName); ok {
 			return value
 		}
-		
+
 		// Look up variable in context
 		if value, ok := ctx.Get(symbolName); ok {
 			return value
 		}
-		
+
 		// Return the symbol unchanged if not found
 		return atom
 	default:
@@ -198,7 +198,7 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 
 	// Get the head of the expression
 	head := list.Elements[0]
-	
+
 	// If head is not a symbol, evaluate it first
 	if atom, ok := head.(Atom); !ok || atom.AtomType != SymbolAtom {
 		evaluatedHead := e.evaluate(head, ctx)
@@ -237,7 +237,7 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 	// Check old built-in function overrides first (for backward compatibility)
 	if builtin, exists := ctx.builtins[headName]; exists {
 		args := transformed.Elements[1:]
-		
+
 		// Push function call to stack for error tracking
 		argsStr := ""
 		if len(args) > 0 {
@@ -249,13 +249,13 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 		} else {
 			argsStr = "[]"
 		}
-		
+
 		funcCallStr := headName + argsStr
 		if err := ctx.stack.Push(headName, funcCallStr); err != nil {
 			return NewErrorExprWithStack("RecursionError", err.Error(), args, ctx.stack.GetFrames())
 		}
 		defer ctx.stack.Pop()
-		
+
 		// Check for errors in arguments and propagate them first
 		for _, arg := range args {
 			if IsError(arg) {
@@ -266,15 +266,15 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 				return arg
 			}
 		}
-		
+
 		// Execute the function
 		result := builtin(args)
-		
+
 		// If the result is an error and doesn't have a stack trace, add one
 		if errorExpr, ok := result.(*ErrorExpr); ok && len(errorExpr.StackTrace) == 0 {
 			errorExpr.StackTrace = ctx.stack.GetFrames()
 		}
-		
+
 		return result
 	}
 
@@ -298,13 +298,13 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 	if funcDef == nil {
 		return nil
 	}
-	
+
 	// Create a new child context with the pattern variable bindings
 	funcCtx := NewChildContext(ctx)
 	for varName, value := range bindings {
 		funcCtx.Set(varName, value)
 	}
-	
+
 	// Execute the function
 	if funcDef.GoImpl != nil {
 		// Built-in function with Go implementation
@@ -319,21 +319,21 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 		} else {
 			argsStr = "[]"
 		}
-		
+
 		funcCallStr := headName + argsStr
 		if err := ctx.stack.Push(headName, funcCallStr); err != nil {
 			return NewErrorExprWithStack("RecursionError", err.Error(), args, ctx.stack.GetFrames())
 		}
 		defer ctx.stack.Pop()
-		
+
 		// Execute the function
 		result := funcDef.GoImpl(args, funcCtx)
-		
+
 		// If the result is an error and doesn't have a stack trace, add one
 		if errorExpr, ok := result.(*ErrorExpr); ok && len(errorExpr.StackTrace) == 0 {
 			errorExpr.StackTrace = ctx.stack.GetFrames()
 		}
-		
+
 		return result
 	} else {
 		// User-defined function with s-expression body
@@ -347,27 +347,27 @@ func (e *Evaluator) evaluateUserDefinedFunction(headName string, args []Expr, ct
 	if funcDef, exists := ctx.Get(headName); exists {
 		// Check if it's a function list (multiple definitions)
 		if funcList, ok := funcDef.(List); ok && len(funcList.Elements) > 0 {
-			if head, ok := funcList.Elements[0].(Atom); ok && 
+			if head, ok := funcList.Elements[0].(Atom); ok &&
 				head.AtomType == SymbolAtom && head.Value.(string) == "FunctionList" {
-				
+
 				// Try each function definition in order
 				for _, def := range funcList.Elements[1:] {
 					if result := e.tryFunctionDefinition(headName, def, args, ctx); result != nil {
 						return result
 					}
 				}
-				
+
 				// No pattern matched, return unevaluated
 				return List{Elements: append([]Expr{NewSymbolAtom(headName)}, args...)}
 			}
 		}
-		
+
 		// Single function definition
 		if result := e.tryFunctionDefinition(headName, funcDef, args, ctx); result != nil {
 			return result
 		}
 	}
-	
+
 	return nil
 }
 
@@ -375,16 +375,16 @@ func (e *Evaluator) evaluateUserDefinedFunction(headName string, args []Expr, ct
 func (e *Evaluator) tryFunctionDefinition(headName string, funcDef Expr, args []Expr, ctx *Context) Expr {
 	// Check if it's a function definition (Function[{params}, body])
 	if funcList, ok := funcDef.(List); ok && len(funcList.Elements) == 3 {
-		if head, ok := funcList.Elements[0].(Atom); ok && 
+		if head, ok := funcList.Elements[0].(Atom); ok &&
 			head.AtomType == SymbolAtom && head.Value.(string) == "Function" {
-			
+
 			// Extract parameters and body
 			params := funcList.Elements[1]
 			body := funcList.Elements[2]
-			
+
 			// Create a new context for function evaluation
 			funcCtx := NewChildContext(ctx)
-			
+
 			// Bind parameters to arguments using pattern matching
 			if paramList, ok := params.(List); ok {
 				// Check if any parameter is a sequence pattern
@@ -401,7 +401,7 @@ func (e *Evaluator) tryFunctionDefinition(headName string, funcDef Expr, args []
 						}
 					}
 				}
-				
+
 				if hasSequencePattern {
 					// Use sequence pattern matching
 					if !e.matchSequencePatterns(paramList.Elements, args, funcCtx) {
@@ -413,7 +413,7 @@ func (e *Evaluator) tryFunctionDefinition(headName string, funcDef Expr, args []
 						// Wrong number of arguments, pattern doesn't match
 						return nil
 					}
-					
+
 					for i, param := range paramList.Elements {
 						if !e.matchPatternInternal(param, args[i], funcCtx, true) {
 							// Pattern didn't match, try next definition
@@ -422,12 +422,12 @@ func (e *Evaluator) tryFunctionDefinition(headName string, funcDef Expr, args []
 					}
 				}
 			}
-			
+
 			// All patterns matched, evaluate the function body
 			return e.evaluate(body, funcCtx)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -446,17 +446,17 @@ func (e *Evaluator) matchPatternInternal(pattern Expr, expr Expr, ctx *Context, 
 			if isPatternVariable(symbolName) {
 				// Parse the pattern variable to get complete pattern information
 				patternInfo := parsePatternInfo(symbolName)
-				
+
 				// Check type constraint if present
 				if !matchesType(expr, patternInfo.TypeName) {
 					return false
 				}
-				
+
 				if patternInfo.VarName == "" {
 					// Anonymous pattern variable _ matches anything (if type constraint passed)
 					return true
 				}
-				
+
 				// Bind the variable to the expression
 				ctx.Set(patternInfo.VarName, expr)
 				return true
@@ -493,12 +493,12 @@ func (e *Evaluator) matchPatternInternal(pattern Expr, expr Expr, ctx *Context, 
 				// Then use sequence pattern matching for the arguments
 				return e.matchSequencePatterns(pat.Elements[1:], exprList.Elements[1:], ctx)
 			}
-			
+
 			// For non-parameter lists, require exact length match
 			if len(pat.Elements) != len(exprList.Elements) {
 				return false
 			}
-			
+
 			for i, patElem := range pat.Elements {
 				// First element is the head (requires exact match), rest are parameters
 				isParam := i > 0 && isParameterList
@@ -518,112 +518,112 @@ func (e *Evaluator) matchPatternInternal(pattern Expr, expr Expr, ctx *Context, 
 func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Context) bool {
 	patternIndex := 0
 	exprIndex := 0
-	
+
 	for patternIndex < len(patterns) {
 		pattern := patterns[patternIndex]
-		
+
 		// Check if this pattern is a sequence pattern
 		if atom, ok := pattern.(Atom); ok && atom.AtomType == SymbolAtom {
 			symbolName := atom.Value.(string)
 			if isPatternVariable(symbolName) {
 				patternInfo := parsePatternInfo(symbolName)
-				
+
 				switch patternInfo.Type {
 				case BlankPattern:
 					// Single pattern: matches exactly one expression
 					if exprIndex >= len(exprs) {
 						return false // No more expressions to match
 					}
-					
+
 					// Check type constraint
 					if !matchesType(exprs[exprIndex], patternInfo.TypeName) {
 						return false
 					}
-					
+
 					// Bind variable if named
 					if patternInfo.VarName != "" {
 						ctx.Set(patternInfo.VarName, exprs[exprIndex])
 					}
-					
+
 					exprIndex++
 					patternIndex++
-					
+
 				case BlankSequencePattern:
 					// Sequence pattern: matches one or more expressions
 					if exprIndex >= len(exprs) {
 						return false // Need at least one expression
 					}
-					
+
 					// Calculate how many expressions this pattern should consume
 					remainingPatterns := len(patterns) - patternIndex - 1
 					minExprsNeeded := remainingPatterns // Minimum expressions needed for remaining patterns
 					maxExprsAvailable := len(exprs) - exprIndex - minExprsNeeded
-					
+
 					if maxExprsAvailable < 1 {
 						return false // Need at least one expression for BlankSequence
 					}
-					
+
 					// Consume expressions for this sequence pattern
 					sequenceExprs := make([]Expr, 0)
 					for i := 0; i < maxExprsAvailable; i++ {
 						if exprIndex >= len(exprs) {
 							break
 						}
-						
+
 						// Check type constraint
 						if !matchesType(exprs[exprIndex], patternInfo.TypeName) {
 							break
 						}
-						
+
 						sequenceExprs = append(sequenceExprs, exprs[exprIndex])
 						exprIndex++
 					}
-					
+
 					if len(sequenceExprs) == 0 {
 						return false // BlankSequence must match at least one expression
 					}
-					
+
 					// Bind variable if named
 					if patternInfo.VarName != "" {
 						ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
 					}
-					
+
 					patternIndex++
-					
+
 				case BlankNullSequencePattern:
 					// Null sequence pattern: matches zero or more expressions
 					// Calculate how many expressions this pattern should consume
 					remainingPatterns := len(patterns) - patternIndex - 1
 					minExprsNeeded := remainingPatterns // Minimum expressions needed for remaining patterns
 					maxExprsAvailable := len(exprs) - exprIndex - minExprsNeeded
-					
+
 					if maxExprsAvailable < 0 {
 						maxExprsAvailable = 0 // Can consume zero expressions
 					}
-					
+
 					// Consume expressions for this sequence pattern
 					sequenceExprs := make([]Expr, 0)
 					for i := 0; i < maxExprsAvailable; i++ {
 						if exprIndex >= len(exprs) {
 							break
 						}
-						
+
 						// Check type constraint
 						if !matchesType(exprs[exprIndex], patternInfo.TypeName) {
 							break
 						}
-						
+
 						sequenceExprs = append(sequenceExprs, exprs[exprIndex])
 						exprIndex++
 					}
-					
+
 					// Bind variable if named (can be empty list)
 					if patternInfo.VarName != "" {
 						ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
 					}
-					
+
 					patternIndex++
-					
+
 				default:
 					return false // Unknown pattern type
 				}
@@ -632,7 +632,7 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 				if exprIndex >= len(exprs) {
 					return false
 				}
-				
+
 				// Regular symbol in parameter list binds to value
 				ctx.Set(symbolName, exprs[exprIndex])
 				exprIndex++
@@ -643,16 +643,16 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 			if exprIndex >= len(exprs) {
 				return false
 			}
-			
+
 			if !e.matchPatternInternal(pattern, exprs[exprIndex], ctx, false) {
 				return false
 			}
-			
+
 			exprIndex++
 			patternIndex++
 		}
 	}
-	
+
 	// All patterns matched, check that all expressions were consumed
 	return exprIndex == len(exprs)
 }
@@ -661,9 +661,9 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 type PatternType int
 
 const (
-	BlankPattern PatternType = iota     // _ - matches exactly one expression
-	BlankSequencePattern                // __ - matches one or more expressions
-	BlankNullSequencePattern            // ___ - matches zero or more expressions
+	BlankPattern             PatternType = iota // _ - matches exactly one expression
+	BlankSequencePattern                        // __ - matches one or more expressions
+	BlankNullSequencePattern                    // ___ - matches zero or more expressions
 )
 
 // PatternInfo contains information about a parsed pattern
@@ -677,12 +677,12 @@ type PatternInfo struct {
 type PatternSpecificity int
 
 const (
-	SpecificityNullSequence PatternSpecificity = 1  // x___ (least specific)
-	SpecificitySequence     PatternSpecificity = 2  // x__ 
-	SpecificityGeneral      PatternSpecificity = 3  // x_
-	SpecificityBuiltinType  PatternSpecificity = 4  // x_Integer, x_String, etc.
-	SpecificityCustomType   PatternSpecificity = 5  // x_Color, x_Point, etc.
-	SpecificityLiteral      PatternSpecificity = 6  // 42, "hello", exact values (most specific)
+	SpecificityNullSequence PatternSpecificity = 1 // x___ (least specific)
+	SpecificitySequence     PatternSpecificity = 2 // x__
+	SpecificityGeneral      PatternSpecificity = 3 // x_
+	SpecificityBuiltinType  PatternSpecificity = 4 // x_Integer, x_String, etc.
+	SpecificityCustomType   PatternSpecificity = 5 // x_Color, x_Point, etc.
+	SpecificityLiteral      PatternSpecificity = 6 // 42, "hello", exact values (most specific)
 )
 
 // getPatternSpecificity calculates the specificity of a single pattern
@@ -705,14 +705,14 @@ func getPatternSpecificity(pattern Expr) PatternSpecificity {
 		if len(pat.Elements) == 0 {
 			return SpecificityLiteral // Empty list
 		}
-		
+
 		// Head must be literal for structured patterns
 		headSpecificity := getPatternSpecificity(pat.Elements[0])
 		if headSpecificity != SpecificityLiteral {
 			// Head is not literal, this is not a valid structured pattern
 			return SpecificityGeneral
 		}
-		
+
 		// Specificity is based on the least specific parameter
 		minSpecificity := SpecificityLiteral
 		for i := 1; i < len(pat.Elements); i++ {
@@ -741,7 +741,7 @@ func getPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 	default:
 		baseSpecificity = SpecificityGeneral
 	}
-	
+
 	// Increase specificity if there's a type constraint
 	if info.TypeName != "" {
 		if isBuiltinType(info.TypeName) {
@@ -750,7 +750,7 @@ func getPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 			baseSpecificity = SpecificityCustomType
 		}
 	}
-	
+
 	return baseSpecificity
 }
 
@@ -775,7 +775,7 @@ func getFunctionPatternSpecificity(params Expr) PatternSpecificity {
 		}
 		return totalSpecificity
 	}
-	
+
 	// Single parameter case
 	return getPatternSpecificity(params)
 }
@@ -783,7 +783,7 @@ func getFunctionPatternSpecificity(params Expr) PatternSpecificity {
 // getFunctionDefinitionSpecificity extracts specificity from a Function definition
 func getFunctionDefinitionSpecificity(funcDef Expr) PatternSpecificity {
 	if funcList, ok := funcDef.(List); ok && len(funcList.Elements) == 3 {
-		if head, ok := funcList.Elements[0].(Atom); ok && 
+		if head, ok := funcList.Elements[0].(Atom); ok &&
 			head.AtomType == SymbolAtom && head.Value.(string) == "Function" {
 			// Extract parameters (second element)
 			params := funcList.Elements[1]
@@ -796,15 +796,15 @@ func getFunctionDefinitionSpecificity(funcDef Expr) PatternSpecificity {
 // insertFunctionBySpecificity inserts a function definition in the correct position based on specificity
 func insertFunctionBySpecificity(existingList List, newFuncDef Expr) List {
 	newSpecificity := getFunctionDefinitionSpecificity(newFuncDef)
-	
+
 	// Create new elements slice with the new function inserted in the right position
 	newElements := make([]Expr, 0, len(existingList.Elements)+1)
 	newElements = append(newElements, existingList.Elements[0]) // Keep "FunctionList" head
-	
+
 	inserted := false
 	for i := 1; i < len(existingList.Elements); i++ {
 		existingSpecificity := getFunctionDefinitionSpecificity(existingList.Elements[i])
-		
+
 		// Insert before less specific patterns (higher specificity = more specific)
 		if !inserted && newSpecificity > existingSpecificity {
 			newElements = append(newElements, newFuncDef)
@@ -812,12 +812,12 @@ func insertFunctionBySpecificity(existingList List, newFuncDef Expr) List {
 		}
 		newElements = append(newElements, existingList.Elements[i])
 	}
-	
+
 	// If not inserted yet, append at end (least specific)
 	if !inserted {
 		newElements = append(newElements, newFuncDef)
 	}
-	
+
 	return List{Elements: newElements}
 }
 
@@ -826,12 +826,12 @@ func isPatternVariable(name string) bool {
 	// Pattern variables have the form: [varname][underscores][typename]
 	// Examples: x_, x__, x___, _Integer, x_Integer, x__Integer, x___Integer
 	// But NOT regular symbols with underscores in the middle: bool_test, my_function, etc.
-	
+
 	// Must start with underscore OR contain underscore followed by uppercase letter (type)
 	if strings.HasPrefix(name, "_") {
 		return true // _Integer, _, __, ___, etc.
 	}
-	
+
 	// Look for pattern: letter(s) + underscore(s) + [optional type starting with uppercase]
 	for i := 0; i < len(name); i++ {
 		if name[i] == '_' {
@@ -855,7 +855,7 @@ func isPatternVariable(name string) bool {
 			return false
 		}
 	}
-	
+
 	return false
 }
 
@@ -864,10 +864,10 @@ func parsePatternVariable(name string) (varName string, typeName string) {
 	if !isPatternVariable(name) {
 		return "", ""
 	}
-	
+
 	// Split by underscore
 	parts := strings.Split(name, "_")
-	
+
 	if len(parts) == 2 {
 		if parts[0] == "" && parts[1] == "" {
 			// Anonymous pattern: _ -> varName="", typeName=""
@@ -880,7 +880,7 @@ func parsePatternVariable(name string) (varName string, typeName string) {
 			return parts[0], parts[1]
 		}
 	}
-	
+
 	// Invalid pattern
 	return "", ""
 }
@@ -890,11 +890,11 @@ func parsePatternInfo(name string) PatternInfo {
 	if !isPatternVariable(name) {
 		return PatternInfo{}
 	}
-	
+
 	// Count consecutive underscores to determine pattern type
 	underscoreCount := 0
 	underscoreStart := -1
-	
+
 	// Find the first underscore
 	for i, ch := range name {
 		if ch == '_' {
@@ -902,16 +902,16 @@ func parsePatternInfo(name string) PatternInfo {
 			break
 		}
 	}
-	
+
 	if underscoreStart == -1 {
 		return PatternInfo{} // No underscore found
 	}
-	
+
 	// Count consecutive underscores
 	for i := underscoreStart; i < len(name) && name[i] == '_'; i++ {
 		underscoreCount++
 	}
-	
+
 	// Determine pattern type based on underscore count
 	var patternType PatternType
 	switch underscoreCount {
@@ -924,17 +924,17 @@ func parsePatternInfo(name string) PatternInfo {
 	default:
 		return PatternInfo{} // Invalid pattern
 	}
-	
+
 	// Extract variable name (before underscores)
 	varName := name[:underscoreStart]
-	
+
 	// Extract type name (after underscores)
 	typeStart := underscoreStart + underscoreCount
 	var typeName string
 	if typeStart < len(name) {
 		typeName = name[typeStart:]
 	}
-	
+
 	return PatternInfo{
 		Type:     patternType,
 		VarName:  varName,
@@ -948,7 +948,7 @@ func matchesType(expr Expr, typeName string) bool {
 		// No type constraint, matches anything
 		return true
 	}
-	
+
 	// Handle built-in types first
 	switch typeName {
 	case "Integer":
@@ -990,18 +990,18 @@ func matchesType(expr Expr, typeName string) bool {
 		}
 		return false
 	}
-	
+
 	return false
 }
 
 // evaluateArguments evaluates arguments based on hold attributes
 func (e *Evaluator) evaluateArguments(headName string, args []Expr, ctx *Context) []Expr {
 	evaluatedArgs := make([]Expr, len(args))
-	
+
 	holdAll := ctx.symbolTable.HasAttribute(headName, HoldAll)
 	holdFirst := ctx.symbolTable.HasAttribute(headName, HoldFirst)
 	holdRest := ctx.symbolTable.HasAttribute(headName, HoldRest)
-	
+
 	for i, arg := range args {
 		if holdAll || (holdFirst && i == 0) || (holdRest && i > 0) {
 			evaluatedArgs[i] = arg // Don't evaluate
@@ -1009,29 +1009,29 @@ func (e *Evaluator) evaluateArguments(headName string, args []Expr, ctx *Context
 			evaluatedArgs[i] = e.evaluate(arg, ctx)
 		}
 	}
-	
+
 	return evaluatedArgs
 }
 
 // applyAttributeTransformations applies attribute-based transformations
 func (e *Evaluator) applyAttributeTransformations(headName string, list List, ctx *Context) List {
 	result := list
-	
+
 	// Apply Flat attribute (associativity)
 	if ctx.symbolTable.HasAttribute(headName, Flat) {
 		result = e.applyFlat(headName, result)
 	}
-	
+
 	// Apply Orderless attribute (commutativity)
 	if ctx.symbolTable.HasAttribute(headName, Orderless) {
 		result = e.applyOrderless(result)
 	}
-	
+
 	// Apply OneIdentity attribute
 	if ctx.symbolTable.HasAttribute(headName, OneIdentity) {
 		result = e.applyOneIdentity(result)
 	}
-	
+
 	return result
 }
 
@@ -1040,10 +1040,10 @@ func (e *Evaluator) applyFlat(headName string, list List) List {
 	if len(list.Elements) <= 1 {
 		return list
 	}
-	
+
 	var newElements []Expr
 	newElements = append(newElements, list.Elements[0]) // Keep the head
-	
+
 	for _, arg := range list.Elements[1:] {
 		if argList, ok := arg.(List); ok && len(argList.Elements) > 0 {
 			if argHead, ok := argList.Elements[0].(Atom); ok &&
@@ -1058,7 +1058,7 @@ func (e *Evaluator) applyFlat(headName string, list List) List {
 			newElements = append(newElements, arg)
 		}
 	}
-	
+
 	return List{Elements: newElements}
 }
 
@@ -1067,19 +1067,19 @@ func (e *Evaluator) applyOrderless(list List) List {
 	if len(list.Elements) <= 2 {
 		return list
 	}
-	
+
 	// Sort arguments by their string representation for consistent ordering
 	args := make([]Expr, len(list.Elements)-1)
 	copy(args, list.Elements[1:])
-	
+
 	sort.Slice(args, func(i, j int) bool {
 		return args[i].String() < args[j].String()
 	})
-	
+
 	newElements := make([]Expr, len(list.Elements))
 	newElements[0] = list.Elements[0]
 	copy(newElements[1:], args)
-	
+
 	return List{Elements: newElements}
 }
 
@@ -1124,7 +1124,7 @@ func (e *Evaluator) evaluateBuiltin(headName string, args []Expr, ctx *Context) 
 			return arg
 		}
 	}
-	
+
 	// Look up function in context's builtin registry
 	if fn, exists := ctx.builtins[headName]; exists {
 		// Push function call to stack
@@ -1138,24 +1138,24 @@ func (e *Evaluator) evaluateBuiltin(headName string, args []Expr, ctx *Context) 
 		} else {
 			argsStr = "[]"
 		}
-		
+
 		funcCallStr := headName + argsStr
 		if err := ctx.stack.Push(headName, funcCallStr); err != nil {
 			return NewErrorExprWithStack("RecursionError", err.Error(), args, ctx.stack.GetFrames())
 		}
 		defer ctx.stack.Pop()
-		
+
 		// Execute the function
 		result := fn(args)
-		
+
 		// If the result is an error and doesn't have a stack trace, add one
 		if errorExpr, ok := result.(*ErrorExpr); ok && len(errorExpr.StackTrace) == 0 {
 			errorExpr.StackTrace = ctx.stack.GetFrames()
 		}
-		
+
 		return result
 	}
-	
+
 	return nil
 }
 
@@ -1243,10 +1243,10 @@ func patternsEqual(pattern1, pattern2 Expr) bool {
 			if p1.AtomType == SymbolAtom && p2.AtomType == SymbolAtom {
 				name1 := p1.Value.(string)
 				name2 := p2.Value.(string)
-				
+
 				isPattern1 := isPatternVariable(name1)
 				isPattern2 := isPatternVariable(name2)
-				
+
 				if isPattern1 && isPattern2 {
 					// Both are pattern variables - compare structure, not names
 					info1 := parsePatternInfo(name1)
@@ -1286,9 +1286,9 @@ func patternsEqual(pattern1, pattern2 Expr) bool {
 func findFunctionWithPattern(funcList List, targetPattern Expr) int {
 	for i := 1; i < len(funcList.Elements); i++ {
 		if funcDef, ok := funcList.Elements[i].(List); ok && len(funcDef.Elements) == 3 {
-			if head, ok := funcDef.Elements[0].(Atom); ok && 
+			if head, ok := funcDef.Elements[0].(Atom); ok &&
 				head.AtomType == SymbolAtom && head.Value.(string) == "Function" {
-				
+
 				// Extract the pattern from this function definition
 				if paramList, ok := funcDef.Elements[1].(List); ok {
 					if patternsEqual(paramList, targetPattern) {
@@ -1306,14 +1306,14 @@ func findFunctionWithPattern(funcList List, targetPattern Expr) int {
 func replaceOrAddFunction(existingList List, newFuncDef Expr) List {
 	// Extract the pattern from the new function definition
 	if funcDef, ok := newFuncDef.(List); ok && len(funcDef.Elements) == 3 {
-		if head, ok := funcDef.Elements[0].(Atom); ok && 
+		if head, ok := funcDef.Elements[0].(Atom); ok &&
 			head.AtomType == SymbolAtom && head.Value.(string) == "Function" {
-			
+
 			targetPattern := funcDef.Elements[1]
-			
+
 			// Check if a function with this pattern already exists
 			existingIndex := findFunctionWithPattern(existingList, targetPattern)
-			
+
 			if existingIndex != -1 {
 				// Replace the existing function definition
 				newElements := make([]Expr, len(existingList.Elements))
@@ -1323,7 +1323,7 @@ func replaceOrAddFunction(existingList List, newFuncDef Expr) List {
 			}
 		}
 	}
-	
+
 	// No existing pattern found, add the new function by specificity
 	return insertFunctionBySpecificity(existingList, newFuncDef)
 }
@@ -1364,7 +1364,7 @@ func getBuiltinFunctions() map[string]BuiltinFunc {
 		"Subtract": EvaluateSubtract,
 		"Divide":   EvaluateDivide,
 		"Power":    EvaluatePower,
-		
+
 		// Comparison operations
 		"Equal":        EvaluateEqual,
 		"Unequal":      EvaluateUnequal,
@@ -1372,29 +1372,29 @@ func getBuiltinFunctions() map[string]BuiltinFunc {
 		"Greater":      EvaluateGreater,
 		"LessEqual":    EvaluateLessEqual,
 		"GreaterEqual": EvaluateGreaterEqual,
-		
+
 		// Logical operations
 		"Not":     EvaluateNot,
 		"SameQ":   EvaluateSameQ,
 		"UnsameQ": EvaluateUnsameQ,
-		
+
 		// Introspection operations
-		"Head":      EvaluateHead,
-		"Length":    EvaluateLength,
-		
+		"Head":   EvaluateHead,
+		"Length": EvaluateLength,
+
 		// Predicate operations
-		"ListQ":     EvaluateListQ,
-		"NumberQ":   EvaluateNumberQ,
-		"BooleanQ":  EvaluateBooleanQ,
-		"IntegerQ":  EvaluateIntegerQ,
-		"AtomQ":     EvaluateAtomQ,
-		"SymbolQ":   EvaluateSymbolQ,
-		"StringQ":   EvaluateStringQ,
-		
+		"ListQ":    EvaluateListQ,
+		"NumberQ":  EvaluateNumberQ,
+		"BooleanQ": EvaluateBooleanQ,
+		"IntegerQ": EvaluateIntegerQ,
+		"AtomQ":    EvaluateAtomQ,
+		"SymbolQ":  EvaluateSymbolQ,
+		"StringQ":  EvaluateStringQ,
+
 		// String operations
 		"StringLength": EvaluateStringLength,
 		"FullForm":     EvaluateFullForm,
-		
+
 		// List access operations
 		"First": EvaluateFirst,
 		"Last":  EvaluateLast,
@@ -1408,12 +1408,12 @@ func getBuiltinFunctions() map[string]BuiltinFunc {
 func setupBuiltinAttributes(symbolTable *SymbolTable) {
 	// Reset attributes
 	symbolTable.Reset()
-	
+
 	// Arithmetic operations
 	symbolTable.SetAttributes("Plus", []Attribute{Flat, Orderless, OneIdentity})
 	symbolTable.SetAttributes("Times", []Attribute{Flat, Orderless, OneIdentity})
 	symbolTable.SetAttributes("Power", []Attribute{OneIdentity})
-	
+
 	// Control structures
 	symbolTable.SetAttributes("Hold", []Attribute{HoldAll})
 	symbolTable.SetAttributes("If", []Attribute{HoldRest})
@@ -1421,16 +1421,16 @@ func setupBuiltinAttributes(symbolTable *SymbolTable) {
 	symbolTable.SetAttributes("CompoundExpression", []Attribute{HoldAll})
 	symbolTable.SetAttributes("Module", []Attribute{HoldAll})
 	symbolTable.SetAttributes("Block", []Attribute{HoldAll})
-	
+
 	// Assignment operations
 	symbolTable.SetAttributes("Set", []Attribute{HoldFirst})
 	symbolTable.SetAttributes("SetDelayed", []Attribute{HoldAll})
 	symbolTable.SetAttributes("Unset", []Attribute{HoldFirst})
-	
+
 	// Logical operations
 	symbolTable.SetAttributes("And", []Attribute{Flat, Orderless, HoldAll})
 	symbolTable.SetAttributes("Or", []Attribute{Flat, Orderless, HoldAll})
-	
+
 	// Constants
 	symbolTable.SetAttributes("Pi", []Attribute{Constant, Protected})
 	symbolTable.SetAttributes("E", []Attribute{Constant, Protected})
@@ -1443,12 +1443,12 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 	// Register built-in functions with pattern-based dispatch
 	builtinPatterns := map[string]PatternFunc{
 		// Arithmetic operations - support multiple arguments with sequence patterns
-		"Plus(x___)":       wrapBuiltinFunc(EvaluatePlus),    // Zero or more arguments
-		"Times(x___)":      wrapBuiltinFunc(EvaluateTimes),   // Zero or more arguments
+		"Plus(x___)":       wrapBuiltinFunc(EvaluatePlus),  // Zero or more arguments
+		"Times(x___)":      wrapBuiltinFunc(EvaluateTimes), // Zero or more arguments
 		"Subtract(x_, y_)": wrapBuiltinFunc(EvaluateSubtract),
 		"Divide(x_, y_)":   wrapBuiltinFunc(EvaluateDivide),
 		"Power(x_, y_)":    wrapBuiltinFunc(EvaluatePower),
-		
+
 		// Comparison operations
 		"Equal(x_, y_)":        wrapBuiltinFunc(EvaluateEqual),
 		"Unequal(x_, y_)":      wrapBuiltinFunc(EvaluateUnequal),
@@ -1458,10 +1458,10 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 		"GreaterEqual(x_, y_)": wrapBuiltinFunc(EvaluateGreaterEqual),
 		"SameQ(x_, y_)":        wrapBuiltinFunc(EvaluateSameQ),
 		"UnsameQ(x_, y_)":      wrapBuiltinFunc(EvaluateUnsameQ),
-		
+
 		// Logical operations (Not - And/Or are special forms)
 		"Not(x_)": wrapBuiltinFunc(EvaluateNot),
-		
+
 		// List operations
 		"Length(x_)":   wrapBuiltinFunc(EvaluateLength),
 		"First(x_)":    wrapBuiltinFunc(EvaluateFirst),
@@ -1469,7 +1469,7 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 		"Rest(x_)":     wrapBuiltinFunc(EvaluateRest),
 		"Most(x_)":     wrapBuiltinFunc(EvaluateMost),
 		"Part(x_, i_)": wrapBuiltinFunc(EvaluatePart),
-		
+
 		// Type predicates
 		"IntegerQ(x_)": wrapBuiltinFunc(EvaluateIntegerQ),
 		"NumberQ(x_)":  wrapBuiltinFunc(EvaluateNumberQ),
@@ -1479,12 +1479,12 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 		"ListQ(x_)":    wrapBuiltinFunc(EvaluateListQ),
 		"AtomQ(x_)":    wrapBuiltinFunc(EvaluateAtomQ),
 		"Head(x_)":     wrapBuiltinFuncNoErrorProp(EvaluateHead),
-		
+
 		// String functions
 		"StringLength(x_)": wrapBuiltinFunc(EvaluateStringLength),
 		"FullForm(x_)":     wrapBuiltinFunc(EvaluateFullForm),
 	}
-	
+
 	// Register all patterns
 	err := registry.RegisterPatternBuiltins(builtinPatterns)
 	if err != nil {
@@ -1495,14 +1495,14 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 // wrapBuiltinFunc wraps an old-style BuiltinFunc to work with the new PatternFunc signature
 func wrapBuiltinFunc(builtin BuiltinFunc) PatternFunc {
 	return func(args []Expr, ctx *Context) Expr {
-		// Check for errors in arguments and propagate them 
+		// Check for errors in arguments and propagate them
 		// Note: Stack frame addition happens in the caller (evaluatePatternFunction)
 		for _, arg := range args {
 			if IsError(arg) {
 				return arg
 			}
 		}
-		
+
 		return builtin(args)
 	}
 }

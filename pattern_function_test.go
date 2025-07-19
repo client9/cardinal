@@ -15,7 +15,7 @@ func TestPatternFunctionSystem(t *testing.T) {
 		{"Plus two args", "Plus(1, 2)", "3"},
 		{"Plus three args", "Plus(1, 2, 3)", "6"},
 		{"Times two args", "Times(2, 3)", "6"},
-		
+
 		// Test user function override capability
 		{"User function", "f(x_) := x + 1; f(5)", "6"},
 		{"User function sequence", "g(x__) := Length(x); g(1, 2, 3)", "3"},
@@ -35,7 +35,7 @@ func TestPatternFunctionSystem(t *testing.T) {
 func TestPatternFunctionRegistry(t *testing.T) {
 	// Test the function registry directly
 	registry := NewFunctionRegistry()
-	
+
 	// Register a simple pattern
 	err := registry.RegisterPatternBuiltin("test(x_)", func(args []Expr, ctx *Context) Expr {
 		if len(args) != 1 {
@@ -43,22 +43,22 @@ func TestPatternFunctionRegistry(t *testing.T) {
 		}
 		return args[0] // Return the argument unchanged
 	})
-	
+
 	if err != nil {
 		t.Fatalf("Failed to register pattern: %v", err)
 	}
-	
+
 	// Test pattern matching
 	funcDef, bindings := registry.FindMatchingFunction("test", []Expr{NewIntAtom(42)})
-	
+
 	if funcDef == nil {
 		t.Fatalf("Expected to find matching function")
 	}
-	
+
 	if len(bindings) != 1 {
 		t.Errorf("Expected 1 binding, got %d", len(bindings))
 	}
-	
+
 	if bindings["x"] == nil {
 		t.Errorf("Expected binding for variable 'x'")
 	}
@@ -67,21 +67,21 @@ func TestPatternFunctionRegistry(t *testing.T) {
 func evaluatePatternTestHelper(t *testing.T, evaluator *Evaluator, input string) string {
 	// Split by semicolon and evaluate each part
 	parts := strings.Split(input, ";")
-	
+
 	var result Expr
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		expr, err := ParseString(part)
 		if err != nil {
 			t.Fatalf("Parse error: %v", err)
 		}
-		
+
 		result = evaluator.Evaluate(expr)
 	}
-	
+
 	return result.String()
 }

@@ -198,45 +198,45 @@ func TestList_Type(t *testing.T) {
 
 func TestConstructorFunctions(t *testing.T) {
 	tests := []struct {
-		name        string
-		constructor func() Expr
-		expectedType string
+		name          string
+		constructor   func() Expr
+		expectedType  string
 		expectedValue interface{}
 	}{
 		{
-			name:        "NewStringAtom",
-			constructor: func() Expr { return NewStringAtom("test") },
-			expectedType: "string",
+			name:          "NewStringAtom",
+			constructor:   func() Expr { return NewStringAtom("test") },
+			expectedType:  "string",
 			expectedValue: "test",
 		},
 		{
-			name:        "NewIntAtom",
-			constructor: func() Expr { return NewIntAtom(42) },
-			expectedType: "int",
+			name:          "NewIntAtom",
+			constructor:   func() Expr { return NewIntAtom(42) },
+			expectedType:  "int",
 			expectedValue: 42,
 		},
 		{
-			name:        "NewFloatAtom",
-			constructor: func() Expr { return NewFloatAtom(3.14) },
-			expectedType: "float64",
+			name:          "NewFloatAtom",
+			constructor:   func() Expr { return NewFloatAtom(3.14) },
+			expectedType:  "float64",
 			expectedValue: 3.14,
 		},
 		{
-			name:        "NewBoolAtom true",
-			constructor: func() Expr { return NewBoolAtom(true) },
-			expectedType: "bool",
+			name:          "NewBoolAtom true",
+			constructor:   func() Expr { return NewBoolAtom(true) },
+			expectedType:  "bool",
 			expectedValue: true,
 		},
 		{
-			name:        "NewBoolAtom false",
-			constructor: func() Expr { return NewBoolAtom(false) },
-			expectedType: "bool",
+			name:          "NewBoolAtom false",
+			constructor:   func() Expr { return NewBoolAtom(false) },
+			expectedType:  "bool",
 			expectedValue: false,
 		},
 		{
-			name:        "NewSymbolAtom",
-			constructor: func() Expr { return NewSymbolAtom("mySymbol") },
-			expectedType: "symbol",
+			name:          "NewSymbolAtom",
+			constructor:   func() Expr { return NewSymbolAtom("mySymbol") },
+			expectedType:  "symbol",
 			expectedValue: "mySymbol",
 		},
 	}
@@ -244,17 +244,17 @@ func TestConstructorFunctions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr := tt.constructor()
-			
+
 			if expr.Type() != tt.expectedType {
 				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
 			}
-			
+
 			atom, ok := expr.(Atom)
 			if !ok {
 				t.Errorf("expected Atom, got %T", expr)
 				return
 			}
-			
+
 			if atom.Value != tt.expectedValue {
 				t.Errorf("expected value %v, got %v", tt.expectedValue, atom.Value)
 			}
@@ -264,45 +264,45 @@ func TestConstructorFunctions(t *testing.T) {
 
 func TestNewList(t *testing.T) {
 	tests := []struct {
-		name            string
-		elements        []Expr
-		expectedLength  int
-		expectedType    string
+		name           string
+		elements       []Expr
+		expectedLength int
+		expectedType   string
 	}{
 		{
-			name:            "empty list",
-			elements:        []Expr{},
-			expectedLength:  0,
-			expectedType:    "list",
+			name:           "empty list",
+			elements:       []Expr{},
+			expectedLength: 0,
+			expectedType:   "list",
 		},
 		{
-			name:            "single element",
-			elements:        []Expr{NewIntAtom(1)},
-			expectedLength:  1,
-			expectedType:    "list",
+			name:           "single element",
+			elements:       []Expr{NewIntAtom(1)},
+			expectedLength: 1,
+			expectedType:   "list",
 		},
 		{
-			name:            "multiple elements",
-			elements:        []Expr{NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)},
-			expectedLength:  3,
-			expectedType:    "list",
+			name:           "multiple elements",
+			elements:       []Expr{NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)},
+			expectedLength: 3,
+			expectedType:   "list",
 		},
 		{
-			name:            "nested list",
-			elements:        []Expr{NewSymbolAtom("f"), NewList(NewSymbolAtom("g"), NewIntAtom(1))},
-			expectedLength:  2,
-			expectedType:    "list",
+			name:           "nested list",
+			elements:       []Expr{NewSymbolAtom("f"), NewList(NewSymbolAtom("g"), NewIntAtom(1))},
+			expectedLength: 2,
+			expectedType:   "list",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			list := NewList(tt.elements...)
-			
+
 			if list.Type() != tt.expectedType {
 				t.Errorf("expected type %q, got %q", tt.expectedType, list.Type())
 			}
-			
+
 			if len(list.Elements) != tt.expectedLength {
 				t.Errorf("expected length %d, got %d", tt.expectedLength, len(list.Elements))
 			}

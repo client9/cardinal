@@ -347,24 +347,24 @@ func TestParser_Parse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
-			
+
 			if tt.hasError {
 				if err == nil {
 					t.Errorf("expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			if expr == nil {
 				t.Errorf("expected expression but got nil")
 				return
 			}
-			
+
 			result := expr.String()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -425,17 +425,17 @@ func TestParser_ParseAtoms(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			if expr.Type() != tt.expectedType {
 				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
 			}
-			
+
 			atom, ok := expr.(Atom)
 			if !ok {
 				t.Errorf("expected Atom, got %T", expr)
 				return
 			}
-			
+
 			if atom.Value != tt.expectedVal {
 				t.Errorf("expected value %v, got %v", tt.expectedVal, atom.Value)
 			}
@@ -445,39 +445,39 @@ func TestParser_ParseAtoms(t *testing.T) {
 
 func TestParser_ParseLists(t *testing.T) {
 	tests := []struct {
-		name            string
-		input           string
-		expectedHead    string
+		name             string
+		input            string
+		expectedHead     string
 		expectedArgCount int
 	}{
 		{
-			name:            "simple list",
-			input:           "Plus(1, 2, 3)",
-			expectedHead:    "Plus",
+			name:             "simple list",
+			input:            "Plus(1, 2, 3)",
+			expectedHead:     "Plus",
 			expectedArgCount: 3,
 		},
 		{
-			name:            "empty list",
-			input:           "List()",
-			expectedHead:    "List",
+			name:             "empty list",
+			input:            "List()",
+			expectedHead:     "List",
 			expectedArgCount: 0,
 		},
 		{
-			name:            "no args function",
-			input:           "Random()",
-			expectedHead:    "Random",
+			name:             "no args function",
+			input:            "Random()",
+			expectedHead:     "Random",
 			expectedArgCount: 0,
 		},
 		{
-			name:            "nested list",
-			input:           "Plus(1, Times(2, 3))",
-			expectedHead:    "Plus",
+			name:             "nested list",
+			input:            "Plus(1, Times(2, 3))",
+			expectedHead:     "Plus",
 			expectedArgCount: 2,
 		},
 		{
-			name:            "single arg",
-			input:           "Not(True)",
-			expectedHead:    "Not",
+			name:             "single arg",
+			input:            "Not(True)",
+			expectedHead:     "Not",
 			expectedArgCount: 1,
 		},
 	}
@@ -489,29 +489,28 @@ func TestParser_ParseLists(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			list, ok := expr.(List)
 			if !ok {
 				t.Errorf("expected List, got %T", expr)
 				return
 			}
-			
-			
+
 			if len(list.Elements) == 0 {
 				t.Errorf("expected non-empty list")
 				return
 			}
-			
+
 			head, ok := list.Elements[0].(Atom)
 			if !ok {
 				t.Errorf("expected head to be Atom, got %T", list.Elements[0])
 				return
 			}
-			
+
 			if head.Value != tt.expectedHead {
 				t.Errorf("expected head %q, got %q", tt.expectedHead, head.Value)
 			}
-			
+
 			argCount := len(list.Elements) - 1 // Subtract head
 			if argCount != tt.expectedArgCount {
 				t.Errorf("expected %d args, got %d", tt.expectedArgCount, argCount)
@@ -565,7 +564,7 @@ func TestParser_ErrorHandling(t *testing.T) {
 				t.Errorf("expected error but got none")
 				return
 			}
-			
+
 			if !strings.Contains(err.Error(), tt.expectedError) {
 				t.Errorf("expected error to contain %q, got %q", tt.expectedError, err.Error())
 			}
@@ -613,7 +612,7 @@ func TestParser_StringEscaping(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			result := expr.String()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -648,11 +647,11 @@ func TestParseString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ParseString(tt.input)
-			
+
 			if tt.hasError && err == nil {
 				t.Errorf("expected error but got none")
 			}
-			
+
 			if !tt.hasError && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}

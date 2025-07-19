@@ -71,11 +71,11 @@ func (l List) String() string {
 	if len(l.Elements) == 0 {
 		return "List()"
 	}
-	
+
 	// Check if this is a List literal (head is "List")
 	if len(l.Elements) > 0 {
-		if headAtom, ok := l.Elements[0].(Atom); ok && 
-		   headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "List" {
+		if headAtom, ok := l.Elements[0].(Atom); ok &&
+			headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "List" {
 			// This is a list literal: [element1, element2, ...]
 			var elements []string
 			for _, elem := range l.Elements[1:] {
@@ -84,7 +84,7 @@ func (l List) String() string {
 			return fmt.Sprintf("List(%s)", strings.Join(elements, ", "))
 		}
 	}
-	
+
 	// This is a function call: head(arg1, arg2, ...)
 	var elements []string
 	for _, elem := range l.Elements {
@@ -145,7 +145,7 @@ func (e *ErrorExpr) GetStackTrace() string {
 	if len(e.StackTrace) == 0 {
 		return "No stack trace available"
 	}
-	
+
 	var trace strings.Builder
 	trace.WriteString("Stack trace:\n")
 	for i, frame := range e.StackTrace {

@@ -21,7 +21,7 @@ func NewREPL() *REPL {
 	evaluator := NewEvaluator()
 	// Set up built-in attributes for the evaluator
 	setupBuiltinAttributes(evaluator.context.symbolTable)
-	
+
 	return &REPL{
 		evaluator: evaluator,
 		input:     os.Stdin,
@@ -35,7 +35,7 @@ func NewREPLWithIO(input io.Reader, output io.Writer) *REPL {
 	evaluator := NewEvaluator()
 	// Set up built-in attributes for the evaluator
 	setupBuiltinAttributes(evaluator.context.symbolTable)
-	
+
 	return &REPL{
 		evaluator: evaluator,
 		input:     input,
@@ -52,42 +52,42 @@ func (r *REPL) SetPrompt(prompt string) {
 // Run starts the REPL loop
 func (r *REPL) Run() error {
 	scanner := bufio.NewScanner(r.input)
-	
+
 	// Print welcome message
 	fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
 	fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n\n")
-	
+
 	for {
 		// Print prompt
 		fmt.Fprint(r.output, r.prompt)
-		
+
 		// Read input
 		if !scanner.Scan() {
 			break
 		}
-		
+
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Handle empty input
 		if line == "" {
 			continue
 		}
-		
+
 		// Handle special commands
 		if r.handleSpecialCommands(line) {
 			continue
 		}
-		
+
 		// Parse and evaluate
 		if err := r.processLine(line); err != nil {
 			fmt.Fprintf(r.output, "Error: %v\n", err)
 		}
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("scanner error: %v", err)
 	}
-	
+
 	return nil
 }
 
@@ -119,13 +119,13 @@ func (r *REPL) processLine(line string) error {
 	if err != nil {
 		return fmt.Errorf("parse error: %v", err)
 	}
-	
+
 	// Evaluate the expression
 	result := r.evaluator.Evaluate(expr)
-	
+
 	// Print the result
 	fmt.Fprintf(r.output, "%s\n", result.String())
-	
+
 	return nil
 }
 
@@ -175,13 +175,13 @@ func (r *REPL) clearContext() {
 func (r *REPL) printAttributes() {
 	fmt.Fprintf(r.output, "\nSymbols with attributes:\n")
 	fmt.Fprintf(r.output, "=======================\n")
-	
+
 	symbols := r.evaluator.context.symbolTable.AllSymbolsWithAttributes()
 	if len(symbols) == 0 {
 		fmt.Fprintf(r.output, "No symbols with attributes found.\n")
 		return
 	}
-	
+
 	for _, symbol := range symbols {
 		attrs := r.evaluator.context.symbolTable.Attributes(symbol)
 		fmt.Fprintf(r.output, "%-15s: %s\n", symbol, AttributesToString(attrs))
@@ -195,7 +195,7 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse error: %v", err)
 	}
-	
+
 	result := r.evaluator.Evaluate(expr)
 	return result.String(), nil
 }
@@ -212,31 +212,30 @@ func (r *REPL) ExecuteFile(filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
 	}
-	
+
 	// Split into lines and process each one
 	lines := strings.Split(string(content), "\n")
-	
+
 	for lineNum, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Skip empty lines and comments
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		// Show what we're executing
 		fmt.Fprintf(r.output, "In(%d): %s\n", lineNum+1, line)
-		
+
 		// Execute the line
 		result, err := r.EvaluateString(line)
 		if err != nil {
 			return fmt.Errorf("error at line %d: %v", lineNum+1, err)
 		}
-		
+
 		// Show the result
 		fmt.Fprintf(r.output, "Out(%d): %s\n", lineNum+1, result)
 	}
-	
+
 	return nil
 }
-

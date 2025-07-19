@@ -158,7 +158,7 @@ func (l *Lexer) skipWhitespace() {
 func (l *Lexer) readString() string {
 	position := l.position
 	l.readChar() // skip opening quote
-	
+
 	for l.ch != '"' && l.ch != 0 {
 		if l.ch == '\\' {
 			l.readChar() // skip escape character
@@ -169,13 +169,13 @@ func (l *Lexer) readString() string {
 			l.readChar()
 		}
 	}
-	
+
 	if l.ch == '"' {
-		result := l.input[position:l.position-1]
+		result := l.input[position : l.position-1]
 		l.readChar() // skip closing quote
 		return result
 	}
-	
+
 	// Handle unclosed string - return what we have
 	if l.position > len(l.input) {
 		return l.input[position:]
@@ -188,17 +188,17 @@ func (l *Lexer) readIdentifier() string {
 	for isLetter(l.ch) || isDigit(l.ch) {
 		l.readChar()
 	}
-	return l.input[position:l.position-1]
+	return l.input[position : l.position-1]
 }
 
 func (l *Lexer) readNumber() (string, TokenType) {
 	position := l.position - 1
 	tokenType := INTEGER
-	
+
 	for isDigit(l.ch) {
 		l.readChar()
 	}
-	
+
 	if l.ch == '.' && isDigit(l.peekChar()) {
 		tokenType = FLOAT
 		l.readChar()
@@ -206,15 +206,15 @@ func (l *Lexer) readNumber() (string, TokenType) {
 			l.readChar()
 		}
 	}
-	
-	return l.input[position:l.position-1], tokenType
+
+	return l.input[position : l.position-1], tokenType
 }
 
 func (l *Lexer) NextToken() Token {
 	var tok Token
-	
+
 	l.skipWhitespace()
-	
+
 	switch l.ch {
 	case '[':
 		tok = Token{Type: LBRACKET, Value: string(l.ch), Position: l.position - 1}
@@ -363,7 +363,7 @@ func (l *Lexer) NextToken() Token {
 			tok = Token{Type: ILLEGAL, Value: string(l.ch), Position: l.position - 1}
 		}
 	}
-	
+
 	l.readChar()
 	return tok
 }
