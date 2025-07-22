@@ -275,17 +275,17 @@ func TestComplexPatternSpecificity(t *testing.T) {
 		expected string
 		reason   string
 	}{
-		// TODO: Fix pattern specificity calculation for literals vs type constraints
-		// {"f(42, 1)", "literal_int", "literal should win over type constraint"},
-		// {"f(1, 42)", "int_literal", "literal should win over type constraint"},
+		// Now enabled with compound specificity - literals should have highest priority
+		{"f(42, 1)", "literal_int", "literal should win over type constraint"},
+		{"f(1, 42)", "int_literal", "literal should win over type constraint"},
 		{"f(1, 2)", "int_int", "specific types should win over general"},
-		// TODO: These tests reveal that pattern matching has more complex issues
-		// {"f(1.5, 2)", "number_int", "should match number + integer"},
-		// {"f(1, 2.5)", "int_number", "should match integer + number"},
+		// These should work with compound specificity - mixed types
+		{"f(1.5, 2)", "number_int", "should match number + integer"},
+		{"f(1, 2.5)", "int_number", "should match integer + number"},
 		{"f(1.5, 2.5)", "number_number", "should match number + number"},
-		// TODO: Fix pattern specificity for mixed literal/pattern cases
-		// {"f(x, 2)", "any_int", "should match any + integer"},
-		// {"f(1, x)", "int_any", "should match integer + any"},
+		// Mixed literal/pattern cases should work with compound specificity
+		{"f(x, 2)", "any_int", "should match any + integer"},
+		{"f(1, x)", "int_any", "should match integer + any"},
 		{"f(x, y)", "any_any", "should fall back to any + any"},
 	}
 
@@ -387,6 +387,30 @@ func TestUtility_ShowPatternSpecificities(t *testing.T) {
 
 		specificity := getPatternSpecificity(pattern)
 		t.Logf("%-25s -> specificity %d", patternStr, specificity)
+	}
+}
+
+// TestUtility_DebugPatternSpecificities shows detailed specificity breakdowns
+func TestUtility_DebugPatternSpecificities(t *testing.T) {
+	t.Skip("Utility test - remove t.Skip() to run for debugging")
+
+	patterns := []string{
+		"Plus(1, 2)",
+		"Plus(1, y_Integer)",
+		"Plus(x_Integer, y_Integer)",
+		"Plus(x_Number, y_Number)",
+		"Plus(x_, y_)",
+	}
+
+	for _, patternStr := range patterns {
+		pattern, err := ParseString(patternStr)
+		if err != nil {
+			t.Fatalf("Failed to parse %s: %v", patternStr, err)
+		}
+
+		debug := DebugPatternSpecificity(pattern)
+		t.Log("=====================================")
+		t.Log(debug)
 	}
 }
 

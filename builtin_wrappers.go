@@ -9,7 +9,7 @@ func WrapPlusIntegers(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		return NewIntAtom(0)
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case
@@ -46,7 +46,7 @@ func WrapPlusReals(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		return NewFloatAtom(0.0)
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case
@@ -83,7 +83,7 @@ func WrapTimesIntegers(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		return NewIntAtom(1)
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case
@@ -120,7 +120,7 @@ func WrapTimesReals(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		return NewFloatAtom(1.0)
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case
@@ -156,7 +156,7 @@ func WrapPlusNumbers(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		return NewFloatAtom(0.0)
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case
@@ -183,7 +183,7 @@ func WrapTimesNumbers(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		return NewFloatAtom(1.0)
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case
@@ -824,8 +824,7 @@ func WrapAssociationRules(args []Expr, ctx *Context) Expr {
 
 	// Handle empty case
 	if len(args) == 0 {
-		result := AssociationRules()
-		return result
+		return CopyExprList(funcName, args)
 	}
 
 	// Handle single arg case

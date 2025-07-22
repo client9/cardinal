@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -24,14 +25,178 @@ type PatternInfo struct {
 type PatternSpecificity int
 
 const (
-	SpecificityNullSequence    PatternSpecificity = 1 // x___ (least specific)
-	SpecificitySequence        PatternSpecificity = 2 // x__
-	SpecificityGeneral         PatternSpecificity = 3 // x_
-	SpecificityBuiltinGeneral  PatternSpecificity = 4 // x_Number, x_Numeric (general builtin types)
-	SpecificityBuiltinSpecific PatternSpecificity = 5 // x_Integer, x_Real, x_String (specific builtin types)
-	SpecificityCustomType      PatternSpecificity = 6 // x_Color, x_Point, etc.
-	SpecificityLiteral         PatternSpecificity = 7 // 42, "hello", exact values (most specific)
+	SpecificityNullSequence    PatternSpecificity = 10 // x___ (least specific)
+	SpecificitySequence        PatternSpecificity = 20 // x__
+	SpecificityGeneral         PatternSpecificity = 30 // x_
+	SpecificityBuiltinGeneral  PatternSpecificity = 40 // x_Number, x_Numeric (general builtin types)
+	SpecificityBuiltinSpecific PatternSpecificity = 50 // x_Integer, x_Real, x_String (specific builtin types)
+	SpecificityCustomType      PatternSpecificity = 60 // x_Color, x_Point, etc.
+	SpecificityLiteral         PatternSpecificity = 70 // 42, "hello", exact values (most specific)
+	
+	// Bonus multipliers for compound patterns
+	LiteralBonusMultiplier = 2  // Literals get double weight in compounds
+	SpecificTypeBonusPoints = 5 // Extra points for specific types
+	PatternComplexityBonus = 1  // Per additional argument
 )
+
+// CompoundSpecificity provides detailed scoring breakdown for compound patterns
+// This allows for detailed analysis of why certain patterns have higher specificity
+// than others, which is crucial for debugging pattern matching issues.
+//
+// The scoring algorithm works as follows:
+// 1. BaseScore: Sum of individual argument specificities + complexity bonus
+// 2. LiteralBonus: Additional points for literal values (multiplied by LiteralBonusMultiplier)
+// 3. TypeBonus: Additional points for specific type constraints (SpecificTypeBonusPoints each)
+// 4. TotalScore: BaseScore + LiteralBonus + TypeBonus
+//
+// Examples:
+// - Plus(1, 2): BaseScore=140+2, LiteralBonus=140, TypeBonus=0, TotalScore=282
+// - Plus(1, y_Integer): BaseScore=70+50+2, LiteralBonus=70, TypeBonus=5, TotalScore=197
+// - Plus(x_Integer, y_Integer): BaseScore=50+50+2, LiteralBonus=0, TypeBonus=10, TotalScore=112
+type CompoundSpecificity struct {
+	BaseScore    int // Sum of individual argument specificities
+	LiteralBonus int // Extra points for literals
+	TypeBonus    int // Extra points for specific types
+	TotalScore   int // Final calculated score
+}
+
+// isLiteral checks if an expression is a literal value (number, string, etc.)
+func isLiteral(expr Expr) bool {
+	if atom, ok := expr.(Atom); ok {
+		switch atom.AtomType {
+		case IntAtom, FloatAtom, StringAtom:
+			return true
+		case SymbolAtom:
+			symbolName := atom.Value.(string)
+			// Built-in constants are considered literals
+			return symbolName == "True" || symbolName == "False" || symbolName == "Pi" || symbolName == "E"
+		}
+	}
+	return false
+}
+
+// isSpecificType checks if a pattern variable has a specific builtin type constraint
+func isSpecificType(expr Expr) bool {
+	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
+		symbolName := atom.Value.(string)
+		if isPatternVariable(symbolName) {
+			info := parsePatternInfo(symbolName)
+			return getTypeSpecificity(info.TypeName) == SpecificityBuiltinSpecific
+		}
+	}
+	return false
+}
+
+// calculateCompoundSpecificity calculates specificity for compound patterns
+func calculateCompoundSpecificity(pattern List) CompoundSpecificity {
+	if len(pattern.Elements) <= 1 {
+		// Simple pattern, use basic calculation
+		baseSpec := int(getPatternSpecificityBasic(pattern))
+		return CompoundSpecificity{
+			BaseScore:  baseSpec,
+			TotalScore: baseSpec,
+		}
+	}
+	
+	args := pattern.Elements[1:] // Skip function head
+	
+	var baseScore, literalBonus, typeBonus int
+	
+	for _, arg := range args {
+		argSpec := int(getPatternSpecificityBasic(arg))
+		baseScore += argSpec
+		
+		// Bonus scoring
+		if isLiteral(arg) {
+			literalBonus += argSpec * LiteralBonusMultiplier / 2 // Apply multiplier bonus
+		} else if isSpecificType(arg) {
+			typeBonus += SpecificTypeBonusPoints
+		}
+		
+		// Complexity bonus for each additional argument
+		baseScore += PatternComplexityBonus
+	}
+	
+	totalScore := baseScore + literalBonus + typeBonus
+	
+	return CompoundSpecificity{
+		BaseScore:    baseScore,
+		LiteralBonus: literalBonus,
+		TypeBonus:    typeBonus,
+		TotalScore:   totalScore,
+	}
+}
+
+// DebugPatternSpecificity returns detailed information about pattern specificity calculation
+// This is useful for debugging pattern matching issues and understanding why certain patterns
+// are chosen over others. It returns a human-readable breakdown of the specificity calculation.
+func DebugPatternSpecificity(pattern Expr) string {
+	switch pat := pattern.(type) {
+	case List:
+		if len(pat.Elements) > 1 {
+			// Check if this is a compound pattern
+			if head, ok := pat.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
+				compound := calculateCompoundSpecificity(pat)
+				result := fmt.Sprintf("Pattern: %s\n", pattern.String())
+				result += fmt.Sprintf("Type: Compound Pattern\n")
+				result += fmt.Sprintf("Arguments: %d\n", len(pat.Elements)-1)
+				result += fmt.Sprintf("Base Score: %d\n", compound.BaseScore)
+				result += fmt.Sprintf("Literal Bonus: %d\n", compound.LiteralBonus)
+				result += fmt.Sprintf("Type Bonus: %d\n", compound.TypeBonus)
+				result += fmt.Sprintf("Total Score: %d\n", compound.TotalScore)
+				
+				// Break down individual arguments
+				result += "Argument Analysis:\n"
+				for i, arg := range pat.Elements[1:] {
+					argSpec := getPatternSpecificityBasic(arg)
+					result += fmt.Sprintf("  Arg %d (%s): %d", i+1, arg.String(), argSpec)
+					if isLiteral(arg) {
+						result += " [LITERAL]"
+					} else if isSpecificType(arg) {
+						result += " [SPECIFIC TYPE]"
+					}
+					result += "\n"
+				}
+				return result
+			}
+		}
+		// Simple pattern
+		spec := getPatternSpecificityBasic(pattern)
+		return fmt.Sprintf("Pattern: %s\nType: Simple Pattern\nScore: %d\n", pattern.String(), spec)
+	default:
+		spec := getPatternSpecificityBasic(pattern)
+		return fmt.Sprintf("Pattern: %s\nType: Basic Pattern\nScore: %d\n", pattern.String(), spec)
+	}
+}
+
+// getPatternSpecificityBasic calculates specificity for a single pattern element (non-compound)
+func getPatternSpecificityBasic(pattern Expr) PatternSpecificity {
+	switch pat := pattern.(type) {
+	case Atom:
+		if pat.AtomType == SymbolAtom {
+			symbolName := pat.Value.(string)
+			if isPatternVariable(symbolName) {
+				patternInfo := parsePatternInfo(symbolName)
+				return getPatternVariableSpecificity(patternInfo)
+			}
+			// Regular symbol (should not occur in patterns, but handle it)
+			return SpecificityLiteral
+		}
+		// Literal atom (number, string, boolean)
+		return SpecificityLiteral
+	case List:
+		// Handle symbolic Pattern expressions: Pattern(x, Blank(...))
+		if len(pat.Elements) >= 3 && pat.Elements[0].String() == "Pattern" {
+			// This is Pattern(variable, BlankType) - analyze the blank type
+			blankExpr := pat.Elements[2]
+			return getBlankExprSpecificity(blankExpr)
+		}
+		// For lists in basic calculation, return minimal specificity
+		return SpecificityGeneral
+	default:
+		return SpecificityGeneral
+	}
+}
 
 // matchBlankExpression matches a blank expression against an expression
 func (e *Evaluator) matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
@@ -307,17 +472,7 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 func getPatternSpecificity(pattern Expr) PatternSpecificity {
 	switch pat := pattern.(type) {
 	case Atom:
-		if pat.AtomType == SymbolAtom {
-			symbolName := pat.Value.(string)
-			if isPatternVariable(symbolName) {
-				patternInfo := parsePatternInfo(symbolName)
-				return getPatternVariableSpecificity(patternInfo)
-			}
-			// Regular symbol (should not occur in patterns, but handle it)
-			return SpecificityLiteral
-		}
-		// Literal atom (number, string, boolean)
-		return SpecificityLiteral
+		return getPatternSpecificityBasic(pattern)
 	case List:
 		// Handle symbolic Pattern expressions: Pattern(x, Blank(...))
 		if len(pat.Elements) >= 3 && pat.Elements[0].String() == "Pattern" {
@@ -325,28 +480,19 @@ func getPatternSpecificity(pattern Expr) PatternSpecificity {
 			blankExpr := pat.Elements[2]
 			return getBlankExprSpecificity(blankExpr)
 		}
-
-		// Structured pattern like Plus(x_, y_) - calculate based on elements
-		if len(pat.Elements) == 0 {
-			return SpecificityLiteral // Empty list
-		}
-
-		// Head must be literal for structured patterns
-		headSpecificity := getPatternSpecificity(pat.Elements[0])
-		if headSpecificity != SpecificityLiteral {
-			// Head is not literal, this is not a valid structured pattern
-			return SpecificityGeneral
-		}
-
-		// Specificity is based on the least specific parameter
-		minSpecificity := SpecificityLiteral
-		for i := 1; i < len(pat.Elements); i++ {
-			paramSpecificity := getPatternSpecificity(pat.Elements[i])
-			if paramSpecificity < minSpecificity {
-				minSpecificity = paramSpecificity
+		
+		// Compound pattern like Plus(x_, y_) - use compound specificity calculation
+		if len(pat.Elements) > 1 {
+			// Check if head is a function name (symbol literal)
+			if head, ok := pat.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
+				// This is a compound pattern - use compound specificity
+				compound := calculateCompoundSpecificity(pat)
+				return PatternSpecificity(compound.TotalScore)
 			}
 		}
-		return minSpecificity
+		
+		// Simple list pattern
+		return getPatternSpecificityBasic(pattern)
 	default:
 		return SpecificityGeneral
 	}

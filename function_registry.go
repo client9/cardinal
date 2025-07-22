@@ -100,12 +100,12 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		return fmt.Errorf("cannot extract function name from pattern: %v", err)
 	}
 
-	// Create function definition with symbolic pattern
+	// Create function definition with symbolic pattern using compound specificity
 	funcDef := FunctionDef{
 		Pattern:     symbolicPattern,
 		Body:        nil,
 		GoImpl:      impl,
-		Specificity: calculatePatternSpecificity(symbolicPattern),
+		Specificity: int(getPatternSpecificity(symbolicPattern)),
 		IsBuiltin:   true,
 	}
 
@@ -134,12 +134,12 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 
 	// fmt.Printf("DEBUG: RegisterUserFunction: function=%s, pattern=%v, body=%v\\n", functionName, pattern, body)
 
-	// Create function definition
+	// Create function definition using compound specificity
 	funcDef := FunctionDef{
 		Pattern:     pattern,
 		Body:        body,
 		GoImpl:      nil,
-		Specificity: calculatePatternSpecificity(pattern),
+		Specificity: int(getPatternSpecificity(pattern)),
 		IsBuiltin:   false,
 	}
 
@@ -233,7 +233,7 @@ func (r *FunctionRegistry) RegisterFunction(functionName string, pattern Expr, i
 		Pattern:     pattern,
 		Body:        nil,
 		GoImpl:      implementation,
-		Specificity: calculatePatternSpecificity(pattern),
+		Specificity: int(getPatternSpecificity(pattern)),
 		IsBuiltin:   false,
 	}
 
@@ -663,8 +663,9 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 	return false
 }
 
-// calculatePatternSpecificity calculates the specificity score for a pattern
+// calculatePatternSpecificity calculates the specificity score for a pattern (deprecated)
 // Higher scores indicate more specific patterns
+// Use getPatternSpecificity directly for new code
 func calculatePatternSpecificity(pattern Expr) int {
 	return int(getPatternSpecificity(pattern))
 }
