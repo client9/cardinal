@@ -13,4 +13,6 @@ test:
 	go test
 
 clean:
+	rm -f repl cmd/repl/repl
+	rm -f wrapgen
 	rm -f *.bak*

@@ -12,15 +12,15 @@ import (
 
 // FunctionSpec defines a function and its pattern for wrapper generation
 type FunctionSpec struct {
-	Pattern      string   // "Plus(x__Integer)"
-	FunctionName string   // "PlusIntegers" 
-	WrapperName  string   // "WrapPlusIntegers"
-	OutputFile   string   // "arithmetic_wrappers.go" - can split functions across files
+	Pattern      string // "Plus(x__Integer)"
+	FunctionName string // "PlusIntegers"
+	WrapperName  string // "WrapPlusIntegers"
+	OutputFile   string // "arithmetic_wrappers.go" - can split functions across files
 	IsVariadic   bool
 	ParamType    string   // For variadic: "int64", "float64", etc.
 	ParamTypes   []string // For fixed arity: ["Expr", "Expr"] or ["float64", "int64"]
 	ReturnType   string
-	ReturnsError bool     // If true, function returns (T, error) and wrapper handles error cases
+	ReturnsError bool // If true, function returns (T, error) and wrapper handles error cases
 }
 
 // FunctionGroup groups functions by output file
@@ -34,7 +34,7 @@ var functionSpecs = []FunctionSpec{
 	// Arithmetic functions -> arithmetic_wrappers.go
 	{
 		Pattern:      "Plus(x__Integer)",
-		FunctionName: "PlusIntegers", 
+		FunctionName: "PlusIntegers",
 		WrapperName:  "WrapPlusIntegers",
 		OutputFile:   "arithmetic_wrappers.go",
 		IsVariadic:   true,
@@ -43,7 +43,7 @@ var functionSpecs = []FunctionSpec{
 	},
 	{
 		Pattern:      "Plus(x__Real)",
-		FunctionName: "PlusReals", 
+		FunctionName: "PlusReals",
 		WrapperName:  "WrapPlusReals",
 		OutputFile:   "arithmetic_wrappers.go",
 		IsVariadic:   true,
@@ -53,7 +53,7 @@ var functionSpecs = []FunctionSpec{
 	{
 		Pattern:      "Times(x__Integer)",
 		FunctionName: "TimesIntegers",
-		WrapperName:  "WrapTimesIntegers", 
+		WrapperName:  "WrapTimesIntegers",
 		OutputFile:   "arithmetic_wrappers.go",
 		IsVariadic:   true,
 		ParamType:    "int64",
@@ -62,7 +62,7 @@ var functionSpecs = []FunctionSpec{
 	{
 		Pattern:      "Times(x__Real)",
 		FunctionName: "TimesReals",
-		WrapperName:  "WrapTimesReals", 
+		WrapperName:  "WrapTimesReals",
 		OutputFile:   "arithmetic_wrappers.go",
 		IsVariadic:   true,
 		ParamType:    "float64",
@@ -79,7 +79,7 @@ var functionSpecs = []FunctionSpec{
 	},
 	{
 		Pattern:      "Times(x__Number)",
-		FunctionName: "TimesNumbers", 
+		FunctionName: "TimesNumbers",
 		WrapperName:  "WrapTimesNumbers",
 		OutputFile:   "arithmetic_wrappers.go",
 		IsVariadic:   true,
@@ -87,7 +87,7 @@ var functionSpecs = []FunctionSpec{
 		ReturnType:   "float64",
 	},
 	{
-		Pattern:      "Power(base_Real, exp_Integer)", 
+		Pattern:      "Power(base_Real, exp_Integer)",
 		FunctionName: "PowerReal",
 		WrapperName:  "WrapPowerReal",
 		OutputFile:   "arithmetic_wrappers.go",
@@ -143,7 +143,7 @@ var functionSpecs = []FunctionSpec{
 		ReturnType:   "float64",
 		ReturnsError: true,
 	},
-	
+
 	// Comparison functions -> comparison_wrappers.go
 	{
 		Pattern:      "Equal(x_, y_)",
@@ -217,7 +217,7 @@ var functionSpecs = []FunctionSpec{
 		ParamTypes:   []string{"Expr", "Expr"},
 		ReturnType:   "bool",
 	},
-	
+
 	// Type predicate functions -> type_predicate_wrappers.go
 	{
 		Pattern:      "IntegerQ(x_)",
@@ -327,7 +327,7 @@ var functionSpecs = []FunctionSpec{
 		ParamTypes:   []string{"Expr"},
 		ReturnType:   "int64",
 	},
-	
+
 	// String functions -> string_wrappers.go
 	{
 		Pattern:      "StringLength(x_String)",
@@ -338,7 +338,7 @@ var functionSpecs = []FunctionSpec{
 		ParamTypes:   []string{"string"},
 		ReturnType:   "int64",
 	},
-	
+
 	// List access functions -> list_access_wrappers.go
 	{
 		Pattern:      "First(x_List)",
@@ -376,7 +376,7 @@ var functionSpecs = []FunctionSpec{
 		ParamTypes:   []string{"List"},
 		ReturnType:   "Expr",
 	},
-	
+
 	// Association functions -> association_wrappers.go
 	{
 		Pattern:      "Association(x___Rule)",
@@ -414,7 +414,7 @@ var functionSpecs = []FunctionSpec{
 		ParamTypes:   []string{"ObjectExpr"},
 		ReturnType:   "Expr",
 	},
-	
+
 	// Logical functions -> logical_wrappers.go
 	{
 		Pattern:      "Not(x_)",
@@ -425,7 +425,7 @@ var functionSpecs = []FunctionSpec{
 		ParamTypes:   []string{"Expr"},
 		ReturnType:   "Expr",
 	},
-	
+
 	// Part functions -> part_wrappers.go
 	{
 		Pattern:      "Part(x_List, i_Integer)",
@@ -478,18 +478,18 @@ func main() {
 		fmt.Printf("Generated %d wrappers in %s\n", len(group.Functions), outputPath)
 		totalFunctions += len(group.Functions)
 	}
-	
+
 	fmt.Printf("Total: %d wrappers across %d files\n", totalFunctions, len(groups))
 }
 
 // groupFunctionsByFile groups function specs by their output file
 func groupFunctionsByFile(specs []FunctionSpec) []FunctionGroup {
 	fileMap := make(map[string][]FunctionSpec)
-	
+
 	for _, spec := range specs {
 		fileMap[spec.OutputFile] = append(fileMap[spec.OutputFile], spec)
 	}
-	
+
 	var groups []FunctionGroup
 	for outputFile, functions := range fileMap {
 		groups = append(groups, FunctionGroup{
@@ -497,7 +497,7 @@ func groupFunctionsByFile(specs []FunctionSpec) []FunctionGroup {
 			Functions:  functions,
 		})
 	}
-	
+
 	return groups
 }
 

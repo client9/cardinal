@@ -98,7 +98,7 @@ func TestRecursionPrevention_SimpleCase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse error for pattern: %v", err)
 	}
-	
+
 	body, err := ParseString("f(Plus(x, 1))")
 	if err != nil {
 		t.Fatalf("Parse error for body: %v", err)

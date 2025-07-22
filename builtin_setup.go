@@ -64,8 +64,8 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 		// Order matters: more specific patterns first, general fallback last
 
 		// Empty arithmetic operations - direct function mappings for identity values
-		"Plus()":  func(args []Expr, ctx *Context) Expr { return PlusEmpty() },   // Additive identity: 0
-		"Times()": func(args []Expr, ctx *Context) Expr { return TimesEmpty() },  // Multiplicative identity: 1
+		"Plus()":  func(args []Expr, ctx *Context) Expr { return PlusEmpty() },  // Additive identity: 0
+		"Times()": func(args []Expr, ctx *Context) Expr { return TimesEmpty() }, // Multiplicative identity: 1
 
 		// Fast paths for homogeneous types
 		"Plus(x__Integer)":  WrapPlusIntegers,  // Fast integer-only addition

@@ -405,7 +405,7 @@ func getTypeSpecificity(typeName string) PatternSpecificity {
 			return SpecificityBuiltinSpecific
 		}
 	}
-	
+
 	// General builtin types (less specific)
 	generalTypes := []string{"Number", "Numeric"}
 	for _, general := range generalTypes {
@@ -413,7 +413,7 @@ func getTypeSpecificity(typeName string) PatternSpecificity {
 			return SpecificityBuiltinGeneral
 		}
 	}
-	
+
 	// Custom types (like Uint64, Color, Point, etc.)
 	return SpecificityCustomType
 }
