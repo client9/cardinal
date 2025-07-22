@@ -10,35 +10,35 @@ type Precedence int
 
 const (
 	_ Precedence = iota
-	LOWEST
-	ASSIGN      // =, :=, =.
-	LOGICAL_OR  // ||
-	LOGICAL_AND // &&
-	EQUALITY    // ==, !=
-	COMPARISON  // <, >, <=, >=
-	SUM         // +, -
-	PRODUCT     // *, /
-	PREFIX      // -x, +x
+	PrecedenceLowest
+	PrecedenceAssign     // =, :=, =.
+	PrecedenceLogicalOr  // ||
+	PrecedenceLogicalAnd // &&
+	PrecedenceEquality   // ==, !=
+	PrecedenceComparison // <, >, <=, >=
+	PrecedenceSum        // +, -
+	PrecedenceProduct    // *, /
+	PrecedencePrefix     // -x, +x
 )
 
 var precedences = map[TokenType]Precedence{
-	SET:          ASSIGN,
-	SETDELAYED:   ASSIGN,
-	UNSET:        ASSIGN,
-	OR:           LOGICAL_OR,
-	AND:          LOGICAL_AND,
-	EQUAL:        EQUALITY,
-	UNEQUAL:      EQUALITY,
-	SAMEQ:        EQUALITY,
-	UNSAMEQ:      EQUALITY,
-	LESS:         COMPARISON,
-	GREATER:      COMPARISON,
-	LESSEQUAL:    COMPARISON,
-	GREATEREQUAL: COMPARISON,
-	PLUS:         SUM,
-	MINUS:        SUM,
-	MULTIPLY:     PRODUCT,
-	DIVIDE:       PRODUCT,
+	SET:          PrecedenceAssign,
+	SETDELAYED:   PrecedenceAssign,
+	UNSET:        PrecedenceAssign,
+	OR:           PrecedenceLogicalOr,
+	AND:          PrecedenceLogicalAnd,
+	EQUAL:        PrecedenceEquality,
+	UNEQUAL:      PrecedenceEquality,
+	SAMEQ:        PrecedenceEquality,
+	UNSAMEQ:      PrecedenceEquality,
+	LESS:         PrecedenceComparison,
+	GREATER:      PrecedenceComparison,
+	LESSEQUAL:    PrecedenceComparison,
+	GREATEREQUAL: PrecedenceComparison,
+	PLUS:         PrecedenceSum,
+	MINUS:        PrecedenceSum,
+	MULTIPLY:     PrecedenceProduct,
+	DIVIDE:       PrecedenceProduct,
 }
 
 type Parser struct {
@@ -82,7 +82,7 @@ func (p *Parser) Parse() (Expr, error) {
 }
 
 func (p *Parser) parseExpression() Expr {
-	return p.parseInfixExpression(LOWEST)
+	return p.parseInfixExpression(PrecedenceLowest)
 }
 
 func (p *Parser) parseInfixExpression(precedence Precedence) Expr {
@@ -119,6 +119,8 @@ func (p *Parser) ParseAtom() Expr {
 		p.nextToken()
 	case LBRACKET:
 		expr = p.parseListLiteral()
+	case LBRACE:
+		expr = p.parseAssociationLiteral()
 	case MINUS:
 		expr = p.parsePrefixExpression()
 	case PLUS:
@@ -233,6 +235,79 @@ func (p *Parser) parseListLiteral() Expr {
 	return NewList(elements...)
 }
 
+func (p *Parser) parseAssociationLiteral() Expr {
+	p.nextToken() // consume '{'
+
+	// Create rules slice for Rule[key, value] expressions
+	var rules []Expr
+
+	// Handle empty association {}
+	if p.currentToken.Type == RBRACE {
+		p.nextToken() // consume '}'
+		// Create Association function call with no arguments for empty association
+		return NewList(NewSymbolAtom("Association"))
+	}
+
+	// Parse key-value pairs as Rule[key, value]
+	for {
+		// Parse the key
+		key := p.parseExpression()
+		if key == nil {
+			break
+		}
+
+		// Expect colon
+		if p.currentToken.Type != COLON {
+			p.addError(fmt.Sprintf("expected ':', got %s", p.currentToken.String()))
+			break
+		}
+		p.nextToken() // consume ':'
+
+		// Parse the value
+		value := p.parseExpression()
+		if value == nil {
+			break
+		}
+
+		// Create Rule[key, value] expression
+		rule := NewList(NewSymbolAtom("Rule"), key, value)
+		rules = append(rules, rule)
+
+		// Check for closing brace
+		if p.currentToken.Type == RBRACE {
+			p.nextToken() // consume '}'
+			break
+		}
+
+		// Check for comma separator
+		if p.currentToken.Type == COMMA {
+			p.nextToken() // consume ','
+
+			// Handle optional trailing comma: {a: 1, b: 2,}
+			if p.currentToken.Type == RBRACE {
+				p.nextToken() // consume '}'
+				break
+			}
+			continue
+		}
+
+		// Handle EOF
+		if p.currentToken.Type == EOF {
+			p.addError("unexpected EOF, expected '}'")
+			break
+		}
+
+		// Unexpected token
+		p.addError(fmt.Sprintf("expected ',' or '}', got %s", p.currentToken.String()))
+		p.nextToken()
+	}
+
+	// Create Association function call with Rule expressions
+	elements := []Expr{NewSymbolAtom("Association")}
+	elements = append(elements, rules...)
+	return NewList(elements...)
+}
+
 func (p *Parser) parseInteger() Expr {
 	value, err := strconv.Atoi(p.currentToken.Value)
 	if err != nil {
@@ -295,14 +370,14 @@ func (p *Parser) peekPrecedence() Precedence {
 	if prec, ok := precedences[p.peekToken.Type]; ok {
 		return prec
 	}
-	return LOWEST
+	return PrecedenceLowest
 }
 
 func (p *Parser) currentPrecedence() Precedence {
 	if prec, ok := precedences[p.currentToken.Type]; ok {
 		return prec
 	}
-	return LOWEST
+	return PrecedenceLowest
 }
 
 func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
@@ -333,7 +408,7 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 func (p *Parser) parsePrefixExpression() Expr {
 	operator := p.currentToken
 	p.nextToken()
-	right := p.parseInfixExpression(PREFIX)
+	right := p.parseInfixExpression(PrecedencePrefix)
 
 	return p.createPrefixExpr(operator.Type, right)
 }

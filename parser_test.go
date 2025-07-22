@@ -536,9 +536,9 @@ func TestParser_ErrorHandling(t *testing.T) {
 			expectedError: "expected ',' or ')', got ILLEGAL(@)",
 		},
 		{
-			name:          "unsupported brace syntax",
+			name:          "unclosed brace syntax",
 			input:         "{",
-			expectedError: "unexpected token: LBRACE",
+			expectedError: "unexpected token: EOF",
 		},
 		{
 			name:          "unclosed list literal",

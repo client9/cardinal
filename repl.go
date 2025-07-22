@@ -65,14 +65,21 @@ func (r *REPL) Run() error {
 
 	// Print welcome message only in interactive mode (when stdin is a terminal)
 	if r.isInteractive() {
-		fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
-		fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n\n")
+		_, _ = fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
+		_, _ = fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n")
+		_, _ = fmt.Fprintf(r.output, "Multi-line expressions are supported - they'll be evaluated when complete\n\n")
 	}
+
+	var currentExpr strings.Builder
 
 	for {
 		// Print prompt only in interactive mode
 		if r.isInteractive() {
-			fmt.Fprint(r.output, r.prompt)
+			if currentExpr.Len() == 0 {
+				_, _ = fmt.Fprint(r.output, r.prompt)
+			} else {
+				_, _ = fmt.Fprint(r.output, "   ... ")
+			}
 		}
 
 		// Read input
@@ -82,19 +89,41 @@ func (r *REPL) Run() error {
 
 		line := strings.TrimSpace(scanner.Text())
 
-		// Handle empty input
+		// Handle empty input - continue building expression if we have one
 		if line == "" {
-			continue
+			if currentExpr.Len() == 0 {
+				continue
+			}
+			// For multi-line expressions, empty line doesn't reset
+		} else {
+			// Handle special commands only if we're not building an expression
+			if currentExpr.Len() == 0 && r.handleSpecialCommands(line) {
+				continue
+			}
+
+			// Add line to current expression
+			if currentExpr.Len() > 0 {
+				currentExpr.WriteString(" ")
+			}
+			currentExpr.WriteString(line)
 		}
 
-		// Handle special commands
-		if r.handleSpecialCommands(line) {
-			continue
+		// Try to parse and evaluate the current expression
+		if currentExpr.Len() > 0 {
+			expr := currentExpr.String()
+			if r.tryProcessExpression(expr) {
+				// Successfully processed, reset for next expression
+				currentExpr.Reset()
+			}
+			// If parsing failed, continue accumulating lines
 		}
+	}
 
-		// Parse and evaluate
-		if err := r.processLine(line); err != nil {
-			fmt.Fprintf(r.output, "Error: %v\n", err)
+	// Handle any incomplete expression at the end
+	if currentExpr.Len() > 0 {
+		expr := currentExpr.String()
+		if err := r.processLine(expr); err != nil {
+			_, _ = fmt.Fprintf(r.output, "Error: %v\n", err)
 		}
 	}
 
@@ -105,12 +134,30 @@ func (r *REPL) Run() error {
 	return nil
 }
 
+// tryProcessExpression attempts to parse and evaluate an expression
+// Returns true if successful, false if the expression is incomplete
+func (r *REPL) tryProcessExpression(expr string) bool {
+	// Try to parse the expression
+	_, err := ParseString(expr)
+	if err != nil {
+		// Parse failed - expression might be incomplete
+		return false
+	}
+
+	// Parse succeeded, now evaluate it
+	if err := r.processLine(expr); err != nil {
+		_, _ = fmt.Fprintf(r.output, "Error: %v\n", err)
+	}
+
+	return true
+}
+
 // handleSpecialCommands handles special REPL commands
 func (r *REPL) handleSpecialCommands(line string) bool {
 	switch line {
 	case "quit", "exit":
 		if r.isInteractive() {
-			fmt.Fprintf(r.output, "Goodbye!\n")
+			_, _ = fmt.Fprintf(r.output, "Goodbye!\n")
 		}
 		os.Exit(0)
 		return true
@@ -140,14 +187,14 @@ func (r *REPL) processLine(line string) error {
 	result := r.evaluator.Evaluate(expr)
 
 	// Print the result
-	fmt.Fprintf(r.output, "%s\n", result.String())
+	_, _ = fmt.Fprintf(r.output, "%s\n", result.String())
 
 	return nil
 }
 
 // printHelp prints help information
 func (r *REPL) printHelp() {
-	fmt.Fprintf(r.output, `
+	_, _ = fmt.Fprintf(r.output, `
 S-Expression REPL Help
 ======================
 
@@ -189,20 +236,87 @@ func (r *REPL) clearContext() {
 
 // printAttributes prints all symbols with their attributes
 func (r *REPL) printAttributes() {
-	fmt.Fprintf(r.output, "\nSymbols with attributes:\n")
-	fmt.Fprintf(r.output, "=======================\n")
+	_, _ = fmt.Fprintf(r.output, "\nSymbols with attributes:\n")
+	_, _ = fmt.Fprintf(r.output, "=======================\n")
 
 	symbols := r.evaluator.context.symbolTable.AllSymbolsWithAttributes()
 	if len(symbols) == 0 {
-		fmt.Fprintf(r.output, "No symbols with attributes found.\n")
+		_, _ = fmt.Fprintf(r.output, "No symbols with attributes found.\n")
 		return
 	}
 
 	for _, symbol := range symbols {
 		attrs := r.evaluator.context.symbolTable.Attributes(symbol)
-		fmt.Fprintf(r.output, "%-15s: %s\n", symbol, AttributesToString(attrs))
+		_, _ = fmt.Fprintf(r.output, "%-15s: %s\n", symbol, AttributesToString(attrs))
 	}
-	fmt.Fprintf(r.output, "\n")
+	_, _ = fmt.Fprintf(r.output, "\n")
+}
+
+// exprInfo represents a parsed expression with its location information
+type exprInfo struct {
+	text      string // The complete expression text
+	startLine int    // Line number where the expression starts (1-based)
+}
+
+// parseFileContent parses file content into complete expressions, handling multi-line expressions
+func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
+	var expressions []exprInfo
+	var currentExpr strings.Builder
+	var startLine int
+
+	lines := strings.Split(content, "\n")
+	lineNum := 0
+
+	for lineNum < len(lines) {
+		lineNum++
+		line := strings.TrimSpace(lines[lineNum-1])
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Start a new expression
+		if currentExpr.Len() == 0 {
+			startLine = lineNum
+		}
+
+		// Add the current line to the expression
+		if currentExpr.Len() > 0 {
+			currentExpr.WriteString(" ")
+		}
+		currentExpr.WriteString(line)
+
+		// Try to parse the current accumulated expression
+		_, err := ParseString(currentExpr.String())
+		if err == nil {
+			// Successfully parsed - we have a complete expression
+			expressions = append(expressions, exprInfo{
+				text:      currentExpr.String(),
+				startLine: startLine,
+			})
+			currentExpr.Reset()
+		} else {
+			// Parse failed - this might be a multi-line expression
+			// Continue accumulating lines until we get a complete expression
+			// or reach end of file
+		}
+	}
+
+	// Check if we have an incomplete expression at the end
+	if currentExpr.Len() > 0 {
+		// Try to parse one more time
+		_, err := ParseString(currentExpr.String())
+		if err != nil {
+			return nil, fmt.Errorf("incomplete expression starting at line %d: %v", startLine, err)
+		}
+		expressions = append(expressions, exprInfo{
+			text:      currentExpr.String(),
+			startLine: startLine,
+		})
+	}
+
+	return expressions, nil
 }
 
 // EvaluateString is a convenience function for evaluating a string expression
@@ -229,28 +343,25 @@ func (r *REPL) ExecuteFile(filename string) error {
 		return fmt.Errorf("failed to read file: %v", err)
 	}
 
-	// Split into lines and process each one
-	lines := strings.Split(string(content), "\n")
+	// Parse expressions from file content, handling multi-line expressions
+	expressions, err := r.parseFileContent(string(content))
+	if err != nil {
+		return err
+	}
 
-	for lineNum, line := range lines {
-		line = strings.TrimSpace(line)
-
-		// Skip empty lines and comments
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
+	// Execute each complete expression
+	for i, exprInfo := range expressions {
 		// Show what we're executing
-		fmt.Fprintf(r.output, "In(%d): %s\n", lineNum+1, line)
+		_, _ = fmt.Fprintf(r.output, "In(%d): %s\n", i+1, exprInfo.text)
 
-		// Execute the line
-		result, err := r.EvaluateString(line)
+		// Execute the expression
+		result, err := r.EvaluateString(exprInfo.text)
 		if err != nil {
-			return fmt.Errorf("error at line %d: %v", lineNum+1, err)
+			return fmt.Errorf("error at expression %d (line %d): %v", i+1, exprInfo.startLine, err)
 		}
 
 		// Show the result
-		fmt.Fprintf(r.output, "Out(%d): %s\n", lineNum+1, result)
+		_, _ = fmt.Fprintf(r.output, "Out(%d): %s\n", i+1, result)
 	}
 
 	return nil

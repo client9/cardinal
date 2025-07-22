@@ -18,6 +18,7 @@ const (
 	LBRACE
 	RBRACE
 	COMMA
+	COLON
 	PLUS
 	MINUS
 	MULTIPLY
@@ -71,6 +72,8 @@ func (t Token) String() string {
 		return "RBRACE"
 	case COMMA:
 		return "COMMA"
+	case COLON:
+		return "COLON"
 	case PLUS:
 		return "PLUS"
 	case MINUS:
@@ -288,7 +291,7 @@ func (l *Lexer) NextToken() Token {
 			l.readChar() // consume '='
 			return tok
 		} else {
-			tok = Token{Type: ILLEGAL, Value: string(l.ch), Position: l.position - 1}
+			tok = Token{Type: COLON, Value: string(l.ch), Position: l.position - 1}
 		}
 	case '!':
 		if l.peekChar() == '=' {

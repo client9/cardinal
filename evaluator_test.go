@@ -7,7 +7,7 @@ import (
 // setupTestEvaluator creates an evaluator with built-in attributes for testing
 func setupTestEvaluator() *Evaluator {
 	eval := NewEvaluator()
-	setupBuiltinAttributes(eval.context.symbolTable)
+	// Built-in attributes are already set up in NewEvaluator()
 	return eval
 }
 

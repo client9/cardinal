@@ -384,7 +384,7 @@ func TestStringFunctions_Integration(t *testing.T) {
 		{
 			name:     "StringLength on non-string",
 			input:    "StringLength(42)",
-			expected: "$Failed(ArgumentError)",
+			expected: "StringLength(42)", // Pattern doesn't match, returns unchanged
 		},
 
 		// FullForm tests

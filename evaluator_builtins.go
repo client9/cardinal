@@ -315,8 +315,8 @@ func EvaluateSameQ(args []Expr) Expr {
 			fmt.Sprintf("SameQ expects 2 arguments, got %d", len(args)), args)
 	}
 
-	// SameQ is stricter than Equal - requires identical representation
-	return NewBoolAtom(args[0].String() == args[1].String() && args[0].Type() == args[1].Type())
+	// SameQ requires structural equality
+	return NewBoolAtom(args[0].Equal(args[1]))
 }
 
 // EvaluateUnsameQ evaluates UnsameQ[a, b] expressions
@@ -373,6 +373,8 @@ func EvaluateHead(args []Expr) Expr {
 		}
 	case *ErrorExpr:
 		head = "Error"
+	case ObjectExpr:
+		head = ex.TypeName
 	default:
 		head = "Unknown"
 	}
@@ -567,6 +569,15 @@ func EvaluateLength(args []Expr) Expr {
 			return NewIntAtom(0) // Empty list has length 0
 		}
 		return NewIntAtom(len(ex.Elements) - 1) // Subtract 1 for the head
+	case ObjectExpr:
+		// Handle Association
+		if ex.TypeName == "Association" {
+			if assocValue, ok := ex.Value.(AssociationValue); ok {
+				return NewIntAtom(assocValue.Len())
+			}
+		}
+		// For other ObjectExpr types, length is 0
+		return NewIntAtom(0)
 	default:
 		// For atoms and other expressions, length is 0
 		return NewIntAtom(0)
@@ -613,6 +624,19 @@ func EvaluateIntegerQ(args []Expr) Expr {
 
 	if atom, ok := args[0].(Atom); ok {
 		return NewBoolAtom(atom.AtomType == IntAtom)
+	}
+	return NewBoolAtom(false)
+}
+
+// EvaluateFloatQ evaluates FloatQ[expr] expressions - returns True if expression is a float
+func EvaluateFloatQ(args []Expr) Expr {
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("FloatQ expects 1 argument, got %d", len(args)), args)
+	}
+
+	if atom, ok := args[0].(Atom); ok {
+		return NewBoolAtom(atom.AtomType == FloatAtom)
 	}
 	return NewBoolAtom(false)
 }
@@ -688,6 +712,29 @@ func EvaluateFullForm(args []Expr) Expr {
 
 	// Return the string representation as a string atom
 	return NewStringAtom(expr.String())
+}
+
+// EvaluateInputForm evaluates InputForm[expr] expressions - returns the user-friendly InputForm representation of the expression
+func EvaluateInputForm(args []Expr) Expr {
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("InputForm expects 1 argument, got %d", len(args)), args)
+	}
+
+	expr := args[0]
+
+	// Convert pattern strings to their symbolic form before getting InputForm representation
+	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
+		symbolStr := atom.Value.(string)
+		if isPatternVariable(symbolStr) {
+			// Convert pattern string to symbolic form
+			symbolicExpr := ConvertPatternStringToSymbolic(symbolStr)
+			return NewStringAtom(symbolicExpr.InputForm())
+		}
+	}
+
+	// Return the InputForm representation as a string atom
+	return NewStringAtom(expr.InputForm())
 }
 
 // EvaluateFirst evaluates First[expr] expressions - returns the first element after the head, if any
@@ -803,31 +850,43 @@ func EvaluatePart(args []Expr) Expr {
 	expr := args[0]
 	indexExpr := args[1]
 
-	// Extract integer index - handle both direct integers and Minus[n] expressions
-	var index int
-	if indexAtom, ok := indexExpr.(Atom); ok && indexAtom.AtomType == IntAtom {
-		// Direct integer atom
-		index = indexAtom.Value.(int)
-	} else if indexList, ok := indexExpr.(List); ok && len(indexList.Elements) == 2 {
-		// Check for Minus[n] pattern (negative number)
-		if headAtom, ok := indexList.Elements[0].(Atom); ok &&
-			headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "Minus" {
-			if valueAtom, ok := indexList.Elements[1].(Atom); ok && valueAtom.AtomType == IntAtom {
-				index = -valueAtom.Value.(int)
+	// Handle Association access first (key-based)
+	if objExpr, ok := expr.(ObjectExpr); ok && objExpr.TypeName == "Association" {
+		if assocValue, ok := objExpr.Value.(AssociationValue); ok {
+			// For associations, use the index argument as a key
+			if value, exists := assocValue.Get(indexExpr); exists {
+				return value
+			}
+			return NewErrorExpr("PartError",
+				fmt.Sprintf("Key %s not found in association", indexExpr.String()), args)
+		}
+	}
+
+	// Handle List access (integer-based indexing)
+	if list, ok := expr.(List); ok {
+		// Extract integer index - handle both direct integers and Minus[n] expressions
+		var index int
+		if indexAtom, ok := indexExpr.(Atom); ok && indexAtom.AtomType == IntAtom {
+			// Direct integer atom
+			index = indexAtom.Value.(int)
+		} else if indexList, ok := indexExpr.(List); ok && len(indexList.Elements) == 2 {
+			// Check for Minus[n] pattern (negative number)
+			if headAtom, ok := indexList.Elements[0].(Atom); ok &&
+				headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "Minus" {
+				if valueAtom, ok := indexList.Elements[1].(Atom); ok && valueAtom.AtomType == IntAtom {
+					index = -valueAtom.Value.(int)
+				} else {
+					return NewErrorExpr("PartError",
+						fmt.Sprintf("Part index must be an integer for lists, got %s", indexExpr.String()), args)
+				}
 			} else {
 				return NewErrorExpr("PartError",
-					fmt.Sprintf("Part index must be an integer, got %s", indexExpr.String()), args)
+					fmt.Sprintf("Part index must be an integer for lists, got %s", indexExpr.String()), args)
 			}
 		} else {
 			return NewErrorExpr("PartError",
-				fmt.Sprintf("Part index must be an integer, got %s", indexExpr.String()), args)
+				fmt.Sprintf("Part index must be an integer for lists, got %s", indexExpr.String()), args)
 		}
-	} else {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.String()), args)
-	}
-
-	if list, ok := expr.(List); ok {
 		// For lists, return the element at the specified index (1-based)
 		if len(list.Elements) <= 1 {
 			return NewErrorExpr("PartError",
@@ -858,9 +917,9 @@ func EvaluatePart(args []Expr) Expr {
 		return list.Elements[actualIndex]
 	}
 
-	// For atoms, Part is not defined
+	// For atoms and other expressions, Part is not defined
 	return NewErrorExpr("PartError",
-		fmt.Sprintf("Part: expression %s is not a list", expr.String()), args)
+		fmt.Sprintf("Part: expression %s is not a list or association", expr.String()), args)
 }
 
 // EvaluateSetAttributes evaluates SetAttributes[symbol, attrs] expressions - sets attributes for a symbol
@@ -1063,4 +1122,85 @@ func parseAttribute(attrName string) (Attribute, error) {
 	default:
 		return HoldAll, fmt.Errorf("unknown attribute: %s", attrName)
 	}
+}
+
+// EvaluateAssociation evaluates Association[...] expressions - creates association objects
+func EvaluateAssociation(args []Expr) Expr {
+	assocValue := NewAssociationValue()
+
+	// Process each argument as a Rule[key, value] expression
+	for _, arg := range args {
+		if ruleList, ok := arg.(List); ok && len(ruleList.Elements) == 3 {
+			// Check if this is Rule[key, value]
+			if headAtom, ok := ruleList.Elements[0].(Atom); ok &&
+				headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "Rule" {
+
+				key := ruleList.Elements[1]
+				value := ruleList.Elements[2]
+				assocValue = assocValue.Set(key, value) // Now returns new association
+				continue
+			}
+		}
+
+		// Invalid argument - not a Rule
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("Association expects Rule expressions, got %s", arg.String()), args)
+	}
+
+	return NewObjectExpr("Association", assocValue)
+}
+
+// EvaluateAssociationQ evaluates AssociationQ[expr] expressions - returns True if expression is an Association
+func EvaluateAssociationQ(args []Expr) Expr {
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("AssociationQ expects 1 argument, got %d", len(args)), args)
+	}
+
+	if objExpr, ok := args[0].(ObjectExpr); ok && objExpr.TypeName == "Association" {
+		return NewSymbolAtom("True")
+	}
+	return NewSymbolAtom("False")
+}
+
+// EvaluateKeys evaluates Keys[assoc] expressions - returns the keys of an association
+func EvaluateKeys(args []Expr) Expr {
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("Keys expects 1 argument, got %d", len(args)), args)
+	}
+
+	if objExpr, ok := args[0].(ObjectExpr); ok && objExpr.TypeName == "Association" {
+		if assocValue, ok := objExpr.Value.(AssociationValue); ok {
+			keys := assocValue.Keys()
+			// Return as List[key1, key2, ...]
+			elements := []Expr{NewSymbolAtom("List")}
+			elements = append(elements, keys...)
+			return NewList(elements...)
+		}
+	}
+
+	return NewErrorExpr("ArgumentError",
+		fmt.Sprintf("Keys expects an Association, got %s", args[0].String()), args)
+}
+
+// EvaluateValues evaluates Values[assoc] expressions - returns the values of an association
+func EvaluateValues(args []Expr) Expr {
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("Values expects 1 argument, got %d", len(args)), args)
+	}
+
+	if objExpr, ok := args[0].(ObjectExpr); ok && objExpr.TypeName == "Association" {
+		if assocValue, ok := objExpr.Value.(AssociationValue); ok {
+			values := assocValue.Values()
+			// Return as List[value1, value2, ...]
+			elements := []Expr{NewSymbolAtom("List")}
+			elements = append(elements, values...)
+			return NewList(elements...)
+		}
+	}
+
+	return NewErrorExpr("ArgumentError",
+		fmt.Sprintf("Values expects an Association, got %s", args[0].String()), args)
 }

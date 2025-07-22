@@ -39,9 +39,60 @@ MatchQ[expr, pattern]
 | Our Syntax | Mathematica | Description |
 |------------|-------------|-------------|
 | `List(1, 2, 3)` | `{1, 2, 3}` or `List[1, 2, 3]` | List of elements |
-| `List()` | `{}` or `List[]` | Empty list |
+| `[1, 2, 3]` | `{1, 2, 3}` | List literal shorthand |
+| `List()` or `[]` | `{}` or `List[]` | Empty list |
 
-**Note**: Mathematica has shorthand `{1, 2, 3}` for lists, we always use `List(...)`.
+### Associations (Modern Map/Dict Syntax)
+| Our Syntax | Mathematica | Description |
+|------------|-------------|-------------|
+| `{key: value}` | `<\|key -> value\|>` | Association with one pair |
+| `{name: "Bob", age: 30}` | `<\|"name" -> "Bob", "age" -> 30\|>` | Multiple key-value pairs |
+| `{}` | `<\|\|>` | Empty association |
+
+**Note**: We use modern `{key: value}` syntax like JavaScript/JSON, while Mathematica uses `<|key -> value|>`.
+
+## Multi-line Expressions
+
+Our evaluator supports multi-line expressions both in files and interactive REPL:
+
+### File Support
+```javascript
+# Comments start with #
+{
+  person: {
+    name: "Bob",
+    age: 30
+  },
+  location: {
+    city: "New York", 
+    state: "NY"
+  }
+}
+
+# Multi-line function calls  
+Plus(
+  1,
+  2,
+  3
+)
+```
+
+### Interactive REPL
+```
+sexpr> {
+   ... name: "Bob",
+   ... age: 30
+   ... }
+{name: "Bob", age: 30}
+
+sexpr> Plus(
+   ... 1,
+   ... 2
+   ... )
+3
+```
+
+The evaluator automatically detects when expressions are complete and evaluates them.
 
 ## Pattern Syntax
 
@@ -165,6 +216,15 @@ MyFunc[a_, b__, c_] ; Same semantics
 | Length | `Length(expr)` | `Length[expr]` | Get expression length |
 | First | `First(expr)` | `First[expr]` | Get first element |
 | Last | `Last(expr)` | `Last[expr]` | Get last element |
+| Part | `Part(expr, index)` | `expr[[index]]` | Access element by index/key |
+
+### Association Functions
+| Function | Our Syntax | Mathematica | Description |
+|----------|------------|-------------|-------------|
+| Association test | `AssociationQ(x)` | `AssociationQ[x]` | Test if association |
+| Get keys | `Keys(assoc)` | `Keys[assoc]` | Get list of keys |
+| Get values | `Values(assoc)` | `Values[assoc]` | Get list of values |
+| Access value | `Part(assoc, key)` | `assoc[key]` | Get value by key |
 
 ### Pattern Matching
 | Function | Our Syntax | Mathematica | Description |
@@ -227,14 +287,84 @@ myMax[x_] := x
 myMax[x_, y_] := If[x > y, x, y]
 ```
 
+### Association Examples
+```javascript
+// Our syntax - modern association syntax
+{name: "Bob", age: 30, active: True}
+Part({name: "Bob", age: 30}, name)     // "Bob"
+Keys({name: "Bob", age: 30})           // List(name, age)
+Values({name: "Bob", age: 30})         // List("Bob", 30)
+Length({name: "Bob", age: 30})         // 2
+
+// Nested associations
+{
+  person: {name: "Bob", age: 30},
+  scores: [85, 92, 78]
+}
+
+// Mathematica equivalent
+<|"name" -> "Bob", "age" -> 30, "active" -> True|>
+assoc["name"]                          (* "Bob" *)
+Keys[assoc]                            (* {"name", "age"} *)
+Values[assoc]                          (* {"Bob", 30} *)
+Length[assoc]                          (* 2 *)
+```
+
+## InputForm vs FullForm
+
+Our evaluator supports two output formats:
+
+### FullForm (String() method)
+- Verbose symbolic representation: `Plus(1, 2)`, `List(1, 2, 3)`
+- Always unambiguous and complete
+- Used for internal representation and debugging
+
+### InputForm (InputForm() method)
+- Compact, user-friendly representation with infix operators and shortcuts
+- Supports operator precedence and automatic parenthesization
+- Resembles common mathematical notation
+
+| Expression | FullForm | InputForm |
+|------------|----------|-----------|
+| Plus(1, 2) | `Plus(1, 2)` | `1 + 2` |
+| Times(3, 4) | `Times(3, 4)` | `3 * 4` |
+| List(1, 2, 3) | `List(1, 2, 3)` | `[1, 2, 3]` |
+| Set(x, 5) | `Set(x, 5)` | `x = 5` |
+| SetDelayed(f, Plus(x, 1)) | `SetDelayed(f, Plus(x, 1))` | `f := x + 1` |
+| Equal(a, b) | `Equal(a, b)` | `a == b` |
+| And(True, False) | `And(True, False)` | `True && False` |
+| Association(Rule(a, b)) | `Association(Rule(a, b))` | `{a: b}` |
+| Plus(1, Times(2, 3)) | `Plus(1, Times(2, 3))` | `1 + 2 * 3` |
+| Times(Plus(1, 2), 3) | `Times(Plus(1, 2), 3)` | `(1 + 2) * 3` |
+
+### Precedence and Parenthesization
+
+InputForm automatically adds parentheses based on operator precedence:
+
+1. **Assignment**: `=`, `:=` (lowest precedence)
+2. **Logical OR**: `||`
+3. **Logical AND**: `&&`
+4. **Equality**: `==`, `!=`, `===`, `=!=`
+5. **Comparison**: `<`, `>`, `<=`, `>=`
+6. **Addition**: `+`, `-`
+7. **Multiplication**: `*`, `/` (highest precedence)
+
+Examples:
+- `Plus(1, Times(2, 3))` → `1 + 2 * 3` (no parentheses needed)
+- `Times(Plus(1, 2), 3)` → `(1 + 2) * 3` (parentheses added)
+- `Set(x, Plus(1, 2))` → `x = 1 + 2` (assignment has lowest precedence)
+
 ## Key Differences Summary
 
 1. **Function Calls**: We use `()`, Mathematica uses `[]`
-2. **Lists**: We use `List(...)`, Mathematica has `{...}` shorthand
-3. **Operators**: We use function calls `Plus(a, b)`, Mathematica has infix `a + b`
-4. **Assignment**: We use `Set(x, y)`, Mathematica uses `x = y`
-5. **Patterns**: Identical syntax and semantics
-6. **Attributes**: Same concepts, slightly different syntax for setting
+2. **Lists**: We support both `List(...)` and `[...]` shorthand, Mathematica uses `{...}`
+3. **Associations**: We use modern `{key: value}` syntax, Mathematica uses `<|key -> value|>`
+4. **Operators**: We support both function calls `Plus(a, b)` and infix `a + b` (InputForm)
+5. **Assignment**: We support both `Set(x, y)` and `x = y` (InputForm)
+6. **Multi-line**: We support multi-line expressions with automatic completion detection
+7. **Patterns**: Identical syntax and semantics
+8. **Attributes**: Same concepts, slightly different syntax for setting
+9. **Output Formats**: FullForm for symbolic representation, InputForm for user-friendly display
 
 ## Notes
 

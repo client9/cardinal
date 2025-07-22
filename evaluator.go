@@ -7,111 +7,6 @@ import (
 	"strings"
 )
 
-// EvaluationStack represents the current evaluation call stack
-type EvaluationStack struct {
-	frames   []StackFrame
-	depth    int
-	maxDepth int
-}
-
-// NewEvaluationStack creates a new evaluation stack with the given maximum depth
-func NewEvaluationStack(maxDepth int) *EvaluationStack {
-	return &EvaluationStack{
-		frames:   make([]StackFrame, 0, maxDepth),
-		depth:    0,
-		maxDepth: maxDepth,
-	}
-}
-
-// Push adds a new frame to the stack and checks for recursion limits
-func (s *EvaluationStack) Push(function, expression string) error {
-	if s.depth >= s.maxDepth {
-		return fmt.Errorf("maximum recursion depth exceeded: %d", s.maxDepth)
-	}
-
-	frame := StackFrame{
-		Function:   function,
-		Expression: expression,
-		Location:   "", // Can be set later if needed
-	}
-
-	s.frames = append(s.frames, frame)
-	s.depth++
-	return nil
-}
-
-// Pop removes the top frame from the stack
-func (s *EvaluationStack) Pop() {
-	if s.depth > 0 {
-		s.frames = s.frames[:len(s.frames)-1]
-		s.depth--
-	}
-}
-
-// GetFrames returns a copy of the current stack frames
-func (s *EvaluationStack) GetFrames() []StackFrame {
-	frames := make([]StackFrame, len(s.frames))
-	copy(frames, s.frames)
-	return frames
-}
-
-// Depth returns the current stack depth
-func (s *EvaluationStack) Depth() int {
-	return s.depth
-}
-
-// Context represents the evaluation context with variable bindings and symbol attributes
-type Context struct {
-	variables        map[string]Expr
-	parent           *Context
-	symbolTable      *SymbolTable
-	functionRegistry *FunctionRegistry // Unified pattern-based function system
-	stack            *EvaluationStack
-}
-
-// NewContext creates a new evaluation context
-func NewContext() *Context {
-	ctx := &Context{
-		variables:        make(map[string]Expr),
-		parent:           nil,
-		symbolTable:      NewSymbolTable(),
-		functionRegistry: NewFunctionRegistry(),
-		stack:            NewEvaluationStack(1000), // Default max depth of 1000
-	}
-
-	// Register default built-in functions with patterns
-	registerDefaultBuiltins(ctx.functionRegistry)
-
-	return ctx
-}
-
-// NewChildContext creates a child context with a parent
-func NewChildContext(parent *Context) *Context {
-	return &Context{
-		variables:        make(map[string]Expr),
-		parent:           parent,
-		symbolTable:      parent.symbolTable,      // Share symbol table with parent
-		functionRegistry: parent.functionRegistry, // Share function registry with parent
-		stack:            parent.stack,            // Share evaluation stack with parent
-	}
-}
-
-// Set sets a variable in the context
-func (c *Context) Set(name string, value Expr) {
-	c.variables[name] = value
-}
-
-// Get retrieves a variable from the context (searches up the parent chain)
-func (c *Context) Get(name string) (Expr, bool) {
-	if value, ok := c.variables[name]; ok {
-		return value, true
-	}
-	if c.parent != nil {
-		return c.parent.Get(name)
-	}
-	return nil, false
-}
-
 // Evaluator represents the expression evaluator
 type Evaluator struct {
 	context *Context
@@ -166,20 +61,20 @@ func (e *Evaluator) evaluateAtom(atom Atom, ctx *Context) Expr {
 	case SymbolAtom:
 		symbolName := atom.Value.(string)
 
-		// Check for built-in constants
-		if value, ok := e.getBuiltinConstant(symbolName); ok {
-			return value
-		}
-
-		// Look up variable in context
+		// Check for variable binding first
 		if value, ok := ctx.Get(symbolName); ok {
 			return value
 		}
 
-		// Return the symbol unchanged if not found
+		// Check for built-in constants
+		if constant, ok := e.getBuiltinConstant(symbolName); ok {
+			return constant
+		}
+
+		// Return the symbol itself if not bound
 		return atom
 	default:
-		// Other atoms (numbers, strings, booleans) evaluate to themselves
+		// Numbers, strings, etc. evaluate to themselves
 		return atom
 	}
 }
@@ -190,800 +85,82 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 		return list
 	}
 
-	// Get the head of the expression
+	// Get the head (function name)
 	head := list.Elements[0]
-
-	// If head is not a symbol, evaluate it first
-	if atom, ok := head.(Atom); !ok || atom.AtomType != SymbolAtom {
-		evaluatedHead := e.evaluate(head, ctx)
-		newList := List{Elements: make([]Expr, len(list.Elements))}
-		newList.Elements[0] = evaluatedHead
-		copy(newList.Elements[1:], list.Elements[1:])
-		return e.evaluateList(newList, ctx)
-	}
-
-	headAtom := head.(Atom)
-	headName := headAtom.Value.(string)
 	args := list.Elements[1:]
 
-	// Handle special forms that need special evaluation semantics
-	if result := e.evaluateSpecialForm(headName, args, ctx); result != nil {
-		return result
+	// Evaluate the head to get the function name
+	evaluatedHead := e.evaluate(head, ctx)
+
+	// Check if head is an error - propagate it
+	if IsError(evaluatedHead) {
+		return evaluatedHead
 	}
 
+	// Extract function name from evaluated head
+	var headName string
+	if headAtom, ok := evaluatedHead.(Atom); ok && headAtom.AtomType == SymbolAtom {
+		headName = headAtom.Value.(string)
+	} else {
+		// Head is not a symbol, return unevaluated
+		return list
+	}
+
+	// Apply attribute transformations before evaluation
+	transformedList := e.applyAttributeTransformations(headName, list, ctx)
+	if !listsEqual(transformedList, list) {
+		// The list was transformed, re-evaluate it
+		return e.evaluateList(transformedList, ctx)
+	}
+
+	// Handle OneIdentity attribute specially - it can return a non-List
+	if ctx.symbolTable.HasAttribute(headName, OneIdentity) && len(list.Elements) == 2 {
+		// OneIdentity: f(x) = x
+		return e.evaluate(list.Elements[1], ctx)
+	}
+
+	// Check for special forms first (these don't follow normal evaluation rules)
+	if specialResult := e.evaluateSpecialForm(headName, args, ctx); specialResult != nil {
+		return specialResult
+	}
+
+	// Try pattern-based function resolution
+	return e.evaluatePatternFunction(headName, args, ctx)
+}
+
+// evaluatePatternFunction evaluates a function using pattern-based dispatch
+func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *Context) Expr {
 	// Evaluate arguments based on hold attributes
 	evaluatedArgs := e.evaluateArguments(headName, args, ctx)
 
-	// Create new list with evaluated arguments
-	newList := List{Elements: make([]Expr, len(evaluatedArgs)+1)}
-	newList.Elements[0] = headAtom
-	copy(newList.Elements[1:], evaluatedArgs)
-
-	// Apply transformations based on attributes
-	transformed := e.applyAttributeTransformations(headName, newList, ctx)
-
-	// Check if OneIdentity reduced it to a single element
-	// Only apply this if we originally had arguments (more than just the head)
-	if len(args) > 0 && len(transformed.Elements) == 1 {
-		return transformed.Elements[0]
+	// Check for errors in evaluated arguments
+	for _, arg := range evaluatedArgs {
+		if IsError(arg) {
+			return arg
+		}
 	}
 
-	// Try to evaluate using the unified pattern-based function system
-	if result := e.evaluatePatternFunction(headName, transformed.Elements[1:], ctx); result != nil {
+	// Create the function call expression for pattern matching
+	callExpr := NewList(append([]Expr{NewSymbolAtom(headName)}, evaluatedArgs...)...)
+
+	// Try to find a matching pattern in the function registry
+	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx); found {
+		// Check if result is an error and needs stack trace
+		if IsError(result) {
+			if errorExpr, ok := result.(*ErrorExpr); ok {
+				// Add stack frame for this function call
+				funcCallStr := headName + "(" + formatArgs(evaluatedArgs) + ")"
+				if err := ctx.stack.Push(headName, funcCallStr); err == nil {
+					ctx.stack.Pop() // Immediately pop since we're just adding to trace
+					return NewErrorExprWithStack(errorExpr.ErrorType, errorExpr.Message, errorExpr.Args, ctx.stack.GetFrames())
+				}
+			}
+		}
 		return result
 	}
 
-	return transformed
-}
-
-// evaluatePatternFunction tries to evaluate a function using the unified pattern-based system
-func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *Context) Expr {
-	// Find the best matching function definition
-	funcDef, bindings := ctx.functionRegistry.FindMatchingFunction(headName, args)
-	if funcDef == nil {
-		return nil
-	}
-
-	// Create a new child context with the pattern variable bindings
-	funcCtx := NewChildContext(ctx)
-	for varName, value := range bindings {
-		funcCtx.Set(varName, value)
-	}
-
-	// Execute the function
-	if funcDef.GoImpl != nil {
-		// Built-in function with Go implementation
-		// Push function call to stack for error tracking
-		argsStr := ""
-		if len(args) > 0 {
-			argStrs := make([]string, len(args))
-			for i, arg := range args {
-				argStrs[i] = arg.String()
-			}
-			argsStr = fmt.Sprintf("[%s]", strings.Join(argStrs, ", "))
-		} else {
-			argsStr = "[]"
-		}
-
-		funcCallStr := headName + argsStr
-		if err := ctx.stack.Push(headName, funcCallStr); err != nil {
-			return NewErrorExprWithStack("RecursionError", err.Error(), args, ctx.stack.GetFrames())
-		}
-		defer ctx.stack.Pop()
-
-		// Execute the function
-		result := funcDef.GoImpl(args, funcCtx)
-
-		// If the result is an error and doesn't have a stack trace, add one
-		if errorExpr, ok := result.(*ErrorExpr); ok && len(errorExpr.StackTrace) == 0 {
-			errorExpr.StackTrace = ctx.stack.GetFrames()
-		}
-
-		return result
-	} else {
-		// User-defined function with s-expression body
-		return e.evaluate(funcDef.Body, funcCtx)
-	}
-}
-
-// matchBlankExpression matches a blank expression (Blank[], BlankSequence[], BlankNullSequence[]) against an expression
-func (e *Evaluator) matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
-	if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
-		// Check type constraint if present
-		if typeExpr != nil {
-			var typeName string
-			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-				typeName = typeAtom.Value.(string)
-			}
-			if !matchesType(expr, typeName) {
-				return false
-			}
-		}
-
-		// For now, single blank expressions always match single expressions
-		// BlankSequence and BlankNullSequence handling for sequences happens elsewhere
-		switch blankType {
-		case "Blank":
-			return true // Single expression always matches Blank[]
-		case "BlankSequence":
-			return true // Single expression matches BlankSequence[] (at least one)
-		case "BlankNullSequence":
-			return true // Single expression matches BlankNullSequence[] (zero or more)
-		}
-	}
-	return false
-}
-
-// MatchPattern matches a pattern against an expression and binds variables (exported for testing)
-func (e *Evaluator) MatchPattern(pattern Expr, expr Expr, ctx *Context) bool {
-	return e.matchPatternInternal(pattern, expr, ctx, false)
-}
-
-// matchPattern matches a pattern against an expression and binds variables
-func (e *Evaluator) matchPattern(pattern Expr, expr Expr, ctx *Context) bool {
-	return e.matchPatternInternal(pattern, expr, ctx, false)
-}
-
-// matchPatternInternal matches a pattern with control over parameter binding behavior
-func (e *Evaluator) matchPatternInternal(pattern Expr, expr Expr, ctx *Context, isParameterList bool) bool {
-	// First, check if the pattern is a symbolic pattern (Pattern[], Blank[], etc.)
-	if isPattern, nameExpr, blankExpr := isSymbolicPattern(pattern); isPattern {
-		// This is a Pattern[name, blank] expression
-		var varName string
-		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-			varName = nameAtom.Value.(string)
-		}
-
-		// Check if the blank expression matches
-		if e.matchBlankExpression(blankExpr, expr, ctx) {
-			// Bind the variable if it has a name
-			if varName != "" {
-				ctx.Set(varName, expr)
-			}
-			return true
-		}
-		return false
-	}
-
-	// Check if the pattern is a direct blank expression
-	if isBlank, _, _ := isSymbolicBlank(pattern); isBlank {
-		return e.matchBlankExpression(pattern, expr, ctx)
-	}
-
-	switch pat := pattern.(type) {
-	case Atom:
-		if pat.AtomType == SymbolAtom {
-			symbolName := pat.Value.(string)
-			// Check if this is a pattern variable (ends with _) - backward compatibility
-			if isPatternVariable(symbolName) {
-				// Convert to symbolic and match
-				symbolicPattern := ConvertPatternStringToSymbolic(symbolName)
-				return e.matchPatternInternal(symbolicPattern, expr, ctx, isParameterList)
-			} else {
-				// Regular symbol behavior depends on context
-				if isParameterList {
-					// In parameter lists, regular symbols bind to values
-					ctx.Set(symbolName, expr)
-					return true
-				} else {
-					// In head patterns, regular symbols require exact matches
-					if exprAtom, ok := expr.(Atom); ok && exprAtom.AtomType == SymbolAtom {
-						return exprAtom.Value.(string) == symbolName
-					}
-					return false
-				}
-			}
-		} else {
-			// Literal atom - exact match required
-			if exprAtom, ok := expr.(Atom); ok {
-				return pat.AtomType == exprAtom.AtomType && pat.Value == exprAtom.Value
-			}
-			return false
-		}
-	case List:
-		// Match structured expressions like Plus(x_, y_)
-		if exprList, ok := expr.(List); ok {
-			// For function parameters, we need to handle sequence patterns
-			if isParameterList && len(pat.Elements) > 1 {
-				// First, check that the heads match exactly (head is never a parameter)
-				if !e.matchPatternInternal(pat.Elements[0], exprList.Elements[0], ctx, false) {
-					return false
-				}
-				// Then use sequence pattern matching for the arguments
-				return e.matchSequencePatterns(pat.Elements[1:], exprList.Elements[1:], ctx)
-			}
-
-			// For non-parameter lists, require exact length match
-			if len(pat.Elements) != len(exprList.Elements) {
-				return false
-			}
-
-			for i, patElem := range pat.Elements {
-				// First element is the head (requires exact match), rest are parameters
-				isParam := i > 0 && isParameterList
-				if !e.matchPatternInternal(patElem, exprList.Elements[i], ctx, isParam) {
-					return false
-				}
-			}
-			return true
-		}
-		return false
-	default:
-		return false
-	}
-}
-
-// matchSequencePatterns handles matching patterns that may contain sequence patterns
-func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Context) bool {
-	patternIndex := 0
-	exprIndex := 0
-
-	for patternIndex < len(patterns) {
-		pattern := patterns[patternIndex]
-
-		// Check if this pattern is a sequence pattern
-		if atom, ok := pattern.(Atom); ok && atom.AtomType == SymbolAtom {
-			symbolName := atom.Value.(string)
-			if isPatternVariable(symbolName) {
-				patternInfo := parsePatternInfo(symbolName)
-
-				switch patternInfo.Type {
-				case BlankPattern:
-					// Single pattern: matches exactly one expression
-					if exprIndex >= len(exprs) {
-						return false // No more expressions to match
-					}
-
-					// Check type constraint
-					if !matchesType(exprs[exprIndex], patternInfo.TypeName) {
-						return false
-					}
-
-					// Bind variable if named
-					if patternInfo.VarName != "" {
-						ctx.Set(patternInfo.VarName, exprs[exprIndex])
-					}
-
-					exprIndex++
-					patternIndex++
-
-				case BlankSequencePattern:
-					// Sequence pattern: matches one or more expressions
-					if exprIndex >= len(exprs) {
-						return false // Need at least one expression
-					}
-
-					// Calculate how many expressions this pattern should consume
-					remainingPatterns := len(patterns) - patternIndex - 1
-					minExprsNeeded := remainingPatterns // Minimum expressions needed for remaining patterns
-					maxExprsAvailable := len(exprs) - exprIndex - minExprsNeeded
-
-					if maxExprsAvailable < 1 {
-						return false // Need at least one expression for BlankSequence
-					}
-
-					// Consume expressions for this sequence pattern
-					sequenceExprs := make([]Expr, 0)
-					for i := 0; i < maxExprsAvailable; i++ {
-						if exprIndex >= len(exprs) {
-							break
-						}
-
-						// Check type constraint
-						if !matchesType(exprs[exprIndex], patternInfo.TypeName) {
-							break
-						}
-
-						sequenceExprs = append(sequenceExprs, exprs[exprIndex])
-						exprIndex++
-					}
-
-					if len(sequenceExprs) == 0 {
-						return false // BlankSequence must match at least one expression
-					}
-
-					// Bind variable if named
-					if patternInfo.VarName != "" {
-						ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
-					}
-
-					patternIndex++
-
-				case BlankNullSequencePattern:
-					// Null sequence pattern: matches zero or more expressions
-					// Calculate how many expressions this pattern should consume
-					remainingPatterns := len(patterns) - patternIndex - 1
-					minExprsNeeded := remainingPatterns // Minimum expressions needed for remaining patterns
-					maxExprsAvailable := len(exprs) - exprIndex - minExprsNeeded
-
-					if maxExprsAvailable < 0 {
-						maxExprsAvailable = 0 // Can consume zero expressions
-					}
-
-					// Consume expressions for this sequence pattern
-					sequenceExprs := make([]Expr, 0)
-					for i := 0; i < maxExprsAvailable; i++ {
-						if exprIndex >= len(exprs) {
-							break
-						}
-
-						// Check type constraint
-						if !matchesType(exprs[exprIndex], patternInfo.TypeName) {
-							break
-						}
-
-						sequenceExprs = append(sequenceExprs, exprs[exprIndex])
-						exprIndex++
-					}
-
-					// Bind variable if named (can be empty list)
-					if patternInfo.VarName != "" {
-						ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
-					}
-
-					patternIndex++
-
-				default:
-					return false // Unknown pattern type
-				}
-			} else {
-				// Regular symbol pattern
-				if exprIndex >= len(exprs) {
-					return false
-				}
-
-				// Regular symbol in parameter list binds to value
-				ctx.Set(symbolName, exprs[exprIndex])
-				exprIndex++
-				patternIndex++
-			}
-		} else {
-			// Non-symbol pattern (literal)
-			if exprIndex >= len(exprs) {
-				return false
-			}
-
-			if !e.matchPatternInternal(pattern, exprs[exprIndex], ctx, false) {
-				return false
-			}
-
-			exprIndex++
-			patternIndex++
-		}
-	}
-
-	// All patterns matched, check that all expressions were consumed
-	return exprIndex == len(exprs)
-}
-
-// PatternType represents the type of pattern
-type PatternType int
-
-const (
-	BlankPattern             PatternType = iota // _ - matches exactly one expression
-	BlankSequencePattern                        // __ - matches one or more expressions
-	BlankNullSequencePattern                    // ___ - matches zero or more expressions
-)
-
-// PatternInfo contains information about a parsed pattern
-type PatternInfo struct {
-	Type     PatternType
-	VarName  string
-	TypeName string
-}
-
-// PatternSpecificity represents how specific a pattern is (higher = more specific)
-type PatternSpecificity int
-
-const (
-	SpecificityNullSequence PatternSpecificity = 1 // x___ (least specific)
-	SpecificitySequence     PatternSpecificity = 2 // x__
-	SpecificityGeneral      PatternSpecificity = 3 // x_
-	SpecificityBuiltinType  PatternSpecificity = 4 // x_Integer, x_String, etc.
-	SpecificityCustomType   PatternSpecificity = 5 // x_Color, x_Point, etc.
-	SpecificityLiteral      PatternSpecificity = 6 // 42, "hello", exact values (most specific)
-)
-
-// getPatternSpecificity calculates the specificity of a single pattern
-func getPatternSpecificity(pattern Expr) PatternSpecificity {
-	switch pat := pattern.(type) {
-	case Atom:
-		if pat.AtomType == SymbolAtom {
-			symbolName := pat.Value.(string)
-			if isPatternVariable(symbolName) {
-				patternInfo := parsePatternInfo(symbolName)
-				return getPatternVariableSpecificity(patternInfo)
-			}
-			// Regular symbol (should not occur in patterns, but handle it)
-			return SpecificityLiteral
-		}
-		// Literal atom (number, string, boolean)
-		return SpecificityLiteral
-	case List:
-		// Structured pattern like Plus(x_, y_) - calculate based on elements
-		if len(pat.Elements) == 0 {
-			return SpecificityLiteral // Empty list
-		}
-
-		// Head must be literal for structured patterns
-		headSpecificity := getPatternSpecificity(pat.Elements[0])
-		if headSpecificity != SpecificityLiteral {
-			// Head is not literal, this is not a valid structured pattern
-			return SpecificityGeneral
-		}
-
-		// Specificity is based on the least specific parameter
-		minSpecificity := SpecificityLiteral
-		for i := 1; i < len(pat.Elements); i++ {
-			paramSpecificity := getPatternSpecificity(pat.Elements[i])
-			if paramSpecificity < minSpecificity {
-				minSpecificity = paramSpecificity
-			}
-		}
-		return minSpecificity
-	default:
-		return SpecificityGeneral
-	}
-}
-
-// getPatternVariableSpecificity calculates specificity for pattern variables
-func getPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
-	// Base specificity on pattern type
-	var baseSpecificity PatternSpecificity
-	switch info.Type {
-	case BlankNullSequencePattern:
-		baseSpecificity = SpecificityNullSequence
-	case BlankSequencePattern:
-		baseSpecificity = SpecificitySequence
-	case BlankPattern:
-		baseSpecificity = SpecificityGeneral
-	default:
-		baseSpecificity = SpecificityGeneral
-	}
-
-	// Increase specificity if there's a type constraint
-	if info.TypeName != "" {
-		if isBuiltinType(info.TypeName) {
-			baseSpecificity = SpecificityBuiltinType
-		} else {
-			baseSpecificity = SpecificityCustomType
-		}
-	}
-
-	return baseSpecificity
-}
-
-// isBuiltinType checks if a type name is a built-in type
-func isBuiltinType(typeName string) bool {
-	switch typeName {
-	case "Integer", "Real", "Float", "Number", "Numeric", "String", "Boolean", "Bool", "Symbol", "Atom", "List":
-		return true
-	default:
-		return false
-	}
-}
-
-// isPatternVariable checks if a symbol name represents a pattern variable
-func isPatternVariable(name string) bool {
-	// Pattern variables have the form: [varname][underscores][typename]
-	// Examples: x_, x__, x___, _Integer, x_Integer, x__Integer, x___Integer
-	// But NOT regular symbols with underscores in the middle: bool_test, my_function, etc.
-
-	// Must start with underscore OR contain underscore followed by uppercase letter (type)
-	if strings.HasPrefix(name, "_") {
-		return true // _Integer, _, __, ___, etc.
-	}
-
-	// Look for pattern: letter(s) + underscore(s) + [optional type starting with uppercase]
-	for i := 0; i < len(name); i++ {
-		if name[i] == '_' {
-			// Found underscore - check if it's followed by more underscores or uppercase letter or end of string
-			remaining := name[i:]
-			if remaining == "_" || remaining == "__" || remaining == "___" {
-				return true // x_, x__, x___
-			}
-			// Check if it's underscore(s) followed by type name (starts with uppercase)
-			if len(remaining) > 1 {
-				// Skip consecutive underscores
-				j := 1
-				for j < len(remaining) && remaining[j] == '_' {
-					j++
-				}
-				if j < len(remaining) && remaining[j] >= 'A' && remaining[j] <= 'Z' {
-					return true // x_Integer, x__Integer, x___Integer
-				}
-			}
-			// If we found underscore but it doesn't match pattern variable format, it's not a pattern variable
-			return false
-		}
-	}
-
-	return false
-}
-
-// parsePatternVariable parses a pattern variable name and returns the variable name and type constraint
-func parsePatternVariable(name string) (varName string, typeName string) {
-	if !isPatternVariable(name) {
-		return "", ""
-	}
-
-	// Split by underscore
-	parts := strings.Split(name, "_")
-
-	if len(parts) == 2 {
-		if parts[0] == "" && parts[1] == "" {
-			// Anonymous pattern: _ -> varName="", typeName=""
-			return "", ""
-		} else if parts[1] == "" {
-			// Simple pattern: x_ -> varName="x", typeName=""
-			return parts[0], ""
-		} else if parts[0] != "" {
-			// Named pattern: x_Integer -> varName="x", typeName="Integer"
-			return parts[0], parts[1]
-		}
-	}
-
-	// Invalid pattern
-	return "", ""
-}
-
-// ConvertPatternStringToSymbolic converts a pattern string (like "x_Integer") to a symbolic expression
-func ConvertPatternStringToSymbolic(name string) Expr {
-	if !isPatternVariable(name) {
-		// Not a pattern variable, return as regular symbol
-		return NewSymbolAtom(name)
-	}
-
-	// Count consecutive underscores to determine pattern type
-	underscoreCount := 0
-	underscoreStart := -1
-
-	// Find the first underscore
-	for i, ch := range name {
-		if ch == '_' {
-			underscoreStart = i
-			break
-		}
-	}
-
-	if underscoreStart == -1 {
-		return NewSymbolAtom(name) // No underscore found, regular symbol
-	}
-
-	// Count consecutive underscores
-	for i := underscoreStart; i < len(name) && name[i] == '_'; i++ {
-		underscoreCount++
-	}
-
-	// Extract variable name (before underscores)
-	varName := name[:underscoreStart]
-
-	// Extract type name (after underscores)
-	typeStart := underscoreStart + underscoreCount
-	var typeName string
-	if typeStart < len(name) {
-		typeName = name[typeStart:]
-	}
-
-	// Create the appropriate Blank expression
-	var blankExpr Expr
-	var typeExpr Expr
-	if typeName != "" {
-		typeExpr = NewSymbolAtom(typeName)
-	}
-
-	switch underscoreCount {
-	case 1:
-		blankExpr = CreateBlankExpr(typeExpr)
-	case 2:
-		blankExpr = CreateBlankSequenceExpr(typeExpr)
-	case 3:
-		blankExpr = CreateBlankNullSequenceExpr(typeExpr)
-	default:
-		return NewSymbolAtom(name) // Invalid pattern, return as symbol
-	}
-
-	// If there's a variable name, wrap in Pattern[name, blank]
-	if varName != "" {
-		return CreatePatternExpr(NewSymbolAtom(varName), blankExpr)
-	}
-
-	// Anonymous pattern, just return the blank expression
-	return blankExpr
-}
-
-// parsePatternInfo parses a pattern variable name and returns complete pattern information
-func parsePatternInfo(name string) PatternInfo {
-	if !isPatternVariable(name) {
-		return PatternInfo{}
-	}
-
-	// Count consecutive underscores to determine pattern type
-	underscoreCount := 0
-	underscoreStart := -1
-
-	// Find the first underscore
-	for i, ch := range name {
-		if ch == '_' {
-			underscoreStart = i
-			break
-		}
-	}
-
-	if underscoreStart == -1 {
-		return PatternInfo{} // No underscore found
-	}
-
-	// Count consecutive underscores
-	for i := underscoreStart; i < len(name) && name[i] == '_'; i++ {
-		underscoreCount++
-	}
-
-	// Determine pattern type based on underscore count
-	var patternType PatternType
-	switch underscoreCount {
-	case 1:
-		patternType = BlankPattern
-	case 2:
-		patternType = BlankSequencePattern
-	case 3:
-		patternType = BlankNullSequencePattern
-	default:
-		return PatternInfo{} // Invalid pattern
-	}
-
-	// Extract variable name (before underscores)
-	varName := name[:underscoreStart]
-
-	// Extract type name (after underscores)
-	typeStart := underscoreStart + underscoreCount
-	var typeName string
-	if typeStart < len(name) {
-		typeName = name[typeStart:]
-	}
-
-	return PatternInfo{
-		Type:     patternType,
-		VarName:  varName,
-		TypeName: typeName,
-	}
-}
-
-// isSymbolicBlank checks if an expression is a symbolic Blank[], BlankSequence[], or BlankNullSequence[]
-func isSymbolicBlank(expr Expr) (bool, string, Expr) {
-	if list, ok := expr.(List); ok && len(list.Elements) >= 1 {
-		if head, ok := list.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
-			headName := head.Value.(string)
-			switch headName {
-			case "Blank", "BlankSequence", "BlankNullSequence":
-				var typeExpr Expr
-				if len(list.Elements) > 1 {
-					typeExpr = list.Elements[1]
-				}
-				return true, headName, typeExpr
-			}
-		}
-	}
-	return false, "", nil
-}
-
-// isSymbolicPattern checks if an expression is a Pattern[name, blank]
-func isSymbolicPattern(expr Expr) (bool, Expr, Expr) {
-	if list, ok := expr.(List); ok && len(list.Elements) == 3 {
-		if head, ok := list.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
-			if head.Value.(string) == "Pattern" {
-				return true, list.Elements[1], list.Elements[2] // name, blank
-			}
-		}
-	}
-	return false, nil, nil
-}
-
-// getSymbolicPatternInfo extracts pattern information from a symbolic pattern expression
-func getSymbolicPatternInfo(expr Expr) PatternInfo {
-	// Check if it's a Pattern[name, blank]
-	if isPattern, nameExpr, blankExpr := isSymbolicPattern(expr); isPattern {
-		var varName string
-		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-			varName = nameAtom.Value.(string)
-		}
-
-		if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
-			var typeName string
-			if typeExpr != nil {
-				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-					typeName = typeAtom.Value.(string)
-				}
-			}
-
-			var patternType PatternType
-			switch blankType {
-			case "Blank":
-				patternType = BlankPattern
-			case "BlankSequence":
-				patternType = BlankSequencePattern
-			case "BlankNullSequence":
-				patternType = BlankNullSequencePattern
-			}
-
-			return PatternInfo{Type: patternType, VarName: varName, TypeName: typeName}
-		}
-	}
-
-	// Check if it's a direct blank expression
-	if isBlank, blankType, typeExpr := isSymbolicBlank(expr); isBlank {
-		var typeName string
-		if typeExpr != nil {
-			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-				typeName = typeAtom.Value.(string)
-			}
-		}
-
-		var patternType PatternType
-		switch blankType {
-		case "Blank":
-			patternType = BlankPattern
-		case "BlankSequence":
-			patternType = BlankSequencePattern
-		case "BlankNullSequence":
-			patternType = BlankNullSequencePattern
-		}
-
-		return PatternInfo{Type: patternType, VarName: "", TypeName: typeName}
-	}
-
-	// Not a pattern
-	return PatternInfo{}
-}
-
-// matchesType checks if an expression matches a given type constraint
-func matchesType(expr Expr, typeName string) bool {
-	if typeName == "" {
-		// No type constraint, matches anything
-		return true
-	}
-
-	// Handle built-in types first
-	switch typeName {
-	case "Integer":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == IntAtom
-		}
-	case "Real", "Float":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == FloatAtom
-		}
-	case "Number", "Numeric":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == IntAtom || atom.AtomType == FloatAtom
-		}
-	case "String":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == StringAtom
-		}
-	case "Boolean", "Bool":
-		return isBool(expr)
-	case "Symbol":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == SymbolAtom
-		}
-	case "Atom":
-		_, ok := expr.(Atom)
-		return ok
-	case "List":
-		_, ok := expr.(List)
-		return ok
-	default:
-		// Handle arbitrary head symbols (e.g., Color, Point, etc.)
-		if list, ok := expr.(List); ok && len(list.Elements) > 0 {
-			if headAtom, ok := list.Elements[0].(Atom); ok && headAtom.AtomType == SymbolAtom {
-				return headAtom.Value.(string) == typeName
-			}
-		}
-		return false
-	}
-
-	return false
+	// No pattern matched, return the unevaluated expression
+	return callExpr
 }
 
 // evaluateArguments evaluates arguments based on hold attributes
@@ -1027,67 +204,62 @@ func (e *Evaluator) applyAttributeTransformations(headName string, list List, ct
 	return result
 }
 
-// applyFlat flattens nested applications of the same operator
+// applyFlat implements the Flat attribute (associativity)
 func (e *Evaluator) applyFlat(headName string, list List) List {
 	if len(list.Elements) <= 1 {
 		return list
 	}
 
-	var newElements []Expr
-	newElements = append(newElements, list.Elements[0]) // Keep the head
+	head := list.Elements[0]
+	args := list.Elements[1:]
+	newArgs := []Expr{}
 
-	for _, arg := range list.Elements[1:] {
+	for _, arg := range args {
+		// If the argument is the same function, flatten it
 		if argList, ok := arg.(List); ok && len(argList.Elements) > 0 {
-			if argHead, ok := argList.Elements[0].(Atom); ok &&
-				argHead.AtomType == SymbolAtom &&
-				argHead.Value.(string) == headName {
-				// Flatten: Plus[a, Plus[b, c]] -> Plus[a, b, c]
-				newElements = append(newElements, argList.Elements[1:]...)
-			} else {
-				newElements = append(newElements, arg)
+			if argHead, ok := argList.Elements[0].(Atom); ok && argHead.AtomType == SymbolAtom {
+				if argHead.Value.(string) == headName {
+					// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
+					newArgs = append(newArgs, argList.Elements[1:]...)
+					continue
+				}
 			}
-		} else {
-			newElements = append(newElements, arg)
 		}
+		newArgs = append(newArgs, arg)
 	}
 
-	return List{Elements: newElements}
+	return NewList(append([]Expr{head}, newArgs...)...)
 }
 
-// applyOrderless sorts arguments for commutative operations
+// applyOrderless implements the Orderless attribute (commutativity)
 func (e *Evaluator) applyOrderless(list List) List {
 	if len(list.Elements) <= 2 {
 		return list
 	}
 
-	// Sort arguments by their string representation for consistent ordering
-	args := make([]Expr, len(list.Elements)-1)
-	copy(args, list.Elements[1:])
+	head := list.Elements[0]
+	args := list.Elements[1:]
 
+	// Sort arguments by their string representation for canonical ordering
 	sort.Slice(args, func(i, j int) bool {
 		return args[i].String() < args[j].String()
 	})
 
-	newElements := make([]Expr, len(list.Elements))
-	newElements[0] = list.Elements[0]
-	copy(newElements[1:], args)
-
-	return List{Elements: newElements}
+	return NewList(append([]Expr{head}, args...)...)
 }
 
-// applyOneIdentity handles f[x] -> x for functions with OneIdentity
+// applyOneIdentity implements the OneIdentity attribute
 func (e *Evaluator) applyOneIdentity(list List) List {
-	if len(list.Elements) == 2 {
-		// f[x] -> x when f has OneIdentity
-		// Return the single argument directly (not wrapped in a list)
-		return List{Elements: []Expr{list.Elements[1]}}
-	}
+	// OneIdentity is now handled specially in evaluateList
+	// This function is kept for consistency but doesn't transform anything
 	return list
 }
 
-// evaluateSpecialForm handles special forms that need custom evaluation
+// evaluateSpecialForm handles special forms that don't follow normal evaluation rules
 func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Context) Expr {
 	switch headName {
+	case "If":
+		return e.evaluateIf(args, ctx)
 	case "Set":
 		return e.evaluateSet(args, ctx)
 	case "SetDelayed":
@@ -1098,23 +270,30 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Conte
 		return e.evaluateHold(args, ctx)
 	case "Evaluate":
 		return e.evaluateEvaluate(args, ctx)
-	case "If":
-		return e.evaluateIf(args, ctx)
+	case "CompoundExpression":
+		return e.evaluateCompoundExpression(args, ctx)
 	case "And":
 		return e.evaluateAnd(args, ctx)
 	case "Or":
 		return e.evaluateOr(args, ctx)
+	default:
+		return nil // Not a special form
 	}
-	return nil
 }
 
-// getBuiltinConstant returns built-in mathematical constants
+// getBuiltinConstant returns built-in constants
 func (e *Evaluator) getBuiltinConstant(name string) (Expr, bool) {
 	switch name {
 	case "Pi":
 		return NewFloatAtom(math.Pi), true
 	case "E":
 		return NewFloatAtom(math.E), true
+	case "True":
+		return NewSymbolAtom("True"), true
+	case "False":
+		return NewSymbolAtom("False"), true
+	case "Null":
+		return NewSymbolAtom("Null"), true
 	}
 	return nil, false
 }
@@ -1142,7 +321,7 @@ func getNumericValue(expr Expr) (float64, bool) {
 	return 0, false
 }
 
-// createNumericResult creates the appropriate numeric atom
+// createNumericResult creates appropriate numeric result (int if whole, float otherwise)
 func createNumericResult(value float64) Expr {
 	if value == float64(int(value)) {
 		return NewIntAtom(int(value))
@@ -1150,10 +329,9 @@ func createNumericResult(value float64) Expr {
 	return NewFloatAtom(value)
 }
 
-// isBool checks if an expression is a boolean
+// isBool checks if an expression is a boolean symbol
 func isBool(expr Expr) bool {
 	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		// True/False are symbols in our Mathematica-compatible system
 		symbolName := atom.Value.(string)
 		return symbolName == "True" || symbolName == "False"
 	}
@@ -1163,11 +341,11 @@ func isBool(expr Expr) bool {
 // getBoolValue extracts boolean value from an expression
 func getBoolValue(expr Expr) (bool, bool) {
 	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		// True/False are symbols in our Mathematica-compatible system
 		symbolName := atom.Value.(string)
-		if symbolName == "True" {
+		switch symbolName {
+		case "True":
 			return true, true
-		} else if symbolName == "False" {
+		case "False":
 			return false, true
 		}
 	}
@@ -1190,34 +368,32 @@ func getSymbolName(expr Expr) (string, bool) {
 	return "", false
 }
 
-// patternsEqual checks if two patterns are structurally equivalent
+// patternsEqual compares two patterns for equivalence
 // This ignores variable names and only compares pattern structure and types
 func patternsEqual(pattern1, pattern2 Expr) bool {
+	// Get pattern info for both patterns
+	info1 := getSymbolicPatternInfo(pattern1)
+	info2 := getSymbolicPatternInfo(pattern2)
+
+	// If both are patterns, compare their structure (ignoring variable names)
+	if (info1 != PatternInfo{} && info2 != PatternInfo{}) {
+		return info1.Type == info2.Type && info1.TypeName == info2.TypeName
+	}
+
+	// For non-patterns or when one is a pattern and one isn't, do exact comparison
 	switch p1 := pattern1.(type) {
 	case Atom:
 		if p2, ok := pattern2.(Atom); ok {
-			// For atoms, check if both are pattern variables or both are literals
+			// For symbol atoms that are pattern variables, ignore the variable name
 			if p1.AtomType == SymbolAtom && p2.AtomType == SymbolAtom {
 				name1 := p1.Value.(string)
 				name2 := p2.Value.(string)
-
-				isPattern1 := isPatternVariable(name1)
-				isPattern2 := isPatternVariable(name2)
-
-				if isPattern1 && isPattern2 {
-					// Both are pattern variables - compare structure, not names
+				if isPatternVariable(name1) && isPatternVariable(name2) {
 					info1 := parsePatternInfo(name1)
 					info2 := parsePatternInfo(name2)
 					return info1.Type == info2.Type && info1.TypeName == info2.TypeName
-				} else if !isPattern1 && !isPattern2 {
-					// Both are regular symbols - must match exactly
-					return name1 == name2
-				} else {
-					// One is pattern, one is not - not equivalent
-					return false
 				}
 			}
-			// For non-symbol atoms, require exact match
 			return p1.AtomType == p2.AtomType && p1.Value == p2.Value
 		}
 		return false
@@ -1226,8 +402,8 @@ func patternsEqual(pattern1, pattern2 Expr) bool {
 			if len(p1.Elements) != len(p2.Elements) {
 				return false
 			}
-			for i, elem1 := range p1.Elements {
-				if !patternsEqual(elem1, p2.Elements[i]) {
+			for i := range p1.Elements {
+				if !patternsEqual(p1.Elements[i], p2.Elements[i]) {
 					return false
 				}
 			}
@@ -1239,148 +415,267 @@ func patternsEqual(pattern1, pattern2 Expr) bool {
 	}
 }
 
-// SetStack sets the evaluation stack for the context
-func (c *Context) SetStack(stack *EvaluationStack) {
-	c.stack = stack
-}
-
 // GetContext returns the evaluator's context
 func (e *Evaluator) GetContext() *Context {
 	return e.context
 }
 
-// GetFunctionRegistry returns the context's function registry
-func (c *Context) GetFunctionRegistry() *FunctionRegistry {
-	return c.functionRegistry
+// listsEqual checks if two lists are structurally equal
+func listsEqual(list1, list2 List) bool {
+	return list1.Equal(list2)
 }
 
-// setupBuiltinAttributes sets up standard attributes for built-in functions
-func setupBuiltinAttributes(symbolTable *SymbolTable) {
-	// Reset attributes
-	symbolTable.Reset()
-
-	// Arithmetic operations
-	symbolTable.SetAttributes("Plus", []Attribute{Flat, Listable, NumericFunction, OneIdentity, Orderless, Protected})
-	symbolTable.SetAttributes("Times", []Attribute{Flat, Orderless, OneIdentity})
-	symbolTable.SetAttributes("Power", []Attribute{OneIdentity})
-
-	// Control structures
-	symbolTable.SetAttributes("Hold", []Attribute{HoldAll})
-	symbolTable.SetAttributes("If", []Attribute{HoldRest})
-	symbolTable.SetAttributes("While", []Attribute{HoldAll})
-	symbolTable.SetAttributes("CompoundExpression", []Attribute{HoldAll})
-	symbolTable.SetAttributes("Module", []Attribute{HoldAll})
-	symbolTable.SetAttributes("Block", []Attribute{HoldAll})
-
-	// Assignment operations
-	symbolTable.SetAttributes("Set", []Attribute{HoldFirst})
-	symbolTable.SetAttributes("SetDelayed", []Attribute{HoldAll})
-	symbolTable.SetAttributes("Unset", []Attribute{HoldFirst})
-
-	// Pattern matching operations
-	// symbolTable.SetAttributes("MatchQ", []Attribute{HoldFirst})
-
-	// Attribute functions
-	symbolTable.SetAttributes("Attributes", []Attribute{HoldFirst})
-	symbolTable.SetAttributes("SetAttributes", []Attribute{HoldFirst})
-	symbolTable.SetAttributes("ClearAttributes", []Attribute{HoldFirst})
-
-	// Logical operations
-	symbolTable.SetAttributes("And", []Attribute{Flat, Orderless, HoldAll})
-	symbolTable.SetAttributes("Or", []Attribute{Flat, Orderless, HoldAll})
-
-	// Constants
-	symbolTable.SetAttributes("Pi", []Attribute{Constant, Protected})
-	symbolTable.SetAttributes("E", []Attribute{Constant, Protected})
-	symbolTable.SetAttributes("True", []Attribute{Constant, Protected})
-	symbolTable.SetAttributes("False", []Attribute{Constant, Protected})
-
-	// Pattern symbols
-	symbolTable.SetAttributes("Blank", []Attribute{Protected})
-	symbolTable.SetAttributes("BlankSequence", []Attribute{Protected})
-	symbolTable.SetAttributes("BlankNullSequence", []Attribute{Protected})
-	symbolTable.SetAttributes("Pattern", []Attribute{Protected})
-}
-
-// registerDefaultBuiltins registers all built-in functions with their patterns
-func registerDefaultBuiltins(registry *FunctionRegistry) {
-	// Register built-in functions with pattern-based dispatch
-	builtinPatterns := map[string]PatternFunc{
-		// Arithmetic operations - support multiple arguments with sequence patterns
-		"Plus(x___)":       wrapBuiltinFunc(EvaluatePlus),  // Zero or more arguments
-		"Times(x___)":      wrapBuiltinFunc(EvaluateTimes), // Zero or more arguments
-		"Subtract(x_, y_)": wrapBuiltinFunc(EvaluateSubtract),
-		"Divide(x_, y_)":   wrapBuiltinFunc(EvaluateDivide),
-		"Power(x_, y_)":    wrapBuiltinFunc(EvaluatePower),
-
-		// Comparison operations
-		"Equal(x_, y_)":        wrapBuiltinFunc(EvaluateEqual),
-		"Unequal(x_, y_)":      wrapBuiltinFunc(EvaluateUnequal),
-		"Less(x_, y_)":         wrapBuiltinFunc(EvaluateLess),
-		"Greater(x_, y_)":      wrapBuiltinFunc(EvaluateGreater),
-		"LessEqual(x_, y_)":    wrapBuiltinFunc(EvaluateLessEqual),
-		"GreaterEqual(x_, y_)": wrapBuiltinFunc(EvaluateGreaterEqual),
-		"SameQ(x_, y_)":        wrapBuiltinFunc(EvaluateSameQ),
-		"UnsameQ(x_, y_)":      wrapBuiltinFunc(EvaluateUnsameQ),
-
-		// Logical operations (Not - And/Or are special forms)
-		"Not(x_)": wrapBuiltinFunc(EvaluateNot),
-
-		// List operations
-		"Length(x_)":   wrapBuiltinFunc(EvaluateLength),
-		"First(x_)":    wrapBuiltinFunc(EvaluateFirst),
-		"Last(x_)":     wrapBuiltinFunc(EvaluateLast),
-		"Rest(x_)":     wrapBuiltinFunc(EvaluateRest),
-		"Most(x_)":     wrapBuiltinFunc(EvaluateMost),
-		"Part(x_, i_)": wrapBuiltinFunc(EvaluatePart),
-
-		// Type predicates
-		"IntegerQ(x_)":            wrapBuiltinFunc(EvaluateIntegerQ),
-		"NumberQ(x_)":             wrapBuiltinFunc(EvaluateNumberQ),
-		"StringQ(x_)":             wrapBuiltinFunc(EvaluateStringQ),
-		"BooleanQ(x_)":            wrapBuiltinFunc(EvaluateBooleanQ),
-		"SymbolQ(x_)":             wrapBuiltinFunc(EvaluateSymbolQ),
-		"ListQ(x_)":               wrapBuiltinFunc(EvaluateListQ),
-		"AtomQ(x_)":               wrapBuiltinFunc(EvaluateAtomQ),
-		"Head(x_)":                wrapBuiltinFunc(EvaluateHead),
-		"Attributes(x_)":          EvaluateAttributes,
-		"SetAttributes(x_, y_)":   EvaluateSetAttributes,
-		"ClearAttributes(x_)":     EvaluateSpecialClearAttributes,
-		"ClearAttributes(x_, y_)": EvaluateClearAttributes,
-		"MatchQ(x_, y_)":          EvaluateMatchQ,
-
-		// String functions
-		"StringLength(x_)": wrapBuiltinFunc(EvaluateStringLength),
-		"FullForm(x_)":     wrapBuiltinFunc(EvaluateFullForm),
+// formatArgs formats function arguments for stack traces
+func formatArgs(args []Expr) string {
+	if len(args) == 0 {
+		return ""
 	}
 
-	// Register all patterns
-	err := registry.RegisterPatternBuiltins(builtinPatterns)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to register built-in patterns: %v", err))
+	argStrs := make([]string, len(args))
+	for i, arg := range args {
+		argStrs[i] = arg.String()
 	}
+
+	// Limit length for readability
+	result := strings.Join(argStrs, ", ")
+	if len(result) > 100 {
+		result = result[:97] + "..."
+	}
+
+	return result
 }
 
-// wrapBuiltinFunc wraps a builtin function to work with the new PatternFunc signature
-func wrapBuiltinFunc(builtin func([]Expr) Expr) PatternFunc {
-	return func(args []Expr, ctx *Context) Expr {
-		// Check for errors in arguments and propagate them
-		// Note: Stack frame addition happens in the caller (evaluatePatternFunction)
-		for _, arg := range args {
-			if IsError(arg) {
-				return arg
+// Special form implementations
+
+// evaluateIf implements the If special form
+func (e *Evaluator) evaluateIf(args []Expr, ctx *Context) Expr {
+	if len(args) < 2 || len(args) > 3 {
+		return NewErrorExpr("ArgumentError", fmt.Sprintf("If expects 2 or 3 arguments, got %d", len(args)), args)
+	}
+
+	// Evaluate the condition
+	condition := e.evaluate(args[0], ctx)
+	if IsError(condition) {
+		return condition
+	}
+
+	// Check the condition
+	if boolVal, isBool := getBoolValue(condition); isBool {
+		if boolVal {
+			// Condition is true, evaluate and return the "then" branch
+			return e.evaluate(args[1], ctx)
+		} else {
+			// Condition is false, evaluate and return the "else" branch if present
+			if len(args) == 3 {
+				return e.evaluate(args[2], ctx)
+			} else {
+				return NewSymbolAtom("Null")
 			}
 		}
+	}
 
-		return builtin(args)
+	// Condition is not a boolean, return an error
+	return NewErrorExpr("TypeError", "If condition must be True or False", []Expr{condition})
+}
+
+// evaluateSet implements the Set special form (immediate assignment)
+func (e *Evaluator) evaluateSet(args []Expr, ctx *Context) Expr {
+	if len(args) != 2 {
+		return NewErrorExpr("ArgumentError", fmt.Sprintf("Set expects 2 arguments, got %d", len(args)), args)
+	}
+
+	// First argument should be a symbol (don't evaluate it)
+	if atom, ok := args[0].(Atom); ok && atom.AtomType == SymbolAtom {
+		symbolName := atom.Value.(string)
+
+		// Evaluate the value
+		value := e.evaluate(args[1], ctx)
+		if IsError(value) {
+			return value
+		}
+
+		// Set the variable
+		ctx.Set(symbolName, value)
+		return value
+	}
+
+	return NewErrorExpr("ArgumentError", "First argument to Set must be a symbol", args)
+}
+
+// evaluateSetDelayed implements the SetDelayed special form (delayed assignment)
+func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
+	if len(args) != 2 {
+		return NewErrorExpr("ArgumentError", fmt.Sprintf("SetDelayed expects 2 arguments, got %d", len(args)), args)
+	}
+
+	lhs := args[0]
+	rhs := args[1] // Don't evaluate RHS for delayed assignment
+
+	// Handle function definitions: f(x_) := body
+	if list, ok := lhs.(List); ok && len(list.Elements) >= 1 {
+		// This is a function definition
+		headExpr := list.Elements[0]
+		if headAtom, ok := headExpr.(Atom); ok && headAtom.AtomType == SymbolAtom {
+			functionName := headAtom.Value.(string)
+
+			// Register the pattern with the function registry
+			err := ctx.functionRegistry.RegisterFunction(functionName, lhs, func(args []Expr, ctx *Context) Expr {
+				// Create a new child context for function evaluation
+				funcCtx := NewChildContext(ctx)
+
+				// Pattern matching and variable binding happen in CallFunction
+				// Just evaluate the RHS in the function context
+				return e.evaluate(rhs, funcCtx)
+			})
+
+			if err != nil {
+				return NewErrorExpr("DefinitionError", err.Error(), args)
+			}
+
+			return NewSymbolAtom("Null")
+		}
+	}
+
+	// Handle simple variable assignment: x := value
+	if atom, ok := lhs.(Atom); ok && atom.AtomType == SymbolAtom {
+		symbolName := atom.Value.(string)
+		// For SetDelayed, store the unevaluated RHS
+		ctx.Set(symbolName, rhs)
+		return NewSymbolAtom("Null")
+	}
+
+	return NewErrorExpr("ArgumentError", "Invalid left-hand side for SetDelayed", args)
+}
+
+// evaluateUnset implements the Unset special form
+func (e *Evaluator) evaluateUnset(args []Expr, ctx *Context) Expr {
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError", fmt.Sprintf("Unset expects 1 argument, got %d", len(args)), args)
+	}
+
+	if atom, ok := args[0].(Atom); ok && atom.AtomType == SymbolAtom {
+		symbolName := atom.Value.(string)
+		// Remove the variable binding
+		delete(ctx.variables, symbolName)
+		return NewSymbolAtom("Null")
+	}
+
+	return NewErrorExpr("ArgumentError", "Argument to Unset must be a symbol", args)
+}
+
+// evaluateHold implements the Hold special form
+func (e *Evaluator) evaluateHold(args []Expr, ctx *Context) Expr {
+	// Hold returns its arguments unevaluated wrapped in Hold
+	return NewList(append([]Expr{NewSymbolAtom("Hold")}, args...)...)
+}
+
+// evaluateEvaluate implements the Evaluate special form
+func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
+	if len(args) == 0 {
+		return NewSymbolAtom("Null")
+	}
+
+	if len(args) == 1 {
+		// Evaluate the single argument
+		return e.evaluate(args[0], ctx)
+	}
+
+	// Multiple arguments - evaluate all and return the last result
+	var result Expr = NewSymbolAtom("Null")
+	for _, arg := range args {
+		result = e.evaluate(arg, ctx)
+		if IsError(result) {
+			return result
+		}
+	}
+	return result
+}
+
+// evaluateCompoundExpression implements the CompoundExpression special form
+func (e *Evaluator) evaluateCompoundExpression(args []Expr, ctx *Context) Expr {
+	if len(args) == 0 {
+		return NewSymbolAtom("Null")
+	}
+
+	var result Expr = NewSymbolAtom("Null")
+	for _, arg := range args {
+		result = e.evaluate(arg, ctx)
+		if IsError(result) {
+			return result
+		}
+	}
+	return result
+}
+
+// evaluateAnd implements the And special form with short-circuit evaluation
+func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
+	if len(args) == 0 {
+		return NewSymbolAtom("True")
+	}
+
+	var nonBooleanArgs []Expr
+
+	for _, arg := range args {
+		// Evaluate this argument
+		result := e.evaluate(arg, ctx)
+		if IsError(result) {
+			return result
+		}
+
+		if boolVal, isBool := getBoolValue(result); isBool {
+			if !boolVal {
+				return NewSymbolAtom("False") // Short-circuit on first False
+			}
+			// True values are eliminated (identity for And)
+		} else {
+			// Collect non-boolean values
+			nonBooleanArgs = append(nonBooleanArgs, result)
+		}
+	}
+
+	// Handle results based on remaining non-boolean arguments
+	if len(nonBooleanArgs) == 0 {
+		return NewSymbolAtom("True") // All were True
+	} else if len(nonBooleanArgs) == 1 {
+		return nonBooleanArgs[0] // Single non-boolean argument
+	} else {
+		// Multiple non-boolean arguments, return simplified And expression
+		return NewList(append([]Expr{NewSymbolAtom("And")}, nonBooleanArgs...)...)
 	}
 }
 
-// wrapBuiltinFuncNoErrorProp wraps a builtin function that should NOT propagate errors
-// (e.g., Head should analyze error expressions, not propagate them)
-func wrapBuiltinFuncNoErrorProp(builtin func([]Expr) Expr) PatternFunc {
-	return func(args []Expr, ctx *Context) Expr {
-		// No error propagation - let the builtin handle errors as data
-		return builtin(args)
+// evaluateOr implements the Or special form with short-circuit evaluation
+func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
+	if len(args) == 0 {
+		return NewSymbolAtom("False")
+	}
+
+	var nonBooleanArgs []Expr
+
+	for _, arg := range args {
+		result := e.evaluate(arg, ctx)
+		if IsError(result) {
+			return result
+		}
+
+		if boolVal, isBool := getBoolValue(result); isBool {
+			if boolVal {
+				return NewSymbolAtom("True") // Short-circuit on first True
+			}
+			// False values are eliminated (identity for Or)
+		} else {
+			// Collect non-boolean values
+			nonBooleanArgs = append(nonBooleanArgs, result)
+		}
+	}
+
+	// Handle results based on remaining non-boolean arguments
+	if len(nonBooleanArgs) == 0 {
+		return NewSymbolAtom("False") // All were False
+	} else if len(nonBooleanArgs) == 1 {
+		return nonBooleanArgs[0] // Single non-boolean argument
+	} else {
+		// Multiple non-boolean arguments, return simplified Or expression
+		return NewList(append([]Expr{NewSymbolAtom("Or")}, nonBooleanArgs...)...)
 	}
 }

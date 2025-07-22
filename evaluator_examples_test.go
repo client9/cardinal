@@ -251,7 +251,7 @@ func TestEvaluatorErrorHandling(t *testing.T) {
 		{
 			name:     "logical with non-boolean",
 			input:    "And(True, x)",
-			expected: "And(True, x)",
+			expected: "x",
 		},
 	}
 

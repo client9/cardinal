@@ -206,8 +206,8 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 			return sumResult
 		}
 
-		// Divide by count
-		count := NewIntAtom(len(args))
+		// Divide by count (use float to ensure real division)
+		count := NewFloatAtom(float64(len(args)))
 		divideList := NewList(NewSymbolAtom("Divide"), sumResult, count)
 		avgResult := eval.evaluate(divideList, ctx)
 

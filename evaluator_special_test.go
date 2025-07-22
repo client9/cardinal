@@ -16,14 +16,14 @@ func TestSpecialFormShortCircuitEvaluation(t *testing.T) {
 		{"And early false", "And(False, undefined_symbol)", "False"}, // Should not evaluate undefined_symbol
 		{"And all true", "And(True, True, True)", "True"},
 		{"And mixed with early false", "And(True, False, undefined_symbol)", "False"}, // Should not evaluate undefined_symbol
-		{"And with non-boolean", "And(True, x)", "And(True, x)"},                      // Returns symbolic form when encountering non-boolean
+		{"And with non-boolean", "And(True, x)", "x"},                                 // True is eliminated, returns x
 
 		// Or short-circuit tests
 		{"Or empty", "Or()", "False"},
 		{"Or early true", "Or(True, undefined_symbol)", "True"}, // Should not evaluate undefined_symbol
 		{"Or all false", "Or(False, False, False)", "False"},
 		{"Or mixed with early true", "Or(False, True, undefined_symbol)", "True"}, // Should not evaluate undefined_symbol
-		{"Or with non-boolean", "Or(False, x)", "Or(False, x)"},                   // Returns symbolic form when encountering non-boolean
+		{"Or with non-boolean", "Or(False, x)", "x"},                              // False is eliminated, returns x
 	}
 
 	for _, tt := range tests {

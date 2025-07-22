@@ -190,6 +190,57 @@ func (r *FunctionRegistry) GetAllFunctionNames() []string {
 	return names
 }
 
+// CallFunction attempts to call a function with the given expression and returns (result, found)
+func (r *FunctionRegistry) CallFunction(callExpr Expr, ctx *Context) (Expr, bool) {
+	// Extract function name and arguments from the call expression
+	if list, ok := callExpr.(List); ok && len(list.Elements) > 0 {
+		if headAtom, ok := list.Elements[0].(Atom); ok && headAtom.AtomType == SymbolAtom {
+			functionName := headAtom.Value.(string)
+			args := list.Elements[1:]
+
+			// Find matching function definition
+			funcDef, bindings := r.FindMatchingFunction(functionName, args)
+			if funcDef == nil {
+				return nil, false
+			}
+
+			// Create child context with pattern variable bindings
+			funcCtx := NewChildContext(ctx)
+			for varName, value := range bindings {
+				funcCtx.Set(varName, value)
+			}
+
+			// Call the function
+			if funcDef.GoImpl != nil {
+				// Built-in function - call Go implementation
+				return funcDef.GoImpl(args, funcCtx), true
+			} else {
+				// User-defined function - evaluate body
+				// Create an evaluator to evaluate the body
+				evaluator := NewEvaluatorWithContext(funcCtx)
+				return evaluator.evaluate(funcDef.Body, funcCtx), true
+			}
+		}
+	}
+	return nil, false
+}
+
+// RegisterFunction is an alias for RegisterUserFunction for backward compatibility
+func (r *FunctionRegistry) RegisterFunction(functionName string, pattern Expr, implementation func([]Expr, *Context) Expr) error {
+	// This is a simplified version that assumes the pattern contains the function name
+	// For the refactored code, we need to create a proper function definition
+	funcDef := FunctionDef{
+		Pattern:     pattern,
+		Body:        nil,
+		GoImpl:      implementation,
+		Specificity: calculatePatternSpecificity(pattern),
+		IsBuiltin:   false,
+	}
+
+	r.registerFunctionDef(functionName, funcDef)
+	return nil
+}
+
 // registerFunctionDef adds or replaces a function definition
 func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef FunctionDef) {
 	definitions := r.functions[functionName]

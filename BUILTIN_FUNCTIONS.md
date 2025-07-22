@@ -164,8 +164,10 @@ This document lists all built-in functions available in the s-expression evaluat
 **Examples**: `Head(42)` → `Integer`, `Head(Plus(1, 2))` → `Integer` (after evaluation)
 
 ### Length(expr_)
-**Description**: Get the length of a list or expression  
-**Examples**: `Length(List(1, 2, 3))` → `3`
+**Description**: Get the length of a list or association  
+**Examples**: 
+- `Length(List(1, 2, 3))` → `3`
+- `Length({name: "Bob", age: 30})` → `2`
 
 ### First(expr_)
 **Description**: Get the first element of a list  
@@ -183,9 +185,34 @@ This document lists all built-in functions available in the s-expression evaluat
 **Description**: Get all elements except the last  
 **Examples**: `Most(List(1, 2, 3))` → `List(1, 2)`
 
-### Part(expr_, n_)
-**Description**: Get the nth element of a list (1-indexed)  
-**Examples**: `Part(List(1, 2, 3), 2)` → `2`
+### Part(expr_, index_)
+**Description**: Get element by index (lists) or key (associations)
+- For lists: 1-indexed access, supports negative indices  
+- For associations: key-based access  
+**Examples**: 
+- `Part(List(1, 2, 3), 2)` → `2`
+- `Part({name: "Bob", age: 30}, name)` → `"Bob"`
+
+## Association Functions
+
+### Association(rules_...)
+**Description**: Create an association from Rule expressions  
+**Examples**: `Association(Rule(name, "Bob"), Rule(age, 30))` → `{name: "Bob", age: 30}`
+**Note**: Typically created using `{key: value}` syntax
+
+### AssociationQ(expr_)
+**Description**: Test if expression is an association  
+**Examples**: `AssociationQ({name: "Bob"})` → `True`, `AssociationQ(List(1, 2))` → `False`
+
+### Keys(assoc_)
+**Description**: Get all keys from an association as a list  
+**Examples**: `Keys({name: "Bob", age: 30})` → `List(name, age)`
+
+### Values(assoc_)
+**Description**: Get all values from an association as a list  
+**Examples**: `Values({name: "Bob", age: 30})` → `List("Bob", 30)`
+
+**Note**: Keys and values are returned in insertion order.
 
 ## Pattern Matching
 
@@ -320,6 +347,29 @@ Functions can have attributes that modify their behavior:
 
 Functions automatically propagate errors - if any argument is an error, the error is returned without evaluation.
 
+## Output Formats
+
+Our evaluator provides two output formats:
+
+### FullForm (Default)
+- Complete symbolic representation
+- Example: `Plus(1, 2)`, `List(1, 2, 3)`, `Set(x, 5)`
+
+### InputForm 
+- User-friendly infix notation with operator precedence
+- Example: `1 + 2`, `[1, 2, 3]`, `x = 5`
+
+| Function | FullForm | InputForm |
+|----------|----------|-----------|
+| Plus(1, 2) | `Plus(1, 2)` | `1 + 2` |
+| Times(a, b) | `Times(a, b)` | `a * b` |
+| Set(x, 5) | `Set(x, 5)` | `x = 5` |
+| SetDelayed(f, Plus(x, 1)) | `SetDelayed(f, Plus(x, 1))` | `f := x + 1` |
+| Equal(a, b) | `Equal(a, b)` | `a == b` |
+| And(True, False) | `And(True, False)` | `True && False` |
+| List(1, 2, 3) | `List(1, 2, 3)` | `[1, 2, 3]` |
+| Association(Rule(a, b)) | `Association(Rule(a, b))` | `{a: b}` |
+
 ## Usage Notes
 
 1. **Function Evaluation**: All functions evaluate their arguments unless they have Hold attributes
@@ -327,6 +377,7 @@ Functions automatically propagate errors - if any argument is an error, the erro
 3. **Attributes**: Function attributes control evaluation and algebraic properties
 4. **Error Propagation**: Errors automatically bubble up through function calls
 5. **Symbolic Computation**: Functions work with both numeric and symbolic expressions
+6. **Output Formats**: Use InputForm for readable output, FullForm for debugging
 
 ## Examples
 
@@ -359,4 +410,24 @@ If(Greater(5, 3), "big", "small") # → "big"
 SetDelayed(factorial(0), 1)
 SetDelayed(factorial(n_Integer), Times(n, factorial(Subtract(n, 1))))
 factorial(5)                     # → 120
+
+# Associations (modern syntax)
+{name: "Bob", age: 30}           # → {name: "Bob", age: 30}
+Part({name: "Bob", age: 30}, name) # → "Bob"
+Keys({name: "Bob", age: 30})     # → List(name, age)
+Values({name: "Bob", age: 30})   # → List("Bob", 30)
+Length({name: "Bob", age: 30})   # → 2
+
+# Nested associations
+{
+  person: {name: "Bob", age: 30},
+  scores: [85, 92, 78]
+}                                # → {person: {name: "Bob", age: 30}, scores: List(85, 92, 78)}
+
+# Multi-line expressions (both file and REPL)
+Plus(
+  1,
+  2,
+  3
+)                                # → 6
 ```

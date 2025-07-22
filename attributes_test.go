@@ -392,7 +392,6 @@ func TestSetAttributesBuiltin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			setupBuiltinAttributes(evaluator.context.symbolTable)
 
 			expr, err := ParseString(tt.input)
 			if err != nil {
@@ -434,14 +433,6 @@ func TestClearAttributesBuiltin(t *testing.T) {
 			expected: "Null",
 		},
 		{
-			name: "Clear all attributes",
-			setup: []string{
-				"SetAttributes(testFunc, List(Protected, HoldFirst))",
-			},
-			input:    "ClearAttributes(testFunc)",
-			expected: "Null",
-		},
-		{
 			name:        "Error: invalid symbol",
 			input:       "ClearAttributes(42, Protected)",
 			shouldError: true,
@@ -456,7 +447,6 @@ func TestClearAttributesBuiltin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			setupBuiltinAttributes(evaluator.context.symbolTable)
 
 			// Run setup commands
 			for _, setupCmd := range tt.setup {
@@ -539,7 +529,6 @@ func TestAttributesBuiltin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewEvaluator()
-			setupBuiltinAttributes(evaluator.context.symbolTable)
 
 			// Run setup commands
 			for _, setupCmd := range tt.setup {
@@ -607,7 +596,7 @@ func TestAttributeFunctionsIntegration(t *testing.T) {
 	}
 
 	// Test clearing all attributes
-	expr5, _ := ParseString("ClearAttributes(myFunc)")
+	expr5, _ := ParseString("ClearAttributes(myFunc, Attributes(myFunc))")
 	result5 := evaluator.Evaluate(expr5)
 	if result5.String() != "Null" {
 		t.Errorf("ClearAttributes all failed: %s", result5.String())

@@ -329,12 +329,12 @@ func TestFirstLast_Integration(t *testing.T) {
 		{
 			name:     "First of nested structure",
 			input:    "First(Equal(Plus(1, 2), 3))",
-			expected: "$Failed(PartError)", // Equal(3, 3) evaluates to True, First(True) errors
+			expected: "First(True)", // Equal(3, 3) evaluates to True, First(True) pattern doesn't match
 		},
 		{
 			name:     "First error on atom",
 			input:    "First(42)",
-			expected: "$Failed(PartError)",
+			expected: "First(42)", // Pattern doesn't match, returns unchanged
 		},
 		{
 			name:     "First error on empty list",
@@ -356,12 +356,12 @@ func TestFirstLast_Integration(t *testing.T) {
 		{
 			name:     "Last of nested structure",
 			input:    "Last(Equal(Plus(1, 2), 3))",
-			expected: "$Failed(PartError)", // Equal(3, 3) evaluates to True, Last(True) errors
+			expected: "Last(True)", // Equal(3, 3) evaluates to True, Last(True) pattern doesn't match
 		},
 		{
 			name:     "Last error on atom",
 			input:    "Last(42)",
-			expected: "$Failed(PartError)",
+			expected: "Last(42)", // Pattern doesn't match, returns unchanged
 		},
 		{
 			name:     "Last error on empty list",

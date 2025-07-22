@@ -469,7 +469,7 @@ func TestPart_Integration(t *testing.T) {
 		{
 			name:     "Part of atom",
 			input:    "Part(42, 1)",
-			expected: "$Failed(PartError)",
+			expected: "Part(42, 1)", // Pattern doesn't match - returns unchanged
 		},
 		{
 			name:     "Part of empty list",
@@ -479,7 +479,7 @@ func TestPart_Integration(t *testing.T) {
 		{
 			name:     "Part with non-integer index",
 			input:    "Part([a, b, c], \"hello\")",
-			expected: "$Failed(PartError)",
+			expected: "Part(List(a, b, c), \"hello\")", // Pattern doesn't match - returns unchanged
 		},
 
 		// Combination with other functions

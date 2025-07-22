@@ -11,9 +11,10 @@ import (
 func main() {
 	// Define command line flags
 	var (
-		prompt = flag.String("prompt", "sexpr> ", "REPL prompt string")
-		help   = flag.Bool("help", false, "Show help message")
-		file   = flag.String("file", "", "Execute expressions from file instead of interactive mode")
+		prompt     = flag.String("prompt", "sexpr> ", "REPL prompt string")
+		help       = flag.Bool("help", false, "Show help message")
+		file       = flag.String("file", "", "Execute expressions from file instead of interactive mode")
+		withUint64 = flag.Bool("with-uint64", false, "Enable experimental Uint64 type system")
 	)
 	
 	flag.Parse()
@@ -27,6 +28,15 @@ func main() {
 	// Create REPL instance
 	repl := sexpr.NewREPL()
 	repl.SetPrompt(*prompt)
+	
+	// Enable Uint64 extension if requested
+	if *withUint64 {
+		if err := sexpr.RegisterUint64(repl.GetEvaluator().GetContext().GetFunctionRegistry()); err != nil {
+			fmt.Fprintf(os.Stderr, "Error enabling Uint64 system: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("Uint64 type system enabled. Try: Uint64(42), Uint64(\"#FF\"), Plus(Uint64(10), 5)")
+	}
 	
 	// If file is specified, execute it
 	if *file != "" {
@@ -54,6 +64,7 @@ Usage:
 Flags:
   -prompt string    Set the REPL prompt (default "sexpr> ")
   -file string      Execute expressions from file instead of interactive mode
+  -with-uint64     Enable experimental Uint64 type system
   -help            Show this help message
 
 Examples:

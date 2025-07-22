@@ -7,7 +7,6 @@ import (
 // TestTrueFalseBehavior tests that True and False behave like Mathematica symbols
 func TestTrueFalseBehavior(t *testing.T) {
 	eval := NewEvaluator()
-	setupBuiltinAttributes(eval.context.symbolTable)
 
 	tests := []struct {
 		name     string
@@ -190,9 +189,6 @@ func TestTrueFalseBehavior(t *testing.T) {
 
 // TestTrueFalseInternalConsistency tests that True/False behavior is internally consistent
 func TestTrueFalseInternalConsistency(t *testing.T) {
-	eval := NewEvaluator()
-	setupBuiltinAttributes(eval.context.symbolTable)
-
 	// Test that True and False symbols are recognized consistently by utility functions
 	trueExpr := NewSymbolAtom("True")
 	falseExpr := NewSymbolAtom("False")
@@ -283,7 +279,6 @@ func TestTrueFalseLexerParserBehavior(t *testing.T) {
 // TestTrueFalseComparisonWithMathematica documents expected Mathematica equivalences
 func TestTrueFalseComparisonWithMathematica(t *testing.T) {
 	eval := NewEvaluator()
-	setupBuiltinAttributes(eval.context.symbolTable)
 
 	// Document expected behavior compared to Mathematica
 	mathematicaTests := []struct {

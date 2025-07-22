@@ -1,10 +1,15 @@
 
+generate:
+	go generate .
+	go build .
 
 lint:
 	go mod tidy
 	gofmt -w -s *.go
 	golangci-lint run .
+
 test:
+	go generate ./...
 	go test
 
 clean:

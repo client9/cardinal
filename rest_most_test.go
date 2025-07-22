@@ -184,7 +184,7 @@ func TestRestMost_Integration(t *testing.T) {
 		{
 			name:     "Rest error on atom",
 			input:    "Rest(42)",
-			expected: "$Failed(PartError)",
+			expected: "Rest(42)", // Pattern doesn't match, returns unchanged
 		},
 		{
 			name:     "Rest error on empty list",
@@ -216,7 +216,7 @@ func TestRestMost_Integration(t *testing.T) {
 		{
 			name:     "Most error on atom",
 			input:    "Most(42)",
-			expected: "$Failed(PartError)",
+			expected: "Most(42)", // Pattern doesn't match, returns unchanged
 		},
 		{
 			name:     "Most error on empty list",

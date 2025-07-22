@@ -43,6 +43,16 @@ var AttributeNames = map[Attribute]string{
 	Temporary:       "Temporary",
 }
 
+// StringToAttribute converts a string name to an attribute
+func StringToAttribute(name string) (Attribute, bool) {
+	for attr, attrName := range AttributeNames {
+		if attrName == name {
+			return attr, true
+		}
+	}
+	return 0, false
+}
+
 // String returns the string representation of an attribute
 func (a Attribute) String() string {
 	if name, ok := AttributeNames[a]; ok {
