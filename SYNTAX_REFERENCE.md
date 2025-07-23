@@ -22,7 +22,12 @@ If[True, 1, 2]
 MatchQ[expr, pattern]
 ```
 
-**Key Difference**: We use parentheses `()` for function calls, Mathematica uses square brackets `[]`.
+**Key Differences**:
+
+* We use parentheses `()` for function calls, Mathematica uses square brackets `[]`.
+* We use brackers `[]` for list literals, Mathematica uses braces `{}`
+* We use a single colon `:` for input of a Rule (e..g `a:b` is parsed as `Rule(a,b)`), Mathematica uses `->` (e.g.  `a->b` is `Rule[a,b]`)
+* We use braces for `{}` for Association literals, Mathematica uses `<\| \|>`
 
 ## Data Types
 

@@ -25,6 +25,7 @@ var precedences = map[TokenType]Precedence{
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
 	UNSET:        PrecedenceAssign,
+	COLON:        PrecedenceAssign,
 	OR:           PrecedenceLogicalOr,
 	AND:          PrecedenceLogicalAnd,
 	EQUAL:        PrecedenceEquality,
@@ -238,7 +239,7 @@ func (p *Parser) parseListLiteral() Expr {
 func (p *Parser) parseAssociationLiteral() Expr {
 	p.nextToken() // consume '{'
 
-	// Create rules slice for Rule[key, value] expressions
+	// Create rules slice for Rule expressions
 	var rules []Expr
 
 	// Handle empty association {}
@@ -248,30 +249,13 @@ func (p *Parser) parseAssociationLiteral() Expr {
 		return NewList(NewSymbolAtom("Association"))
 	}
 
-	// Parse key-value pairs as Rule[key, value]
+	// Parse expressions (expecting Rule expressions from key:value infix parsing)
 	for {
-		// Parse the key
-		key := p.parseExpression()
-		if key == nil {
-			break
+		// Parse expression (should be key:value which becomes Rule(key, value))
+		expr := p.parseExpression()
+		if expr != nil {
+			rules = append(rules, expr)
 		}
-
-		// Expect colon
-		if p.currentToken.Type != COLON {
-			p.addError(fmt.Sprintf("expected ':', got %s", p.currentToken.String()))
-			break
-		}
-		p.nextToken() // consume ':'
-
-		// Parse the value
-		value := p.parseExpression()
-		if value == nil {
-			break
-		}
-
-		// Create Rule[key, value] expression
-		rule := NewList(NewSymbolAtom("Rule"), key, value)
-		rules = append(rules, rule)
 
 		// Check for closing brace
 		if p.currentToken.Type == RBRACE {
@@ -382,7 +366,7 @@ func (p *Parser) currentPrecedence() Precedence {
 
 func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
 	switch tokenType {
-	case SET, SETDELAYED, UNSET, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE:
+	case SET, SETDELAYED, UNSET, COLON, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE:
 		return true
 	default:
 		return false
@@ -421,6 +405,8 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 		return NewList(NewSymbolAtom("SetDelayed"), left, right)
 	case UNSET:
 		return NewList(NewSymbolAtom("Unset"), left)
+	case COLON:
+		return NewList(NewSymbolAtom("Rule"), left, right)
 	case OR:
 		return NewList(NewSymbolAtom("Or"), left, right)
 	case AND:
