@@ -11,6 +11,7 @@ type Expr interface {
 	String() string
 	InputForm() string
 	Type() string
+	Length() int64
 	Equal(rhs Expr) bool
 }
 
@@ -28,6 +29,10 @@ const (
 type Atom struct {
 	AtomType AtomType
 	Value    interface{}
+}
+
+func (a Atom) Length() int64 {
+	return 0
 }
 
 func (a Atom) String() string {
@@ -109,6 +114,10 @@ const (
 	PrecedenceProduct
 	PrecedenceAssign
 )
+
+func (l List) Length() int64 {
+	return int64(len(l.Elements))
+}
 
 func (l List) String() string {
 	if len(l.Elements) == 0 {
@@ -368,6 +377,12 @@ type ErrorExpr struct {
 	StackTrace []StackFrame // Stack trace of evaluation frames
 }
 
+// Possible we expose the arguments above differently and use ObjectExpr
+// for now return 0
+func (e *ErrorExpr) Length() int64 {
+	return 0
+}
+
 func (e *ErrorExpr) String() string {
 	return fmt.Sprintf("$Failed(%s)", e.ErrorType)
 }
@@ -423,6 +438,10 @@ func (o ObjectExpr) InputForm() string {
 	// Delegate to the wrapped Expr's InputForm if it has one,
 	// otherwise fall back to String()
 	return o.Value.InputForm()
+}
+
+func (o ObjectExpr) Length() int64 {
+	return o.Value.Length() // Delegate to wrapper Expr
 }
 
 func (o ObjectExpr) Type() string {

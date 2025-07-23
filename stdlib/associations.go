@@ -3,9 +3,19 @@ package stdlib
 import (
 	"fmt"
 	"strings"
-	
+
 	"github.com/client9/sexpr/core"
 )
+
+// ExtractAssociation safely extracts an AssociationValue  value from an Expr
+func ExtractAssociation(expr core.Expr) (AssociationValue, bool) {
+	if atom, ok := expr.(core.ObjectExpr); ok && atom.Type() == "Association" {
+		if val, ok := atom.Value.(AssociationValue); ok {
+			return val, true
+		}
+	}
+	return AssociationValue{}, false
+}
 
 // AssociationEntry represents a key-value pair in an association
 type AssociationEntry struct {
@@ -20,6 +30,10 @@ type AssociationValue struct {
 	order   []core.Expr                   // Preserve insertion order of keys
 }
 
+func (a AssociationValue) Length() int64 {
+	return int64(len(a.order))
+}
+
 // NewAssociationValue creates a new empty association
 func NewAssociationValue() AssociationValue {
 	return AssociationValue{
@@ -28,6 +42,11 @@ func NewAssociationValue() AssociationValue {
 	}
 }
 
+func AssociationLength(x AssociationValue) int64 {
+	return int64(len(x.order))
+}
+
+/* AI nonsense
 // NewAssociationFromPairs creates an association from alternating key-value pairs
 func NewAssociationFromPairs(pairs ...core.Expr) (AssociationValue, error) {
 	if len(pairs)%2 != 0 {
@@ -42,6 +61,7 @@ func NewAssociationFromPairs(pairs ...core.Expr) (AssociationValue, error) {
 	}
 	return assoc, nil
 }
+*/
 
 // hashKey computes a hash string for any expression
 func hashKey(key core.Expr) string {
@@ -220,6 +240,7 @@ func (a AssociationValue) Equal(rhs core.Expr) bool {
 	return true
 }
 
+/*
 // NewAssociation creates an ObjectExpr wrapping an AssociationValue
 func NewAssociation(pairs ...core.Expr) (core.ObjectExpr, error) {
 	assocValue, err := NewAssociationFromPairs(pairs...)
@@ -228,6 +249,7 @@ func NewAssociation(pairs ...core.Expr) (core.ObjectExpr, error) {
 	}
 	return core.NewObjectExpr("Association", assocValue), nil
 }
+*/
 
 // Association functions - all work with ObjectExpr of type "Association"
 
