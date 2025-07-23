@@ -33,7 +33,8 @@ func UnequalFloats(x, y float64) bool {
 }
 
 // UnequalFloats checks if two numbers are not equal.
-//   Automatically casted to float64.
+//
+//	Automatically casted to float64.
 func UnequalNumbers(x, y Number) bool {
 	return x != y
 }

@@ -16,7 +16,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		}
 		return core.List{Elements: exprs}
 	}
-	
+
 	// Helper function to create integer list spec
 	createIntList := func(nums ...int64) core.List {
 		exprs := make([]core.Expr, len(nums)+1)
@@ -39,7 +39,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		// For non-list expressions, return as single-element slice
 		return []string{expr.String()}
 	}
-	
+
 	// Helper function to check if result is an error
 	isError := func(expr core.Expr) bool {
 		str := expr.String()
@@ -48,14 +48,14 @@ func TestTakeAndDropFunctions(t *testing.T) {
 
 	testList := createList("a", "b", "c", "d", "e")
 	emptyList := createList()
-	
+
 	tests := []struct {
-		name       string
-		function   string
-		list       core.List
-		arg        interface{} // int64 for n, core.List for [n] or [n,m]
-		expected   []string
-		shouldErr  bool
+		name      string
+		function  string
+		list      core.List
+		arg       interface{} // int64 for n, core.List for [n] or [n,m]
+		expected  []string
+		shouldErr bool
 	}{
 		// TakeList tests (Take(expr, n))
 		{"Take first 2", "TakeList", testList, int64(2), []string{"a", "b"}, false},
@@ -65,7 +65,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		{"Take 0", "TakeList", testList, int64(0), []string{}, false},
 		{"Take more than available", "TakeList", testList, int64(10), []string{"a", "b", "c", "d", "e"}, false},
 		{"Take from empty list", "TakeList", emptyList, int64(2), []string{}, false},
-		
+
 		// TakeListSingle tests (Take(expr, [n]))
 		{"Take single element 1", "TakeListSingle", testList, createIntList(1), []string{"a"}, false},
 		{"Take single element 3", "TakeListSingle", testList, createIntList(3), []string{"c"}, false},
@@ -73,7 +73,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		{"Take single element -2", "TakeListSingle", testList, createIntList(-2), []string{"d"}, false},
 		{"Take single out of bounds", "TakeListSingle", testList, createIntList(10), nil, true},
 		{"Take single from empty", "TakeListSingle", emptyList, createIntList(1), nil, true},
-		
+
 		// TakeListRange tests (Take(expr, [n, m]))
 		{"Take range [1,3]", "TakeListRange", testList, createIntList(1, 3), []string{"a", "b", "c"}, false},
 		{"Take range [2,4]", "TakeListRange", testList, createIntList(2, 4), []string{"b", "c", "d"}, false},
@@ -81,7 +81,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		{"Take range [-2,-2]", "TakeListRange", testList, createIntList(-2, -2), []string{"d"}, false},
 		{"Take range out of bounds", "TakeListRange", testList, createIntList(1, 10), nil, true},
 		{"Take range invalid order", "TakeListRange", testList, createIntList(3, 1), nil, true},
-		
+
 		// DropList tests (Drop(expr, n))
 		{"Drop first 2", "DropList", testList, int64(2), []string{"c", "d", "e"}, false},
 		{"Drop first 3", "DropList", testList, int64(3), []string{"d", "e"}, false},
@@ -91,7 +91,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		{"Drop all", "DropList", testList, int64(5), []string{}, false},
 		{"Drop more than available", "DropList", testList, int64(10), []string{}, false},
 		{"Drop from empty list", "DropList", emptyList, int64(2), []string{}, false},
-		
+
 		// DropListSingle tests (Drop(expr, [n]))
 		{"Drop single element 1", "DropListSingle", testList, createIntList(1), []string{"b", "c", "d", "e"}, false},
 		{"Drop single element 3", "DropListSingle", testList, createIntList(3), []string{"a", "b", "d", "e"}, false},
@@ -99,7 +99,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		{"Drop single element -2", "DropListSingle", testList, createIntList(-2), []string{"a", "b", "c", "e"}, false},
 		{"Drop single out of bounds", "DropListSingle", testList, createIntList(10), nil, true},
 		{"Drop single from empty", "DropListSingle", emptyList, createIntList(1), []string{}, false},
-		
+
 		// DropListRange tests (Drop(expr, [n, m]))
 		{"Drop range [1,3]", "DropListRange", testList, createIntList(1, 3), []string{"d", "e"}, false},
 		{"Drop range [2,4]", "DropListRange", testList, createIntList(2, 4), []string{"a", "e"}, false},
@@ -112,7 +112,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var result core.Expr
-			
+
 			switch tt.function {
 			case "TakeList":
 				result = TakeList(tt.list, tt.arg.(int64))
@@ -129,7 +129,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 			default:
 				t.Fatalf("Unknown function: %s", tt.function)
 			}
-			
+
 			if tt.shouldErr {
 				if !isError(result) {
 					t.Errorf("Expected error, got: %v", result)
@@ -140,7 +140,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 				} else {
 					actual := extractElements(result)
 					if len(actual) != len(tt.expected) {
-						t.Errorf("Expected %d elements, got %d: %v vs %v", 
+						t.Errorf("Expected %d elements, got %d: %v vs %v",
 							len(tt.expected), len(actual), tt.expected, actual)
 					} else {
 						for i, exp := range tt.expected {
@@ -166,7 +166,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 		}
 		return core.List{Elements: exprs}
 	}
-	
+
 	// Helper function to create integer list spec
 	createIntList := func(nums ...int64) core.List {
 		exprs := make([]core.Expr, len(nums)+1)
@@ -178,7 +178,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 	}
 
 	singleElementList := createList("x")
-	
+
 	// Test edge cases
 	t.Run("Take from single element list", func(t *testing.T) {
 		result := TakeList(singleElementList, 1)
@@ -190,7 +190,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 			t.Errorf("Expected List, got %T", result)
 		}
 	})
-	
+
 	t.Run("Drop from single element list", func(t *testing.T) {
 		result := DropList(singleElementList, 1)
 		if list, ok := result.(core.List); ok {
@@ -201,7 +201,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 			t.Errorf("Expected List, got %T", result)
 		}
 	})
-	
+
 	t.Run("Take single with invalid spec", func(t *testing.T) {
 		// Test with too many arguments in list spec
 		invalidSpec := createIntList(1, 2, 3)
@@ -211,7 +211,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 			t.Errorf("Expected error for invalid spec, got %v", result)
 		}
 	})
-	
+
 	t.Run("Drop range with zero index", func(t *testing.T) {
 		// Test with zero index (invalid in 1-based indexing)
 		zeroSpec := createIntList(0, 2)

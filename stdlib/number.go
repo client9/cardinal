@@ -1,7 +1,7 @@
 package stdlib
 
 import (
-        "github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core"
 )
 
 // Number indicates something was a number before being cast to a float64

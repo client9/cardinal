@@ -30,7 +30,6 @@ type AssociationValue struct {
 	order   []core.Expr                   // Preserve insertion order of keys
 }
 
-
 // NewAssociationValue creates a new empty association
 func NewAssociationValue() AssociationValue {
 	return AssociationValue{
@@ -257,7 +256,7 @@ func NewAssociation(pairs ...core.Expr) (core.ObjectExpr, error) {
 
 // AssociationQExpr checks if an expression is an Association
 func AssociationQExpr(expr core.Expr) bool {
-	
+
 	if objExpr, ok := expr.(core.ObjectExpr); ok && objExpr.TypeName == "Association" {
 		return true
 	}

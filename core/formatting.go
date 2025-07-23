@@ -1,0 +1,209 @@
+package core
+
+import (
+	"fmt"
+	"strings"
+)
+
+// Precedence levels for InputForm formatting
+type Precedence int
+
+const (
+	PrecedenceLowest Precedence = iota
+	PrecedenceAssign
+	PrecedenceLogicalOr
+	PrecedenceLogicalAnd
+	PrecedenceEquality
+	PrecedenceComparison
+	PrecedenceSum
+	PrecedenceProduct
+)
+
+// inputFormWithPrecedence formats a List with precedence-aware operator handling
+func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
+	if len(l.Elements) == 0 {
+		return "List()"
+	}
+
+	// Check if this is a special function that has infix/shortcut representation
+	if headAtom, ok := l.Elements[0].(Atom); ok && headAtom.AtomType == SymbolAtom {
+		head := headAtom.Value.(string)
+
+		switch head {
+		case "List":
+			// List(...) -> [...]
+			if len(l.Elements) == 1 {
+				return "[]"
+			}
+			var elements []string
+			for _, elem := range l.Elements[1:] {
+				elements = append(elements, elem.InputForm())
+			}
+			return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
+
+		case "Association":
+			// Association(Rule(a,b), Rule(c,d)) -> {a: b, c: d}
+			if len(l.Elements) == 1 {
+				return "{}"
+			}
+			var pairs []string
+			for _, elem := range l.Elements[1:] {
+				if ruleList, ok := elem.(List); ok && len(ruleList.Elements) == 3 {
+					if headAtom, ok := ruleList.Elements[0].(Atom); ok &&
+						headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "Rule" {
+						key := ruleList.Elements[1].InputForm()
+						value := ruleList.Elements[2].InputForm()
+						pairs = append(pairs, fmt.Sprintf("%s: %s", key, value))
+						continue
+					}
+				}
+				// Fallback for non-Rule elements
+				pairs = append(pairs, elem.InputForm())
+			}
+			return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
+
+		case "Rule":
+			// Rule(a, b) -> a: b
+			if len(l.Elements) == 3 {
+				return fmt.Sprintf("%s: %s", l.Elements[1].InputForm(), l.Elements[2].InputForm())
+			}
+
+		case "Set":
+			// Set(a, b) -> a = b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("=", PrecedenceAssign, parentPrecedence)
+			}
+
+		case "SetDelayed":
+			// SetDelayed(a, b) -> a := b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens(":=", PrecedenceAssign, parentPrecedence)
+			}
+
+		case "Plus":
+			// Plus(a, b, ...) -> a + b + ...
+			if len(l.Elements) >= 3 {
+				return l.formatLeftAssociativeInfix("+", PrecedenceSum, parentPrecedence)
+			}
+
+		case "Times":
+			// Times(a, b, ...) -> a * b * ...
+			if len(l.Elements) >= 3 {
+				return l.formatLeftAssociativeInfix("*", PrecedenceProduct, parentPrecedence)
+			}
+
+		case "Subtract":
+			// Subtract(a, b) -> a - b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("-", PrecedenceSum, parentPrecedence)
+			}
+
+		case "Divide":
+			// Divide(a, b) -> a / b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("/", PrecedenceProduct, parentPrecedence)
+			}
+
+		case "Equal":
+			// Equal(a, b) -> a == b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("==", PrecedenceEquality, parentPrecedence)
+			}
+
+		case "Unequal":
+			// Unequal(a, b) -> a != b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("!=", PrecedenceEquality, parentPrecedence)
+			}
+
+		case "SameQ":
+			// SameQ(a, b) -> a === b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("===", PrecedenceEquality, parentPrecedence)
+			}
+
+		case "UnsameQ":
+			// UnsameQ(a, b) -> a =!= b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("=!=", PrecedenceEquality, parentPrecedence)
+			}
+
+		case "Less":
+			// Less(a, b) -> a < b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("<", PrecedenceComparison, parentPrecedence)
+			}
+
+		case "Greater":
+			// Greater(a, b) -> a > b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens(">", PrecedenceComparison, parentPrecedence)
+			}
+
+		case "LessEqual":
+			// LessEqual(a, b) -> a <= b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens("<=", PrecedenceComparison, parentPrecedence)
+			}
+
+		case "GreaterEqual":
+			// GreaterEqual(a, b) -> a >= b
+			if len(l.Elements) == 3 {
+				return l.formatInfixWithParens(">=", PrecedenceComparison, parentPrecedence)
+			}
+
+		case "And":
+			// And(a, b, ...) -> a && b && ...
+			if len(l.Elements) >= 3 {
+				return l.formatLeftAssociativeInfix("&&", PrecedenceLogicalAnd, parentPrecedence)
+			}
+
+		case "Or":
+			// Or(a, b, ...) -> a || b || ...
+			if len(l.Elements) >= 3 {
+				return l.formatLeftAssociativeInfix("||", PrecedenceLogicalOr, parentPrecedence)
+			}
+		}
+	}
+
+	// Default: function call format Head(arg1, arg2, ...)
+	var elements []string
+	for _, elem := range l.Elements[1:] {
+		elements = append(elements, elem.InputForm())
+	}
+	return fmt.Sprintf("%s(%s)", l.Elements[0].InputForm(), strings.Join(elements, ", "))
+}
+
+// formatInfixWithParens formats a binary infix operation with parentheses if needed
+func (l List) formatInfixWithParens(op string, opPrecedence, parentPrecedence Precedence) string {
+	left := l.getInputFormWithPrecedence(l.Elements[1], opPrecedence)
+	right := l.getInputFormWithPrecedence(l.Elements[2], opPrecedence)
+	result := fmt.Sprintf("%s %s %s", left, op, right)
+
+	if opPrecedence < parentPrecedence {
+		return fmt.Sprintf("(%s)", result)
+	}
+	return result
+}
+
+// formatLeftAssociativeInfix formats left-associative infix operations like a + b + c
+func (l List) formatLeftAssociativeInfix(op string, opPrecedence, parentPrecedence Precedence) string {
+	var parts []string
+	for _, elem := range l.Elements[1:] {
+		parts = append(parts, l.getInputFormWithPrecedence(elem, opPrecedence+1)) // Higher precedence for right operand
+	}
+	result := strings.Join(parts, fmt.Sprintf(" %s ", op))
+
+	if opPrecedence < parentPrecedence {
+		return fmt.Sprintf("(%s)", result)
+	}
+	return result
+}
+
+// getInputFormWithPrecedence gets InputForm with precedence context for proper parenthesization
+func (l List) getInputFormWithPrecedence(expr Expr, precedence Precedence) string {
+	if list, ok := expr.(List); ok {
+		return list.inputFormWithPrecedence(precedence)
+	}
+	return expr.InputForm()
+}
