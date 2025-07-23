@@ -18,14 +18,9 @@ func NotExpr(expr core.Expr) core.Expr {
 	return core.NewList(core.NewSymbolAtom("Not"), expr)
 }
 
-// MatchQExprs checks if an expression matches a pattern
-// func MatchQExprs(expr, pattern Expr, ctx *Context) bool {
-// 	// Convert string-based pattern to symbolic if needed
-// 	symbolicPattern := convertToSymbolicPattern(pattern)
-
-// 	// Create a temporary context for pattern matching (don't pollute original context)
-// 	tempCtx := NewChildContext(ctx)
-
-// 	// Use the existing pattern matching logic
-// 	return matchPatternForMatchQ(symbolicPattern, expr, tempCtx)
-// }
+// MatchQExprs checks if an expression matches a pattern (pure test, no variable binding)
+func MatchQExprs(expr, pattern core.Expr) bool {
+	// Use the pure pattern matcher from core (no Context needed for pure testing)
+	matcher := core.NewPatternMatcher()
+	return matcher.TestMatch(pattern, expr)
+}

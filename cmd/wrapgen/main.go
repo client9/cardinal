@@ -495,6 +495,14 @@ var functionSpecs = []FunctionSpec{
 		SymbolName: "Part",
 		Attributes: []string{},
 	},
+
+	{
+		Pattern:    "MatchQ(x_, y_)",
+		Function:   stdlib.MatchQExprs,
+		OutputFile: "logical_wrappers.go",
+		SymbolName: "MatchQ",
+		Attributes: []string{},
+	},
 }
 
 // processFunctionSpecs processes all function specs, filling in auto-derived fields via reflection
@@ -868,9 +876,6 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 		"SetAttributes(x_, y_)":    WrapSetAttributesSingle,
 		"ClearAttributes(x_, y_List)":  WrapClearAttributesList,
 		"ClearAttributes(x_, y_)":  WrapClearAttributesSingle,
-		
-		// Pattern matching functions
-		"MatchQ(x_, y_)":           WrapMatchQExprs,
 	}
 
 	// Register patterns with the function registry

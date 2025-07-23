@@ -2,37 +2,8 @@ package sexpr
 
 import (
 	"fmt"
-	"github.com/client9/sexpr/core"
 )
 
-// MatchQExprs checks if an expression matches a pattern (pure test, no variable binding)
-func MatchQExprs(expr, pattern Expr, ctx *Context) bool {
-	// Use the pure pattern matcher from core (no Context needed for pure testing)
-	matcher := core.NewPatternMatcher()
-	return matcher.TestMatch(pattern, expr)
-}
-
-// WrapMatchQExprs is a clean wrapper for MatchQ that uses the business logic function
-func WrapMatchQExprs(args []Expr, ctx *Context) Expr {
-	// Validate argument count
-	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError",
-			"MatchQ expects 2 arguments", args)
-	}
-
-	// Check for errors in arguments first
-	for _, arg := range args {
-		if IsError(arg) {
-			return arg
-		}
-	}
-
-	// Call business logic function
-	result := MatchQExprs(args[0], args[1], ctx)
-
-	// Convert result back to Expr
-	return NewBoolAtom(result)
-}
 
 // AttributesExpr gets the attributes of a symbol
 func AttributesExpr(expr Expr, ctx *Context) Expr {
