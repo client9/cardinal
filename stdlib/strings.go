@@ -14,9 +14,9 @@ func StringLengthRunes(s string) int64 {
 	return int64(utf8.RuneCountInString(s))
 }
 
-// TakeString extracts the first or last n bytes from a string
-// Take(str, n) takes first n bytes; Take(str, -n) takes last n bytes
-func TakeString(str string, n int64) core.Expr {
+// StringTakeByte extracts the first or last n bytes from a string
+// StringTakeByte(str, n) takes first n bytes; StringTakeByte(str, -n) takes last n bytes
+func StringTakeByte(str string, n int64) core.Expr {
 	strLength := len(str) // byte length
 
 	if n == 0 {
@@ -46,46 +46,46 @@ func TakeString(str string, n int64) core.Expr {
 	return core.NewStringAtom(str[startIdx:endIdx])
 }
 
-// TakeStringSingle takes the nth byte from a string and returns it as a single-byte string
-// Take(str, [n]) - returns string containing the nth byte
-func TakeStringSingle(str string, indexList core.List) core.Expr {
+// StringTakeByteAt takes the nth byte from a string and returns it as a single-byte string
+// StringTakeByteAt(str, [n]) - returns string containing the nth byte
+func StringTakeByteAt(str string, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
 	if len(indexList.Elements) != 2 { // Head + one element
 		return core.NewErrorExpr("ArgumentError",
-			"Take with list spec requires exactly one index", []core.Expr{indexList})
+			"StringTakeByteAt with list spec requires exactly one index", []core.Expr{indexList})
 	}
 
 	index, ok := core.ExtractInt64(indexList.Elements[1])
 	if !ok {
 		return core.NewErrorExpr("ArgumentError",
-			"Take index must be an integer", []core.Expr{indexList.Elements[1]})
+			"StringTakeByteAt index must be an integer", []core.Expr{indexList.Elements[1]})
 	}
 
-	return takeStringSingle(str, index)
+	return stringTakeByteAtSingle(str, index)
 }
 
-// TakeStringRange takes a range of bytes from a string
-// Take(str, [n, m]) - takes bytes from index n to m (inclusive, 1-based)
-func TakeStringRange(str string, indexList core.List) core.Expr {
+// StringTakeByteRange takes a range of bytes from a string
+// StringTakeByteRange(str, [n, m]) - takes bytes from index n to m (inclusive, 1-based)
+func StringTakeByteRange(str string, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
 	if len(indexList.Elements) != 3 { // Head + two elements
 		return core.NewErrorExpr("ArgumentError",
-			"Take with range spec requires exactly two indices", []core.Expr{indexList})
+			"StringTakeByteRange with range spec requires exactly two indices", []core.Expr{indexList})
 	}
 
 	start, ok1 := core.ExtractInt64(indexList.Elements[1])
 	end, ok2 := core.ExtractInt64(indexList.Elements[2])
 	if !ok1 || !ok2 {
 		return core.NewErrorExpr("ArgumentError",
-			"Take indices must be integers", indexList.Elements[1:])
+			"StringTakeByteRange indices must be integers", indexList.Elements[1:])
 	}
 
-	return takeStringRange(str, start, end)
+	return stringTakeByteRange(str, start, end)
 }
 
-// DropString drops the first or last n bytes from a string and returns the remainder
-// Drop(str, n) drops first n bytes; Drop(str, -n) drops last n bytes
-func DropString(str string, n int64) core.Expr {
+// StringDropByte drops the first or last n bytes from a string and returns the remainder
+// StringDropByte(str, n) drops first n bytes; StringDropByte(str, -n) drops last n bytes
+func StringDropByte(str string, n int64) core.Expr {
 	strLength := len(str) // byte length
 
 	if n == 0 {
@@ -117,52 +117,52 @@ func DropString(str string, n int64) core.Expr {
 	return core.NewStringAtom(str[startIdx:endIdx])
 }
 
-// DropStringSingle drops the nth byte from a string and returns the remainder
-// Drop(str, [n]) - removes the byte at position n
-func DropStringSingle(str string, indexList core.List) core.Expr {
+// StringDropByteAt drops the nth byte from a string and returns the remainder
+// StringDropByteAt(str, [n]) - removes the byte at position n
+func StringDropByteAt(str string, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
 	if len(indexList.Elements) != 2 { // Head + one element
 		return core.NewErrorExpr("ArgumentError",
-			"Drop with list spec requires exactly one index", []core.Expr{indexList})
+			"StringDropByteAt with list spec requires exactly one index", []core.Expr{indexList})
 	}
 
 	index, ok := core.ExtractInt64(indexList.Elements[1])
 	if !ok {
 		return core.NewErrorExpr("ArgumentError",
-			"Drop index must be an integer", []core.Expr{indexList.Elements[1]})
+			"StringDropByteAt index must be an integer", []core.Expr{indexList.Elements[1]})
 	}
 
-	return dropStringSingle(str, index)
+	return stringDropByteAtSingle(str, index)
 }
 
-// DropStringRange drops a range of bytes from a string and returns the remainder
-// Drop(str, [n, m]) - removes bytes from index n to m (inclusive, 1-based)
-func DropStringRange(str string, indexList core.List) core.Expr {
+// StringDropByteRange drops a range of bytes from a string and returns the remainder
+// StringDropByteRange(str, [n, m]) - removes bytes from index n to m (inclusive, 1-based)
+func StringDropByteRange(str string, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
 	if len(indexList.Elements) != 3 { // Head + two elements
 		return core.NewErrorExpr("ArgumentError",
-			"Drop with range spec requires exactly two indices", []core.Expr{indexList})
+			"StringDropByteRange with range spec requires exactly two indices", []core.Expr{indexList})
 	}
 
 	start, ok1 := core.ExtractInt64(indexList.Elements[1])
 	end, ok2 := core.ExtractInt64(indexList.Elements[2])
 	if !ok1 || !ok2 {
 		return core.NewErrorExpr("ArgumentError",
-			"Drop indices must be integers", indexList.Elements[1:])
+			"StringDropByteRange indices must be integers", indexList.Elements[1:])
 	}
 
-	return dropStringRange(str, start, end)
+	return stringDropByteRange(str, start, end)
 }
 
 // Helper functions
 
-// takeStringSingle is a helper function that takes a single byte
-func takeStringSingle(str string, index int64) core.Expr {
+// stringTakeByteAtSingle is a helper function that takes a single byte
+func stringTakeByteAtSingle(str string, index int64) core.Expr {
 	strLength := int64(len(str))
 
 	if strLength == 0 {
 		return core.NewErrorExpr("PartError",
-			"Take: string is empty", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeByteAt: string is empty", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Convert to 0-based indexing and handle negatives
@@ -175,13 +175,13 @@ func takeStringSingle(str string, index int64) core.Expr {
 	} else {
 		// index == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"Take index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeByteAt index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if actualIndex < 0 || actualIndex >= strLength {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Take index %d is out of bounds for string with %d bytes",
+			fmt.Sprintf("StringTakeByteAt index %d is out of bounds for string with %d bytes",
 				index, strLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -189,8 +189,8 @@ func takeStringSingle(str string, index int64) core.Expr {
 	return core.NewStringAtom(string(str[actualIndex]))
 }
 
-// takeStringRange is a helper function that implements the range logic
-func takeStringRange(str string, start, end int64) core.Expr {
+// stringTakeByteRange is a helper function that implements the range logic
+func stringTakeByteRange(str string, start, end int64) core.Expr {
 	strLength := int64(len(str))
 
 	if strLength == 0 {
@@ -207,7 +207,7 @@ func takeStringRange(str string, start, end int64) core.Expr {
 	} else {
 		// start == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"Take index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeByteRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	if end > 0 {
@@ -217,13 +217,13 @@ func takeStringRange(str string, start, end int64) core.Expr {
 	} else {
 		// end == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"Take index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeByteRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if startIdx < 0 || endIdx >= strLength || startIdx > endIdx {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Take range [%d, %d] is out of bounds for string with %d bytes",
+			fmt.Sprintf("StringTakeByteRange range [%d, %d] is out of bounds for string with %d bytes",
 				start, end, strLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -231,8 +231,8 @@ func takeStringRange(str string, start, end int64) core.Expr {
 	return core.NewStringAtom(str[startIdx : endIdx+1])
 }
 
-// dropStringSingle is a helper function that drops a single byte
-func dropStringSingle(str string, index int64) core.Expr {
+// stringDropByteAtSingle is a helper function that drops a single byte
+func stringDropByteAtSingle(str string, index int64) core.Expr {
 	strLength := int64(len(str))
 
 	if strLength == 0 {
@@ -249,13 +249,13 @@ func dropStringSingle(str string, index int64) core.Expr {
 	} else {
 		// index == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"Drop index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringDropByteAt index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if actualIndex < 0 || actualIndex >= strLength {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Drop index %d is out of bounds for string with %d bytes",
+			fmt.Sprintf("StringDropByteAt index %d is out of bounds for string with %d bytes",
 				index, strLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -264,8 +264,8 @@ func dropStringSingle(str string, index int64) core.Expr {
 	return core.NewStringAtom(result)
 }
 
-// dropStringRange is a helper function that drops a range of bytes
-func dropStringRange(str string, start, end int64) core.Expr {
+// stringDropByteRange is a helper function that drops a range of bytes
+func stringDropByteRange(str string, start, end int64) core.Expr {
 	strLength := int64(len(str))
 
 	if strLength == 0 {
@@ -282,7 +282,7 @@ func dropStringRange(str string, start, end int64) core.Expr {
 	} else {
 		// start == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"Drop index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringDropByteRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	if end > 0 {
@@ -292,13 +292,13 @@ func dropStringRange(str string, start, end int64) core.Expr {
 	} else {
 		// end == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"Drop index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringDropByteRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if startIdx < 0 || endIdx >= strLength || startIdx > endIdx {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Drop range [%d, %d] is out of bounds for string with %d bytes",
+			fmt.Sprintf("StringDropByteRange range [%d, %d] is out of bounds for string with %d bytes",
 				start, end, strLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -340,26 +340,26 @@ func StringTake(str string, n int64) core.Expr {
 	return core.NewStringAtom(string(runes[startIdx:endIdx]))
 }
 
-// StringTakeSingle takes the nth rune from a string and returns it as a single-rune string
-// StringTake(str, [n]) - returns string containing the nth rune
-func StringTakeSingle(str string, indexList core.List) core.Expr {
+// StringTakeAt takes the nth rune from a string and returns it as a single-rune string
+// StringTakeAt(str, [n]) - returns string containing the nth rune
+func StringTakeAt(str string, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
 	if len(indexList.Elements) != 2 { // Head + one element
 		return core.NewErrorExpr("ArgumentError",
-			"StringTake with list spec requires exactly one index", []core.Expr{indexList})
+			"StringTakeAt with list spec requires exactly one index", []core.Expr{indexList})
 	}
 
 	index, ok := core.ExtractInt64(indexList.Elements[1])
 	if !ok {
 		return core.NewErrorExpr("ArgumentError",
-			"StringTake index must be an integer", []core.Expr{indexList.Elements[1]})
+			"StringTakeAt index must be an integer", []core.Expr{indexList.Elements[1]})
 	}
 
-	return stringTakeSingle(str, index)
+	return stringTakeAtSingle(str, index)
 }
 
 // StringTakeRange takes a range of runes from a string
-// StringTake(str, [n, m]) - takes runes from index n to m (inclusive, 1-based)
+// StringTakeRange(str, [n, m]) - takes runes from index n to m (inclusive, 1-based)
 func StringTakeRange(str string, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
 	if len(indexList.Elements) != 3 { // Head + two elements
@@ -412,26 +412,26 @@ func StringDrop(str string, n int64) core.Expr {
 	return core.NewStringAtom(string(runes[startIdx:endIdx]))
 }
 
-// StringDropSingle drops the nth rune from a string and returns the remainder
-// StringDrop(str, [n]) - removes the rune at position n
-func StringDropSingle(str string, indexList core.List) core.Expr {
+// StringDropAt drops the nth rune from a string and returns the remainder
+// StringDropAt(str, [n]) - removes the rune at position n
+func StringDropAt(str string, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
 	if len(indexList.Elements) != 2 { // Head + one element
 		return core.NewErrorExpr("ArgumentError",
-			"StringDrop with list spec requires exactly one index", []core.Expr{indexList})
+			"StringDropAt with list spec requires exactly one index", []core.Expr{indexList})
 	}
 
 	index, ok := core.ExtractInt64(indexList.Elements[1])
 	if !ok {
 		return core.NewErrorExpr("ArgumentError",
-			"StringDrop index must be an integer", []core.Expr{indexList.Elements[1]})
+			"StringDropAt index must be an integer", []core.Expr{indexList.Elements[1]})
 	}
 
-	return stringDropSingle(str, index)
+	return stringDropAtSingle(str, index)
 }
 
 // StringDropRange drops a range of runes from a string and returns the remainder
-// StringDrop(str, [n, m]) - removes runes from index n to m (inclusive, 1-based)
+// StringDropRange(str, [n, m]) - removes runes from index n to m (inclusive, 1-based)
 func StringDropRange(str string, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
 	if len(indexList.Elements) != 3 { // Head + two elements
@@ -451,14 +451,14 @@ func StringDropRange(str string, indexList core.List) core.Expr {
 
 // Helper functions for rune-based operations
 
-// stringTakeSingle is a helper function that takes a single rune
-func stringTakeSingle(str string, index int64) core.Expr {
+// stringTakeAtSingle is a helper function that takes a single rune
+func stringTakeAtSingle(str string, index int64) core.Expr {
 	runes := []rune(str)
 	runeLength := int64(len(runes))
 
 	if runeLength == 0 {
 		return core.NewErrorExpr("PartError",
-			"StringTake: string is empty", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeAt: string is empty", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Convert to 0-based indexing and handle negatives
@@ -471,13 +471,13 @@ func stringTakeSingle(str string, index int64) core.Expr {
 	} else {
 		// index == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"StringTake index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeAt index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if actualIndex < 0 || actualIndex >= runeLength {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("StringTake index %d is out of bounds for string with %d characters",
+			fmt.Sprintf("StringTakeAt index %d is out of bounds for string with %d characters",
 				index, runeLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -504,7 +504,7 @@ func stringTakeRange(str string, start, end int64) core.Expr {
 	} else {
 		// start == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"StringTake index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	if end > 0 {
@@ -514,13 +514,13 @@ func stringTakeRange(str string, start, end int64) core.Expr {
 	} else {
 		// end == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"StringTake index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringTakeRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if startIdx < 0 || endIdx >= runeLength || startIdx > endIdx {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("StringTake range [%d, %d] is out of bounds for string with %d characters",
+			fmt.Sprintf("StringTakeRange range [%d, %d] is out of bounds for string with %d characters",
 				start, end, runeLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -528,8 +528,8 @@ func stringTakeRange(str string, start, end int64) core.Expr {
 	return core.NewStringAtom(string(runes[startIdx : endIdx+1]))
 }
 
-// stringDropSingle is a helper function that drops a single rune
-func stringDropSingle(str string, index int64) core.Expr {
+// stringDropAtSingle is a helper function that drops a single rune
+func stringDropAtSingle(str string, index int64) core.Expr {
 	runes := []rune(str)
 	runeLength := int64(len(runes))
 
@@ -547,13 +547,13 @@ func stringDropSingle(str string, index int64) core.Expr {
 	} else {
 		// index == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"StringDrop index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringDropAt index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if actualIndex < 0 || actualIndex >= runeLength {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("StringDrop index %d is out of bounds for string with %d characters",
+			fmt.Sprintf("StringDropAt index %d is out of bounds for string with %d characters",
 				index, runeLength), []core.Expr{core.NewStringAtom(str)})
 	}
 
@@ -581,7 +581,7 @@ func stringDropRange(str string, start, end int64) core.Expr {
 	} else {
 		// start == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"StringDrop index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringDropRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	if end > 0 {
@@ -591,13 +591,13 @@ func stringDropRange(str string, start, end int64) core.Expr {
 	} else {
 		// end == 0 is invalid in 1-based indexing
 		return core.NewErrorExpr("PartError",
-			"StringDrop index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
+			"StringDropRange index 0 is out of bounds (indices start at 1)", []core.Expr{core.NewStringAtom(str)})
 	}
 
 	// Bounds checking
 	if startIdx < 0 || endIdx >= runeLength || startIdx > endIdx {
 		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("StringDrop range [%d, %d] is out of bounds for string with %d characters",
+			fmt.Sprintf("StringDropRange range [%d, %d] is out of bounds for string with %d characters",
 				start, end, runeLength), []core.Expr{core.NewStringAtom(str)})
 	}
 

@@ -80,13 +80,3 @@ func DivideExprs(x, y core.Expr) (float64, error) {
 
 	return val1 / val2, nil
 }
-
-// PlusEmpty returns the additive identity (0) for empty Plus()
-func PlusEmpty() core.Expr {
-	return core.NewIntAtom(0)
-}
-
-// TimesEmpty returns the multiplicative identity (1) for empty Times()
-func TimesEmpty() core.Expr {
-	return core.NewIntAtom(1)
-}

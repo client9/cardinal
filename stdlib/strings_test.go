@@ -39,56 +39,56 @@ func TestTakeAndDropStringFunctions(t *testing.T) {
 		expected  string
 		shouldErr bool
 	}{
-		// TakeString tests (Take(str, n))
-		{"Take first 3 bytes", "TakeString", "hello", int64(3), "hel", false},
-		{"Take first 5 bytes", "TakeString", "hello", int64(5), "hello", false},
-		{"Take last 2 bytes", "TakeString", "hello", int64(-2), "lo", false},
-		{"Take last 3 bytes", "TakeString", "hello", int64(-3), "llo", false},
-		{"Take 0 bytes", "TakeString", "hello", int64(0), "", false},
-		{"Take more than available", "TakeString", "hello", int64(10), "hello", false},
-		{"Take from empty string", "TakeString", "", int64(2), "", false},
+		// StringTakeByte tests (StringTakeByte(str, n))
+		{"Take first 3 bytes", "StringTakeByte", "hello", int64(3), "hel", false},
+		{"Take first 5 bytes", "StringTakeByte", "hello", int64(5), "hello", false},
+		{"Take last 2 bytes", "StringTakeByte", "hello", int64(-2), "lo", false},
+		{"Take last 3 bytes", "StringTakeByte", "hello", int64(-3), "llo", false},
+		{"Take 0 bytes", "StringTakeByte", "hello", int64(0), "", false},
+		{"Take more than available", "StringTakeByte", "hello", int64(10), "hello", false},
+		{"Take from empty string", "StringTakeByte", "", int64(2), "", false},
 
-		// TakeStringSingle tests (Take(str, [n]))
-		{"Take single byte 1", "TakeStringSingle", "hello", createIntList(1), "h", false},
-		{"Take single byte 3", "TakeStringSingle", "hello", createIntList(3), "l", false},
-		{"Take single byte -1", "TakeStringSingle", "hello", createIntList(-1), "o", false},
-		{"Take single byte -2", "TakeStringSingle", "hello", createIntList(-2), "l", false},
-		{"Take single out of bounds", "TakeStringSingle", "hello", createIntList(10), "", true},
-		{"Take single from empty", "TakeStringSingle", "", createIntList(1), "", true},
+		// StringTakeByteAt tests (StringTakeByteAt(str, [n]))
+		{"Take single byte 1", "StringTakeByteAt", "hello", createIntList(1), "h", false},
+		{"Take single byte 3", "StringTakeByteAt", "hello", createIntList(3), "l", false},
+		{"Take single byte -1", "StringTakeByteAt", "hello", createIntList(-1), "o", false},
+		{"Take single byte -2", "StringTakeByteAt", "hello", createIntList(-2), "l", false},
+		{"Take single out of bounds", "StringTakeByteAt", "hello", createIntList(10), "", true},
+		{"Take single from empty", "StringTakeByteAt", "", createIntList(1), "", true},
 
-		// TakeStringRange tests (Take(str, [n, m]))
-		{"Take range [1,3]", "TakeStringRange", "hello", createIntList(1, 3), "hel", false},
-		{"Take range [2,4]", "TakeStringRange", "hello", createIntList(2, 4), "ell", false},
-		{"Take range [-3,-1]", "TakeStringRange", "hello", createIntList(-3, -1), "llo", false},
-		{"Take range [-2,-2]", "TakeStringRange", "hello", createIntList(-2, -2), "l", false},
-		{"Take range out of bounds", "TakeStringRange", "hello", createIntList(1, 10), "", true},
-		{"Take range invalid order", "TakeStringRange", "hello", createIntList(3, 1), "", true},
+		// StringTakeByteRange tests (StringTakeByteRange(str, [n, m]))
+		{"Take range [1,3]", "StringTakeByteRange", "hello", createIntList(1, 3), "hel", false},
+		{"Take range [2,4]", "StringTakeByteRange", "hello", createIntList(2, 4), "ell", false},
+		{"Take range [-3,-1]", "StringTakeByteRange", "hello", createIntList(-3, -1), "llo", false},
+		{"Take range [-2,-2]", "StringTakeByteRange", "hello", createIntList(-2, -2), "l", false},
+		{"Take range out of bounds", "StringTakeByteRange", "hello", createIntList(1, 10), "", true},
+		{"Take range invalid order", "StringTakeByteRange", "hello", createIntList(3, 1), "", true},
 
-		// DropString tests (Drop(str, n))
-		{"Drop first 2 bytes", "DropString", "hello", int64(2), "llo", false},
-		{"Drop first 3 bytes", "DropString", "hello", int64(3), "lo", false},
-		{"Drop last 2 bytes", "DropString", "hello", int64(-2), "hel", false},
-		{"Drop last 3 bytes", "DropString", "hello", int64(-3), "he", false},
-		{"Drop 0 bytes", "DropString", "hello", int64(0), "hello", false},
-		{"Drop all bytes", "DropString", "hello", int64(5), "", false},
-		{"Drop more than available", "DropString", "hello", int64(10), "", false},
-		{"Drop from empty string", "DropString", "", int64(2), "", false},
+		// StringDropByte tests (StringDropByte(str, n))
+		{"Drop first 2 bytes", "StringDropByte", "hello", int64(2), "llo", false},
+		{"Drop first 3 bytes", "StringDropByte", "hello", int64(3), "lo", false},
+		{"Drop last 2 bytes", "StringDropByte", "hello", int64(-2), "hel", false},
+		{"Drop last 3 bytes", "StringDropByte", "hello", int64(-3), "he", false},
+		{"Drop 0 bytes", "StringDropByte", "hello", int64(0), "hello", false},
+		{"Drop all bytes", "StringDropByte", "hello", int64(5), "", false},
+		{"Drop more than available", "StringDropByte", "hello", int64(10), "", false},
+		{"Drop from empty string", "StringDropByte", "", int64(2), "", false},
 
-		// DropStringSingle tests (Drop(str, [n]))
-		{"Drop single byte 1", "DropStringSingle", "hello", createIntList(1), "ello", false},
-		{"Drop single byte 3", "DropStringSingle", "hello", createIntList(3), "helo", false},
-		{"Drop single byte -1", "DropStringSingle", "hello", createIntList(-1), "hell", false},
-		{"Drop single byte -2", "DropStringSingle", "hello", createIntList(-2), "helo", false},
-		{"Drop single out of bounds", "DropStringSingle", "hello", createIntList(10), "", true},
-		{"Drop single from empty", "DropStringSingle", "", createIntList(1), "", false},
+		// StringDropByteAt tests (StringDropByteAt(str, [n]))
+		{"Drop single byte 1", "StringDropByteAt", "hello", createIntList(1), "ello", false},
+		{"Drop single byte 3", "StringDropByteAt", "hello", createIntList(3), "helo", false},
+		{"Drop single byte -1", "StringDropByteAt", "hello", createIntList(-1), "hell", false},
+		{"Drop single byte -2", "StringDropByteAt", "hello", createIntList(-2), "helo", false},
+		{"Drop single out of bounds", "StringDropByteAt", "hello", createIntList(10), "", true},
+		{"Drop single from empty", "StringDropByteAt", "", createIntList(1), "", false},
 
-		// DropStringRange tests (Drop(str, [n, m]))
-		{"Drop range [1,3]", "DropStringRange", "hello", createIntList(1, 3), "lo", false},
-		{"Drop range [2,4]", "DropStringRange", "hello", createIntList(2, 4), "ho", false},
-		{"Drop range [-3,-1]", "DropStringRange", "hello", createIntList(-3, -1), "he", false},
-		{"Drop range [-2,-2]", "DropStringRange", "hello", createIntList(-2, -2), "helo", false},
-		{"Drop range out of bounds", "DropStringRange", "hello", createIntList(1, 10), "", true},
-		{"Drop range invalid order", "DropStringRange", "hello", createIntList(3, 1), "", true},
+		// StringDropByteRange tests (StringDropByteRange(str, [n, m]))
+		{"Drop range [1,3]", "StringDropByteRange", "hello", createIntList(1, 3), "lo", false},
+		{"Drop range [2,4]", "StringDropByteRange", "hello", createIntList(2, 4), "ho", false},
+		{"Drop range [-3,-1]", "StringDropByteRange", "hello", createIntList(-3, -1), "he", false},
+		{"Drop range [-2,-2]", "StringDropByteRange", "hello", createIntList(-2, -2), "helo", false},
+		{"Drop range out of bounds", "StringDropByteRange", "hello", createIntList(1, 10), "", true},
+		{"Drop range invalid order", "StringDropByteRange", "hello", createIntList(3, 1), "", true},
 	}
 
 	for _, tt := range tests {
@@ -96,18 +96,18 @@ func TestTakeAndDropStringFunctions(t *testing.T) {
 			var result core.Expr
 
 			switch tt.function {
-			case "TakeString":
-				result = TakeString(tt.str, tt.arg.(int64))
-			case "TakeStringSingle":
-				result = TakeStringSingle(tt.str, tt.arg.(core.List))
-			case "TakeStringRange":
-				result = TakeStringRange(tt.str, tt.arg.(core.List))
-			case "DropString":
-				result = DropString(tt.str, tt.arg.(int64))
-			case "DropStringSingle":
-				result = DropStringSingle(tt.str, tt.arg.(core.List))
-			case "DropStringRange":
-				result = DropStringRange(tt.str, tt.arg.(core.List))
+			case "StringTakeByte":
+				result = StringTakeByte(tt.str, tt.arg.(int64))
+			case "StringTakeByteAt":
+				result = StringTakeByteAt(tt.str, tt.arg.(core.List))
+			case "StringTakeByteRange":
+				result = StringTakeByteRange(tt.str, tt.arg.(core.List))
+			case "StringDropByte":
+				result = StringDropByte(tt.str, tt.arg.(int64))
+			case "StringDropByteAt":
+				result = StringDropByteAt(tt.str, tt.arg.(core.List))
+			case "StringDropByteRange":
+				result = StringDropByteRange(tt.str, tt.arg.(core.List))
 			default:
 				t.Fatalf("Unknown function: %s", tt.function)
 			}
@@ -142,14 +142,14 @@ func TestStringTakeDropEdgeCases(t *testing.T) {
 	}
 
 	t.Run("Take from single byte string", func(t *testing.T) {
-		result := TakeString("x", 1)
+		result := StringTakeByte("x", 1)
 		if str, ok := core.ExtractString(result); !ok || str != "x" {
 			t.Errorf("Expected \"x\", got %v", result)
 		}
 	})
 
 	t.Run("Drop from single byte string", func(t *testing.T) {
-		result := DropString("x", 1)
+		result := StringDropByte("x", 1)
 		if str, ok := core.ExtractString(result); !ok || str != "" {
 			t.Errorf("Expected empty string, got %v", result)
 		}
@@ -158,7 +158,7 @@ func TestStringTakeDropEdgeCases(t *testing.T) {
 	t.Run("Take single with invalid spec", func(t *testing.T) {
 		// Test with too many arguments in list spec
 		invalidSpec := createIntList(1, 2, 3)
-		result := TakeStringSingle("abc", invalidSpec)
+		result := StringTakeByteAt("abc", invalidSpec)
 		str := result.String()
 		if !(str == "Error" || (len(str) > 7 && str[:7] == "$Failed")) {
 			t.Errorf("Expected error for invalid spec, got %v", result)
@@ -168,7 +168,7 @@ func TestStringTakeDropEdgeCases(t *testing.T) {
 	t.Run("Drop range with zero index", func(t *testing.T) {
 		// Test with zero index (invalid in 1-based indexing)
 		zeroSpec := createIntList(0, 2)
-		result := DropStringRange("abc", zeroSpec)
+		result := StringDropByteRange("abc", zeroSpec)
 		str := result.String()
 		if !(str == "Error" || (len(str) > 7 && str[:7] == "$Failed")) {
 			t.Errorf("Expected error for zero index, got %v", result)
@@ -182,19 +182,19 @@ func TestStringTakeDropEdgeCases(t *testing.T) {
 
 		// Should operate on bytes, not Unicode characters
 		// Taking 4 bytes gives us "caf" + first byte of é (0xC3)
-		result := TakeString(utf8Str, 4)
+		result := StringTakeByte(utf8Str, 4)
 		if str, ok := core.ExtractString(result); !ok || str != "caf\xc3" {
 			t.Errorf("Expected \"caf\\xc3\" (4 bytes from café), got %q", str)
 		}
 
 		// Taking 5 bytes should get the whole string
-		result = TakeString(utf8Str, 5)
+		result = StringTakeByte(utf8Str, 5)
 		if str, ok := core.ExtractString(result); !ok || str != "café" {
 			t.Errorf("Expected \"café\" (all 5 bytes), got %q", str)
 		}
 
 		// Taking first 3 bytes should give us just "caf"
-		result = TakeString(utf8Str, 3)
+		result = StringTakeByte(utf8Str, 3)
 		if str, ok := core.ExtractString(result); !ok || str != "caf" {
 			t.Errorf("Expected \"caf\" (3 bytes), got %q", str)
 		}
@@ -243,13 +243,13 @@ func TestStringTakeAndStringDropFunctions(t *testing.T) {
 		{"StringTake more than available", "StringTake", "hi", int64(10), "hi", false},
 		{"StringTake from empty string", "StringTake", "", int64(2), "", false},
 
-		// StringTakeSingle tests (StringTake(str, [n])) - RUNE-based
-		{"StringTake single rune 1", "StringTakeSingle", "café", createIntList(1), "c", false},
-		{"StringTake single rune 4", "StringTakeSingle", "café", createIntList(4), "é", false},
-		{"StringTake single rune -1", "StringTakeSingle", "café", createIntList(-1), "é", false},
-		{"StringTake single rune -2", "StringTakeSingle", "café", createIntList(-2), "f", false},
-		{"StringTake single out of bounds", "StringTakeSingle", "hi", createIntList(10), "", true},
-		{"StringTake single from empty", "StringTakeSingle", "", createIntList(1), "", true},
+		// StringTakeAt tests (StringTakeAt(str, [n])) - RUNE-based
+		{"StringTake single rune 1", "StringTakeAt", "café", createIntList(1), "c", false},
+		{"StringTake single rune 4", "StringTakeAt", "café", createIntList(4), "é", false},
+		{"StringTake single rune -1", "StringTakeAt", "café", createIntList(-1), "é", false},
+		{"StringTake single rune -2", "StringTakeAt", "café", createIntList(-2), "f", false},
+		{"StringTake single out of bounds", "StringTakeAt", "hi", createIntList(10), "", true},
+		{"StringTake single from empty", "StringTakeAt", "", createIntList(1), "", true},
 
 		// StringTakeRange tests (StringTake(str, [n, m])) - RUNE-based
 		{"StringTake range [1,3]", "StringTakeRange", "café", createIntList(1, 3), "caf", false},
@@ -269,13 +269,13 @@ func TestStringTakeAndStringDropFunctions(t *testing.T) {
 		{"StringDrop more than available", "StringDrop", "hi", int64(10), "", false},
 		{"StringDrop from empty string", "StringDrop", "", int64(2), "", false},
 
-		// StringDropSingle tests (StringDrop(str, [n])) - RUNE-based
-		{"StringDrop single rune 1", "StringDropSingle", "café", createIntList(1), "afé", false},
-		{"StringDrop single rune 4", "StringDropSingle", "café", createIntList(4), "caf", false},
-		{"StringDrop single rune -1", "StringDropSingle", "café", createIntList(-1), "caf", false},
-		{"StringDrop single rune -2", "StringDropSingle", "café", createIntList(-2), "caé", false},
-		{"StringDrop single out of bounds", "StringDropSingle", "hi", createIntList(10), "", true},
-		{"StringDrop single from empty", "StringDropSingle", "", createIntList(1), "", false},
+		// StringDropAt tests (StringDropAt(str, [n])) - RUNE-based
+		{"StringDrop single rune 1", "StringDropAt", "café", createIntList(1), "afé", false},
+		{"StringDrop single rune 4", "StringDropAt", "café", createIntList(4), "caf", false},
+		{"StringDrop single rune -1", "StringDropAt", "café", createIntList(-1), "caf", false},
+		{"StringDrop single rune -2", "StringDropAt", "café", createIntList(-2), "caé", false},
+		{"StringDrop single out of bounds", "StringDropAt", "hi", createIntList(10), "", true},
+		{"StringDrop single from empty", "StringDropAt", "", createIntList(1), "", false},
 
 		// StringDropRange tests (StringDrop(str, [n, m])) - RUNE-based
 		{"StringDrop range [1,3]", "StringDropRange", "café", createIntList(1, 3), "é", false},
@@ -293,14 +293,14 @@ func TestStringTakeAndStringDropFunctions(t *testing.T) {
 			switch tt.function {
 			case "StringTake":
 				result = StringTake(tt.str, tt.arg.(int64))
-			case "StringTakeSingle":
-				result = StringTakeSingle(tt.str, tt.arg.(core.List))
+			case "StringTakeAt":
+				result = StringTakeAt(tt.str, tt.arg.(core.List))
 			case "StringTakeRange":
 				result = StringTakeRange(tt.str, tt.arg.(core.List))
 			case "StringDrop":
 				result = StringDrop(tt.str, tt.arg.(int64))
-			case "StringDropSingle":
-				result = StringDropSingle(tt.str, tt.arg.(core.List))
+			case "StringDropAt":
+				result = StringDropAt(tt.str, tt.arg.(core.List))
 			case "StringDropRange":
 				result = StringDropRange(tt.str, tt.arg.(core.List))
 			default:
@@ -337,7 +337,7 @@ func TestStringTakeDropVsByteBasedComparison(t *testing.T) {
 		}
 
 		// Take works on bytes
-		result2 := TakeString(utf8Str, 4)
+		result2 := StringTakeByte(utf8Str, 4)
 		if str, ok := core.ExtractString(result2); !ok || str != "caf\xc3" {
 			t.Errorf("Take(\"café\", 4) expected \"caf\\xc3\", got %q", str)
 		}
@@ -354,13 +354,13 @@ func TestStringTakeDropVsByteBasedComparison(t *testing.T) {
 		}
 
 		// StringTake gets 4th character (é)
-		result1 := StringTakeSingle(utf8Str, createIntList(4))
+		result1 := StringTakeAt(utf8Str, createIntList(4))
 		if str, ok := core.ExtractString(result1); !ok || str != "é" {
 			t.Errorf("StringTake(\"café\", [4]) expected \"é\", got %q", str)
 		}
 
 		// Take gets 4th byte (first byte of é which is 0xC3)
-		result2 := TakeStringSingle(utf8Str, createIntList(4))
+		result2 := StringTakeByteAt(utf8Str, createIntList(4))
 		if str, ok := core.ExtractString(result2); !ok || str != "Ã" {
 			t.Errorf("Take(\"café\", [4]) expected \"Ã\" (0xC3), got %q", str)
 		}

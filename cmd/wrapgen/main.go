@@ -377,45 +377,45 @@ var functionSpecs = []FunctionSpec{
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Take(x_String, n_Integer)",
-		Function:   stdlib.TakeString,
+		Pattern:    "StringTakeByte(x_String, n_Integer)",
+		Function:   stdlib.StringTakeByte,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "Take",
+		SymbolName: "StringTakeByte",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Take(x_String, List(n_Integer))",
-		Function:   stdlib.TakeStringSingle,
+		Pattern:    "StringTakeByteAt(x_String, List(n_Integer))",
+		Function:   stdlib.StringTakeByteAt,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "Take",
+		SymbolName: "StringTakeByteAt",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Take(x_String, List(n_Integer, m_Integer))",
-		Function:   stdlib.TakeStringRange,
+		Pattern:    "StringTakeByteRange(x_String, List(n_Integer, m_Integer))",
+		Function:   stdlib.StringTakeByteRange,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "Take",
+		SymbolName: "StringTakeByteRange",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Drop(x_String, n_Integer)",
-		Function:   stdlib.DropString,
+		Pattern:    "StringDropByte(x_String, n_Integer)",
+		Function:   stdlib.StringDropByte,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "Drop",
+		SymbolName: "StringDropByte",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Drop(x_String, List(n_Integer))",
-		Function:   stdlib.DropStringSingle,
+		Pattern:    "StringDropByteAt(x_String, List(n_Integer))",
+		Function:   stdlib.StringDropByteAt,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "Drop",
+		SymbolName: "StringDropByteAt",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Drop(x_String, List(n_Integer, m_Integer))",
-		Function:   stdlib.DropStringRange,
+		Pattern:    "StringDropByteRange(x_String, List(n_Integer, m_Integer))",
+		Function:   stdlib.StringDropByteRange,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "Drop",
+		SymbolName: "StringDropByteRange",
 		Attributes: []string{},
 	},
 	{
@@ -426,10 +426,10 @@ var functionSpecs = []FunctionSpec{
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "StringTake(x_String, List(n_Integer))",
-		Function:   stdlib.StringTakeSingle,
+		Pattern:    "StringTakeAt(x_String, List(n_Integer))",
+		Function:   stdlib.StringTakeAt,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTake",
+		SymbolName: "StringTakeAt",
 		Attributes: []string{},
 	},
 	{
@@ -447,10 +447,10 @@ var functionSpecs = []FunctionSpec{
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "StringDrop(x_String, List(n_Integer))",
-		Function:   stdlib.StringDropSingle,
+		Pattern:    "StringDropAt(x_String, List(n_Integer))",
+		Function:   stdlib.StringDropAt,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDrop",
+		SymbolName: "StringDropAt",
 		Attributes: []string{},
 	},
 	{
@@ -863,12 +863,14 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 {{end}}
 
 		// Special attribute manipulation functions (require context)
-		"Attributes(x_)":           EvaluateAttributes,
-		"SetAttributes(x_, y_)":    EvaluateSetAttributes,
-		"ClearAttributes(x_, y_)":  EvaluateClearAttributes,
+		"Attributes(x_)":           WrapAttributesExpr,
+		"SetAttributes(x_, y_List)": WrapSetAttributesList,
+		"SetAttributes(x_, y_)":    WrapSetAttributesSingle,
+		"ClearAttributes(x_, y_List)":  WrapClearAttributesList,
+		"ClearAttributes(x_, y_)":  WrapClearAttributesSingle,
 		
 		// Pattern matching functions
-		"MatchQ(x_, y_)":           EvaluateMatchQ,
+		"MatchQ(x_, y_)":           WrapMatchQExprs,
 	}
 
 	// Register patterns with the function registry

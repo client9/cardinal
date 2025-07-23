@@ -4,9 +4,6 @@ import (
 	"fmt"
 )
 
-//go:generate go run cmd/wrapgen/main.go -single builtin_wrappers.go
-//go:generate go run cmd/wrapgen/main.go -setup builtin_setup.go
-
 // MatchQExprs checks if an expression matches a pattern
 func MatchQExprs(expr, pattern Expr, ctx *Context) bool {
 	// Convert string-based pattern to symbolic if needed
