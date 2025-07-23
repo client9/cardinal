@@ -109,13 +109,13 @@ type Precedence int
 
 const (
 	PrecedenceLowest Precedence = iota
+	PrecedenceAssign
 	PrecedenceLogicalOr
 	PrecedenceLogicalAnd
 	PrecedenceEquality
 	PrecedenceComparison
 	PrecedenceSum
 	PrecedenceProduct
-	PrecedenceAssign
 )
 
 func (l List) Length() int64 {
