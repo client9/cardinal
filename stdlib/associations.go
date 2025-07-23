@@ -30,9 +30,6 @@ type AssociationValue struct {
 	order   []core.Expr                   // Preserve insertion order of keys
 }
 
-func (a AssociationValue) Length() int64 {
-	return int64(len(a.order))
-}
 
 // NewAssociationValue creates a new empty association
 func NewAssociationValue() AssociationValue {
@@ -172,6 +169,11 @@ func (a AssociationValue) Values() []core.Expr {
 	return result
 }
 
+// TBD what is correct
+func (a AssociationValue) Length() int64 {
+	return int64(len(a.order))
+}
+
 // Length returns the number of key-value pairs
 func (a AssociationValue) Len() int {
 	return len(a.Keys()) // Account for any duplicates in order slice
@@ -255,6 +257,7 @@ func NewAssociation(pairs ...core.Expr) (core.ObjectExpr, error) {
 
 // AssociationQExpr checks if an expression is an Association
 func AssociationQExpr(expr core.Expr) bool {
+	
 	if objExpr, ok := expr.(core.ObjectExpr); ok && objExpr.TypeName == "Association" {
 		return true
 	}

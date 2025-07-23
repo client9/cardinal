@@ -2,48 +2,10 @@ package sexpr
 
 import (
 	"fmt"
-
-	"github.com/client9/sexpr/stdlib"
 )
 
 //go:generate go run cmd/wrapgen/main.go -single builtin_wrappers.go
 //go:generate go run cmd/wrapgen/main.go -setup builtin_setup.go
-
-// Business logic functions for mathematical operations
-// These are pure Go functions that are automatically wrapped
-
-// PlusIntegers moved to stdlib/math.go
-
-// TimesIntegers moved to stdlib/math.go
-
-// PlusReals moved to stdlib/math.go
-
-// TimesReals moved to stdlib/math.go
-
-// Mixed numeric arithmetic - moved to stdlib/mixed_math.go
-
-// EqualExprs moved to stdlib/comparisons_expr.go
-
-// PowerReal moved to stdlib/math.go
-
-// StringLengthFunc moved to stdlib/strings.go
-
-// Type predicate functions moved to stdlib/predicates.go
-
-// Output format functions moved to stdlib/predicates.go
-
-// Length functions moved to stdlib/lists.go
-
-// StringLengthStr moved to stdlib/strings.go
-
-// List access functions moved to stdlib/lists.go
-
-// Comparison operators - all return bool
-
-// UnequalExprs checks if two expressions are not equal
-// Comparison functions moved to stdlib/comparisons_expr.go
-
-// Association functions - moved to stdlib/associations.go
 
 // MatchQExprs checks if an expression matches a pattern
 func MatchQExprs(expr, pattern Expr, ctx *Context) bool {
@@ -79,7 +41,6 @@ func WrapMatchQExprs(args []Expr, ctx *Context) Expr {
 	return NewBoolAtom(result)
 }
 
-// NotExpr moved to stdlib/logical.go
 
 // AttributesExpr gets the attributes of a symbol
 func AttributesExpr(expr Expr, ctx *Context) Expr {
@@ -336,77 +297,3 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 	return ClearAttributesList(args[0], attrList, ctx)
 }
 
-// Arithmetic functions - type-specific operations
-
-// SubtractIntegers moved to stdlib/math.go
-
-// SubtractNumbers moved to stdlib/mixed_math.go as SubtractExprs
-
-// PowerNumbers moved to stdlib/mixed_math.go as PowerExprs
-
-// DivideIntegers moved to stdlib/math.go
-
-// DivideNumbers moved to stdlib/mixed_math.go as DivideExprs
-
-// Import functions from stdlib - keeping same names for backward compatibility
-var (
-	// Mathematical operations
-	PlusNumbers    = stdlib.PlusNumbers
-	TimesNumbers   = stdlib.TimesNumbers
-	SubtractNumbers = stdlib.SubtractExprs
-	PowerNumbers   = stdlib.PowerExprs  
-	DivideNumbers  = stdlib.DivideExprs
-	PlusEmpty      = stdlib.PlusEmpty
-	TimesEmpty     = stdlib.TimesEmpty
-	
-	// Comparison operations
-	EqualExprs       = stdlib.EqualExprs
-	UnequalExprs     = stdlib.UnequalExprs
-	LessExprs        = stdlib.LessExprs
-	GreaterExprs     = stdlib.GreaterExprs
-	LessEqualExprs   = stdlib.LessEqualExprs
-	GreaterEqualExprs = stdlib.GreaterEqualExprs
-	SameQExprs       = stdlib.SameQExprs
-	UnsameQExprs     = stdlib.UnsameQExprs
-	
-	// List operations
-	LengthExpr = stdlib.LengthExpr
-	FirstExpr  = stdlib.FirstExpr
-	LastExpr   = stdlib.LastExpr
-	RestExpr   = stdlib.RestExpr
-	MostExpr   = stdlib.MostExpr
-	PartList   = stdlib.PartList
-	
-	// Type predicate operations
-	IntegerQExpr = stdlib.IntegerQExpr
-	FloatQExpr   = stdlib.FloatQExpr
-	NumberQExpr  = stdlib.NumberQExpr
-	StringQExpr  = stdlib.StringQExpr
-	BooleanQExpr = stdlib.BooleanQExpr
-	SymbolQExpr  = stdlib.SymbolQExpr
-	ListQExpr    = stdlib.ListQExpr
-	AtomQExpr    = stdlib.AtomQExpr
-	
-	// Utility operations
-	HeadExpr         = stdlib.HeadExpr
-	FullFormExpr     = stdlib.FullFormExpr
-	InputFormExpr    = stdlib.InputFormExpr
-	StringLengthFunc = stdlib.StringLengthFunc
-	StringLengthStr  = stdlib.StringLengthStr
-	
-	// Logical operations
-	NotExpr = stdlib.NotExpr
-	
-	// Association operations
-	AssociationQExpr = stdlib.AssociationQExpr
-	KeysExpr         = stdlib.KeysExpr
-	ValuesExpr       = stdlib.ValuesExpr
-	AssociationRules = stdlib.AssociationRules
-	PartAssociation  = stdlib.PartAssociation
-)
-
-// PartList moved to stdlib/lists.go
-
-// PartAssociation moved to stdlib/associations.go
-
-// HeadExpr moved to stdlib/predicates.go

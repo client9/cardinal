@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	//	"log"
 	"reflect"
 	"runtime"
 	"strings"
@@ -29,7 +30,7 @@ func analyzeFunctionSignature(fn interface{}) (FunctionInfo, error) {
 
 	// Get function name from runtime
 	fullName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
-	
+
 	// Extract parameter types
 	paramTypes := make([]string, 0, t.NumIn())
 	for i := 0; i < t.NumIn(); i++ {
@@ -40,10 +41,10 @@ func analyzeFunctionSignature(fn interface{}) (FunctionInfo, error) {
 	// Extract return type
 	var returnType string
 	var returnsError bool
-	
+
 	if t.NumOut() > 0 {
 		returnType = typeToString(t.Out(0))
-		
+
 		// Check if second return type is error
 		if t.NumOut() == 2 {
 			errorType := reflect.TypeOf((*error)(nil)).Elem()
@@ -64,15 +65,8 @@ func analyzeFunctionSignature(fn interface{}) (FunctionInfo, error) {
 
 // typeToString converts a reflect.Type to a string representation suitable for code generation
 func typeToString(t reflect.Type) string {
+	// this switch is a problem
 	switch t.Kind() {
-	case reflect.String:
-		return "string"
-	case reflect.Int64:
-		return "int64"
-	case reflect.Float64:
-		return "float64"
-	case reflect.Bool:
-		return "bool"
 	case reflect.Slice:
 		// Handle variadic slice types like []int64 -> int64
 		if t.Elem().Kind() == reflect.Int64 {
@@ -82,14 +76,48 @@ func typeToString(t reflect.Type) string {
 		}
 		// For other slices, return the element type
 		return typeToString(t.Elem())
-	default:
-		// For custom types, use the name
-		if t.Name() != "" {
-			return t.Name()
-		}
-		// Fallback to string representation
-		return t.String()
 	}
+
+	// Don't use "t.Kind()" since it removes types.
+	//	switch t.Kind() {
+
+	if t.Name() != "" {
+		return t.Name()
+	}
+
+	// unclear how it falls to here
+	return t.String()
+	/*
+	   switch t.Name() {
+	   case "Number":
+
+	   	return "Number"
+
+	   case "string":
+
+	   	return "string"
+
+	   case "int64":
+
+	   	return "int64"
+
+	   case "float64":
+
+	   	return "float64"
+
+	   case "bool":
+
+	   	return "bool"
+
+	   case "":
+
+	   	return t.String()
+
+	   default:
+
+	   		return t.Name()
+	   	}
+	*/
 }
 
 // extractFunctionName extracts just the function name from a full runtime name

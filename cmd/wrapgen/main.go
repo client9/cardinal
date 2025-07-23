@@ -8,29 +8,29 @@ import (
 	"os"
 	"strings"
 	"text/template"
-	
+
 	// Import stdlib functions for reflection
 	"github.com/client9/sexpr/stdlib"
 )
 
 // FunctionSpec defines a function and its pattern for wrapper generation
 type FunctionSpec struct {
-	Pattern      string      // "Plus(x__Integer)" - MANUAL: domain-specific pattern
-	OutputFile   string      // "arithmetic_wrappers.go" - MANUAL: organization choice
-	SymbolName   string      // "Plus" - MANUAL: symbol name for attribute setup
-	Attributes   []string    // ["Flat", "Orderless", "OneIdentity"] - MANUAL: domain knowledge
-	
+	Pattern    string   // "Plus(x__Integer)" - MANUAL: domain-specific pattern
+	OutputFile string   // "arithmetic_wrappers.go" - MANUAL: organization choice
+	SymbolName string   // "Plus" - MANUAL: symbol name for attribute setup
+	Attributes []string // ["Flat", "Orderless", "OneIdentity"] - MANUAL: domain knowledge
+
 	// HYBRID: Either specify Function (for reflection) OR manual fields (legacy)
-	Function     interface{} // PlusIntegers - NEW: actual function reference for reflection
-	
+	Function interface{} // PlusIntegers - NEW: actual function reference for reflection
+
 	// AUTO-DERIVED: These will be populated by reflection if Function is provided
-	FunctionName string      // "PlusIntegers" - derived from Function name
-	WrapperName  string      // "WrapPlusIntegers" - derived from FunctionName
-	IsVariadic   bool        // derived from Function signature
-	ParamType    string      // For variadic: derived from Function signature
-	ParamTypes   []string    // For fixed arity: derived from Function signature
-	ReturnType   string      // derived from Function signature
-	ReturnsError bool        // derived from Function signature (has error return)
+	FunctionName string   // "PlusIntegers" - derived from Function name
+	WrapperName  string   // "WrapPlusIntegers" - derived from FunctionName
+	IsVariadic   bool     // derived from Function signature
+	ParamType    string   // For variadic: derived from Function signature
+	ParamTypes   []string // For fixed arity: derived from Function signature
+	ReturnType   string   // derived from Function signature
+	ReturnsError bool     // derived from Function signature (has error return)
 }
 
 // FunctionGroup groups functions by output file
@@ -41,306 +41,333 @@ type FunctionGroup struct {
 
 // Organized function specifications with output file destinations
 var functionSpecs = []FunctionSpec{
-	// Arithmetic functions -> arithmetic_wrappers.go
 	{
-		Pattern:      "Plus(x__Integer)",
-		Function:     stdlib.PlusIntegers,  // NEW: Use reflection instead of manual fields
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Plus",
-		Attributes:   []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
-		// FunctionName, WrapperName, IsVariadic, ParamType, ReturnType will be auto-derived
+		Pattern:    "Plus()",
+		Function:   stdlib.PlusIdentity,
+		OutputFile: "arithmetric_wrappers.go",
 	},
 	{
-		Pattern:      "Plus(x__Real)",
-		Function:     stdlib.PlusReals,  // NEW: Use reflection
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Plus",
-		Attributes:   []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
-		// FunctionName, WrapperName, IsVariadic, ParamType, ReturnType will be auto-derived
+		Pattern:    "Times()",
+		Function:   stdlib.TimesIdentity,
+		OutputFile: "arithmetric_wrappers.go",
 	},
 	{
-		Pattern:      "Times(x__Integer)",
-		Function:     stdlib.TimesIntegers,  // NEW: Use reflection
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Times",
-		Attributes:   []string{"Flat", "Orderless", "OneIdentity"},
-		// FunctionName, WrapperName, IsVariadic, ParamType, ReturnType will be auto-derived
+		Pattern:    "Plus(x__Integer)",
+		Function:   stdlib.PlusIntegers,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Plus",
+		Attributes: []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
 	},
 	{
-		Pattern:      "Times(x__Real)",
-		Function:     stdlib.TimesReals,  // NEW: Use reflection
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Times",
-		Attributes:   []string{"Flat", "Orderless", "OneIdentity"},
-		// FunctionName, WrapperName, IsVariadic, ParamType, ReturnType will be auto-derived
-	},
-	// Mixed numeric functions now in stdlib/mixed_math.go
-	{
-		Pattern:      "Plus(x__Number)",
-		Function:     stdlib.PlusNumbers,
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Plus",
-		Attributes:   []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
+		Pattern:    "Plus(x__Real)",
+		Function:   stdlib.PlusReals,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Plus",
+		Attributes: []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
 	},
 	{
-		Pattern:      "Times(x__Number)",
-		Function:     stdlib.TimesNumbers,
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Times",
-		Attributes:   []string{"Flat", "Orderless", "OneIdentity"},
+		Pattern:    "Times(x__Integer)",
+		Function:   stdlib.TimesIntegers,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Times",
+		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
 	},
 	{
-		Pattern:      "Power(base_Real, exp_Integer)",
-		Function:     stdlib.PowerReal,  // NEW: Use reflection
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Power",
-		Attributes:   []string{"OneIdentity"},
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Times(x__Real)",
+		Function:   stdlib.TimesReals,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Times",
+		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
 	},
 	{
-		Pattern:      "Subtract(x_Integer, y_Integer)",
-		Function:     stdlib.SubtractIntegers,  // NEW: Use reflection
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Subtract",
-		Attributes:   []string{},
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Plus(x__Number)",
+		Function:   stdlib.PlusNumbers,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Plus",
 	},
 	{
-		Pattern:      "Subtract(x_Number, y_Number)",
-		Function:     stdlib.SubtractExprs,
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Subtract",
-		Attributes:   []string{},
+		Pattern:    "Times(x__Number)",
+		Function:   stdlib.TimesNumbers,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Times",
+		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
 	},
 	{
-		Pattern:      "Divide(x_Integer, y_Integer)",
-		Function:     stdlib.DivideIntegers,  // NEW: Use reflection
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Divide",
-		Attributes:   []string{},
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType, ReturnsError will be auto-derived
+		Pattern:    "Power(base_Real, exp_Integer)",
+		Function:   stdlib.PowerReal,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Power",
+		Attributes: []string{"OneIdentity"},
 	},
 	{
-		Pattern:      "Divide(x_Number, y_Number)",
-		Function:     stdlib.DivideExprs,
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Divide",
-		Attributes:   []string{},
+		Pattern:    "Subtract(x_Integer, y_Integer)",
+		Function:   stdlib.SubtractIntegers,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Subtract",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Power(x_Number, y_Number)",
-		Function:     stdlib.PowerExprs,
-		OutputFile:   "arithmetic_wrappers.go",
-		SymbolName:   "Power",
-		Attributes:   []string{"OneIdentity"},
-	},
-
-	// Comparison functions now in stdlib/comparisons_expr.go
-	{
-		Pattern:      "Equal(x_, y_)",
-		Function:     stdlib.EqualExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "Equal",
-		Attributes:   []string{},
+		Pattern:    "Subtract(x_Number, y_Number)",
+		Function:   stdlib.SubtractExprs,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Subtract",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Unequal(x_, y_)",
-		Function:     stdlib.UnequalExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "Unequal",
-		Attributes:   []string{},
+		Pattern:    "Divide(x_Integer, y_Integer)",
+		Function:   stdlib.DivideIntegers,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Divide",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Less(x_, y_)",
-		Function:     stdlib.LessExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "Less",
-		Attributes:   []string{},
+		Pattern:    "Divide(x_Number, y_Number)",
+		Function:   stdlib.DivideExprs,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Divide",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Greater(x_, y_)",
-		Function:     stdlib.GreaterExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "Greater",
-		Attributes:   []string{},
+		Pattern:    "Power(x_Number, y_Number)",
+		Function:   stdlib.PowerExprs,
+		OutputFile: "arithmetic_wrappers.go",
+		SymbolName: "Power",
+		Attributes: []string{"OneIdentity"},
 	},
 	{
-		Pattern:      "LessEqual(x_, y_)",
-		Function:     stdlib.LessEqualExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "LessEqual",
-		Attributes:   []string{},
+		Pattern:    "Equal(x_Integer, y_Integer)",
+		Function:   stdlib.EqualInts,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "Equal",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "GreaterEqual(x_, y_)",
-		Function:     stdlib.GreaterEqualExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "GreaterEqual",
-		Attributes:   []string{},
+		Pattern:    "Equal(x_Real, y_Real)",
+		Function:   stdlib.EqualFloats,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "SameQ(x_, y_)",
-		Function:     stdlib.SameQExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "SameQ",
-		Attributes:   []string{},
+		Pattern:    "Equal(x_Number, y_Number)",
+		Function:   stdlib.EqualNumbers,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "UnsameQ(x_, y_)",
-		Function:     stdlib.UnsameQExprs,
-		OutputFile:   "comparison_wrappers.go",
-		SymbolName:   "UnsameQ",
-		Attributes:   []string{},
-	},
-
-	// Type predicate functions -> type_predicate_wrappers.go  
-	{
-		Pattern:      "IntegerQ(x_)",
-		Function:     stdlib.IntegerQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Equal(x_String, y_String)",
+		Function:   stdlib.EqualStrings,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "FloatQ(x_)",
-		Function:     stdlib.FloatQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Unequal(x_Integer, y_Integer)",
+		Function:   stdlib.UnequalInts,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "Unequal",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "NumberQ(x_)",
-		Function:     stdlib.NumberQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Unequal(x_Real, y_Real)",
+		Function:   stdlib.UnequalFloats,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "StringQ(x_)",
-		Function:     stdlib.StringQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Unequal(x_Number, y_Number)",
+		Function:   stdlib.UnequalNumbers,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "BooleanQ(x_)",
-		Function:     stdlib.BooleanQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Unequal(x_String, y_String)",
+		Function:   stdlib.UnequalStrings,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "SymbolQ(x_)",
-		Function:     stdlib.SymbolQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Less(x_Number, y_Number)",
+		Function:   stdlib.LessNumber,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "Less",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "ListQ(x_)",
-		Function:     stdlib.ListQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Greater(x_Number, y_Number))",
+		Function:   stdlib.GreaterNumber,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "Greater",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "AtomQ(x_)",
-		Function:     stdlib.AtomQExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "LessEqual(x_Number, y_Number)",
+		Function:   stdlib.LessEqualNumber,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "LessEqual",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Head(x_)",
-		Function:     stdlib.HeadExpr,  // NEW: Use reflection
-		OutputFile:   "type_predicate_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "GreaterEqual(x_Number, y_Number)",
+		Function:   stdlib.GreaterEqualNumber,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "GreaterEqual",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "FullForm(x_)",
-		Function:     stdlib.FullFormExpr,  // NEW: Use reflection
-		OutputFile:   "output_format_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
+		Pattern:    "Equal(x_, y_)",
+		Function:   stdlib.EqualExprs,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "InputForm(x_)",
-		Function:     stdlib.InputFormExpr,  // NEW: Use reflection
-		OutputFile:   "output_format_wrappers.go",
-		// FunctionName, WrapperName, IsVariadic, ParamTypes, ReturnType will be auto-derived
-	},
-	// List functions now in stdlib/lists.go
-	{
-		Pattern:      "Length(x_)",
-		Function:     stdlib.LengthExpr,
-		OutputFile:   "list_wrappers.go",
-		SymbolName:   "Length",
-		Attributes:   []string{},
+		Pattern:    "Unequal(x_, y_)",
+		Function:   stdlib.UnequalExprs,
+		OutputFile: "comparison_wrappers.go",
 	},
 	{
-		Pattern:      "First(x_List)",
-		Function:     stdlib.FirstExpr,
-		OutputFile:   "list_wrappers.go",
-		SymbolName:   "First",
-		Attributes:   []string{},
+		Pattern:    "SameQ(x_, y_)",
+		Function:   stdlib.SameQExprs,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "SameQ",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Last(x_List)",
-		Function:     stdlib.LastExpr,
-		OutputFile:   "list_wrappers.go",
-		SymbolName:   "Last",
-		Attributes:   []string{},
+		Pattern:    "UnsameQ(x_, y_)",
+		Function:   stdlib.UnsameQExprs,
+		OutputFile: "comparison_wrappers.go",
+		SymbolName: "UnsameQ",
+		Attributes: []string{},
 	},
 	{
-		Pattern:      "Rest(x_List)",
-		Function:     stdlib.RestExpr,
-		OutputFile:   "list_wrappers.go",
-		SymbolName:   "Rest",
-		Attributes:   []string{},
+		Pattern:    "IntegerQ(x_)",
+		Function:   stdlib.IntegerQExpr,
+		OutputFile: "type_predicate_wrappers.go",
 	},
 	{
-		Pattern:      "Most(x_List)",
-		Function:     stdlib.MostExpr,
-		OutputFile:   "list_wrappers.go",
-		SymbolName:   "Most",
-		Attributes:   []string{},
-	},
-	
-	// Logical functions
-	{
-		Pattern:      "Not(x_)",
-		Function:     stdlib.NotExpr,
-		OutputFile:   "logical_wrappers.go",
-		SymbolName:   "Not",
-		Attributes:   []string{},
-	},
-	
-	// Association functions
-	{
-		Pattern:      "AssociationQ(x_)",
-		Function:     stdlib.AssociationQExpr,
-		OutputFile:   "association_wrappers.go",
-		SymbolName:   "AssociationQ",
-		Attributes:   []string{},
+		Pattern:    "FloatQ(x_)",
+		Function:   stdlib.FloatQExpr,
+		OutputFile: "type_predicate_wrappers.go",
 	},
 	{
-		Pattern:      "Keys(x_Association)",
-		Function:     stdlib.KeysExpr,
-		OutputFile:   "association_wrappers.go",
-		SymbolName:   "Keys",
-		Attributes:   []string{},
+		Pattern:    "NumberQ(x_)",
+		Function:   stdlib.NumberQExpr,
+		OutputFile: "type_predicate_wrappers.go",
 	},
 	{
-		Pattern:      "Values(x_Association)",
-		Function:     stdlib.ValuesExpr,
-		OutputFile:   "association_wrappers.go",
-		SymbolName:   "Values",
-		Attributes:   []string{},
+		Pattern:    "StringQ(x_)",
+		Function:   stdlib.StringQExpr,
+		OutputFile: "type_predicate_wrappers.go",
 	},
 	{
-		Pattern:      "Association(x__Rule)",
-		Function:     stdlib.AssociationRules,
-		OutputFile:   "association_wrappers.go",
-		SymbolName:   "Association",
-		Attributes:   []string{},
+		Pattern:    "BooleanQ(x_)",
+		Function:   stdlib.BooleanQExpr,
+		OutputFile: "type_predicate_wrappers.go",
 	},
 	{
-		Pattern:      "Part(x_Association, y_)",
-		Function:     stdlib.PartAssociation,
-		OutputFile:   "association_wrappers.go",
-		SymbolName:   "Part",
-		Attributes:   []string{},
+		Pattern:    "SymbolQ(x_)",
+		Function:   stdlib.SymbolQExpr,
+		OutputFile: "type_predicate_wrappers.go",
+	},
+	{
+		Pattern:    "ListQ(x_)",
+		Function:   stdlib.ListQExpr,
+		OutputFile: "type_predicate_wrappers.go",
+	},
+	{
+		Pattern:    "AtomQ(x_)",
+		Function:   stdlib.AtomQExpr,
+		OutputFile: "type_predicate_wrappers.go",
+	},
+	{
+		Pattern:    "Head(x_)",
+		Function:   stdlib.HeadExpr,
+		OutputFile: "type_predicate_wrappers.go",
+	},
+	{
+		Pattern:    "FullForm(x_)",
+		Function:   stdlib.FullFormExpr,
+		OutputFile: "output_format_wrappers.go",
+	},
+	{
+		Pattern:    "InputForm(x_)",
+		Function:   stdlib.InputFormExpr,
+		OutputFile: "output_format_wrappers.go",
+	},
+	{
+		Pattern:    "Length(x_)",
+		Function:   stdlib.LengthExpr,
+		OutputFile: "list_wrappers.go",
+		SymbolName: "Length",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "First(x_List)",
+		Function:   stdlib.FirstExpr,
+		OutputFile: "list_wrappers.go",
+		SymbolName: "First",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Last(x_List)",
+		Function:   stdlib.LastExpr,
+		OutputFile: "list_wrappers.go",
+		SymbolName: "Last",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Rest(x_List)",
+		Function:   stdlib.RestExpr,
+		OutputFile: "list_wrappers.go",
+		SymbolName: "Rest",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Most(x_List)",
+		Function:   stdlib.MostExpr,
+		OutputFile: "list_wrappers.go",
+		SymbolName: "Most",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Not(x_)",
+		Function:   stdlib.NotExpr,
+		OutputFile: "logical_wrappers.go",
+		SymbolName: "Not",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "StringLength(x_String)",
+		Function:   stdlib.StringLengthRunes,
+		OutputFile: "string_wrappers.go",
+		SymbolName: "StringLength",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "AssociationQ(x_)",
+		Function:   stdlib.AssociationQExpr,
+		OutputFile: "association_wrappers.go",
+		SymbolName: "AssociationQ",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Keys(x_Association)",
+		Function:   stdlib.KeysExpr,
+		OutputFile: "association_wrappers.go",
+		SymbolName: "Keys",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Values(x_Association)",
+		Function:   stdlib.ValuesExpr,
+		OutputFile: "association_wrappers.go",
+		SymbolName: "Values",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Association(x___Rule)",
+		Function:   stdlib.AssociationRules,
+		OutputFile: "association_wrappers.go",
+		SymbolName: "Association",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Part(x_Association, y_)",
+		Function:   stdlib.PartAssociation,
+		OutputFile: "association_wrappers.go",
+		SymbolName: "Part",
+		Attributes: []string{},
 	},
 }
 
@@ -455,16 +482,6 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 	funcName := "{{.Pattern | extractFuncName}}"
 	{{- end}}
 	
-	// Handle empty case
-	if len(args) == 0 {
-		{{.FunctionName | getEmptyCase}}
-	}
-	
-	// Handle single arg case  
-	if len(args) == 1 {
-		{{if eq .FunctionName "AssociationRules"}}result := AssociationRules(args[0]); return result{{else}}{{.ParamType | getSingleCase}}{{end}}
-	}
-	
 	// Convert all args to {{.ParamType}}
 	convertedArgs := make([]{{.ParamType}}, len(args))
 	for i, arg := range args {
@@ -521,20 +538,6 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 		},
 		"getEmptyCase": func(funcName string) string {
 			switch funcName {
-			case "PlusIntegers":
-				return "return NewIntAtom(0)"
-			case "PlusReals":
-				return "return NewFloatAtom(0.0)"
-			case "PlusNumbers":
-				return "return NewFloatAtom(0.0)"
-			case "TimesIntegers":
-				return "return NewIntAtom(1)"
-			case "TimesReals":
-				return "return NewFloatAtom(1.0)"
-			case "TimesNumbers":
-				return "return NewFloatAtom(1.0)"
-			case "AssociationRules":
-				return "result := AssociationRules(); return result"
 			default:
 				return "return CopyExprList(funcName, args)"
 			}
@@ -554,7 +557,6 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 		// Fall back to original if not real
 		return CopyExprList(funcName, args)`
 			case "Expr":
-				// Special case for Association functions, fallback for others
 				return "return args[0]"
 			default:
 				return "return args[0]"
@@ -571,6 +573,13 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 		}`
 			case "float64":
 				return `if val, ok := core.ExtractFloat64(arg); ok {
+			convertedArgs[i] = val
+		} else {
+			// Type mismatch - return unchanged
+			return core.CopyExprList(funcName, args)
+		}`
+			case "Number":
+				return `if val, ok := stdlib.ExtractNumber(arg); ok {
 			convertedArgs[i] = val
 		} else {
 			// Type mismatch - return unchanged
@@ -598,21 +607,22 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 				return "return result"
 			}
 		},
-		"needsFallbackHandling": func(functionName string) bool {
-			// Numeric comparison functions need fallback handling for non-numeric types
-			fallbackFunctions := []string{"LessExprs", "GreaterExprs", "LessEqualExprs", "GreaterEqualExprs"}
-			for _, name := range fallbackFunctions {
-				if functionName == name {
-					return true
-				}
-			}
-			return false
-		},
 		"getFixedConversion": func(paramTypes []string) string {
 			var conversions []string
 			for i, paramType := range paramTypes {
 				varName := fmt.Sprintf("arg%d", i)
 				switch paramType {
+				case "Number":
+
+					conversions = append(conversions, fmt.Sprintf("	%s, ok := stdlib.ExtractNumber(args[%d])", varName, i))
+					conversions = append(conversions, "	if !ok {")
+					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
+					conversions = append(conversions, "	}")
+				case "AssociationValue":
+					conversions = append(conversions, fmt.Sprintf("	%s, ok := stdlib.ExtractAssociation(args[%d])", varName, i))
+					conversions = append(conversions, "	if !ok {")
+					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
+					conversions = append(conversions, "	}")
 				case "Expr":
 					conversions = append(conversions, fmt.Sprintf("	%s := args[%d]", varName, i))
 				case "int64":
@@ -645,6 +655,8 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 					conversions = append(conversions, "	if !ok {")
 					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
 					conversions = append(conversions, "	}")
+				default:
+					log.Fatalf("Unknown Parameter Type: %s", paramType)
 				}
 			}
 			return strings.Join(conversions, "\n")
@@ -724,10 +736,6 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 {{range .Functions}}		"{{.Pattern}}": {{.WrapperName}}, // {{.FunctionName}}
 {{end}}
 
-		// Special empty cases
-		"Plus()":  func(args []Expr, ctx *Context) Expr { return PlusEmpty() },  // Additive identity: 0
-		"Times()": func(args []Expr, ctx *Context) Expr { return TimesEmpty() }, // Multiplicative identity: 1
-		
 		// Special attribute manipulation functions (require context)
 		"Attributes(x_)":           EvaluateAttributes,
 		"SetAttributes(x_, y_)":    EvaluateSetAttributes,

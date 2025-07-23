@@ -249,6 +249,11 @@ func TestListLiteral_Integration(t *testing.T) {
 			expected: "List(3, 12)", // Expressions are evaluated
 		},
 		{
+			name:     "Length of list",
+			input:    "Length(List(1, 2, 3, 4))",
+			expected: "4",
+		},
+		{
 			name:     "Length of list literal",
 			input:    "Length([1, 2, 3, 4])",
 			expected: "4",

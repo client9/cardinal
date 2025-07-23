@@ -15,6 +15,10 @@ func (u Uint64Value) String() string {
 	return fmt.Sprintf("#%X", u.value)
 }
 
+func (u Uint64Value) Length() int64 {
+	return 0
+}
+
 func (u Uint64Value) InputForm() string {
 	return u.String() // For Uint64Value, InputForm is the same as String()
 }

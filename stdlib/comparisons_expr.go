@@ -17,50 +17,6 @@ func UnequalExprs(x, y core.Expr) bool {
 	return !x.Equal(y)
 }
 
-// LessExprs checks if x < y for numeric types
-func LessExprs(x, y core.Expr) bool {
-	// Extract numeric values
-	val1, ok1 := core.GetNumericValue(x)
-	val2, ok2 := core.GetNumericValue(y)
-	if ok1 && ok2 {
-		return val1 < val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// GreaterExprs checks if x > y for numeric types
-func GreaterExprs(x, y core.Expr) bool {
-	// Extract numeric values
-	val1, ok1 := core.GetNumericValue(x)
-	val2, ok2 := core.GetNumericValue(y)
-	if ok1 && ok2 {
-		return val1 > val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// LessEqualExprs checks if x <= y for numeric types
-func LessEqualExprs(x, y core.Expr) bool {
-	// Extract numeric values
-	val1, ok1 := core.GetNumericValue(x)
-	val2, ok2 := core.GetNumericValue(y)
-	if ok1 && ok2 {
-		return val1 <= val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// GreaterEqualExprs checks if x >= y for numeric types
-func GreaterEqualExprs(x, y core.Expr) bool {
-	// Extract numeric values
-	val1, ok1 := core.GetNumericValue(x)
-	val2, ok2 := core.GetNumericValue(y)
-	if ok1 && ok2 {
-		return val1 >= val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
 // SameQExprs checks if two expressions are structurally equal
 func SameQExprs(x, y core.Expr) bool {
 	return x.Equal(y)

@@ -10,21 +10,7 @@ import (
 
 // LengthExpr returns the length of an expression
 func LengthExpr(expr core.Expr) int64 {
-	switch ex := expr.(type) {
-	case core.List:
-		// For lists, return the number of elements (excluding the head)
-		if len(ex.Elements) == 0 {
-			return 0 // Empty list has length 0
-		}
-		return int64(len(ex.Elements) - 1) // Subtract 1 for the head
-	case core.ObjectExpr:
-		// Handle Association - need to access AssociationValue but it's in main package
-		// For now, just return 0 for ObjectExpr types
-		return 0
-	default:
-		// For atoms and other expressions, length is 0
-		return 0
-	}
+	return expr.Length()
 }
 
 // FirstExpr returns the first element of a list (after the head)

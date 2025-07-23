@@ -8,6 +8,16 @@ import (
 // Arithmetic functions for mathematical operations
 // These are pure Go functions that are automatically wrapped
 
+// PlusIdentity returns the additive identity (0), which is returned by Plus()
+func PlusIdentity() int64 {
+	return 0
+}
+
+// TimesIdentity returns the multiplicative identity (1), which is returned by Times()
+func TimesIdentity() int64 {
+	return 1
+}
+
 // PlusIntegers adds a sequence of integers
 func PlusIntegers(args ...int64) int64 {
 	sum := int64(0)

@@ -32,6 +32,9 @@ type Atom struct {
 }
 
 func (a Atom) Length() int64 {
+	if a.AtomType == StringAtom {
+		return int64(len(a.Value.(string)))
+	}
 	return 0
 }
 
@@ -116,7 +119,12 @@ const (
 )
 
 func (l List) Length() int64 {
-	return int64(len(l.Elements))
+	// really should panic
+	if len(l.Elements) == 0 {
+		return 0
+	}
+	// element[0] is the head
+	return int64(len(l.Elements)) - 1
 }
 
 func (l List) String() string {
