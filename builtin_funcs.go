@@ -2,18 +2,14 @@ package sexpr
 
 import (
 	"fmt"
+	"github.com/client9/sexpr/core"
 )
 
-// MatchQExprs checks if an expression matches a pattern
+// MatchQExprs checks if an expression matches a pattern (pure test, no variable binding)
 func MatchQExprs(expr, pattern Expr, ctx *Context) bool {
-	// Convert string-based pattern to symbolic if needed
-	symbolicPattern := convertToSymbolicPattern(pattern)
-
-	// Create a temporary context for pattern matching (don't pollute original context)
-	tempCtx := NewChildContext(ctx)
-
-	// Use the existing pattern matching logic
-	return matchPatternForMatchQ(symbolicPattern, expr, tempCtx)
+	// Use the pure pattern matcher from core (no Context needed for pure testing)
+	matcher := core.NewPatternMatcher()
+	return matcher.TestMatch(pattern, expr)
 }
 
 // WrapMatchQExprs is a clean wrapper for MatchQ that uses the business logic function

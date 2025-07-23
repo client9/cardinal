@@ -186,3 +186,37 @@ func (st *SymbolTable) Reset() {
 
 	st.attributes = make(map[string]map[Attribute]bool)
 }
+
+// parseAttribute parses an attribute name string into an Attribute enum value
+func parseAttribute(attrName string) (Attribute, error) {
+	switch attrName {
+	case "HoldAll":
+		return HoldAll, nil
+	case "HoldFirst":
+		return HoldFirst, nil
+	case "HoldRest":
+		return HoldRest, nil
+	case "Flat":
+		return Flat, nil
+	case "Orderless":
+		return Orderless, nil
+	case "OneIdentity":
+		return OneIdentity, nil
+	case "Listable":
+		return Listable, nil
+	case "Constant":
+		return Constant, nil
+	case "NumericFunction":
+		return NumericFunction, nil
+	case "Protected":
+		return Protected, nil
+	case "ReadProtected":
+		return ReadProtected, nil
+	case "Locked":
+		return Locked, nil
+	case "Temporary":
+		return Temporary, nil
+	default:
+		return HoldAll, fmt.Errorf("unknown attribute: %s", attrName)
+	}
+}

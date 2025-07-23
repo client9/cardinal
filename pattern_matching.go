@@ -3,6 +3,7 @@ package sexpr
 import (
 	"fmt"
 	"strings"
+	"github.com/client9/sexpr/core"
 )
 
 // PatternType represents the type of pattern
@@ -708,18 +709,18 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 
 	switch underscoreCount {
 	case 1:
-		blankExpr = CreateBlankExpr(typeExpr)
+		blankExpr = core.CreateBlankExpr(typeExpr)
 	case 2:
-		blankExpr = CreateBlankSequenceExpr(typeExpr)
+		blankExpr = core.CreateBlankSequenceExpr(typeExpr)
 	case 3:
-		blankExpr = CreateBlankNullSequenceExpr(typeExpr)
+		blankExpr = core.CreateBlankNullSequenceExpr(typeExpr)
 	default:
 		return NewSymbolAtom(name) // Invalid pattern, return as symbol
 	}
 
 	// If there's a variable name, wrap in Pattern[name, blank]
 	if varName != "" {
-		return CreatePatternExpr(NewSymbolAtom(varName), blankExpr)
+		return core.CreatePatternExpr(NewSymbolAtom(varName), blankExpr)
 	}
 
 	// Anonymous pattern, just return the blank expression
