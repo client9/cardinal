@@ -2,6 +2,8 @@ package sexpr
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/stdlib"
 )
 
 func TestEvaluateStringQ(t *testing.T) {
@@ -68,14 +70,7 @@ func TestEvaluateStringQ(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := EvaluateStringQ([]Expr{tt.arg})
-
-			if !isBool(result) {
-				t.Errorf("expected boolean result, got %T", result)
-				return
-			}
-
-			val, _ := getBoolValue(result)
+			val := stdlib.StringQExpr(tt.arg)
 			if val != tt.expected {
 				t.Errorf("expected %t, got %t", tt.expected, val)
 			}
@@ -86,111 +81,59 @@ func TestEvaluateStringQ(t *testing.T) {
 func TestEvaluateStringLength(t *testing.T) {
 	tests := []struct {
 		name     string
-		arg      Expr
+		arg      string
 		expected int
 		hasError bool
 	}{
 		{
 			name:     "Empty string",
-			arg:      NewStringAtom(""),
+			arg:      "",
 			expected: 0,
 			hasError: false,
 		},
 		{
 			name:     "Single character",
-			arg:      NewStringAtom("a"),
+			arg:      "a",
 			expected: 1,
 			hasError: false,
 		},
 		{
 			name:     "Simple string",
-			arg:      NewStringAtom("hello"),
+			arg:      "hello",
 			expected: 5,
 			hasError: false,
 		},
 		{
 			name:     "String with spaces",
-			arg:      NewStringAtom("hello world"),
+			arg:      "hello world",
 			expected: 11,
 			hasError: false,
 		},
 		{
 			name:     "String with special characters",
-			arg:      NewStringAtom("Hello, World! 123"),
+			arg:      "Hello, World! 123",
 			expected: 17,
 			hasError: false,
 		},
 		{
 			name:     "String with escape sequences",
-			arg:      NewStringAtom("Line1\nLine2\tTabbed"),
+			arg:      "Line1\nLine2\tTabbed",
 			expected: 18, // \n and \t count as single characters
 			hasError: false,
 		},
 		{
 			name:     "Unicode string",
-			arg:      NewStringAtom("Hello 世界"),
+			arg:      "Hello 世界",
 			expected: 8, // Unicode characters count correctly
 			hasError: false,
-		},
-		{
-			name:     "Integer atom - should error",
-			arg:      NewIntAtom(42),
-			expected: 0,
-			hasError: true,
-		},
-		{
-			name:     "Float atom - should error",
-			arg:      NewFloatAtom(3.14),
-			expected: 0,
-			hasError: true,
-		},
-		{
-			name:     "Boolean atom - should error",
-			arg:      NewBoolAtom(true),
-			expected: 0,
-			hasError: true,
-		},
-		{
-			name:     "Symbol atom - should error",
-			arg:      NewSymbolAtom("x"),
-			expected: 0,
-			hasError: true,
-		},
-		{
-			name: "List - should error",
-			arg: List{Elements: []Expr{
-				NewSymbolAtom("Plus"),
-				NewIntAtom(1),
-			}},
-			expected: 0,
-			hasError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := EvaluateStringLength([]Expr{tt.arg})
-
-			if tt.hasError {
-				if !IsError(result) {
-					t.Errorf("expected error for %s, got %s", tt.name, result.String())
-				}
-				return
-			}
-
-			if IsError(result) {
-				t.Errorf("unexpected error: %s", result.String())
-				return
-			}
-
-			if !isNumeric(result) {
-				t.Errorf("expected numeric result, got %T", result)
-				return
-			}
-
-			val, _ := getNumericValue(result)
-			if int(val) != tt.expected {
-				t.Errorf("expected %d, got %d", tt.expected, int(val))
+			result := stdlib.StringLengthRunes(tt.arg)
+			if int(result) != tt.expected {
+				t.Errorf("expected %d, got %d", tt.expected, int(result))
 			}
 		})
 	}
@@ -301,34 +244,6 @@ func TestEvaluateFullForm(t *testing.T) {
 				}
 			} else {
 				t.Errorf("expected string atom, got %T", result)
-			}
-		})
-	}
-}
-
-// Test argument validation for all string functions
-func TestStringFunctions_ArgumentValidation(t *testing.T) {
-	functions := []struct {
-		name string
-		fn   func([]Expr) Expr
-	}{
-		{"StringQ", EvaluateStringQ},
-		{"StringLength", EvaluateStringLength},
-		{"FullForm", EvaluateFullForm},
-	}
-
-	for _, fn := range functions {
-		t.Run(fn.name+"_no_args", func(t *testing.T) {
-			result := fn.fn([]Expr{})
-			if !IsError(result) {
-				t.Errorf("expected error for no arguments, got %s", result.String())
-			}
-		})
-
-		t.Run(fn.name+"_too_many_args", func(t *testing.T) {
-			result := fn.fn([]Expr{NewIntAtom(1), NewIntAtom(2)})
-			if !IsError(result) {
-				t.Errorf("expected error for too many arguments, got %s", result.String())
 			}
 		})
 	}

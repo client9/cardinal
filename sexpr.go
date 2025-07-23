@@ -23,29 +23,29 @@ const (
 
 // Re-export core constructor functions for backward compatibility
 var (
-	NewErrorExpr         = core.NewErrorExpr
+	NewErrorExpr          = core.NewErrorExpr
 	NewErrorExprWithStack = core.NewErrorExprWithStack
-	NewStringAtom        = core.NewStringAtom
-	NewIntAtom          = core.NewIntAtom
-	NewFloatAtom        = core.NewFloatAtom
-	NewBoolAtom         = core.NewBoolAtom
-	NewSymbolAtom       = core.NewSymbolAtom
-	NewList             = core.NewList
-	NewObjectExpr       = core.NewObjectExpr
+	NewStringAtom         = core.NewStringAtom
+	NewIntAtom            = core.NewIntAtom
+	NewFloatAtom          = core.NewFloatAtom
+	NewBoolAtom           = core.NewBoolAtom
+	NewSymbolAtom         = core.NewSymbolAtom
+	NewList               = core.NewList
+	NewObjectExpr         = core.NewObjectExpr
 )
 
 // Re-export core helper functions for backward compatibility
 var (
-	ExtractInt64      = core.ExtractInt64
-	ExtractFloat64    = core.ExtractFloat64
-	ExtractString     = core.ExtractString
-	ExtractBool       = core.ExtractBool
-	CopyExprList      = core.CopyExprList
-	IsError           = core.IsError
-	GetNumericValue   = core.GetNumericValue
-	IsNumeric         = core.IsNumeric
-	IsBool            = core.IsBool
-	IsSymbol          = core.IsSymbol
+	ExtractInt64    = core.ExtractInt64
+	ExtractFloat64  = core.ExtractFloat64
+	ExtractString   = core.ExtractString
+	ExtractBool     = core.ExtractBool
+	CopyExprList    = core.CopyExprList
+	IsError         = core.IsError
+	GetNumericValue = core.GetNumericValue
+	IsNumeric       = core.IsNumeric
+	IsBool          = core.IsBool
+	IsSymbol        = core.IsSymbol
 )
 
 // Re-export functions needed by REPL

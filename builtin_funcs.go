@@ -41,7 +41,6 @@ func WrapMatchQExprs(args []Expr, ctx *Context) Expr {
 	return NewBoolAtom(result)
 }
 
-
 // AttributesExpr gets the attributes of a symbol
 func AttributesExpr(expr Expr, ctx *Context) Expr {
 	// The argument should be a symbol
@@ -296,4 +295,3 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 	// Call business logic function
 	return ClearAttributesList(args[0], attrList, ctx)
 }
-

@@ -32,11 +32,11 @@ const (
 	SpecificityBuiltinSpecific PatternSpecificity = 50 // x_Integer, x_Real, x_String (specific builtin types)
 	SpecificityCustomType      PatternSpecificity = 60 // x_Color, x_Point, etc.
 	SpecificityLiteral         PatternSpecificity = 70 // 42, "hello", exact values (most specific)
-	
+
 	// Bonus multipliers for compound patterns
-	LiteralBonusMultiplier = 2  // Literals get double weight in compounds
+	LiteralBonusMultiplier  = 2 // Literals get double weight in compounds
 	SpecificTypeBonusPoints = 5 // Extra points for specific types
-	PatternComplexityBonus = 1  // Per additional argument
+	PatternComplexityBonus  = 1 // Per additional argument
 )
 
 // CompoundSpecificity provides detailed scoring breakdown for compound patterns
@@ -97,28 +97,28 @@ func calculateCompoundSpecificity(pattern List) CompoundSpecificity {
 			TotalScore: baseSpec,
 		}
 	}
-	
+
 	args := pattern.Elements[1:] // Skip function head
-	
+
 	var baseScore, literalBonus, typeBonus int
-	
+
 	for _, arg := range args {
 		argSpec := int(getPatternSpecificityBasic(arg))
 		baseScore += argSpec
-		
+
 		// Bonus scoring
 		if isLiteral(arg) {
 			literalBonus += argSpec * LiteralBonusMultiplier / 2 // Apply multiplier bonus
 		} else if isSpecificType(arg) {
 			typeBonus += SpecificTypeBonusPoints
 		}
-		
+
 		// Complexity bonus for each additional argument
 		baseScore += PatternComplexityBonus
 	}
-	
+
 	totalScore := baseScore + literalBonus + typeBonus
-	
+
 	return CompoundSpecificity{
 		BaseScore:    baseScore,
 		LiteralBonus: literalBonus,
@@ -144,7 +144,7 @@ func DebugPatternSpecificity(pattern Expr) string {
 				result += fmt.Sprintf("Literal Bonus: %d\n", compound.LiteralBonus)
 				result += fmt.Sprintf("Type Bonus: %d\n", compound.TypeBonus)
 				result += fmt.Sprintf("Total Score: %d\n", compound.TotalScore)
-				
+
 				// Break down individual arguments
 				result += "Argument Analysis:\n"
 				for i, arg := range pat.Elements[1:] {
@@ -480,7 +480,7 @@ func getPatternSpecificity(pattern Expr) PatternSpecificity {
 			blankExpr := pat.Elements[2]
 			return getBlankExprSpecificity(blankExpr)
 		}
-		
+
 		// Compound pattern like Plus(x_, y_) - use compound specificity calculation
 		if len(pat.Elements) > 1 {
 			// Check if head is a function name (symbol literal)
@@ -490,7 +490,7 @@ func getPatternSpecificity(pattern Expr) PatternSpecificity {
 				return PatternSpecificity(compound.TotalScore)
 			}
 		}
-		
+
 		// Simple list pattern
 		return getPatternSpecificityBasic(pattern)
 	default:
