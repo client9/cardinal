@@ -1,4 +1,4 @@
-package sexpr
+package main
 
 import (
 	"bufio"
@@ -7,11 +7,13 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/client9/sexpr"
 )
 
 // REPL represents a Read-Eval-Print Loop for s-expressions
 type REPL struct {
-	evaluator *Evaluator
+	evaluator *sexpr.Evaluator
 	input     io.Reader
 	output    io.Writer
 	prompt    string
@@ -19,9 +21,9 @@ type REPL struct {
 
 // NewREPL creates a new REPL instance
 func NewREPL() *REPL {
-	evaluator := NewEvaluator()
+	evaluator := sexpr.NewEvaluator()
 	// Set up built-in attributes for the evaluator
-	setupBuiltinAttributes(evaluator.context.symbolTable)
+	sexpr.SetupBuiltinAttributes(evaluator.GetContext().GetSymbolTable())
 
 	return &REPL{
 		evaluator: evaluator,
@@ -33,9 +35,9 @@ func NewREPL() *REPL {
 
 // NewREPLWithIO creates a new REPL instance with custom input/output
 func NewREPLWithIO(input io.Reader, output io.Writer) *REPL {
-	evaluator := NewEvaluator()
+	evaluator := sexpr.NewEvaluator()
 	// Set up built-in attributes for the evaluator
-	setupBuiltinAttributes(evaluator.context.symbolTable)
+	sexpr.SetupBuiltinAttributes(evaluator.GetContext().GetSymbolTable())
 
 	return &REPL{
 		evaluator: evaluator,
@@ -138,7 +140,7 @@ func (r *REPL) Run() error {
 // Returns true if successful, false if the expression is incomplete
 func (r *REPL) tryProcessExpression(expr string) bool {
 	// Try to parse the expression
-	_, err := ParseString(expr)
+	_, err := sexpr.ParseString(expr)
 	if err != nil {
 		// Parse failed - expression might be incomplete
 		return false
@@ -178,7 +180,7 @@ func (r *REPL) handleSpecialCommands(line string) bool {
 // processLine parses and evaluates a single line of input
 func (r *REPL) processLine(line string) error {
 	// Parse the expression
-	expr, err := ParseString(line)
+	expr, err := sexpr.ParseString(line)
 	if err != nil {
 		return fmt.Errorf("parse error: %v", err)
 	}
@@ -230,8 +232,8 @@ Operators:
 
 // clearContext clears all variable assignments
 func (r *REPL) clearContext() {
-	r.evaluator = NewEvaluator()
-	setupBuiltinAttributes(r.evaluator.context.symbolTable)
+	r.evaluator = sexpr.NewEvaluator()
+	sexpr.SetupBuiltinAttributes(r.evaluator.GetContext().GetSymbolTable())
 }
 
 // printAttributes prints all symbols with their attributes
@@ -239,15 +241,15 @@ func (r *REPL) printAttributes() {
 	_, _ = fmt.Fprintf(r.output, "\nSymbols with attributes:\n")
 	_, _ = fmt.Fprintf(r.output, "=======================\n")
 
-	symbols := r.evaluator.context.symbolTable.AllSymbolsWithAttributes()
+	symbols := r.evaluator.GetContext().GetSymbolTable().AllSymbolsWithAttributes()
 	if len(symbols) == 0 {
 		_, _ = fmt.Fprintf(r.output, "No symbols with attributes found.\n")
 		return
 	}
 
 	for _, symbol := range symbols {
-		attrs := r.evaluator.context.symbolTable.Attributes(symbol)
-		_, _ = fmt.Fprintf(r.output, "%-15s: %s\n", symbol, AttributesToString(attrs))
+		attrs := r.evaluator.GetContext().GetSymbolTable().Attributes(symbol)
+		_, _ = fmt.Fprintf(r.output, "%-15s: %s\n", symbol, sexpr.AttributesToString(attrs))
 	}
 	_, _ = fmt.Fprintf(r.output, "\n")
 }
@@ -288,7 +290,7 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 		currentExpr.WriteString(line)
 
 		// Try to parse the current accumulated expression
-		_, err := ParseString(currentExpr.String())
+		_, err := sexpr.ParseString(currentExpr.String())
 		if err == nil {
 			// Successfully parsed - we have a complete expression
 			expressions = append(expressions, exprInfo{
@@ -306,7 +308,7 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 	// Check if we have an incomplete expression at the end
 	if currentExpr.Len() > 0 {
 		// Try to parse one more time
-		_, err := ParseString(currentExpr.String())
+		_, err := sexpr.ParseString(currentExpr.String())
 		if err != nil {
 			return nil, fmt.Errorf("incomplete expression starting at line %d: %v", startLine, err)
 		}
@@ -321,7 +323,7 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 
 // EvaluateString is a convenience function for evaluating a string expression
 func (r *REPL) EvaluateString(input string) (string, error) {
-	expr, err := ParseString(input)
+	expr, err := sexpr.ParseString(input)
 	if err != nil {
 		return "", fmt.Errorf("parse error: %v", err)
 	}
@@ -331,7 +333,7 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 }
 
 // GetEvaluator returns the underlying evaluator (for testing purposes)
-func (r *REPL) GetEvaluator() *Evaluator {
+func (r *REPL) GetEvaluator() *sexpr.Evaluator {
 	return r.evaluator
 }
 

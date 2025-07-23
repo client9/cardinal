@@ -2,423 +2,48 @@ package sexpr
 
 import (
 	"fmt"
-	"math"
-	"unicode/utf8"
+
+	"github.com/client9/sexpr/stdlib"
 )
 
 //go:generate go run cmd/wrapgen/main.go -single builtin_wrappers.go
+//go:generate go run cmd/wrapgen/main.go -setup builtin_setup.go
 
 // Business logic functions for mathematical operations
 // These are pure Go functions that are automatically wrapped
 
-// PlusIntegers adds a sequence of integers
-func PlusIntegers(args ...int64) int64 {
-	sum := int64(0)
-	for _, v := range args {
-		sum += v
-	}
-	return sum
-}
+// PlusIntegers moved to stdlib/math.go
 
-// TimesIntegers multiplies a sequence of integers
-func TimesIntegers(args ...int64) int64 {
-	if len(args) == 0 {
-		return 1
-	}
-	product := int64(1)
-	for _, v := range args {
-		product *= v
-	}
-	return product
-}
+// TimesIntegers moved to stdlib/math.go
 
-// PlusReals adds a sequence of real numbers
-func PlusReals(args ...float64) float64 {
-	sum := 0.0
-	for _, v := range args {
-		sum += v
-	}
-	return sum
-}
+// PlusReals moved to stdlib/math.go
 
-// TimesReals multiplies a sequence of real numbers
-func TimesReals(args ...float64) float64 {
-	if len(args) == 0 {
-		return 1.0
-	}
-	product := 1.0
-	for _, v := range args {
-		product *= v
-	}
-	return product
-}
+// TimesReals moved to stdlib/math.go
 
-// Mixed numeric arithmetic - handles both integers and floats, returns float64
+// Mixed numeric arithmetic - moved to stdlib/mixed_math.go
 
-// PlusNumbers adds a sequence of mixed numeric expressions
-func PlusNumbers(args ...Expr) float64 {
-	sum := 0.0
-	for _, arg := range args {
-		if val, ok := getNumericValue(arg); ok {
-			sum += val
-		}
-		// Skip non-numeric values - they'll be caught by pattern matching
-	}
-	return sum
-}
+// EqualExprs moved to stdlib/comparisons_expr.go
 
-// TimesNumbers multiplies a sequence of mixed numeric expressions
-func TimesNumbers(args ...Expr) float64 {
-	if len(args) == 0 {
-		return 1.0
-	}
-	product := 1.0
-	for _, arg := range args {
-		if val, ok := getNumericValue(arg); ok {
-			product *= val
-		}
-		// Skip non-numeric values - they'll be caught by pattern matching
-	}
-	return product
-}
+// PowerReal moved to stdlib/math.go
 
-// EqualExprs checks if two expressions are equal
-func EqualExprs(x, y Expr) bool {
-	return x.Equal(y)
-}
+// StringLengthFunc moved to stdlib/strings.go
 
-// PowerReal computes real base to integer exponent
-func PowerReal(base float64, exp int64) float64 {
-	if exp == 0 {
-		return 1.0
-	}
-	if exp < 0 {
-		return 1.0 / PowerReal(base, -exp)
-	}
+// Type predicate functions moved to stdlib/predicates.go
 
-	result := 1.0
-	for i := int64(0); i < exp; i++ {
-		result *= base
-	}
-	return result
-}
+// Output format functions moved to stdlib/predicates.go
 
-// StringLengthFunc returns the length of a string
-func StringLengthFunc(s string) int64 {
-	return int64(len(s))
-}
+// Length functions moved to stdlib/lists.go
 
-// Type predicate functions - all return bool
+// StringLengthStr moved to stdlib/strings.go
 
-// IntegerQExpr checks if an expression is an integer
-func IntegerQExpr(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		return atom.AtomType == IntAtom
-	}
-	return false
-}
-
-// FloatQExpr checks if an expression is a float
-func FloatQExpr(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		return atom.AtomType == FloatAtom
-	}
-	return false
-}
-
-// NumberQExpr checks if an expression is numeric (int or float)
-func NumberQExpr(expr Expr) bool {
-	return isNumeric(expr)
-}
-
-// StringQExpr checks if an expression is a string
-func StringQExpr(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		return atom.AtomType == StringAtom
-	}
-	return false
-}
-
-// BooleanQExpr checks if an expression is a boolean (True/False symbol)
-func BooleanQExpr(expr Expr) bool {
-	return isBool(expr)
-}
-
-// SymbolQExpr checks if an expression is a symbol
-func SymbolQExpr(expr Expr) bool {
-	return isSymbol(expr)
-}
-
-// ListQExpr checks if an expression is a list
-func ListQExpr(expr Expr) bool {
-	_, isList := expr.(List)
-	return isList
-}
-
-// AtomQExpr checks if an expression is an atom
-func AtomQExpr(expr Expr) bool {
-	_, isAtom := expr.(Atom)
-	return isAtom
-}
-
-// Output format functions - all return string
-
-// FullFormExpr returns the full string representation of an expression
-func FullFormExpr(expr Expr) string {
-	// Convert pattern strings to their symbolic form before getting string representation
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolStr := atom.Value.(string)
-		if isPatternVariable(symbolStr) {
-			// Convert pattern string to symbolic form
-			symbolicExpr := ConvertPatternStringToSymbolic(symbolStr)
-			return symbolicExpr.String()
-		}
-	}
-
-	// Return the string representation
-	return expr.String()
-}
-
-// InputFormExpr returns the user-friendly InputForm representation of an expression
-func InputFormExpr(expr Expr) string {
-	// Convert pattern strings to their symbolic form before getting InputForm representation
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolStr := atom.Value.(string)
-		if isPatternVariable(symbolStr) {
-			// Convert pattern string to symbolic form
-			symbolicExpr := ConvertPatternStringToSymbolic(symbolStr)
-			return symbolicExpr.InputForm()
-		}
-	}
-
-	// Return the InputForm representation
-	return expr.InputForm()
-}
-
-// Length and string functions - all return int64
-
-// LengthExpr returns the length of an expression
-func LengthExpr(expr Expr) int64 {
-	switch ex := expr.(type) {
-	case List:
-		// For lists, return the number of elements (excluding the head)
-		if len(ex.Elements) == 0 {
-			return 0 // Empty list has length 0
-		}
-		return int64(len(ex.Elements) - 1) // Subtract 1 for the head
-	case ObjectExpr:
-		// Handle Association
-		if ex.TypeName == "Association" {
-			if assocValue, ok := ex.Value.(AssociationValue); ok {
-				return int64(assocValue.Len())
-			}
-		}
-		// For other ObjectExpr types, length is 0
-		return 0
-	default:
-		// For atoms and other expressions, length is 0
-		return 0
-	}
-}
-
-// StringLengthStr returns the UTF-8 rune count of a string
-func StringLengthStr(s string) int64 {
-	return int64(utf8.RuneCountInString(s))
-}
-
-// List access functions - all return Expr
-
-// FirstExpr returns the first element of a list (after the head)
-func FirstExpr(list List) Expr {
-	// For lists, return the first element after the head
-	if len(list.Elements) <= 1 {
-		// Return error for empty lists
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("First: expression %s has no elements", list.String()), []Expr{list})
-	}
-	return list.Elements[1] // Index 1 is first element after head (index 0)
-}
-
-// LastExpr returns the last element of a list
-func LastExpr(list List) Expr {
-	// For lists, return the last element
-	if len(list.Elements) <= 1 {
-		// Return error for empty lists
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Last: expression %s has no elements", list.String()), []Expr{list})
-	}
-	return list.Elements[len(list.Elements)-1] // Last element
-}
-
-// RestExpr returns a new list with the first element after head removed
-func RestExpr(list List) Expr {
-	// For lists, return a new list with the first element after head removed
-	if len(list.Elements) <= 1 {
-		// Return error for empty lists
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Rest: expression %s has no elements", list.String()), []Expr{list})
-	}
-
-	// Create new list: head + elements[2:] (skip first element after head)
-	if len(list.Elements) == 2 {
-		// Special case: if only head and one element, return just the head
-		return List{Elements: []Expr{list.Elements[0]}}
-	}
-
-	newElements := make([]Expr, len(list.Elements)-1)
-	newElements[0] = list.Elements[0]        // Keep the head
-	copy(newElements[1:], list.Elements[2:]) // Copy everything after the first element
-	return List{Elements: newElements}
-}
-
-// MostExpr returns a new list with the last element removed
-func MostExpr(list List) Expr {
-	// For lists, return a new list with the last element removed
-	if len(list.Elements) <= 1 {
-		// Return error for empty lists
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Most: expression %s has no elements", list.String()), []Expr{list})
-	}
-
-	// Create new list with all elements except the last one
-	if len(list.Elements) == 2 {
-		// Special case: if only head and one element, return just the head
-		return List{Elements: []Expr{list.Elements[0]}}
-	}
-
-	newElements := make([]Expr, len(list.Elements)-1)
-	copy(newElements, list.Elements[:len(list.Elements)-1])
-	return List{Elements: newElements}
-}
+// List access functions moved to stdlib/lists.go
 
 // Comparison operators - all return bool
 
 // UnequalExprs checks if two expressions are not equal
-func UnequalExprs(x, y Expr) bool {
-	return !x.Equal(y)
-}
+// Comparison functions moved to stdlib/comparisons_expr.go
 
-// LessExprs checks if x < y for numeric types
-func LessExprs(x, y Expr) bool {
-	// Extract numeric values
-	val1, ok1 := getNumericValue(x)
-	val2, ok2 := getNumericValue(y)
-	if ok1 && ok2 {
-		return val1 < val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// GreaterExprs checks if x > y for numeric types
-func GreaterExprs(x, y Expr) bool {
-	// Extract numeric values
-	val1, ok1 := getNumericValue(x)
-	val2, ok2 := getNumericValue(y)
-	if ok1 && ok2 {
-		return val1 > val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// LessEqualExprs checks if x <= y for numeric types
-func LessEqualExprs(x, y Expr) bool {
-	// Extract numeric values
-	val1, ok1 := getNumericValue(x)
-	val2, ok2 := getNumericValue(y)
-	if ok1 && ok2 {
-		return val1 <= val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// GreaterEqualExprs checks if x >= y for numeric types
-func GreaterEqualExprs(x, y Expr) bool {
-	// Extract numeric values
-	val1, ok1 := getNumericValue(x)
-	val2, ok2 := getNumericValue(y)
-	if ok1 && ok2 {
-		return val1 >= val2
-	}
-	return false // Fallback case - will be handled by wrapper
-}
-
-// SameQExprs checks if two expressions are structurally equal
-func SameQExprs(x, y Expr) bool {
-	return x.Equal(y)
-}
-
-// UnsameQExprs checks if two expressions are not structurally equal
-func UnsameQExprs(x, y Expr) bool {
-	return !x.Equal(y)
-}
-
-// Association functions - all work with ObjectExpr of type "Association"
-
-// AssociationQExpr checks if an expression is an Association
-func AssociationQExpr(expr Expr) bool {
-	if objExpr, ok := expr.(ObjectExpr); ok && objExpr.TypeName == "Association" {
-		return true
-	}
-	return false
-}
-
-// KeysExpr returns the keys of an association as a List
-func KeysExpr(assoc ObjectExpr) Expr {
-	if assoc.TypeName == "Association" {
-		if assocValue, ok := assoc.Value.(AssociationValue); ok {
-			keys := assocValue.Keys()
-			// Return as List[key1, key2, ...]
-			elements := []Expr{NewSymbolAtom("List")}
-			elements = append(elements, keys...)
-			return NewList(elements...)
-		}
-	}
-	// This should not happen with proper pattern matching, but return error as fallback
-	return NewErrorExpr("ArgumentError",
-		fmt.Sprintf("Keys expects an Association, got %s", assoc.String()), []Expr{assoc})
-}
-
-// ValuesExpr returns the values of an association as a List
-func ValuesExpr(assoc ObjectExpr) Expr {
-	if assoc.TypeName == "Association" {
-		if assocValue, ok := assoc.Value.(AssociationValue); ok {
-			values := assocValue.Values()
-			// Return as List[value1, value2, ...]
-			elements := []Expr{NewSymbolAtom("List")}
-			elements = append(elements, values...)
-			return NewList(elements...)
-		}
-	}
-	// This should not happen with proper pattern matching, but return error as fallback
-	return NewErrorExpr("ArgumentError",
-		fmt.Sprintf("Values expects an Association, got %s", assoc.String()), []Expr{assoc})
-}
-
-// AssociationRules creates an Association from a sequence of Rule expressions
-func AssociationRules(rules ...Expr) Expr {
-	assocValue := NewAssociationValue()
-
-	// Process each Rule expression
-	for _, rule := range rules {
-		if ruleList, ok := rule.(List); ok && len(ruleList.Elements) == 3 {
-			// Check if this is Rule[key, value]
-			if headAtom, ok := ruleList.Elements[0].(Atom); ok &&
-				headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "Rule" {
-
-				key := ruleList.Elements[1]
-				value := ruleList.Elements[2]
-				assocValue = assocValue.Set(key, value) // Returns new association (immutable)
-				continue
-			}
-		}
-
-		// Invalid argument - not a Rule
-		return NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Association expects Rule expressions, got %s", rule.String()), []Expr{rule})
-	}
-
-	return NewObjectExpr("Association", assocValue)
-}
+// Association functions - moved to stdlib/associations.go
 
 // MatchQExprs checks if an expression matches a pattern
 func MatchQExprs(expr, pattern Expr, ctx *Context) bool {
@@ -454,16 +79,7 @@ func WrapMatchQExprs(args []Expr, ctx *Context) Expr {
 	return NewBoolAtom(result)
 }
 
-// NotExpr performs logical negation on boolean expressions
-func NotExpr(expr Expr) Expr {
-	if isBool(expr) {
-		val, _ := getBoolValue(expr)
-		return NewBoolAtom(!val)
-	}
-
-	// Return unchanged expression if not boolean (symbolic behavior)
-	return List{Elements: []Expr{NewSymbolAtom("Not"), expr}}
-}
+// NotExpr moved to stdlib/logical.go
 
 // AttributesExpr gets the attributes of a symbol
 func AttributesExpr(expr Expr, ctx *Context) Expr {
@@ -722,156 +338,75 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 
 // Arithmetic functions - type-specific operations
 
-// SubtractIntegers performs integer subtraction
-func SubtractIntegers(x, y int64) int64 {
-	return x - y
-}
+// SubtractIntegers moved to stdlib/math.go
 
-// SubtractNumbers performs mixed numeric subtraction (returns float64)
-// Pattern constraint ensures both arguments are numeric
-func SubtractNumbers(x, y Expr) float64 {
-	val1, _ := getNumericValue(x)
-	val2, _ := getNumericValue(y)
-	return val1 - val2
-}
+// SubtractNumbers moved to stdlib/mixed_math.go as SubtractExprs
 
-// PowerNumbers performs power operation on numeric arguments
-// Returns (float64, error) for clear type safety
-func PowerNumbers(base, exp Expr) (float64, error) {
-	if !isNumeric(base) || !isNumeric(exp) {
-		return 0, fmt.Errorf("MathematicalError")
-	}
+// PowerNumbers moved to stdlib/mixed_math.go as PowerExprs
 
-	baseVal, _ := getNumericValue(base)
-	expVal, _ := getNumericValue(exp)
-	result := math.Pow(baseVal, expVal)
+// DivideIntegers moved to stdlib/math.go
 
-	// Check for invalid results (NaN, Inf)
-	if math.IsNaN(result) || math.IsInf(result, 0) {
-		return 0, fmt.Errorf("MathematicalError")
-	}
+// DivideNumbers moved to stdlib/mixed_math.go as DivideExprs
 
-	return result, nil
-}
+// Import functions from stdlib - keeping same names for backward compatibility
+var (
+	// Mathematical operations
+	PlusNumbers    = stdlib.PlusNumbers
+	TimesNumbers   = stdlib.TimesNumbers
+	SubtractNumbers = stdlib.SubtractExprs
+	PowerNumbers   = stdlib.PowerExprs  
+	DivideNumbers  = stdlib.DivideExprs
+	PlusEmpty      = stdlib.PlusEmpty
+	TimesEmpty     = stdlib.TimesEmpty
+	
+	// Comparison operations
+	EqualExprs       = stdlib.EqualExprs
+	UnequalExprs     = stdlib.UnequalExprs
+	LessExprs        = stdlib.LessExprs
+	GreaterExprs     = stdlib.GreaterExprs
+	LessEqualExprs   = stdlib.LessEqualExprs
+	GreaterEqualExprs = stdlib.GreaterEqualExprs
+	SameQExprs       = stdlib.SameQExprs
+	UnsameQExprs     = stdlib.UnsameQExprs
+	
+	// List operations
+	LengthExpr = stdlib.LengthExpr
+	FirstExpr  = stdlib.FirstExpr
+	LastExpr   = stdlib.LastExpr
+	RestExpr   = stdlib.RestExpr
+	MostExpr   = stdlib.MostExpr
+	PartList   = stdlib.PartList
+	
+	// Type predicate operations
+	IntegerQExpr = stdlib.IntegerQExpr
+	FloatQExpr   = stdlib.FloatQExpr
+	NumberQExpr  = stdlib.NumberQExpr
+	StringQExpr  = stdlib.StringQExpr
+	BooleanQExpr = stdlib.BooleanQExpr
+	SymbolQExpr  = stdlib.SymbolQExpr
+	ListQExpr    = stdlib.ListQExpr
+	AtomQExpr    = stdlib.AtomQExpr
+	
+	// Utility operations
+	HeadExpr         = stdlib.HeadExpr
+	FullFormExpr     = stdlib.FullFormExpr
+	InputFormExpr    = stdlib.InputFormExpr
+	StringLengthFunc = stdlib.StringLengthFunc
+	StringLengthStr  = stdlib.StringLengthStr
+	
+	// Logical operations
+	NotExpr = stdlib.NotExpr
+	
+	// Association operations
+	AssociationQExpr = stdlib.AssociationQExpr
+	KeysExpr         = stdlib.KeysExpr
+	ValuesExpr       = stdlib.ValuesExpr
+	AssociationRules = stdlib.AssociationRules
+	PartAssociation  = stdlib.PartAssociation
+)
 
-// DivideIntegers performs integer division on int64 arguments
-// Returns (int64, error) for clear type safety using Go's integer division
-func DivideIntegers(x, y int64) (int64, error) {
-	if y == 0 {
-		return 0, fmt.Errorf("DivisionByZero")
-	}
+// PartList moved to stdlib/lists.go
 
-	return x / y, nil
-}
+// PartAssociation moved to stdlib/associations.go
 
-// DivideNumbers performs division on numeric arguments
-// Returns (float64, error) for clear type safety
-func DivideNumbers(x, y Expr) (float64, error) {
-	if !isNumeric(x) || !isNumeric(y) {
-		return 0, fmt.Errorf("MathematicalError")
-	}
-
-	val1, _ := getNumericValue(x)
-	val2, _ := getNumericValue(y)
-
-	if val2 == 0 {
-		return 0, fmt.Errorf("DivisionByZero")
-	}
-
-	return val1 / val2, nil
-}
-
-// Identity functions for empty arithmetic operations (direct pattern mappings)
-
-// PlusEmpty returns the additive identity (0) for empty Plus()
-func PlusEmpty() Expr {
-	return NewIntAtom(0)
-}
-
-// TimesEmpty returns the multiplicative identity (1) for empty Times()
-func TimesEmpty() Expr {
-	return NewIntAtom(1)
-}
-
-// Part functions - separated for Lists and Associations
-
-// PartList extracts an element from a list by integer index (1-based)
-func PartList(list List, index int64) Expr {
-	// For lists, return the element at the specified index (1-based)
-	if len(list.Elements) <= 1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part: expression %s has no elements", list.String()), []Expr{list})
-	}
-
-	// Handle negative indexing: -1 is last element, -2 is second to last, etc.
-	var actualIndex int
-	if index < 0 {
-		// Negative indexing: -1 = last, -2 = second to last, etc.
-		actualIndex = len(list.Elements) + int(index)
-	} else if index > 0 {
-		// Positive 1-based indexing: convert to 0-based for internal use
-		actualIndex = int(index)
-	} else {
-		// index == 0 is invalid in 1-based indexing
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds (indices start at 1)", index), []Expr{list})
-	}
-
-	// Check bounds (remember: list.Elements[0] is the head, actual elements start at index 1)
-	if actualIndex < 1 || actualIndex >= len(list.Elements) {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for expression with %d elements",
-				index, len(list.Elements)-1), []Expr{list})
-	}
-
-	return list.Elements[actualIndex]
-}
-
-// PartAssociation extracts a value from an association by key
-func PartAssociation(assoc ObjectExpr, key Expr) Expr {
-	if assoc.TypeName == "Association" {
-		if assocValue, ok := assoc.Value.(AssociationValue); ok {
-			// For associations, use the key argument to lookup value
-			if value, exists := assocValue.Get(key); exists {
-				return value
-			}
-			return NewErrorExpr("PartError",
-				fmt.Sprintf("Key %s not found in association", key.String()), []Expr{assoc, key})
-		}
-	}
-	// This should not happen with proper pattern matching, but return error as fallback
-	return NewErrorExpr("ArgumentError",
-		fmt.Sprintf("Part expects an Association, got %s", assoc.String()), []Expr{assoc})
-}
-
-// HeadExpr returns the head/type of an expression
-func HeadExpr(expr Expr) Expr {
-	switch ex := expr.(type) {
-	case Atom:
-		switch ex.AtomType {
-		case IntAtom:
-			return NewSymbolAtom("Integer")
-		case FloatAtom:
-			return NewSymbolAtom("Real")
-		case StringAtom:
-			return NewSymbolAtom("String")
-		case SymbolAtom:
-			return NewSymbolAtom("Symbol")
-		default:
-			return NewSymbolAtom("Unknown")
-		}
-	case List:
-		if len(ex.Elements) == 0 {
-			return NewSymbolAtom("List")
-		} else {
-			// For non-empty lists, the head is the first element
-			// This matches Mathematica semantics where f[x,y] has head f
-			return ex.Elements[0]
-		}
-	case ObjectExpr:
-		return NewSymbolAtom(ex.TypeName)
-	default:
-		return NewSymbolAtom("Unknown")
-	}
-	// Note: ErrorExpr is not handled here - wrapper will propagate errors
-}
+// HeadExpr moved to stdlib/predicates.go

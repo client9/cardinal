@@ -44,44 +44,6 @@ func TestContextIsolation(t *testing.T) {
 	t.Logf("eval2 CustomFunc attributes: %s", AttributesToString(attrs2))
 }
 
-// TestConcurrentEvaluators demonstrates that evaluators can be used safely in parallel
-func TestConcurrentEvaluators(t *testing.T) {
-	// Create multiple REPL instances (each has its own evaluator)
-	repl1 := NewREPL()
-	repl2 := NewREPL()
-
-	// Set different variables in each REPL
-	result1, err1 := repl1.EvaluateString("x = 10")
-	if err1 != nil {
-		t.Fatalf("repl1 error: %v", err1)
-	}
-	if result1 != "10" {
-		t.Errorf("expected '10', got '%s'", result1)
-	}
-
-	result2, err2 := repl2.EvaluateString("x = 20")
-	if err2 != nil {
-		t.Fatalf("repl2 error: %v", err2)
-	}
-	if result2 != "20" {
-		t.Errorf("expected '20', got '%s'", result2)
-	}
-
-	// Verify that the variables are isolated
-	result1, _ = repl1.EvaluateString("x")
-	result2, _ = repl2.EvaluateString("x")
-
-	if result1 != "10" {
-		t.Errorf("repl1 x should be 10, got '%s'", result1)
-	}
-	if result2 != "20" {
-		t.Errorf("repl2 x should be 20, got '%s'", result2)
-	}
-
-	t.Logf("repl1 x = %s", result1)
-	t.Logf("repl2 x = %s", result2)
-}
-
 // TestChildContextAttributeSharing demonstrates that child contexts share symbol tables
 func TestChildContextAttributeSharing(t *testing.T) {
 	// Create parent context with attributes

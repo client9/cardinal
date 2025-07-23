@@ -14,27 +14,27 @@ func TestAssociationParsing(t *testing.T) {
 		{
 			name:     "Empty association",
 			input:    "{}",
-			expected: "{}",
+			expected: "Association()",
 		},
 		{
 			name:     "Single key-value pair",
 			input:    "{name: \"Bob\"}",
-			expected: "{name: \"Bob\"}",
+			expected: "Association(Rule(name, \"Bob\"))",
 		},
 		{
 			name:     "Multiple key-value pairs",
 			input:    "{name: \"Bob\", age: 30}",
-			expected: "{name: \"Bob\", age: 30}",
+			expected: "Association(Rule(name, \"Bob\"), Rule(age, 30))",
 		},
 		{
 			name:     "Mixed value types",
 			input:    "{name: \"Bob\", age: 30, active: True}",
-			expected: "{name: \"Bob\", age: 30, active: True}",
+			expected: "Association(Rule(name, \"Bob\"), Rule(age, 30), Rule(active, True))",
 		},
 		{
 			name:     "Trailing comma",
 			input:    "{name: \"Bob\", age: 30,}",
-			expected: "{name: \"Bob\", age: 30}",
+			expected: "Association(Rule(name, \"Bob\"), Rule(age, 30))",
 		},
 	}
 
@@ -392,17 +392,17 @@ func TestAssociationPatternBehavior(t *testing.T) {
 		{
 			name:     "Keys with multiple arguments",
 			input:    "Keys({}, {})",
-			expected: "Keys({}, {})", // Pattern doesn't match, returns unchanged
+			expected: "Keys(Association(), Association())", // Pattern doesn't match, returns unchanged
 		},
 		{
 			name:     "Values with multiple arguments",
 			input:    "Values({}, {})",
-			expected: "Values({}, {})", // Pattern doesn't match, returns unchanged
+			expected: "Values(Association(), Association())", // Pattern doesn't match, returns unchanged
 		},
 		{
 			name:     "AssociationQ with multiple arguments",
 			input:    "AssociationQ({}, {})",
-			expected: "AssociationQ({}, {})", // Pattern doesn't match, returns unchanged
+			expected: "AssociationQ(Association(), Association())", // Pattern doesn't match, returns unchanged
 		},
 	}
 

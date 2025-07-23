@@ -121,3 +121,8 @@ func (c *Context) SetStack(stack *EvaluationStack) {
 func (c *Context) GetFunctionRegistry() *FunctionRegistry {
 	return c.functionRegistry
 }
+
+// GetSymbolTable returns the context's symbol table
+func (c *Context) GetSymbolTable() *SymbolTable {
+	return c.symbolTable
+}

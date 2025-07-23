@@ -1,6 +1,7 @@
 
-generate:
-	go generate .
+build:
+	go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go
+	go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go -setup builtin_setup.go
 	go build .
 
 lint:
@@ -8,11 +9,12 @@ lint:
 	gofmt -w -s *.go
 	golangci-lint run .
 
-test:
-	go generate ./...
-	go test
+test:  build
+	go test .
 
 clean:
 	rm -f repl cmd/repl/repl
-	rm -f wrapgen
+	rm -f main wrapgen
 	rm -f *.bak*
+	rm -f *_wrappers.go
+	rm -f builtin_setup.go

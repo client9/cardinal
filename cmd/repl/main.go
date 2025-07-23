@@ -26,7 +26,7 @@ func main() {
 	}
 	
 	// Create REPL instance
-	repl := sexpr.NewREPL()
+	repl := NewREPL()
 	repl.SetPrompt(*prompt)
 	
 	// Enable Uint64 extension if requested
