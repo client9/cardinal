@@ -404,14 +404,14 @@ var functionSpecs = []FunctionSpec{
 		SymbolName: "ByteArray",
 		Attributes: []string{},
 	},
-/* List(x___Integer) --> []int64 not supported yet
+	/* List(x___Integer) --> []int64 not supported yet
 	{
 		Pattern:    "ByteArray(List(x___Integer))",
 		Function:   stdlib.ByteArrayFromInts,
 		OutputFile: "string_wrappers.go",
 		Attributes: []string{},
 	},
-*/
+	*/
 	{
 		Pattern:    "AssociationQ(x_)",
 		Function:   stdlib.AssociationQExpr,
@@ -455,6 +455,36 @@ var functionSpecs = []FunctionSpec{
 		SymbolName: "MatchQ",
 		Attributes: []string{},
 	},
+	{
+		Pattern:    "RotateLeft(x_, n_Integer)",
+		Function:   stdlib.RotateLeft,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "RotateLeft",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "RotateRight(x_, n_Integer)",
+		Function:   stdlib.RotateRight,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "RotateRight",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Print(x_)",
+		Function:   stdlib.Print,
+		OutputFile: "output_wrappers.go",
+		SymbolName: "Print",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Print(label_String, x_)",
+		Function:   stdlib.PrintLabel,
+		OutputFile: "output_wrappers.go",
+		SymbolName: "PrintLabel",
+		Attributes: []string{},
+	},
+	// Note: PatternSpecificity and ShowPatterns are implemented directly in builtin_funcs.go
+	// because they need access to pattern parsing and function registry functionality
 }
 
 // processFunctionSpecs processes all function specs, filling in auto-derived fields via reflection
@@ -829,11 +859,15 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 {{end}}
 
 		// Special attribute manipulation functions (require context)
-		"Attributes(x_)":           WrapAttributesExpr,
-		"SetAttributes(x_, y_List)": WrapSetAttributesList,
-		"SetAttributes(x_, y_)":    WrapSetAttributesSingle,
-		"ClearAttributes(x_, y_List)":  WrapClearAttributesList,
-		"ClearAttributes(x_, y_)":  WrapClearAttributesSingle,
+		"Attributes(x_)":              WrapAttributesExpr,
+		"SetAttributes(x_, y_List)":   WrapSetAttributesList,
+		"SetAttributes(x_, y_)":       WrapSetAttributesSingle,
+		"ClearAttributes(x_, y_List)": WrapClearAttributesList,
+		"ClearAttributes(x_, y_)":     WrapClearAttributesSingle,
+		
+		// Special debugging functions (require context and main package access)
+		"PatternSpecificity(pattern_)":      WrapPatternSpecificity,
+		"ShowPatterns(functionName_Symbol)": WrapShowPatterns,
 	}
 
 	// Register patterns with the function registry

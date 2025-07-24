@@ -16,7 +16,7 @@ func TestSliceSyntaxBasicIndexing(t *testing.T) {
 			expected: "3",
 		},
 		{
-			name:     "String single index access", 
+			name:     "String single index access",
 			input:    `"hello"[2]`,
 			expected: `"e"`,
 		},
@@ -280,7 +280,7 @@ func TestSliceSyntaxErrorCases(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			
+
 			if tt.expectError {
 				if !IsError(result) {
 					t.Errorf("Expected error but got: %v", result)
@@ -402,8 +402,8 @@ func TestSliceSyntaxCompatibilityWithExistingFunctions(t *testing.T) {
 
 			// Compare results
 			if sliceResult.String() != funcResult.String() {
-				t.Errorf("%s: slice syntax '%s' = %s, function call '%s' = %s", 
-					tt.description, tt.sliceSyntax, sliceResult.String(), 
+				t.Errorf("%s: slice syntax '%s' = %s, function call '%s' = %s",
+					tt.description, tt.sliceSyntax, sliceResult.String(),
 					tt.functionCall, funcResult.String())
 			}
 		})

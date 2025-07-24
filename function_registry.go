@@ -253,16 +253,117 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 			r.functions[functionName] = definitions
 			return
 		}
+
+		// Check for specificity collision with different patterns
+		// Note: Disabled warnings for now as they need fine-tuning for type overlap detection
+		// TODO: Re-enable after fixing type constraint extraction
+		_ = couldPatternsConflict // Prevent unused function warning
+		/*
+			if existingDef.Specificity == newDef.Specificity && couldPatternsConflict(existingDef.Pattern, newDef.Pattern) {
+				fmt.Printf("WARNING: Pattern specificity collision for function '%s'!\n", functionName)
+				fmt.Printf("  Existing: %s (specificity: %d)\n", existingDef.Pattern.String(), existingDef.Specificity)
+				fmt.Printf("  New:      %s (specificity: %d)\n", newDef.Pattern.String(), newDef.Specificity)
+				fmt.Printf("  Order will be determined by lexicographic tie-breaker: '%s' vs '%s'\n",
+					existingDef.Pattern.String(), newDef.Pattern.String())
+				if existingDef.Pattern.String() < newDef.Pattern.String() {
+					fmt.Printf("  Result: '%s' will match first\n", existingDef.Pattern.String())
+				} else {
+					fmt.Printf("  Result: '%s' will match first\n", newDef.Pattern.String())
+				}
+				fmt.Printf("  Consider adjusting pattern specificity to make matching order explicit.\n\n")
+			}
+		*/
 	}
 
 	// Add new definition and re-sort by specificity
 	definitions = append(definitions, newDef)
 	sort.Slice(definitions, func(i, j int) bool {
 		// Higher specificity comes first
-		return definitions[i].Specificity > definitions[j].Specificity
+		if definitions[i].Specificity != definitions[j].Specificity {
+			return definitions[i].Specificity > definitions[j].Specificity
+		}
+		// Tie-breaker: use lexicographic order of pattern strings for stability
+		// This ensures Integer patterns come before Number patterns when specificity is equal
+		return definitions[i].Pattern.String() < definitions[j].Pattern.String()
 	})
 
 	r.functions[functionName] = definitions
+}
+
+// couldPatternsConflict checks if two patterns could potentially match the same arguments
+// Returns true only if there's genuine ambiguity that could cause pattern matching issues
+func couldPatternsConflict(pattern1, pattern2 Expr) bool {
+	// Extract type constraints from both patterns
+	types1 := extractTypeConstraints(pattern1)
+	types2 := extractTypeConstraints(pattern2)
+
+	// If patterns have no overlapping type constraints, they won't conflict
+	return hasOverlappingTypes(types1, types2)
+}
+
+// extractTypeConstraints extracts type names from a pattern
+func extractTypeConstraints(pattern Expr) []string {
+	var types []string
+
+	switch p := pattern.(type) {
+	case List:
+		// Process each element in the pattern
+		for _, elem := range p.Elements {
+			types = append(types, extractTypeConstraints(elem)...)
+		}
+	default:
+		// Check if this is a symbolic pattern with type constraint
+		if isPattern, _, blankExpr := isSymbolicPattern(pattern); isPattern {
+			if isBlank, _, typeExpr := isSymbolicBlank(blankExpr); isBlank && typeExpr != nil {
+				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
+					types = append(types, typeAtom.Value.(string))
+				}
+			}
+		} else if isBlank, _, typeExpr := isSymbolicBlank(pattern); isBlank && typeExpr != nil {
+			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
+				types = append(types, typeAtom.Value.(string))
+			}
+		}
+	}
+
+	return types
+}
+
+// hasOverlappingTypes checks if two sets of type constraints could overlap
+func hasOverlappingTypes(types1, types2 []string) bool {
+	// If either pattern has no type constraints, they could potentially conflict
+	if len(types1) == 0 || len(types2) == 0 {
+		return true
+	}
+
+	// Check for direct matches or subtype relationships
+	for _, t1 := range types1 {
+		for _, t2 := range types2 {
+			if typesCouldOverlap(t1, t2) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// typesCouldOverlap checks if two specific types could overlap in pattern matching
+func typesCouldOverlap(type1, type2 string) bool {
+	// Same type always overlaps
+	if type1 == type2 {
+		return true
+	}
+
+	// Number is a supertype of Integer and Real
+	if (type1 == "Number" && (type2 == "Integer" || type2 == "Real")) ||
+		(type2 == "Number" && (type1 == "Integer" || type1 == "Real")) {
+		return true
+	}
+
+	// Different concrete types don't overlap
+	// Integer vs String, Integer vs Real, String vs Real, etc.
+	return false
 }
 
 // extractFunctionName extracts the function name from a pattern

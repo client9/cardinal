@@ -64,23 +64,23 @@ func (b ByteArray) Equal(rhs Expr) bool {
 // ElementAt returns the nth byte (1-indexed) as an integer atom
 func (b ByteArray) ElementAt(n int64) Expr {
 	length := int64(len(b.data))
-	
+
 	if length == 0 {
 		return NewErrorExpr("PartError", "ByteArray is empty", []Expr{b})
 	}
-	
+
 	// Handle negative indexing
 	if n < 0 {
 		n = length + n + 1
 	}
-	
+
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
 		return NewErrorExpr("PartError",
 			fmt.Sprintf("Part index %d is out of bounds for ByteArray with %d bytes", n, length),
 			[]Expr{b})
 	}
-	
+
 	// Convert to 0-based index and return byte as integer
 	return NewIntAtom(int(b.data[n-1]))
 }
@@ -88,11 +88,11 @@ func (b ByteArray) ElementAt(n int64) Expr {
 // Slice returns a new ByteArray containing bytes from start to stop (inclusive, 1-indexed)
 func (b ByteArray) Slice(start, stop int64) Expr {
 	length := int64(len(b.data))
-	
+
 	if length == 0 {
 		return NewByteArray(nil)
 	}
-	
+
 	// Handle negative indexing
 	if start < 0 {
 		start = length + start + 1
@@ -100,24 +100,24 @@ func (b ByteArray) Slice(start, stop int64) Expr {
 	if stop < 0 {
 		stop = length + stop + 1
 	}
-	
+
 	// Check bounds
 	if start <= 0 || stop <= 0 || start > length || stop > length {
 		return NewErrorExpr("PartError",
 			fmt.Sprintf("Slice indices [%d, %d] out of bounds for ByteArray with %d bytes",
 				start, stop, length), []Expr{b})
 	}
-	
+
 	if start > stop {
 		return NewErrorExpr("PartError",
 			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop),
 			[]Expr{b})
 	}
-	
+
 	// Convert to 0-based indices and create new ByteArray
 	startIdx := start - 1
 	stopIdx := stop // stop is inclusive, so we include it
-	
+
 	return NewByteArray(b.data[startIdx:stopIdx])
 }
 
@@ -134,4 +134,26 @@ func (b ByteArray) Append(data ...byte) ByteArray {
 // ToStringAtom converts the ByteArray to a string atom (assuming UTF-8 encoding)
 func (b ByteArray) ToStringAtom() Atom {
 	return NewStringAtom(string(b.data))
+}
+
+// Join joins this ByteArray with another sliceable of the same type
+func (b ByteArray) Join(other Sliceable) Expr {
+	// Type check: ensure other is also a ByteArray
+	otherByteArray, ok := other.(ByteArray)
+	if !ok {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Cannot join %T with ByteArray", other),
+			[]Expr{b, other.(Expr)})
+	}
+
+	// Get data from both byte arrays
+	thisData := b.Data()
+	otherData := otherByteArray.Data()
+
+	// Create new byte array with combined data
+	newData := make([]byte, len(thisData)+len(otherData))
+	copy(newData, thisData)
+	copy(newData[len(thisData):], otherData)
+
+	return NewByteArray(newData)
 }

@@ -7,7 +7,7 @@ build:
 
 lint:
 	go mod tidy
-	gofmt -w -s *.go
+	gofmt -w -s *.go core/*.go stdlib/*.go cmd/wrapgen/*.go cmd/repl/*.go
 	golangci-lint run .
 
 test:  build

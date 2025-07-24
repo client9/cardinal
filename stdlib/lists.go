@@ -115,7 +115,7 @@ func TakeListSingle(list core.List, indexList core.List) core.Expr {
 	if core.IsError(element) {
 		return element
 	}
-	
+
 	// Wrap the element in a list with the same head as the original list
 	return core.List{Elements: []core.Expr{list.Elements[0], element}}
 }

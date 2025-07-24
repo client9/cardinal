@@ -258,3 +258,81 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 	// Call business logic function
 	return ClearAttributesList(args[0], attrList, ctx)
 }
+
+// PatternSpecificityExpr calculates the specificity of a pattern expression for debugging
+func PatternSpecificityExpr(pattern Expr, ctx *Context) Expr {
+	// Calculate specificity directly from the pattern expression
+	specificity := getPatternSpecificity(pattern)
+	return NewIntAtom(int(specificity))
+}
+
+// ShowPatternsExpr lists all registered patterns for a function name
+func ShowPatternsExpr(functionName Expr, ctx *Context) Expr {
+	if atom, ok := functionName.(Atom); ok && atom.AtomType == SymbolAtom {
+		funcName := atom.Value.(string)
+
+		// Get function definitions from the registry
+		definitions := ctx.functionRegistry.GetFunctionDefinitions(funcName)
+		if definitions == nil {
+			return NewErrorExpr("ArgumentError",
+				fmt.Sprintf("No patterns found for function: %s", funcName), []Expr{functionName})
+		}
+
+		// Create a list of pattern information
+		elements := make([]Expr, len(definitions)+1)
+		elements[0] = NewSymbolAtom("List")
+
+		for i, def := range definitions {
+			// Create a rule showing pattern -> specificity
+			patternStr := def.Pattern.String()
+			specificityStr := fmt.Sprintf("%d", def.Specificity)
+
+			ruleElements := []Expr{
+				NewSymbolAtom("Rule"),
+				NewStringAtom(patternStr),
+				NewStringAtom(specificityStr),
+			}
+
+			elements[i+1] = List{Elements: ruleElements}
+		}
+
+		return List{Elements: elements}
+	}
+
+	return NewErrorExpr("ArgumentError",
+		"ShowPatterns expects a symbol", []Expr{functionName})
+}
+
+// WrapPatternSpecificity is a clean wrapper for PatternSpecificity
+func WrapPatternSpecificity(args []Expr, ctx *Context) Expr {
+	// Validate argument count
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			"PatternSpecificity expects 1 argument", args)
+	}
+
+	// Check for errors in arguments first
+	if IsError(args[0]) {
+		return args[0]
+	}
+
+	// Call business logic function
+	return PatternSpecificityExpr(args[0], ctx)
+}
+
+// WrapShowPatterns is a clean wrapper for ShowPatterns
+func WrapShowPatterns(args []Expr, ctx *Context) Expr {
+	// Validate argument count
+	if len(args) != 1 {
+		return NewErrorExpr("ArgumentError",
+			"ShowPatterns expects 1 argument", args)
+	}
+
+	// Check for errors in arguments first
+	if IsError(args[0]) {
+		return args[0]
+	}
+
+	// Call business logic function
+	return ShowPatternsExpr(args[0], ctx)
+}

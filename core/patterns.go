@@ -119,12 +119,12 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 	// Check if it's a Pattern[name, blank] first
 	if isPattern, nameExpr, blankExpr := IsSymbolicPattern(expr); isPattern {
 		info := PatternInfo{}
-		
+
 		// Extract variable name
 		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
 			info.VarName = nameAtom.Value.(string)
 		}
-		
+
 		// Analyze the blank expression
 		if isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr); isBlank {
 			switch blankType {
@@ -135,7 +135,7 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 			case "BlankNullSequence":
 				info.Type = BlankNullSequencePattern
 			}
-			
+
 			// Extract type constraint
 			if typeExpr != nil {
 				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
@@ -143,14 +143,14 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 				}
 			}
 		}
-		
+
 		return info
 	}
-	
+
 	// Check if it's a direct blank expression
 	if isBlank, blankType, typeExpr := IsSymbolicBlank(expr); isBlank {
 		info := PatternInfo{}
-		
+
 		switch blankType {
 		case "Blank":
 			info.Type = BlankPattern
@@ -159,17 +159,17 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 		case "BlankNullSequence":
 			info.Type = BlankNullSequencePattern
 		}
-		
+
 		// Extract type constraint
 		if typeExpr != nil {
 			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
 				info.TypeName = typeAtom.Value.(string)
 			}
 		}
-		
+
 		return info
 	}
-	
+
 	return PatternInfo{}
 }
 
@@ -214,7 +214,7 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 
 	// Extract variable name and type
 	var varName, typeName string
-	
+
 	// Handle different underscore patterns
 	if strings.HasSuffix(name, "___") {
 		// BlankNullSequence pattern
@@ -371,12 +371,12 @@ func GetPatternSpecificity(pattern Expr) PatternSpecificity {
 	if isPattern, _, blankExpr := IsSymbolicPattern(pattern); isPattern {
 		return GetBlankExprSpecificity(blankExpr)
 	}
-	
+
 	// Check if it's a direct blank
 	if isBlank, _, _ := IsSymbolicBlank(pattern); isBlank {
 		return GetBlankExprSpecificity(pattern)
 	}
-	
+
 	// Check for string-based patterns
 	if atom, ok := pattern.(Atom); ok && atom.AtomType == SymbolAtom {
 		name := atom.Value.(string)
@@ -385,7 +385,7 @@ func GetPatternSpecificity(pattern Expr) PatternSpecificity {
 			return GetPatternVariableSpecificity(info)
 		}
 	}
-	
+
 	// Literal patterns are most specific
 	return SpecificityLiteral
 }
@@ -396,16 +396,16 @@ func GetBlankExprSpecificity(blankExpr Expr) PatternSpecificity {
 	if !isBlank {
 		return SpecificityLiteral
 	}
-	
+
 	if typeExpr == nil {
 		return SpecificityGeneral // Plain _
 	}
-	
+
 	if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
 		typeName := typeAtom.Value.(string)
 		return GetTypeSpecificity(typeName)
 	}
-	
+
 	return SpecificityTyped
 }
 
@@ -414,11 +414,11 @@ func GetTypeSpecificity(typeName string) PatternSpecificity {
 	if typeName == "" {
 		return SpecificityGeneral
 	}
-	
+
 	if IsBuiltinType(typeName) {
 		return SpecificityBuiltinType
 	}
-	
+
 	return SpecificityUserType
 }
 
@@ -427,7 +427,7 @@ func GetPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 	if info.TypeName == "" {
 		return SpecificityGeneral
 	}
-	
+
 	return GetTypeSpecificity(info.TypeName)
 }
 
@@ -436,15 +436,15 @@ func CalculateCompoundSpecificity(pattern List) CompoundSpecificity {
 	if len(pattern.Elements) == 0 {
 		return CompoundSpecificity{}
 	}
-	
+
 	cs := CompoundSpecificity{
 		ArgsCount:       len(pattern.Elements) - 1, // Exclude head
 		ArgsSpecificity: make([]PatternSpecificity, 0),
 	}
-	
+
 	// Calculate head specificity
 	cs.HeadSpecificity = GetPatternSpecificity(pattern.Elements[0])
-	
+
 	// Calculate argument specificities
 	totalArgScore := 0
 	for i := 1; i < len(pattern.Elements); i++ {
@@ -452,10 +452,10 @@ func CalculateCompoundSpecificity(pattern List) CompoundSpecificity {
 		cs.ArgsSpecificity = append(cs.ArgsSpecificity, argSpec)
 		totalArgScore += int(argSpec)
 	}
-	
+
 	// Calculate total score (higher is more specific)
 	cs.TotalScore = int(cs.HeadSpecificity)*1000 + cs.ArgsCount*100 + totalArgScore
-	
+
 	return cs
 }
 
@@ -483,12 +483,12 @@ func (pm *PatternMatcher) testMatchInternal(pattern, expr Expr) bool {
 		// For pure matching, just test the blank part (no variable binding)
 		return pm.testMatchBlank(blankExpr, expr)
 	}
-	
+
 	// Handle direct symbolic blanks
 	if isBlank, _, _ := IsSymbolicBlank(pattern); isBlank {
 		return pm.testMatchBlank(pattern, expr)
 	}
-	
+
 	// Handle different expression types
 	switch p := pattern.(type) {
 	case Atom:
@@ -504,25 +504,25 @@ func (pm *PatternMatcher) testMatchInternal(pattern, expr Expr) bool {
 				// Sequence patterns don't match single expressions in pure matching
 				return false
 			}
-			
+
 			// Regular symbol - must match literally
 			if exprAtom, ok := expr.(Atom); ok && exprAtom.AtomType == SymbolAtom {
 				return exprAtom.Value.(string) == varName
 			}
 			return false
 		}
-		
+
 		// Other atom types must match exactly
 		return p.Equal(expr)
-		
+
 	case List:
 		exprList, ok := expr.(List)
 		if !ok {
 			return false
 		}
-		
+
 		return pm.testMatchList(p, exprList)
-		
+
 	default:
 		// All other types must match exactly
 		return pattern.Equal(expr)
@@ -535,7 +535,7 @@ func (pm *PatternMatcher) testMatchBlank(blankExpr, expr Expr) bool {
 	if !isBlank {
 		return false
 	}
-	
+
 	// Check type constraint if present
 	if typeExpr != nil {
 		var typeName string
@@ -546,14 +546,14 @@ func (pm *PatternMatcher) testMatchBlank(blankExpr, expr Expr) bool {
 			return false
 		}
 	}
-	
+
 	// For pure matching, single expressions match all blank types
 	// (sequence handling is more complex and typically needs context)
 	switch blankType {
 	case "Blank", "BlankSequence", "BlankNullSequence":
 		return true
 	}
-	
+
 	return false
 }
 
@@ -561,17 +561,17 @@ func (pm *PatternMatcher) testMatchBlank(blankExpr, expr Expr) bool {
 func (pm *PatternMatcher) testMatchList(patternList, exprList List) bool {
 	// For pure matching, we do simple element-by-element matching
 	// (sequence patterns are more complex and typically need context)
-	
+
 	if len(patternList.Elements) != len(exprList.Elements) {
 		return false
 	}
-	
+
 	// Match each element
 	for i, patternElem := range patternList.Elements {
 		if !pm.testMatchInternal(patternElem, exprList.Elements[i]) {
 			return false
 		}
 	}
-	
+
 	return true
 }

@@ -14,17 +14,17 @@ func Take(expr core.Expr, n int64) core.Expr {
 		return core.NewErrorExpr("TypeError",
 			"Take requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
 	}
-	
+
 	length := expr.Length()
 	if length == 0 {
 		return expr // Empty expression returns itself
 	}
-	
+
 	if n == 0 {
 		// Take 0 elements - return empty version of same type
 		return createEmpty(expr)
 	}
-	
+
 	if n > 0 {
 		// Take first n elements: expr.Slice(1, n)
 		if n > length {
@@ -50,16 +50,16 @@ func Drop(expr core.Expr, n int64) core.Expr {
 		return core.NewErrorExpr("TypeError",
 			"Drop requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
 	}
-	
+
 	length := expr.Length()
 	if length == 0 {
 		return expr // Empty expression returns itself
 	}
-	
+
 	if n == 0 {
 		return expr // Drop 0 elements returns original
 	}
-	
+
 	if n > 0 {
 		// Drop first n elements: expr.Slice(n + 1, length)
 		if n >= length {
@@ -84,7 +84,7 @@ func Part(expr core.Expr, n int64) core.Expr {
 		return core.NewErrorExpr("TypeError",
 			"Part requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
 	}
-	
+
 	return sliceable.ElementAt(n)
 }
 
@@ -94,7 +94,7 @@ func Rest(expr core.Expr) core.Expr {
 	return Drop(expr, 1)
 }
 
-// Most removes the last element from a sliceable expression  
+// Most removes the last element from a sliceable expression
 // Most(expr) - equivalent to Drop(expr, -1)
 func Most(expr core.Expr) core.Expr {
 	return Drop(expr, -1)
@@ -120,20 +120,20 @@ func TakeRange(expr core.Expr, rangeList core.List) core.Expr {
 		return core.NewErrorExpr("TypeError",
 			"Take requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
 	}
-	
+
 	// Extract range indices
 	if len(rangeList.Elements) != 3 { // Head + two elements
 		return core.NewErrorExpr("ArgumentError",
 			"Take with range requires exactly two indices", []core.Expr{rangeList})
 	}
-	
+
 	start, ok1 := core.ExtractInt64(rangeList.Elements[1])
 	stop, ok2 := core.ExtractInt64(rangeList.Elements[2])
 	if !ok1 || !ok2 {
 		return core.NewErrorExpr("ArgumentError",
 			"Take indices must be integers", rangeList.Elements[1:])
 	}
-	
+
 	return sliceable.Slice(start, stop)
 }
 
@@ -145,25 +145,25 @@ func DropRange(expr core.Expr, rangeList core.List) core.Expr {
 		return core.NewErrorExpr("TypeError",
 			"Drop requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
 	}
-	
+
 	// Extract range indices
 	if len(rangeList.Elements) != 3 { // Head + two elements
 		return core.NewErrorExpr("ArgumentError",
 			"Drop with range requires exactly two indices", []core.Expr{rangeList})
 	}
-	
+
 	start, ok1 := core.ExtractInt64(rangeList.Elements[1])
 	stop, ok2 := core.ExtractInt64(rangeList.Elements[2])
 	if !ok1 || !ok2 {
 		return core.NewErrorExpr("ArgumentError",
 			"Drop indices must be integers", rangeList.Elements[1:])
 	}
-	
+
 	length := expr.Length()
 	if length == 0 {
 		return expr
 	}
-	
+
 	// Drop range by combining two slices: [1, start-1] + [stop+1, length]
 	if start <= 1 && stop >= length {
 		// Dropping everything
@@ -201,6 +201,91 @@ func createEmpty(expr core.Expr) core.Expr {
 	default:
 		return core.NewErrorExpr("TypeError", "Cannot create empty version of unknown type", []core.Expr{expr})
 	}
+}
+
+// RotateLeft rotates elements of a sliceable expression to the left by n positions
+// RotateLeft(expr, n) moves the first n elements to the end
+func RotateLeft(expr core.Expr, n int64) core.Expr {
+	sliceable := core.AsSliceable(expr)
+	if sliceable == nil {
+		return core.NewErrorExpr("TypeError",
+			"RotateLeft requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+	}
+
+	length := expr.Length()
+	if length == 0 {
+		return expr // Empty expressions remain unchanged
+	}
+
+	// Normalize n to be within [0, length)
+	n = n % length
+	if n < 0 {
+		n += length
+	}
+
+	if n == 0 {
+		return expr // No rotation needed
+	}
+
+	// Rotate left by n: take elements [n+1:] + [1:n]
+	// For 1-based indexing: slice from (n+1) to end, then from 1 to n
+	rightPart := sliceable.Slice(n+1, length)
+	leftPart := sliceable.Slice(1, n)
+
+	// Concatenate the parts
+	return concatenateSliceable(rightPart, leftPart)
+}
+
+// RotateRight rotates elements of a sliceable expression to the right by n positions
+// RotateRight(expr, n) moves the last n elements to the beginning
+func RotateRight(expr core.Expr, n int64) core.Expr {
+	sliceable := core.AsSliceable(expr)
+	if sliceable == nil {
+		return core.NewErrorExpr("TypeError",
+			"RotateRight requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+	}
+
+	length := expr.Length()
+	if length == 0 {
+		return expr // Empty expressions remain unchanged
+	}
+
+	// Normalize n to be within [0, length)
+	n = n % length
+	if n < 0 {
+		n += length
+	}
+
+	if n == 0 {
+		return expr // No rotation needed
+	}
+
+	// Rotate right by n: take elements [length-n+1:] + [1:length-n]
+	// For 1-based indexing: slice from (length-n+1) to end, then from 1 to (length-n)
+	rightPart := sliceable.Slice(length-n+1, length)
+	leftPart := sliceable.Slice(1, length-n)
+
+	// Concatenate the parts
+	return concatenateSliceable(rightPart, leftPart)
+}
+
+// concatenateSliceable concatenates two sliceable expressions using the Concat method
+func concatenateSliceable(left, right core.Expr) core.Expr {
+	// Ensure both expressions are sliceable
+	leftSliceable := core.AsSliceable(left)
+	if leftSliceable == nil {
+		return core.NewErrorExpr("TypeError",
+			"Left operand is not sliceable", []core.Expr{left})
+	}
+
+	rightSliceable := core.AsSliceable(right)
+	if rightSliceable == nil {
+		return core.NewErrorExpr("TypeError",
+			"Right operand is not sliceable", []core.Expr{right})
+	}
+
+	// Use the Join method - this handles type checking and implementation details
+	return leftSliceable.Join(rightSliceable)
 }
 
 // joinSlices joins two slices for DropRange middle case

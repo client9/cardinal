@@ -521,8 +521,10 @@ func getBlankExprSpecificity(blankExpr Expr) PatternSpecificity {
 			if len(blank.Elements) == 1 {
 				return SpecificitySequence // BlankSequence() - matches sequence
 			} else if len(blank.Elements) == 2 {
-				// BlankSequence(Type) - check the type but still sequence
-				return SpecificitySequence // Typed sequence is still sequence level
+				// BlankSequence(Type) - combine sequence specificity with type specificity
+				typeExpr := blank.Elements[1]
+				typeSpec := getTypeSpecificity(typeExpr.String())
+				return SpecificitySequence + typeSpec // Sequence base + type bonus
 			}
 		case "BlankNullSequence":
 			return SpecificityNullSequence // BlankNullSequence() - least specific
@@ -580,9 +582,16 @@ func getPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 		baseSpecificity = SpecificityGeneral
 	}
 
-	// Increase specificity if there's a type constraint
+	// If there's a type constraint, combine it with the base pattern type
 	if info.TypeName != "" {
-		return getTypeSpecificity(info.TypeName)
+		typeSpec := getTypeSpecificity(info.TypeName)
+		// For typed patterns, we need to preserve the pattern type ordering while respecting type specificity
+		// Formula: typeSpecificity + (baseSpecificity / 100) to maintain ordering
+		// This ensures:
+		// - x_Integer (30 + 50) = 80 > x__Integer (20 + 50) = 70 > x___Integer (10 + 50) = 60
+		// - x_Integer (30 + 50) = 80 > x_Number (30 + 40) = 70
+		// - x__Integer (20 + 50) = 70 > x__Number (20 + 40) = 60
+		return PatternSpecificity(int(baseSpecificity) + int(typeSpec))
 	}
 
 	return baseSpecificity

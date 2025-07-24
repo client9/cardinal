@@ -19,16 +19,16 @@ func TestPatternSpecificity_Direct(t *testing.T) {
 		{"literal string", "\"hello\"", SpecificityLiteral},
 		{"literal symbol", "Pi", SpecificityLiteral},
 
-		// Specific builtin types
-		{"blank integer", "x_Integer", SpecificityBuiltinSpecific},
-		{"blank real", "y_Real", SpecificityBuiltinSpecific},
-		{"blank string", "s_String", SpecificityBuiltinSpecific},
-		{"blank list", "lst_List", SpecificityBuiltinSpecific},
-		{"blank symbol", "sym_Symbol", SpecificityBuiltinSpecific},
+		// Specific builtin types (base pattern specificity + type specificity)
+		{"blank integer", "x_Integer", SpecificityGeneral + SpecificityBuiltinSpecific}, // 30 + 50 = 80
+		{"blank real", "y_Real", SpecificityGeneral + SpecificityBuiltinSpecific},       // 30 + 50 = 80
+		{"blank string", "s_String", SpecificityGeneral + SpecificityBuiltinSpecific},   // 30 + 50 = 80
+		{"blank list", "lst_List", SpecificityGeneral + SpecificityBuiltinSpecific},     // 30 + 50 = 80
+		{"blank symbol", "sym_Symbol", SpecificityGeneral + SpecificityBuiltinSpecific}, // 30 + 50 = 80
 
-		// General builtin types
-		{"blank number", "n_Number", SpecificityBuiltinGeneral},
-		{"blank numeric", "n_Numeric", SpecificityBuiltinGeneral},
+		// General builtin types (base pattern specificity + type specificity)
+		{"blank number", "n_Number", SpecificityGeneral + SpecificityBuiltinGeneral},   // 30 + 40 = 70
+		{"blank numeric", "n_Numeric", SpecificityGeneral + SpecificityBuiltinGeneral}, // 30 + 40 = 70
 
 		// General patterns
 		{"blank general", "x_", SpecificityGeneral},
@@ -37,9 +37,9 @@ func TestPatternSpecificity_Direct(t *testing.T) {
 		{"blank sequence", "x__", SpecificitySequence},
 		{"blank null sequence", "x___", SpecificityNullSequence},
 
-		// Typed sequences
-		{"integer sequence", "x__Integer", SpecificityBuiltinSpecific},
-		{"number sequence", "x__Number", SpecificityBuiltinGeneral},
+		// Typed sequences (base pattern specificity + type specificity)
+		{"integer sequence", "x__Integer", SpecificitySequence + SpecificityBuiltinSpecific}, // 20 + 50 = 70
+		{"number sequence", "x__Number", SpecificitySequence + SpecificityBuiltinGeneral},    // 20 + 40 = 60
 	}
 
 	for _, tt := range tests {
@@ -70,12 +70,12 @@ func TestPatternSorting_Direct(t *testing.T) {
 	}
 
 	expectedOrder := []string{
-		"42",        // SpecificityLiteral = 7
-		"x_Integer", // SpecificityBuiltinSpecific = 5
-		"x_Number",  // SpecificityBuiltinGeneral = 4
-		"x_",        // SpecificityGeneral = 3
-		"x__",       // SpecificitySequence = 2
-		"x___",      // SpecificityNullSequence = 1
+		"x_Integer", // SpecificityGeneral + SpecificityBuiltinSpecific = 30 + 50 = 80
+		"x_Number",  // SpecificityGeneral + SpecificityBuiltinGeneral = 30 + 40 = 70
+		"42",        // SpecificityLiteral = 70
+		"x_",        // SpecificityGeneral = 30
+		"x__",       // SpecificitySequence = 20
+		"x___",      // SpecificityNullSequence = 10
 	}
 
 	// Create function definitions with these patterns

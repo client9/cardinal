@@ -44,7 +44,7 @@ func TestCreatePatternExpr(t *testing.T) {
 	nameExpr := NewSymbolAtom("x")
 	blankExpr := CreateBlankExpr(nil)
 	pattern := CreatePatternExpr(nameExpr, blankExpr)
-	
+
 	expected := List{Elements: []Expr{NewSymbolAtom("Pattern"), nameExpr, blankExpr}}
 	if !reflect.DeepEqual(pattern, expected) {
 		t.Errorf("CreatePatternExpr = %v, want %v", pattern, expected)
@@ -54,9 +54,9 @@ func TestCreatePatternExpr(t *testing.T) {
 // Test pattern analysis functions
 func TestIsSymbolicBlank(t *testing.T) {
 	tests := []struct {
-		expr       Expr
-		expectBlank bool
-		expectType string
+		expr           Expr
+		expectBlank    bool
+		expectType     string
 		expectTypeExpr Expr
 	}{
 		{CreateBlankExpr(nil), true, "Blank", nil},
@@ -133,12 +133,12 @@ func TestIsPatternVariable(t *testing.T) {
 
 func TestParsePatternVariable(t *testing.T) {
 	tests := []struct {
-		name     string
-		expectVar string
+		name       string
+		expectVar  string
 		expectType string
 	}{
 		{"x_Integer", "x", "Integer"},
-		{"var_String", "var", "String"}, 
+		{"var_String", "var", "String"},
 		{"x_", "x", ""},
 		{"_Integer", "", "Integer"},
 		{"_", "", ""},
@@ -293,10 +293,10 @@ func TestPatternMatcher(t *testing.T) {
 		{CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(NewSymbolAtom("String"))), NewIntAtom(42), false},
 
 		// List patterns
-		{NewList(NewSymbolAtom("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)), 
-		 NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)), true},
-		{NewList(NewSymbolAtom("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)), 
-		 NewList(NewSymbolAtom("Times"), NewIntAtom(1), NewIntAtom(2)), false},
+		{NewList(NewSymbolAtom("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
+			NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)), true},
+		{NewList(NewSymbolAtom("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
+			NewList(NewSymbolAtom("Times"), NewIntAtom(1), NewIntAtom(2)), false},
 	}
 
 	for _, test := range tests {

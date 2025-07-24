@@ -23,7 +23,7 @@ const (
 )
 
 var precedences = map[TokenType]Precedence{
-	LBRACKET:     PrecedencePrefix,   // High precedence for postfix indexing
+	LBRACKET:     PrecedencePrefix, // High precedence for postfix indexing
 	SEMICOLON:    PrecedenceCompound,
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
@@ -477,17 +477,17 @@ func (p *Parser) parseGroupedExpression() Expr {
 // parseIndexOrSlice handles postfix [index] and [start:end] syntax
 func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 	p.nextToken() // consume '['
-	
+
 	// Check for empty brackets []
 	if p.currentToken.Type == RBRACKET {
 		p.addError("empty brackets are not allowed")
 		return expr
 	}
-	
+
 	// Parse the first expression (could be index, start, or just ':')
 	var firstExpr Expr
 	var hasFirstExpr bool
-	
+
 	if p.currentToken.Type == COLON {
 		// [:end] syntax - no start expression
 		hasFirstExpr = false
@@ -496,7 +496,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 		firstExpr = p.parseSliceExpression()
 		hasFirstExpr = true
 	}
-	
+
 	// Check what comes next
 	if p.currentToken.Type == RBRACKET {
 		// Simple index: expr[index]
@@ -506,17 +506,17 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 		}
 		p.nextToken() // consume ']'
 		return NewList(NewSymbolAtom("Part"), expr, firstExpr)
-		
+
 	} else if p.currentToken.Type == COLON {
 		// Slice syntax: expr[start:end] or expr[:end] or expr[start:]
 		p.nextToken() // consume ':'
-		
+
 		var startExpr, endExpr Expr
-		
+
 		if hasFirstExpr {
 			startExpr = firstExpr
 		}
-		
+
 		// Check for end expression
 		if p.currentToken.Type == RBRACKET {
 			// expr[start:] syntax - no end expression
@@ -542,13 +542,13 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 				return expr
 			}
 			p.nextToken() // consume ']'
-			
+
 			// Generate appropriate slice expression
 			if startExpr == nil {
 				// [:end] syntax - Take first n elements
 				return NewList(NewSymbolAtom("Take"), expr, endExpr)
 			} else {
-				// [start:end] syntax - Slice operation  
+				// [start:end] syntax - Slice operation
 				return NewList(NewSymbolAtom("SliceRange"), expr, startExpr, endExpr)
 			}
 		}

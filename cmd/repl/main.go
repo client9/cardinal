@@ -16,19 +16,19 @@ func main() {
 		file       = flag.String("file", "", "Execute expressions from file instead of interactive mode")
 		withUint64 = flag.Bool("with-uint64", false, "Enable experimental Uint64 type system")
 	)
-	
+
 	flag.Parse()
-	
+
 	// Show help if requested
 	if *help {
 		showHelp()
 		return
 	}
-	
+
 	// Create REPL instance
 	repl := NewREPL()
 	repl.SetPrompt(*prompt)
-	
+
 	// Enable Uint64 extension if requested
 	if *withUint64 {
 		if err := sexpr.RegisterUint64(repl.GetEvaluator().GetContext().GetFunctionRegistry()); err != nil {
@@ -37,7 +37,7 @@ func main() {
 		}
 		fmt.Println("Uint64 type system enabled. Try: Uint64(42), Uint64(\"#FF\"), Plus(Uint64(10), 5)")
 	}
-	
+
 	// If file is specified, execute it
 	if *file != "" {
 		if err := repl.ExecuteFile(*file); err != nil {
@@ -46,7 +46,7 @@ func main() {
 		}
 		return
 	}
-	
+
 	// Start interactive REPL
 	if err := repl.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "REPL error: %v\n", err)
@@ -74,4 +74,3 @@ Examples:
 
 For detailed usage information, start the REPL and type 'help'.`)
 }
-

@@ -46,7 +46,7 @@ func ExtractBool(expr Expr) (bool, bool) {
 
 // ExtractByteArray safely extracts an ByteArray value from an Expr
 func ExtractByteArray(expr Expr) (ByteArray, bool) {
-	if ba, ok := expr.(ByteArray); ok  {
+	if ba, ok := expr.(ByteArray); ok {
 		return ba, true
 	}
 	return ByteArray{}, false

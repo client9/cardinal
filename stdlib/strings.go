@@ -14,10 +14,11 @@ func StringLengthRunes(s string) int64 {
 }
 
 // NewByteArrayFromInts creates a new ByteArray from a slice of int64
-//  values are cast to a byte.
+//
+//	values are cast to a byte.
 func ByteArrayFromInts(src []int64) core.Expr {
 	dest := make([]byte, len(src))
-	for i,val := range src {
+	for i, val := range src {
 		dest[i] = byte(val)
 	}
 	// NewByteArray makes another un-needed copy
@@ -28,6 +29,7 @@ func ByteArrayFromInts(src []int64) core.Expr {
 func ByteArrayFromString(s string) core.Expr {
 	return core.NewByteArray([]byte(s))
 }
+
 // ByteArrayToString converts a ByteArray to a string (assuming UTF-8 encoding)
 func ByteArrayToString(ba core.ByteArray) core.Expr {
 	return ba.ToStringAtom()

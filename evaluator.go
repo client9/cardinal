@@ -691,7 +691,7 @@ func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 // evaluateSliceRange implements slice range syntax: expr[start:end]
 func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	if len(args) != 3 {
-		return NewErrorExpr("ArgumentError", 
+		return NewErrorExpr("ArgumentError",
 			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)), args)
 	}
 
@@ -704,7 +704,7 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return NewErrorExpr("TypeError", 
+		return NewErrorExpr("TypeError",
 			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
 	}
 
@@ -713,7 +713,7 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	if IsError(startExpr) {
 		return startExpr
 	}
-	
+
 	endExpr := e.evaluate(args[2], ctx)
 	if IsError(endExpr) {
 		return endExpr
@@ -722,13 +722,13 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	// Extract integer values for start and end
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return NewErrorExpr("TypeError", 
+		return NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
 	}
 
 	end, ok := core.ExtractInt64(endExpr)
 	if !ok {
-		return NewErrorExpr("TypeError", 
+		return NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Type()), []Expr{endExpr})
 	}
 
@@ -736,12 +736,12 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	return sliceable.Slice(start, end)
 }
 
-// evaluateTakeFrom implements slice syntax: expr[start:] 
+// evaluateTakeFrom implements slice syntax: expr[start:]
 // If start is negative, uses Take for last n elements
 // If start is positive, uses Drop for first n elements
 func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError", 
+		return NewErrorExpr("ArgumentError",
 			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)), args)
 	}
 
@@ -760,7 +760,7 @@ func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 	// Extract integer value for start
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return NewErrorExpr("TypeError", 
+		return NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
 	}
 

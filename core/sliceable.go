@@ -6,10 +6,14 @@ type Sliceable interface {
 	// ElementAt returns the nth element (1-indexed)
 	// Returns an error Expr if index is out of bounds
 	ElementAt(n int64) Expr
-	
+
 	// Slice returns a new Expr containing elements from start to stop (inclusive, 1-indexed)
 	// Returns an error Expr if indices are out of bounds
 	Slice(start, stop int64) Expr
+
+	// Join joins this sliceable with another sliceable of the same type
+	// Returns an error Expr if the types are incompatible
+	Join(other Sliceable) Expr
 }
 
 // IsSliceable checks if an expression implements the Sliceable interface and actually supports slicing

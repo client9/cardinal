@@ -183,7 +183,7 @@ func TestCompoundStatementParsing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expr, err := ParseString(tt.input)
-			
+
 			if tt.expectError {
 				if err == nil {
 					// Maybe parsing succeeded but evaluation should fail
@@ -316,12 +316,12 @@ func TestCompoundStatementSideEffects(t *testing.T) {
 
 // Helper function to check if a string contains a substring (case-insensitive)
 func containsSubstring(str, substr string) bool {
-	return len(str) >= len(substr) && 
-		   (str == substr || 
-		    (len(str) > len(substr) && 
-		     (str[:len(substr)] == substr || 
-		      str[len(str)-len(substr):] == substr || 
-		      containsSubstringHelper(str, substr))))
+	return len(str) >= len(substr) &&
+		(str == substr ||
+			(len(str) > len(substr) &&
+				(str[:len(substr)] == substr ||
+					str[len(str)-len(substr):] == substr ||
+					containsSubstringHelper(str, substr))))
 }
 
 func containsSubstringHelper(str, substr string) bool {
