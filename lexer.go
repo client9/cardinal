@@ -38,6 +38,7 @@ const (
 	OR
 	SAMEQ
 	UNSAMEQ
+	SEMICOLON
 	WHITESPACE
 	ILLEGAL
 )
@@ -229,6 +230,8 @@ func (l *Lexer) NextToken() Token {
 		tok = Token{Type: RBRACE, Value: string(l.ch), Position: l.position - 1}
 	case ',':
 		tok = Token{Type: COMMA, Value: string(l.ch), Position: l.position - 1}
+	case ';':
+		tok = Token{Type: SEMICOLON, Value: string(l.ch), Position: l.position - 1}
 	case '+':
 		tok = Token{Type: PLUS, Value: string(l.ch), Position: l.position - 1}
 	case '-':

@@ -908,6 +908,9 @@ func matchesType(expr Expr, typeName string) bool {
 	case "List":
 		_, ok := expr.(List)
 		return ok
+	case "Association":
+		_, ok := expr.(core.Association)
+		return ok
 	default:
 		// Handle ObjectExpr with custom TypeName
 		if objExpr, ok := expr.(ObjectExpr); ok {

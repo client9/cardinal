@@ -272,6 +272,8 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Conte
 		return e.evaluateEvaluate(args, ctx)
 	case "CompoundExpression":
 		return e.evaluateCompoundExpression(args, ctx)
+	case "CompoundStatement":
+		return e.evaluateCompoundExpression(args, ctx)
 	case "And":
 		return e.evaluateAnd(args, ctx)
 	case "Or":

@@ -11,6 +11,7 @@ type Precedence int
 const (
 	_ Precedence = iota
 	PrecedenceLowest
+	PrecedenceCompound   // ; (compound statements)
 	PrecedenceAssign     // =, :=, =.
 	PrecedenceLogicalOr  // ||
 	PrecedenceLogicalAnd // &&
@@ -22,6 +23,7 @@ const (
 )
 
 var precedences = map[TokenType]Precedence{
+	SEMICOLON:    PrecedenceCompound,
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
 	UNSET:        PrecedenceAssign,
@@ -366,7 +368,7 @@ func (p *Parser) currentPrecedence() Precedence {
 
 func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
 	switch tokenType {
-	case SET, SETDELAYED, UNSET, COLON, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE:
+	case SEMICOLON, SET, SETDELAYED, UNSET, COLON, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE:
 		return true
 	default:
 		return false
@@ -399,6 +401,8 @@ func (p *Parser) parsePrefixExpression() Expr {
 
 func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 	switch operator {
+	case SEMICOLON:
+		return NewList(NewSymbolAtom("CompoundStatement"), left, right)
 	case SET:
 		return NewList(NewSymbolAtom("Set"), left, right)
 	case SETDELAYED:

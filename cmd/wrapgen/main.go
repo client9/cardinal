@@ -710,8 +710,8 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 					conversions = append(conversions, "	if !ok {")
 					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
 					conversions = append(conversions, "	}")
-				case "AssociationValue":
-					conversions = append(conversions, fmt.Sprintf("	%s, ok := stdlib.ExtractAssociation(args[%d])", varName, i))
+				case "Association":
+					conversions = append(conversions, fmt.Sprintf("	%s, ok := core.ExtractAssociation(args[%d])", varName, i))
 					conversions = append(conversions, "	if !ok {")
 					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
 					conversions = append(conversions, "	}")
