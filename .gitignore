@@ -34,3 +34,4 @@ go.work.sum
 coverage.html
 coverage.out
 *.bak*
+*wrappers.go
