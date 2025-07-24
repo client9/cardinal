@@ -35,3 +35,4 @@ coverage.html
 coverage.out
 *.bak*
 *wrappers.go
+builtin_setup.go
