@@ -23,6 +23,7 @@ const (
 )
 
 var precedences = map[TokenType]Precedence{
+	LBRACKET:     PrecedencePrefix,   // High precedence for postfix indexing
 	SEMICOLON:    PrecedenceCompound,
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
@@ -92,11 +93,13 @@ func (p *Parser) parseInfixExpression(precedence Precedence) Expr {
 	left := p.ParseAtom()
 
 	for p.currentToken.Type != EOF && precedence < p.currentPrecedence() {
-		if !p.IsInfixOperator(p.currentToken.Type) {
+		if p.currentToken.Type == LBRACKET {
+			left = p.parseIndexOrSlice(left)
+		} else if p.IsInfixOperator(p.currentToken.Type) {
+			left = p.parseInfixOperation(left)
+		} else {
 			break
 		}
-
-		left = p.parseInfixOperation(left)
 	}
 
 	return left
@@ -469,6 +472,97 @@ func (p *Parser) parseGroupedExpression() Expr {
 
 	p.nextToken() // consume ')'
 	return expr
+}
+
+// parseIndexOrSlice handles postfix [index] and [start:end] syntax
+func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
+	p.nextToken() // consume '['
+	
+	// Check for empty brackets []
+	if p.currentToken.Type == RBRACKET {
+		p.addError("empty brackets are not allowed")
+		return expr
+	}
+	
+	// Parse the first expression (could be index, start, or just ':')
+	var firstExpr Expr
+	var hasFirstExpr bool
+	
+	if p.currentToken.Type == COLON {
+		// [:end] syntax - no start expression
+		hasFirstExpr = false
+	} else {
+		// Parse first expression, but stop at colon (don't treat colon as infix operator here)
+		firstExpr = p.parseSliceExpression()
+		hasFirstExpr = true
+	}
+	
+	// Check what comes next
+	if p.currentToken.Type == RBRACKET {
+		// Simple index: expr[index]
+		if !hasFirstExpr {
+			p.addError("expected expression before ']'")
+			return expr
+		}
+		p.nextToken() // consume ']'
+		return NewList(NewSymbolAtom("Part"), expr, firstExpr)
+		
+	} else if p.currentToken.Type == COLON {
+		// Slice syntax: expr[start:end] or expr[:end] or expr[start:]
+		p.nextToken() // consume ':'
+		
+		var startExpr, endExpr Expr
+		
+		if hasFirstExpr {
+			startExpr = firstExpr
+		}
+		
+		// Check for end expression
+		if p.currentToken.Type == RBRACKET {
+			// expr[start:] syntax - no end expression
+			if !hasFirstExpr {
+				p.addError("slice cannot be empty on both sides of ':'")
+				return expr
+			}
+			p.nextToken() // consume ']'
+			// Convert to Drop operation: Drop(expr, start-1)
+			if startExpr == nil {
+				return expr
+			}
+			// For start:, we want everything from start onwards
+			// If start is negative, use Take(expr, start) for last n elements
+			// If start is positive, use Drop(expr, start-1) since Drop removes the first n elements
+			// But we can't easily detect negative at parse time, so we'll use a special function
+			return NewList(NewSymbolAtom("TakeFrom"), expr, startExpr)
+		} else {
+			// Parse end expression
+			endExpr = p.parseSliceExpression()
+			if p.currentToken.Type != RBRACKET {
+				p.addError("expected ']' after slice expression")
+				return expr
+			}
+			p.nextToken() // consume ']'
+			
+			// Generate appropriate slice expression
+			if startExpr == nil {
+				// [:end] syntax - Take first n elements
+				return NewList(NewSymbolAtom("Take"), expr, endExpr)
+			} else {
+				// [start:end] syntax - Slice operation  
+				return NewList(NewSymbolAtom("SliceRange"), expr, startExpr, endExpr)
+			}
+		}
+	} else {
+		p.addError("expected ':' or ']' after slice expression")
+		return expr
+	}
+}
+
+// parseSliceExpression parses expressions inside slice brackets, treating colons as separators
+func (p *Parser) parseSliceExpression() Expr {
+	// Parse a simple expression that stops at colons and brackets
+	// We'll use a custom precedence that's higher than colon assignment
+	return p.parseInfixExpression(PrecedenceLogicalOr)
 }
 
 func ParseString(input string) (Expr, error) {

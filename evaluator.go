@@ -5,6 +5,8 @@ import (
 	"math"
 	"sort"
 	"strings"
+
+	"github.com/client9/sexpr/core"
 )
 
 // Evaluator represents the expression evaluator
@@ -278,6 +280,10 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Conte
 		return e.evaluateAnd(args, ctx)
 	case "Or":
 		return e.evaluateOr(args, ctx)
+	case "SliceRange":
+		return e.evaluateSliceRange(args, ctx)
+	case "TakeFrom":
+		return e.evaluateTakeFrom(args, ctx)
 	default:
 		return nil // Not a special form
 	}
@@ -679,5 +685,93 @@ func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 	} else {
 		// Multiple non-boolean arguments, return simplified Or expression
 		return NewList(append([]Expr{NewSymbolAtom("Or")}, nonBooleanArgs...)...)
+	}
+}
+
+// evaluateSliceRange implements slice range syntax: expr[start:end]
+func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
+	if len(args) != 3 {
+		return NewErrorExpr("ArgumentError", 
+			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)), args)
+	}
+
+	// Evaluate the expression being sliced
+	expr := e.evaluate(args[0], ctx)
+	if IsError(expr) {
+		return expr
+	}
+
+	// Check if the expression is sliceable
+	sliceable := core.AsSliceable(expr)
+	if sliceable == nil {
+		return NewErrorExpr("TypeError", 
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
+	}
+
+	// Evaluate start and end indices
+	startExpr := e.evaluate(args[1], ctx)
+	if IsError(startExpr) {
+		return startExpr
+	}
+	
+	endExpr := e.evaluate(args[2], ctx)
+	if IsError(endExpr) {
+		return endExpr
+	}
+
+	// Extract integer values for start and end
+	start, ok := core.ExtractInt64(startExpr)
+	if !ok {
+		return NewErrorExpr("TypeError", 
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
+	}
+
+	end, ok := core.ExtractInt64(endExpr)
+	if !ok {
+		return NewErrorExpr("TypeError", 
+			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Type()), []Expr{endExpr})
+	}
+
+	// Use the Sliceable interface to perform the slice operation
+	return sliceable.Slice(start, end)
+}
+
+// evaluateTakeFrom implements slice syntax: expr[start:] 
+// If start is negative, uses Take for last n elements
+// If start is positive, uses Drop for first n elements
+func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
+	if len(args) != 2 {
+		return NewErrorExpr("ArgumentError", 
+			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)), args)
+	}
+
+	// Evaluate the expression being sliced
+	expr := e.evaluate(args[0], ctx)
+	if IsError(expr) {
+		return expr
+	}
+
+	// Evaluate start index
+	startExpr := e.evaluate(args[1], ctx)
+	if IsError(startExpr) {
+		return startExpr
+	}
+
+	// Extract integer value for start
+	start, ok := core.ExtractInt64(startExpr)
+	if !ok {
+		return NewErrorExpr("TypeError", 
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
+	}
+
+	if start < 0 {
+		// Negative start: use Take to get last |start| elements
+		// Take([1,2,3,4,5], -2) gives [4,5]
+		return e.evaluate(NewList(NewSymbolAtom("Take"), expr, NewIntAtom(int(start))), ctx)
+	} else {
+		// Positive start: use Drop to remove first (start-1) elements
+		// Drop([1,2,3,4,5], 2) gives [3,4,5] (for start=3, 1-indexed)
+		dropCount := start - 1
+		return e.evaluate(NewList(NewSymbolAtom("Drop"), expr, NewIntAtom(int(dropCount))), ctx)
 	}
 }
