@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"strconv"
+	"unicode/utf8"
 )
 
 // AtomType represents the type of an atomic value
@@ -23,7 +24,7 @@ type Atom struct {
 
 func (a Atom) Length() int64 {
 	if a.AtomType == StringAtom {
-		return int64(len(a.Value.(string)))
+		return int64(utf8.RuneCountInString(a.Value.(string)))
 	}
 	return 0
 }
@@ -87,4 +88,77 @@ func (a Atom) Equal(rhs Expr) bool {
 	default:
 		return false
 	}
+}
+
+// Sliceable interface implementation (only for StringAtom)
+
+// ElementAt returns the nth character (1-indexed) for string atoms
+func (a Atom) ElementAt(n int64) Expr {
+	if a.AtomType != StringAtom {
+		return NewErrorExpr("TypeError", 
+			fmt.Sprintf("ElementAt not supported for %s", a.Type()), []Expr{a})
+	}
+	
+	str := a.Value.(string)
+	runes := []rune(str)
+	length := int64(len(runes))
+	
+	if length == 0 {
+		return NewErrorExpr("PartError", "String is empty", []Expr{a})
+	}
+	
+	// Handle negative indexing
+	if n < 0 {
+		n = length + n + 1
+	}
+	
+	// Check bounds (1-indexed)
+	if n <= 0 || n > length {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for string with %d characters", n, length),
+			[]Expr{a})
+	}
+	
+	// Convert to 0-based index and return character as string
+	return NewStringAtom(string(runes[n-1]))
+}
+
+// Slice returns a substring from start to stop (inclusive, 1-indexed) for string atoms
+func (a Atom) Slice(start, stop int64) Expr {
+	if a.AtomType != StringAtom {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Slice not supported for %s", a.Type()), []Expr{a})
+	}
+	
+	str := a.Value.(string)
+	runes := []rune(str)
+	length := int64(len(runes))
+	
+	if length == 0 {
+		return NewStringAtom("")
+	}
+	
+	// Handle negative indexing
+	if start < 0 {
+		start = length + start + 1
+	}
+	if stop < 0 {
+		stop = length + stop + 1
+	}
+	
+	// Check bounds
+	if start <= 0 || stop <= 0 || start > length || stop > length {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Slice indices [%d, %d] out of bounds for string with %d characters",
+				start, stop, length), []Expr{a})
+	}
+	
+	if start > stop {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop),
+			[]Expr{a})
+	}
+	
+	// Convert to 0-based indices and return substring
+	return NewStringAtom(string(runes[start-1 : stop]))
 }

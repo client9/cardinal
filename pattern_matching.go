@@ -2,8 +2,8 @@ package sexpr
 
 import (
 	"fmt"
-	"strings"
 	"github.com/client9/sexpr/core"
+	"strings"
 )
 
 // PatternType represents the type of pattern

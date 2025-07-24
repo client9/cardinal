@@ -16,23 +16,13 @@ func LengthExpr(expr core.Expr) int64 {
 // FirstExpr returns the first element of a list (after the head)
 func FirstExpr(list core.List) core.Expr {
 	// Use the ElementAt primitive method
-	if element, ok := list.ElementAt(1); ok {
-		return element
-	}
-	// Return error for empty lists
-	return core.NewErrorExpr("PartError",
-		fmt.Sprintf("First: expression %s has no elements", list.String()), []core.Expr{list})
+	return list.ElementAt(1)
 }
 
 // LastExpr returns the last element of a list
 func LastExpr(list core.List) core.Expr {
 	// Use the ElementAt primitive method with negative indexing
-	if element, ok := list.ElementAt(-1); ok {
-		return element
-	}
-	// Return error for empty lists
-	return core.NewErrorExpr("PartError",
-		fmt.Sprintf("Last: expression %s has no elements", list.String()), []core.Expr{list})
+	return list.ElementAt(-1)
 }
 
 // RestExpr returns a new list with the first element after head removed
@@ -69,22 +59,7 @@ func MostExpr(list core.List) core.Expr {
 // PartList extracts an element from a list by integer index (1-based)
 func PartList(list core.List, index int64) core.Expr {
 	// Use the ElementAt primitive method
-	if element, ok := list.ElementAt(index); ok {
-		return element
-	}
-
-	// Return appropriate error message
-	if len(list.Elements) <= 1 {
-		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Part: expression %s has no elements", list.String()), []core.Expr{list})
-	}
-	if index == 0 {
-		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds (indices start at 1)", index), []core.Expr{list})
-	}
-	return core.NewErrorExpr("PartError",
-		fmt.Sprintf("Part index %d is out of bounds for expression with %d elements",
-			index, len(list.Elements)-1), []core.Expr{list})
+	return list.ElementAt(index)
 }
 
 // TakeList extracts the first or last n elements from a list
@@ -136,13 +111,13 @@ func TakeListSingle(list core.List, indexList core.List) core.Expr {
 	}
 
 	// Use the ElementAt primitive method
-	if element, success := list.ElementAt(index); success {
-		// Wrap the element in a list with the same head as the original list
-		return core.List{Elements: []core.Expr{list.Elements[0], element}}
+	element := list.ElementAt(index)
+	if core.IsError(element) {
+		return element
 	}
-
-	// Return the same error as PartList would
-	return PartList(list, index)
+	
+	// Wrap the element in a list with the same head as the original list
+	return core.List{Elements: []core.Expr{list.Elements[0], element}}
 }
 
 // TakeListRange takes a range of elements from a list

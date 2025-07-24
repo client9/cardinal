@@ -1,29 +1,6 @@
 package core
 
-// ElementAt returns the element at the given index (1-based, like Mathematica)
-// Returns the element and true if successful, nil and false if index is out of bounds
-func (l List) ElementAt(index int64) (Expr, bool) {
-	if len(l.Elements) == 0 {
-		return nil, false
-	}
-	
-	// Convert to 0-based indexing and handle negative indices
-	var idx int
-	if index > 0 {
-		idx = int(index) // 1-based to 0-based: elements[0] is head, elements[1] is first element
-	} else if index < 0 {
-		idx = len(l.Elements) + int(index) // Negative indexing from end
-	} else {
-		return nil, false // index 0 is invalid in 1-based system
-	}
-	
-	// Check bounds (elements[0] is head, so valid indices are 1 to len-1)
-	if idx < 1 || idx >= len(l.Elements) {
-		return nil, false
-	}
-	
-	return l.Elements[idx], true
-}
+// Note: ElementAt is now implemented directly in list.go as part of the Sliceable interface
 
 // SliceStart returns a new list with the first n elements (excluding head)
 func (l List) SliceStart(n int64) List {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-
 // AttributesExpr gets the attributes of a symbol
 func AttributesExpr(expr Expr, ctx *Context) Expr {
 	// The argument should be a symbol

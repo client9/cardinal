@@ -321,45 +321,66 @@ var functionSpecs = []FunctionSpec{
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Take(x_List, n_Integer)",
-		Function:   stdlib.TakeList,
-		OutputFile: "list_wrappers.go",
+		Pattern:    "Take(x_, n_Integer)",
+		Function:   stdlib.Take,
+		OutputFile: "sequence_wrappers.go",
 		SymbolName: "Take",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Take(x_List, List(n_Integer))",
-		Function:   stdlib.TakeListSingle,
-		OutputFile: "list_wrappers.go",
+		Pattern:    "Take(x_, List(n_Integer, m_Integer))",
+		Function:   stdlib.TakeRange,
+		OutputFile: "sequence_wrappers.go",
 		SymbolName: "Take",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Take(x_List, List(n_Integer, m_Integer))",
-		Function:   stdlib.TakeListRange,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Take",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Drop(x_List, n_Integer)",
-		Function:   stdlib.DropList,
-		OutputFile: "list_wrappers.go",
+		Pattern:    "Drop(x_, n_Integer)",
+		Function:   stdlib.Drop,
+		OutputFile: "sequence_wrappers.go",
 		SymbolName: "Drop",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Drop(x_List, List(n_Integer))",
-		Function:   stdlib.DropListSingle,
-		OutputFile: "list_wrappers.go",
+		Pattern:    "Drop(x_, List(n_Integer, m_Integer))",
+		Function:   stdlib.DropRange,
+		OutputFile: "sequence_wrappers.go",
 		SymbolName: "Drop",
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "Drop(x_List, List(n_Integer, m_Integer))",
-		Function:   stdlib.DropListRange,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Drop",
+		Pattern:    "Part(x_, n_Integer)",
+		Function:   stdlib.Part,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "Part",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Rest(x_)",
+		Function:   stdlib.Rest,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "Rest",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Most(x_)",
+		Function:   stdlib.Most,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "Most",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "First(x_)",
+		Function:   stdlib.First,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "First",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Last(x_)",
+		Function:   stdlib.Last,
+		OutputFile: "sequence_wrappers.go",
+		SymbolName: "Last",
 		Attributes: []string{},
 	},
 	{
@@ -377,89 +398,20 @@ var functionSpecs = []FunctionSpec{
 		Attributes: []string{},
 	},
 	{
-		Pattern:    "StringTakeByte(x_String, n_Integer)",
-		Function:   stdlib.StringTakeByte,
+		Pattern:    "ByteArray(x_String)",
+		Function:   stdlib.ByteArrayFromString,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTakeByte",
+		SymbolName: "ByteArray",
 		Attributes: []string{},
 	},
+/* List(x___Integer) --> []int64 not supported yet
 	{
-		Pattern:    "StringTakeByteAt(x_String, List(n_Integer))",
-		Function:   stdlib.StringTakeByteAt,
+		Pattern:    "ByteArray(List(x___Integer))",
+		Function:   stdlib.ByteArrayFromInts,
 		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTakeByteAt",
 		Attributes: []string{},
 	},
-	{
-		Pattern:    "StringTakeByteRange(x_String, List(n_Integer, m_Integer))",
-		Function:   stdlib.StringTakeByteRange,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTakeByteRange",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringDropByte(x_String, n_Integer)",
-		Function:   stdlib.StringDropByte,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDropByte",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringDropByteAt(x_String, List(n_Integer))",
-		Function:   stdlib.StringDropByteAt,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDropByteAt",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringDropByteRange(x_String, List(n_Integer, m_Integer))",
-		Function:   stdlib.StringDropByteRange,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDropByteRange",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringTake(x_String, n_Integer)",
-		Function:   stdlib.StringTake,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTake",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringTakeAt(x_String, List(n_Integer))",
-		Function:   stdlib.StringTakeAt,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTakeAt",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringTake(x_String, List(n_Integer, m_Integer))",
-		Function:   stdlib.StringTakeRange,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringTake",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringDrop(x_String, n_Integer)",
-		Function:   stdlib.StringDrop,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDrop",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringDropAt(x_String, List(n_Integer))",
-		Function:   stdlib.StringDropAt,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDropAt",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringDrop(x_String, List(n_Integer, m_Integer))",
-		Function:   stdlib.StringDropRange,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringDrop",
-		Attributes: []string{},
-	},
+*/
 	{
 		Pattern:    "AssociationQ(x_)",
 		Function:   stdlib.AssociationQExpr,
@@ -746,6 +698,12 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 			for i, paramType := range paramTypes {
 				varName := fmt.Sprintf("arg%d", i)
 				switch paramType {
+				case "ByteArray":
+
+					conversions = append(conversions, fmt.Sprintf("	%s, ok := core.ByteArray(args[%d])", varName, i))
+					conversions = append(conversions, "	if !ok {")
+					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
+					conversions = append(conversions, "	}")
 				case "Number":
 
 					conversions = append(conversions, fmt.Sprintf("	%s, ok := stdlib.ExtractNumber(args[%d])", varName, i))
