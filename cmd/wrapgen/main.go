@@ -261,6 +261,11 @@ var functionSpecs = []FunctionSpec{
 		OutputFile: "type_predicate_wrappers.go",
 	},
 	{
+		Pattern:    "TrueQ(x_)",
+		Function:   stdlib.TrueQExpr,
+		OutputFile: "type_predicate_wrappers.go",
+	},
+	{
 		Pattern:    "ListQ(x_)",
 		Function:   stdlib.ListQExpr,
 		OutputFile: "type_predicate_wrappers.go",
@@ -397,6 +402,29 @@ var functionSpecs = []FunctionSpec{
 		SymbolName: "StringLength",
 		Attributes: []string{},
 	},
+	{
+		Pattern:    "Append(x_List, y_)",
+		Function:   stdlib.ListAppend,
+		OutputFile: "list_wrappers.go",
+		SymbolName: "Append",
+		Attributes: []string{},
+	},
+	{
+		Pattern:    "Append(x_String, y_String)",
+		Function:   stdlib.StringAppend,
+		OutputFile: "string_wrappers.go",
+		SymbolName: "Append",
+		Attributes: []string{},
+	},
+	/* ByteArray not supported yet
+	{
+		Pattern:    "Append(x_ByteArray, y_Integer)",
+		Function:   stdlib.ByteArrayAppend,
+		OutputFile: "string_wrappers.go",
+		SymbolName: "Append",
+		Attributes: []string{},
+	},
+	*/
 	{
 		Pattern:    "ByteArray(x_String)",
 		Function:   stdlib.ByteArrayFromString,
