@@ -34,8 +34,13 @@ func RestExpr(list core.List) core.Expr {
 			fmt.Sprintf("Rest: expression %s has no elements", list.String()), []core.Expr{list})
 	}
 
-	// Use the SliceEnd primitive method to get elements from index 2 onwards
-	return list.SliceEnd(2)
+	// Use the modern Slice method to get elements from index 2 onwards
+	listLength := list.Length()
+	if listLength == 1 {
+		// Only head, return empty list with same head
+		return core.List{Elements: []core.Expr{list.Elements[0]}}
+	}
+	return list.Slice(2, listLength)
 }
 
 // MostExpr returns a new list with the last element removed
@@ -47,13 +52,13 @@ func MostExpr(list core.List) core.Expr {
 			fmt.Sprintf("Most: expression %s has no elements", list.String()), []core.Expr{list})
 	}
 
-	// Use the SliceBetween primitive method to get elements from 1 to length-1
+	// Use the modern Slice method to get elements from 1 to length-1
 	listLength := list.Length()
 	if listLength == 1 {
 		// Special case: if only one element, return just the head
 		return core.List{Elements: []core.Expr{list.Elements[0]}}
 	}
-	return list.SliceBetween(1, listLength-1)
+	return list.Slice(1, listLength-1)
 }
 
 // PartList extracts an element from a list by integer index (1-based)
@@ -78,20 +83,20 @@ func TakeList(list core.List, n int64) core.Expr {
 	}
 
 	if n > 0 {
-		// Take first n elements using SliceStart primitive
+		// Take first n elements using modern Slice method
 		if n > listLength {
 			n = listLength // Don't take more than available
 		}
-		return list.SliceStart(n)
+		return list.Slice(1, n)
 	} else {
-		// Take last |n| elements using SliceEnd primitive
+		// Take last |n| elements using modern Slice method
 		absN := -n
 		if absN > listLength {
 			absN = listLength // Don't take more than available
 		}
 		// Calculate starting index: total elements - |n| + 1
 		startIdx := listLength - absN + 1
-		return list.SliceEnd(startIdx)
+		return list.Slice(startIdx, listLength)
 	}
 }
 
@@ -170,8 +175,8 @@ func takeListRange(list core.List, start, end int64) core.Expr {
 				start, end, listLength), []core.Expr{list})
 	}
 
-	// Use the SliceBetween primitive method
-	return list.SliceBetween(actualStart, actualEnd)
+	// Use the modern Slice method
+	return list.Slice(actualStart, actualEnd)
 }
 
 // DropList drops the first or last n elements from a list and returns the remainder
@@ -190,20 +195,20 @@ func DropList(list core.List, n int64) core.Expr {
 	}
 
 	if n > 0 {
-		// Drop first n elements - use SliceEnd to keep the rest
+		// Drop first n elements using modern Slice method
 		if n >= listLength {
 			// Drop all elements - return empty list with same head
 			return core.List{Elements: []core.Expr{list.Elements[0]}}
 		}
-		return list.SliceEnd(n + 1) // Start from n+1 to end
+		return list.Slice(n+1, listLength) // Start from n+1 to end
 	} else {
-		// Drop last |n| elements - use SliceStart to keep the beginning
+		// Drop last |n| elements using modern Slice method
 		absN := -n
 		if absN >= listLength {
 			// Drop all elements - return empty list with same head
 			return core.List{Elements: []core.Expr{list.Elements[0]}}
 		}
-		return list.SliceStart(listLength - absN) // Keep first (length - |n|) elements
+		return list.Slice(1, listLength-absN) // Keep first (length - |n|) elements
 	}
 }
 
@@ -271,8 +276,25 @@ func dropListSingle(list core.List, index int64) core.Expr {
 				index, listLength), []core.Expr{list})
 	}
 
-	// Use the SliceExclude primitive method to remove single element
-	return list.SliceExclude(actualIndex, actualIndex)
+	// Use modern Slice and Join methods to exclude single element
+	if actualIndex == 1 {
+		// Dropping first element
+		if listLength == 1 {
+			return core.List{Elements: []core.Expr{list.Elements[0]}} // Just head
+		}
+		return list.Slice(2, listLength)
+	} else if actualIndex == listLength {
+		// Dropping last element
+		return list.Slice(1, listLength-1)
+	} else {
+		// Dropping middle element - join before and after
+		before := list.Slice(1, actualIndex-1)
+		after := list.Slice(actualIndex+1, listLength)
+		if sliceable, ok := before.(core.Sliceable); ok {
+			return sliceable.Join(after.(core.Sliceable))
+		}
+		return core.NewErrorExpr("InternalError", "Failed to join slices", []core.Expr{before, after})
+	}
 }
 
 // dropListRange is a helper function that drops a range of elements
@@ -306,6 +328,23 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 				start, end, listLength), []core.Expr{list})
 	}
 
-	// Use the SliceExclude primitive method to remove the range
-	return list.SliceExclude(actualStart, actualEnd)
+	// Use modern Slice and Join methods to exclude the range
+	if actualStart == 1 && actualEnd == listLength {
+		// Dropping everything
+		return core.List{Elements: []core.Expr{list.Elements[0]}} // Just head
+	} else if actualStart == 1 {
+		// Dropping from beginning
+		return list.Slice(actualEnd+1, listLength)
+	} else if actualEnd == listLength {
+		// Dropping to end
+		return list.Slice(1, actualStart-1)
+	} else {
+		// Dropping middle range - join before and after
+		before := list.Slice(1, actualStart-1)
+		after := list.Slice(actualEnd+1, listLength)
+		if sliceable, ok := before.(core.Sliceable); ok {
+			return sliceable.Join(after.(core.Sliceable))
+		}
+		return core.NewErrorExpr("InternalError", "Failed to join slices", []core.Expr{before, after})
+	}
 }
