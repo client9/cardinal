@@ -14,6 +14,7 @@ func main() {
 		prompt     = flag.String("prompt", "sexpr> ", "REPL prompt string")
 		help       = flag.Bool("help", false, "Show help message")
 		file       = flag.String("file", "", "Execute expressions from file instead of interactive mode")
+		cmd        = flag.String("c", "", "Execute expression from command line")
 		withUint64 = flag.Bool("with-uint64", false, "Enable experimental Uint64 type system")
 	)
 
@@ -36,6 +37,15 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("Uint64 type system enabled. Try: Uint64(42), Uint64(\"#FF\"), Plus(Uint64(10), 5)")
+	}
+
+	// if expression is entered on command line, execute it
+	if *cmd != "" {
+		if err := repl.processLine(*cmd); err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	// If file is specified, execute it
