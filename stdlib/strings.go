@@ -13,6 +13,25 @@ func StringLengthRunes(s string) int64 {
 	return int64(utf8.RuneCountInString(s))
 }
 
+// StringAppend appends a string to another string.
+// Note: Append normally adds an element of list to a list
+//
+//	We don't have "character" or "rune" type, and characters
+//	are single character *strings*.
+//
+// So while the intention of Append is Append("foo", "d")
+// it can be used for string joining Append("foo", "bar")
+//
+// This is added for the principle of least surprise.
+func StringAppend(lhs, rhs string) string {
+	return lhs + rhs
+}
+
+// ByteArrayAppend adds one byte to the end of a ByteArray
+func ByteArrayAppend(lhs core.ByteArray, b int64) core.Expr {
+	return lhs.Append(byte(b))
+}
+
 // NewByteArrayFromInts creates a new ByteArray from a slice of int64
 //
 //	values are cast to a byte.

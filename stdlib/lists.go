@@ -13,6 +13,11 @@ func LengthExpr(expr core.Expr) int64 {
 	return expr.Length()
 }
 
+// ListAppends adds an expression to the end of List type
+func ListAppend(list core.List, e core.Expr) core.Expr {
+	return list.Append(e)
+}
+
 // FirstExpr returns the first element of a list (after the head)
 func FirstExpr(list core.List) core.Expr {
 	// Use the ElementAt primitive method

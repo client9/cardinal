@@ -184,3 +184,11 @@ func (l List) Join(other Sliceable) Expr {
 
 	return List{Elements: newElements}
 }
+
+// Appends an expression to the end of a List
+func (l List) Append(e Expr) List {
+	dest := make([]Expr, len(l.Elements)+1)
+	copy(dest, l.Elements)
+	dest[len(dest)-1] = e
+	return List{Elements: dest}
+}
