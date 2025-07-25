@@ -93,7 +93,7 @@ func TestCompoundStatements(t *testing.T) {
 		{
 			name:     "Complex expression with multiple operations",
 			input:    "base = 2; exp = 3; power = Power(base, exp); sum = Plus(power, 2); sum",
-			expected: "10",
+			expected: "10.0",
 		},
 		{
 			name:     "Single expression (no semicolon)",

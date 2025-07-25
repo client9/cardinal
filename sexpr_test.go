@@ -58,7 +58,7 @@ func TestAtom_String(t *testing.T) {
 		{
 			name:     "zero float atom",
 			atom:     NewFloatAtom(0.0),
-			expected: "0",
+			expected: "0.0",
 		},
 		{
 			name:     "negative float atom",
