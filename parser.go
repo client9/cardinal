@@ -133,6 +133,9 @@ func (p *Parser) ParseAtom() Expr {
 		expr = p.parsePrefixExpression()
 	case LPAREN:
 		expr = p.parseGroupedExpression()
+	case SEMICOLON, EOF:
+		// Empty expression - return Null without consuming token
+		return NewSymbolAtom("Null")
 	default:
 		p.addError(fmt.Sprintf("unexpected token: %s", p.currentToken.String()))
 		return nil
@@ -388,6 +391,13 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 		return p.createInfixExpr(operator.Type, left, nil)
 	}
 
+	// Special case for SET with slice/part expressions: convert to slice assignment
+	if operator.Type == SET && p.isSliceExpression(left) {
+		p.nextToken()
+		right := p.parseInfixExpression(precedence)
+		return p.createSliceAssignment(left, right)
+	}
+
 	p.nextToken()
 	right := p.parseInfixExpression(precedence)
 
@@ -563,6 +573,68 @@ func (p *Parser) parseSliceExpression() Expr {
 	// Parse a simple expression that stops at colons and brackets
 	// We'll use a custom precedence that's higher than colon assignment
 	return p.parseInfixExpression(PrecedenceLogicalOr)
+}
+
+// isSliceExpression checks if an expression is a slice or part expression
+func (p *Parser) isSliceExpression(expr Expr) bool {
+	list, ok := expr.(List)
+	if !ok || len(list.Elements) == 0 {
+		return false
+	}
+
+	head, ok := list.Elements[0].(Atom)
+	if !ok || head.AtomType != SymbolAtom {
+		return false
+	}
+
+	headName := head.Value.(string)
+	return headName == "Part" || headName == "SliceRange" || headName == "Take" || headName == "TakeFrom"
+}
+
+// createSliceAssignment creates the appropriate slice assignment AST node
+func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
+	list := sliceExpr.(List)
+	head := list.Elements[0].(Atom)
+	headName := head.Value.(string)
+
+	switch headName {
+	case "Part":
+		// Part(expr, index) = value -> PartSet(expr, index, value)
+		if len(list.Elements) != 3 {
+			p.addError("Part expression must have exactly 2 arguments for assignment")
+			return nil
+		}
+		return NewList(NewSymbolAtom("PartSet"), list.Elements[1], list.Elements[2], value)
+
+	case "SliceRange":
+		// SliceRange(expr, start, end) = value -> SliceSet(expr, start, end, value)
+		if len(list.Elements) != 4 {
+			p.addError("SliceRange expression must have exactly 3 arguments for assignment")
+			return nil
+		}
+		return NewList(NewSymbolAtom("SliceSet"), list.Elements[1], list.Elements[2], list.Elements[3], value)
+
+	case "Take":
+		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
+		if len(list.Elements) != 3 {
+			p.addError("Take expression must have exactly 2 arguments for assignment")
+			return nil
+		}
+		return NewList(NewSymbolAtom("SliceSet"), list.Elements[1], NewIntAtom(1), list.Elements[2], value)
+
+	case "TakeFrom":
+		// TakeFrom(expr, start) = value -> SliceSet(expr, start, -1, value)
+		// Note: -1 represents "to end" in our slice assignment semantics
+		if len(list.Elements) != 3 {
+			p.addError("TakeFrom expression must have exactly 2 arguments for assignment")
+			return nil
+		}
+		return NewList(NewSymbolAtom("SliceSet"), list.Elements[1], list.Elements[2], NewIntAtom(-1), value)
+
+	default:
+		p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))
+		return nil
+	}
 }
 
 func ParseString(input string) (Expr, error) {

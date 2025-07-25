@@ -161,22 +161,19 @@ func TestCompoundStatementParsing(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "Invalid empty first expression",
+			name:        "Valid empty first expression",
 			input:       "; 42",
-			expectError: true,
-			errorMsg:    "unexpected token",
+			expectError: false,
 		},
 		{
-			name:        "Invalid trailing semicolon",
+			name:        "Valid trailing semicolon",
 			input:       "42;",
-			expectError: true,
-			errorMsg:    "unexpected token: EOF",
+			expectError: false,
 		},
 		{
-			name:        "Invalid empty between semicolons",
+			name:        "Valid empty between semicolons",
 			input:       "1; ; 3",
-			expectError: true,
-			errorMsg:    "unexpected token",
+			expectError: false,
 		},
 	}
 

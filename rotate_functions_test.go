@@ -102,25 +102,25 @@ func TestRotateLeft(t *testing.T) {
 			name:     "ByteArray rotate left by 1",
 			input:    core.NewByteArray([]byte{1, 2, 3, 4, 5}),
 			n:        1,
-			expected: "ByteArray[[2 3 4 5 1]]",
+			expected: "ByteArray(2, 3, 4, 5, 1)",
 		},
 		{
 			name:     "ByteArray rotate left by 0",
 			input:    core.NewByteArray([]byte{1, 2, 3}),
 			n:        0,
-			expected: "ByteArray[[1 2 3]]",
+			expected: "ByteArray(1, 2, 3)",
 		},
 		{
 			name:     "ByteArray rotate left by -2",
 			input:    core.NewByteArray([]byte{1, 2, 3, 4, 5}),
 			n:        -2,
-			expected: "ByteArray[[4 5 1 2 3]]",
+			expected: "ByteArray(4, 5, 1, 2, 3)",
 		},
 		{
 			name:     "ByteArray rotate left by length + 1",
 			input:    core.NewByteArray([]byte{1, 2, 3}),
 			n:        4, // length is 3, so this is 4 % 3 = 1
-			expected: "ByteArray[[2 3 1]]",
+			expected: "ByteArray(2, 3, 1)",
 		},
 
 		// Empty sequences
@@ -140,7 +140,7 @@ func TestRotateLeft(t *testing.T) {
 			name:     "Empty ByteArray rotate left",
 			input:    core.NewByteArray([]byte{}),
 			n:        2,
-			expected: "ByteArray[[]]",
+			expected: "ByteArray()",
 		},
 
 		// Single element sequences
@@ -289,25 +289,25 @@ func TestRotateRight(t *testing.T) {
 			name:     "ByteArray rotate right by 1",
 			input:    core.NewByteArray([]byte{1, 2, 3, 4, 5}),
 			n:        1,
-			expected: "ByteArray[[5 1 2 3 4]]",
+			expected: "ByteArray(5, 1, 2, 3, 4)",
 		},
 		{
 			name:     "ByteArray rotate right by 0",
 			input:    core.NewByteArray([]byte{1, 2, 3}),
 			n:        0,
-			expected: "ByteArray[[1 2 3]]",
+			expected: "ByteArray(1, 2, 3)",
 		},
 		{
 			name:     "ByteArray rotate right by -2",
 			input:    core.NewByteArray([]byte{1, 2, 3, 4, 5}),
 			n:        -2,
-			expected: "ByteArray[[3 4 5 1 2]]",
+			expected: "ByteArray(3, 4, 5, 1, 2)",
 		},
 		{
 			name:     "ByteArray rotate right by length + 1",
 			input:    core.NewByteArray([]byte{1, 2, 3}),
 			n:        4, // length is 3, so this is 4 % 3 = 1
-			expected: "ByteArray[[3 1 2]]",
+			expected: "ByteArray(3, 1, 2)",
 		},
 
 		// Empty sequences
@@ -327,7 +327,7 @@ func TestRotateRight(t *testing.T) {
 			name:     "Empty ByteArray rotate right",
 			input:    core.NewByteArray([]byte{}),
 			n:        2,
-			expected: "ByteArray[[]]",
+			expected: "ByteArray()",
 		},
 
 		// Single element sequences

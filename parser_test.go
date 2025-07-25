@@ -129,8 +129,8 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "empty input",
 			input:    "",
-			expected: "",
-			hasError: true,
+			expected: "Null",
+			hasError: false,
 		},
 		{
 			name:     "multiple expressions",
@@ -342,6 +342,48 @@ func TestParser_Parse(t *testing.T) {
 			expected: `List(1, "hello", True, x)`,
 			hasError: false,
 		},
+		{
+			name:     "single semicolon",
+			input:    ";",
+			expected: "CompoundStatement(Null, Null)",
+			hasError: false,
+		},
+		{
+			name:     "semicolon followed by expression",
+			input:    ";1",
+			expected: "CompoundStatement(Null, 1)",
+			hasError: false,
+		},
+		{
+			name:     "expression followed by semicolon",
+			input:    "1;",
+			expected: "CompoundStatement(1, Null)",
+			hasError: false,
+		},
+		{
+			name:     "semicolon, expression, semicolon",
+			input:    ";1;",
+			expected: "CompoundStatement(CompoundStatement(Null, 1), Null)",
+			hasError: false,
+		},
+		{
+			name:     "multiple empty semicolons",
+			input:    ";;",
+			expected: "CompoundStatement(CompoundStatement(Null, Null), Null)",
+			hasError: false,
+		},
+		{
+			name:     "empty statements with expressions",
+			input:    ";2+3;",
+			expected: "CompoundStatement(CompoundStatement(Null, Plus(2, 3)), Null)",
+			hasError: false,
+		},
+		{
+			name:     "multiple expressions with empty statements",
+			input:    "1;;2",
+			expected: "CompoundStatement(CompoundStatement(1, Null), 2)",
+			hasError: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -538,7 +580,7 @@ func TestParser_ErrorHandling(t *testing.T) {
 		{
 			name:          "unclosed brace syntax",
 			input:         "{",
-			expectedError: "unexpected token: EOF",
+			expectedError: "unexpected EOF, expected '}'",
 		},
 		{
 			name:          "unclosed list literal",
@@ -640,7 +682,7 @@ func TestParseString(t *testing.T) {
 		{
 			name:     "empty string",
 			input:    "",
-			hasError: true,
+			hasError: false,
 		},
 	}
 

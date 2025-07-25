@@ -192,3 +192,156 @@ func (l List) Append(e Expr) List {
 	dest[len(dest)-1] = e
 	return List{Elements: dest}
 }
+
+// SetElementAt returns a new List with the nth element replaced (1-indexed)
+// Returns an error Expr if index is out of bounds
+func (l List) SetElementAt(n int64, value Expr) Expr {
+	if len(l.Elements) <= 1 {
+		return NewErrorExpr("PartError", "List has no elements", []Expr{l})
+	}
+
+	length := l.Length() // Number of elements excluding head
+
+	// Handle negative indexing
+	if n < 0 {
+		n = length + n + 1
+	}
+
+	// Check bounds (1-indexed)
+	if n <= 0 || n > length {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for list with %d elements", n, length),
+			[]Expr{l})
+	}
+
+	// Create new list with element replaced
+	newElements := make([]Expr, len(l.Elements))
+	copy(newElements, l.Elements)
+	newElements[n] = value // n is 1-indexed, but array is 0-indexed after head
+
+	return List{Elements: newElements}
+}
+
+// SetSlice returns a new List with elements from start to stop replaced by values (1-indexed)
+// values can be a single Expr, List, or other Sliceable
+func (l List) SetSlice(start, stop int64, values Expr) Expr {
+	if len(l.Elements) <= 1 {
+		// Empty list - can only insert at position 1
+		if start == 1 && stop == 0 {
+			return l.insertValues(1, values)
+		}
+		return NewErrorExpr("PartError", "List has no elements", []Expr{l})
+	}
+
+	length := l.Length()
+
+	// Handle negative indexing
+	if start < 0 {
+		start = length + start + 1
+	}
+	if stop < 0 {
+		stop = length + stop + 1
+	}
+
+	// Validate range
+	if start <= 0 {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Start index %d must be positive", start),
+			[]Expr{l})
+	}
+
+	if start > length+1 {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Start index %d is out of bounds for list with %d elements", start, length),
+			[]Expr{l})
+	}
+
+	// Handle special cases
+	if stop < start-1 {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start),
+			[]Expr{l})
+	}
+
+	// Convert values to slice
+	var valueSlice []Expr
+	if valuesList, ok := values.(List); ok && len(valuesList.Elements) > 1 {
+		// Extract elements from List (excluding head)
+		valueSlice = valuesList.Elements[1:]
+	} else if sliceable := AsSliceable(values); sliceable != nil {
+		// Handle other sliceable types by converting to list
+		if valuesList, ok := values.(List); ok {
+			valueSlice = valuesList.Elements[1:]
+		} else {
+			// For non-List sliceables, treat as single element
+			valueSlice = []Expr{values}
+		}
+	} else {
+		// Single value
+		valueSlice = []Expr{values}
+	}
+
+	// Calculate new list size
+	oldRangeSize := int64(0)
+	if stop >= start {
+		oldRangeSize = stop - start + 1
+	}
+	newSize := int64(len(l.Elements)) - oldRangeSize + int64(len(valueSlice))
+
+	// Create new list
+	newElements := make([]Expr, newSize)
+
+	// Copy head
+	newElements[0] = l.Elements[0]
+
+	// Copy elements before the range
+	if start > 1 {
+		copy(newElements[1:start], l.Elements[1:start])
+	}
+
+	// Insert new values
+	if len(valueSlice) > 0 {
+		copy(newElements[start:start+int64(len(valueSlice))], valueSlice)
+	}
+
+	// Copy elements after the range
+	if stop < length {
+		afterStart := start + int64(len(valueSlice))
+		copy(newElements[afterStart:], l.Elements[stop+1:])
+	}
+
+	return List{Elements: newElements}
+}
+
+// insertValues is a helper method for inserting values at a specific position
+func (l List) insertValues(pos int64, values Expr) Expr {
+	// Convert values to slice
+	var valueSlice []Expr
+	if valuesList, ok := values.(List); ok && len(valuesList.Elements) > 1 {
+		valueSlice = valuesList.Elements[1:]
+	} else {
+		valueSlice = []Expr{values}
+	}
+
+	// Create new list with values inserted
+	newSize := len(l.Elements) + len(valueSlice)
+	newElements := make([]Expr, newSize)
+
+	// Copy head
+	newElements[0] = l.Elements[0]
+
+	// Copy elements before insertion point
+	if pos > 1 {
+		copy(newElements[1:pos], l.Elements[1:pos])
+	}
+
+	// Insert new values
+	copy(newElements[pos:pos+int64(len(valueSlice))], valueSlice)
+
+	// Copy remaining elements
+	if pos <= int64(len(l.Elements)) {
+		copy(newElements[pos+int64(len(valueSlice)):], l.Elements[pos:])
+	}
+
+	return List{Elements: newElements}
+}

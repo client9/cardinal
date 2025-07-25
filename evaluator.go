@@ -284,6 +284,10 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Conte
 		return e.evaluateSliceRange(args, ctx)
 	case "TakeFrom":
 		return e.evaluateTakeFrom(args, ctx)
+	case "PartSet":
+		return e.evaluatePartSet(args, ctx)
+	case "SliceSet":
+		return e.evaluateSliceSet(args, ctx)
 	default:
 		return nil // Not a special form
 	}
@@ -774,4 +778,110 @@ func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 		dropCount := start - 1
 		return e.evaluate(NewList(NewSymbolAtom("Drop"), expr, NewIntAtom(int(dropCount))), ctx)
 	}
+}
+
+// evaluatePartSet implements slice assignment syntax: expr[index] = value
+func (e *Evaluator) evaluatePartSet(args []Expr, ctx *Context) Expr {
+	if len(args) != 3 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("PartSet expects 3 arguments (expr, index, value), got %d", len(args)), args)
+	}
+
+	// Evaluate the expression being modified
+	expr := e.evaluate(args[0], ctx)
+	if IsError(expr) {
+		return expr
+	}
+
+	// Check if the expression is sliceable
+	sliceable := core.AsSliceable(expr)
+	if sliceable == nil {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
+	}
+
+	// Evaluate index
+	indexExpr := e.evaluate(args[1], ctx)
+	if IsError(indexExpr) {
+		return indexExpr
+	}
+
+	// Extract integer value for index
+	index, ok := core.ExtractInt64(indexExpr)
+	if !ok {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Type()), []Expr{indexExpr})
+	}
+
+	// Evaluate value
+	value := e.evaluate(args[2], ctx)
+	if IsError(value) {
+		return value
+	}
+
+	// Use the Sliceable interface to perform the assignment
+	return sliceable.SetElementAt(index, value)
+}
+
+// evaluateSliceSet implements slice assignment syntax: expr[start:end] = value
+func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
+	if len(args) != 4 {
+		return NewErrorExpr("ArgumentError",
+			fmt.Sprintf("SliceSet expects 4 arguments (expr, start, end, value), got %d", len(args)), args)
+	}
+
+	// Evaluate the expression being modified
+	expr := e.evaluate(args[0], ctx)
+	if IsError(expr) {
+		return expr
+	}
+
+	// Check if the expression is sliceable
+	sliceable := core.AsSliceable(expr)
+	if sliceable == nil {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
+	}
+
+	// Evaluate start index
+	startExpr := e.evaluate(args[1], ctx)
+	if IsError(startExpr) {
+		return startExpr
+	}
+
+	// Extract integer value for start
+	start, ok := core.ExtractInt64(startExpr)
+	if !ok {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
+	}
+
+	// Evaluate end index
+	endExpr := e.evaluate(args[2], ctx)
+	if IsError(endExpr) {
+		return endExpr
+	}
+
+	// Extract integer value for end (handle special case of -1 for "to end")
+	var end int64
+	if endAtom, ok := endExpr.(Atom); ok && endAtom.AtomType == IntAtom && endAtom.Value.(int) == -1 {
+		// Special case: -1 means "to end of sequence"
+		end = sliceable.(interface{ Length() int64 }).Length()
+	} else {
+		var ok bool
+		end, ok = core.ExtractInt64(endExpr)
+		if !ok {
+			return NewErrorExpr("TypeError",
+				fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Type()), []Expr{endExpr})
+		}
+	}
+
+	// Evaluate value
+	value := e.evaluate(args[3], ctx)
+	if IsError(value) {
+		return value
+	}
+
+	// Use the Sliceable interface to perform the slice assignment
+	return sliceable.SetSlice(start, end, value)
 }

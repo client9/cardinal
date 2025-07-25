@@ -198,3 +198,141 @@ func (a Atom) Join(other Sliceable) Expr {
 
 	return NewStringAtom(thisStr + otherStr)
 }
+
+// SetElementAt returns a new string atom with the nth character replaced (1-indexed)
+// Returns an error Expr if index is out of bounds or value is not a string
+func (a Atom) SetElementAt(n int64, value Expr) Expr {
+	if a.AtomType != StringAtom {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("SetElementAt not supported for %s", a.Type()), []Expr{a})
+	}
+
+	// Validate that value is a string
+	valueAtom, ok := value.(Atom)
+	if !ok || valueAtom.AtomType != StringAtom {
+		return NewErrorExpr("TypeError",
+			"String assignment requires string value", []Expr{a, value})
+	}
+
+	str := a.Value.(string)
+	runes := []rune(str)
+	length := int64(len(runes))
+
+	if length == 0 {
+		return NewErrorExpr("PartError", "String is empty", []Expr{a})
+	}
+
+	// Handle negative indexing
+	if n < 0 {
+		n = length + n + 1
+	}
+
+	// Check bounds (1-indexed)
+	if n <= 0 || n > length {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for string with %d characters", n, length),
+			[]Expr{a})
+	}
+
+	valueStr := valueAtom.Value.(string)
+	valueRunes := []rune(valueStr)
+
+	// For single character replacement, value should be a single character
+	if len(valueRunes) != 1 {
+		return NewErrorExpr("ValueError",
+			fmt.Sprintf("Single character replacement requires exactly one character, got %d", len(valueRunes)),
+			[]Expr{a, value})
+	}
+
+	// Create new string with character replaced
+	newRunes := make([]rune, length)
+	copy(newRunes, runes)
+	newRunes[n-1] = valueRunes[0] // n is 1-indexed
+
+	return NewStringAtom(string(newRunes))
+}
+
+// SetSlice returns a new string atom with characters from start to stop replaced by values (1-indexed)
+// values must be a string atom
+func (a Atom) SetSlice(start, stop int64, values Expr) Expr {
+	if a.AtomType != StringAtom {
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("SetSlice not supported for %s", a.Type()), []Expr{a})
+	}
+
+	// Validate that values is a string
+	valueAtom, ok := values.(Atom)
+	if !ok || valueAtom.AtomType != StringAtom {
+		return NewErrorExpr("TypeError",
+			"String slice assignment requires string value", []Expr{a, values})
+	}
+
+	str := a.Value.(string)
+	runes := []rune(str)
+	length := int64(len(runes))
+
+	// Handle empty string
+	if length == 0 {
+		if start == 1 && stop == 0 {
+			// Insert at beginning of empty string
+			return values
+		}
+		return NewErrorExpr("PartError", "String is empty", []Expr{a})
+	}
+
+	// Handle negative indexing
+	if start < 0 {
+		start = length + start + 1
+	}
+	if stop < 0 {
+		stop = length + stop + 1
+	}
+
+	// Validate range
+	if start <= 0 {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Start index %d must be positive", start),
+			[]Expr{a})
+	}
+
+	if start > length+1 {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Start index %d is out of bounds for string with %d characters", start, length),
+			[]Expr{a})
+	}
+
+	// Handle special cases
+	if stop < start-1 {
+		return NewErrorExpr("PartError",
+			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start),
+			[]Expr{a})
+	}
+
+	valueStr := valueAtom.Value.(string)
+	valueRunes := []rune(valueStr)
+
+	// Calculate range to replace
+	replaceStart := start - 1 // Convert to 0-based
+	replaceEnd := stop        // Convert to 0-based (exclusive end)
+	if stop > length {
+		replaceEnd = length
+	}
+
+	// Build new string
+	var newRunes []rune
+
+	// Add characters before the replacement range
+	if replaceStart > 0 {
+		newRunes = append(newRunes, runes[:replaceStart]...)
+	}
+
+	// Add replacement characters
+	newRunes = append(newRunes, valueRunes...)
+
+	// Add characters after the replacement range
+	if replaceEnd < length {
+		newRunes = append(newRunes, runes[replaceEnd:]...)
+	}
+
+	return NewStringAtom(string(newRunes))
+}
