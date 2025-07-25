@@ -57,6 +57,15 @@ func AtomQExpr(expr core.Expr) bool {
 	return isAtom
 }
 
+// TrueQExpr check is an expression is explicity True
+func TrueQExpr(expr core.Expr) bool {
+	a, ok := expr.(core.Atom)
+	if !ok {
+		return false
+	}
+	return a.AtomType == core.SymbolAtom && a.String() == "True"
+}
+
 // Output format functions - all return string
 
 // FullFormExpr returns the full string representation of an expression
