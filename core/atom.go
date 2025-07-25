@@ -174,7 +174,7 @@ func (a Atom) Join(other Sliceable) Expr {
 	// Only string atoms support joining
 	if a.AtomType != StringAtom {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Atom of type %s does not support join", a.AtomType),
+			fmt.Sprintf("Atom of type %d does not support join", a.AtomType),
 			[]Expr{a})
 	}
 
@@ -188,7 +188,7 @@ func (a Atom) Join(other Sliceable) Expr {
 
 	if otherAtom.AtomType != StringAtom {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Cannot join %s with string", otherAtom.AtomType),
+			fmt.Sprintf("Cannot join atom %d with string", otherAtom.AtomType),
 			[]Expr{a, otherAtom})
 	}
 
