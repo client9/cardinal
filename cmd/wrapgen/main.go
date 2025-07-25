@@ -522,7 +522,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error generating setup file: %v", err)
 		}
-		fmt.Printf("Generated builtin setup file: %s\n", *setupFile)
+		//fmt.Printf("Generated builtin setup file: %s\n", *setupFile)
 		return
 	}
 
@@ -532,7 +532,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error generating single file: %v", err)
 		}
-		fmt.Printf("Generated %d wrappers in %s\n", len(processedSpecs), *single)
+		//fmt.Printf("Generated %d wrappers in %s\n", len(processedSpecs), *single)
 		return
 	}
 
@@ -547,11 +547,11 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error generating %s: %v", outputPath, err)
 		}
-		fmt.Printf("Generated %d wrappers in %s\n", len(group.Functions), outputPath)
+		//fmt.Printf("Generated %d wrappers in %s\n", len(group.Functions), outputPath)
 		totalFunctions += len(group.Functions)
 	}
 
-	fmt.Printf("Total: %d wrappers across %d files\n", totalFunctions, len(groups))
+	//fmt.Printf("Total: %d wrappers across %d files\n", totalFunctions, len(groups))
 }
 
 // groupFunctionsByFile groups function specs by their output file
