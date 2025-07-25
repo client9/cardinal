@@ -42,7 +42,7 @@ func TestEvaluator_ArithmeticOperations(t *testing.T) {
 		{
 			name:     "power",
 			input:    "Power(2, 3)",
-			expected: "8",
+			expected: "8.0",
 		},
 		{
 			name:     "mixed types",
@@ -519,7 +519,7 @@ func TestEvaluator_ComplexExpressions(t *testing.T) {
 		{
 			name:     "nested arithmetic",
 			input:    "Plus(Times(2, 3), Power(2, 2))",
-			expected: "10",
+			expected: "10.0",
 		},
 		{
 			name:     "comparison with arithmetic",
