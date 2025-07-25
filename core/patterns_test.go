@@ -266,6 +266,31 @@ func TestGetPatternSpecificity(t *testing.T) {
 	}
 }
 
+// Test literal symbol pattern distinction
+func TestLiteralSymbolPatterns(t *testing.T) {
+	matcher := NewPatternMatcher()
+
+	// These should match exactly
+	if !matcher.TestMatch(NewSymbolAtom("s1"), NewSymbolAtom("s1")) {
+		t.Error("s1 pattern should match s1 symbol")
+	}
+
+	// These should NOT match
+	if matcher.TestMatch(NewSymbolAtom("s1"), NewSymbolAtom("s2")) {
+		t.Error("s1 pattern should NOT match s2 symbol")
+	}
+
+	// Symbol pattern should NOT match integer
+	if matcher.TestMatch(NewSymbolAtom("s1"), NewIntAtom(100)) {
+		t.Error("s1 pattern should NOT match integer 100")
+	}
+
+	// Symbol pattern should NOT match different types
+	if matcher.TestMatch(NewSymbolAtom("True"), NewSymbolAtom("False")) {
+		t.Error("True pattern should NOT match False symbol")
+	}
+}
+
 // Test pure pattern matcher
 func TestPatternMatcher(t *testing.T) {
 	matcher := NewPatternMatcher()

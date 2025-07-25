@@ -617,8 +617,19 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 		}
 
 		// Regular pattern element - must match exactly one expression element
-		// Element 0 is head (literal), elements 1+ are parameters (bind)
+		// Parameters bind to values, but some symbols should match literally
 		isParameterPosition := exprIdx > 0
+		if isParameterPosition {
+			// Check if this is a symbol that should match literally
+			if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
+				symbolName := atom.Value.(string)
+				// Specific symbols that should match literally, not bind
+				// This includes boolean constants and other system symbols
+				if isLiteralSymbol(symbolName) {
+					isParameterPosition = false
+				}
+			}
+		}
 		if !directMatchPatternWithContext(patternElem, exprList.Elements[exprIdx], ctx, isParameterPosition) {
 			return false
 		}
@@ -769,6 +780,13 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 // Use getPatternSpecificity directly for new code
 func calculatePatternSpecificity(pattern Expr) int {
 	return int(getPatternSpecificity(pattern))
+}
+
+// isLiteralSymbol determines if a symbol should be treated as a literal match rather than a parameter
+func isLiteralSymbol(symbolName string) bool {
+	// Any symbol that is NOT a pattern variable should be treated as a literal
+	// Pattern variables are identified by containing underscores (x_, x_Integer, etc.)
+	return !isPatternVariable(symbolName)
 }
 
 // patternsEquivalent checks if two patterns are structurally equivalent (ignoring variable names)

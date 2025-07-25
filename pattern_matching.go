@@ -69,8 +69,8 @@ func isLiteral(expr Expr) bool {
 			return true
 		case SymbolAtom:
 			symbolName := atom.Value.(string)
-			// Built-in constants are considered literals
-			return symbolName == "True" || symbolName == "False" || symbolName == "Pi" || symbolName == "E"
+			// Any symbol that is NOT a pattern variable is considered a literal
+			return !isPatternVariable(symbolName)
 		}
 	}
 	return false

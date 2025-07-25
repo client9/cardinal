@@ -31,9 +31,9 @@ func TestSimpleVariablePatterns(t *testing.T) {
 			expected: "7",
 		},
 		{
-			name:     "Mixed regular and pattern parameters",
-			input:    "mixed(x, y_) := x * y + 1; mixed(5, 3)",
-			expected: "16",
+			name:     "Mixed literal and pattern parameters",
+			input:    "mixed(x, y_) := x * y + 1; mixed(x, 3)",
+			expected: "Plus(1, Times(x, 3))",
 		},
 	}
 
@@ -108,17 +108,287 @@ func TestLiteralPatterns(t *testing.T) {
 			input:    "bool_test(True)",
 			expected: "\"it's true\"",
 		},
-		// TODO: Fix pattern matching bug - literal patterns not ordered correctly
-		// {
-		// 	name: "Boolean literal fallback",
-		// 	setup: []string{
-		// 		"bool_test(True) := \"it's true\"",
-		// 		"bool_test(False) := \"it's false\"",
-		// 		"bool_test(x_) := \"not boolean\"",
-		// 	},
-		// 	input:    "bool_test(42)",
-		// 	expected: "\"not boolean\"",
-		// },
+		{
+			name: "Boolean literal fallback",
+			setup: []string{
+				"bool_test(True) := \"it's true\"",
+				"bool_test(False) := \"it's false\"",
+				"bool_test(x_) := \"not boolean\"",
+			},
+			input:    "bool_test(42)",
+			expected: "\"not boolean\"",
+		},
+		{
+			name: "Boolean False literal",
+			setup: []string{
+				"bool_test(True) := \"it's true\"",
+				"bool_test(False) := \"it's false\"",
+				"bool_test(x_) := \"not boolean\"",
+			},
+			input:    "bool_test(False)",
+			expected: "\"it's false\"",
+		},
+		{
+			name: "Custom symbol literal patterns",
+			setup: []string{
+				"classify(Red) := \"color red\"",
+				"classify(Green) := \"color green\"",
+				"classify(Blue) := \"color blue\"",
+				"classify(x_) := \"unknown color\"",
+			},
+			input:    "classify(Red)",
+			expected: "\"color red\"",
+		},
+		{
+			name: "Custom symbol literal fallback",
+			setup: []string{
+				"classify(Red) := \"color red\"",
+				"classify(Green) := \"color green\"",
+				"classify(Blue) := \"color blue\"",
+				"classify(x_) := \"unknown color\"",
+			},
+			input:    "classify(Purple)",
+			expected: "\"unknown color\"",
+		},
+		{
+			name: "Mixed literal and pattern variables",
+			setup: []string{
+				"math_op(Add, x_, y_) := x + y",
+				"math_op(Multiply, x_, y_) := x * y",
+				"math_op(op_, x_, y_) := \"unknown operation\"",
+			},
+			input:    "math_op(Add, 5, 3)",
+			expected: "8",
+		},
+		{
+			name: "Mixed literal fallback",
+			setup: []string{
+				"math_op(Add, x_, y_) := x + y",
+				"math_op(Multiply, x_, y_) := x * y",
+				"math_op(op_, x_, y_) := \"unknown operation\"",
+			},
+			input:    "math_op(Divide, 10, 2)",
+			expected: "\"unknown operation\"",
+		},
+		{
+			name: "String literal patterns",
+			setup: []string{
+				"greet(\"hello\") := \"Hello there!\"",
+				"greet(\"goodbye\") := \"See you later!\"",
+				"greet(x_) := \"I don't understand\"",
+			},
+			input:    "greet(\"hello\")",
+			expected: "\"Hello there!\"",
+		},
+		{
+			name: "String literal fallback",
+			setup: []string{
+				"greet(\"hello\") := \"Hello there!\"",
+				"greet(\"goodbye\") := \"See you later!\"",
+				"greet(x_) := \"I don't understand\"",
+			},
+			input:    "greet(\"hi\")",
+			expected: "\"I don't understand\"",
+		},
+		{
+			name: "Multiple symbol literals with specificity",
+			setup: []string{
+				"status(Active) := \"System is running\"",
+				"status(Inactive) := \"System is stopped\"",
+				"status(Maintenance) := \"System is under maintenance\"",
+				"status(Unknown) := \"System status unclear\"",
+				"status(x_Symbol) := \"Unrecognized status symbol\"",
+				"status(x_) := \"Invalid status type\"",
+			},
+			input:    "status(Active)",
+			expected: "\"System is running\"",
+		},
+		{
+			name: "Symbol literal vs Symbol pattern",
+			setup: []string{
+				"status(Active) := \"System is running\"",
+				"status(Inactive) := \"System is stopped\"",
+				"status(Maintenance) := \"System is under maintenance\"",
+				"status(Unknown) := \"System status unclear\"",
+				"status(x_Symbol) := \"Unrecognized status symbol\"",
+				"status(x_) := \"Invalid status type\"",
+			},
+			input:    "status(Testing)",
+			expected: "\"Unrecognized status symbol\"",
+		},
+		{
+			name: "Symbol literal vs general fallback",
+			setup: []string{
+				"status(Active) := \"System is running\"",
+				"status(Inactive) := \"System is stopped\"",
+				"status(Maintenance) := \"System is under maintenance\"",
+				"status(Unknown) := \"System status unclear\"",
+				"status(x_Symbol) := \"Unrecognized status symbol\"",
+				"status(x_) := \"Invalid status type\"",
+			},
+			input:    "status(123)",
+			expected: "\"Invalid status type\"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewEvaluator()
+
+			// Setup function definitions
+			for _, setup := range tt.setup {
+				_, err := evaluateExpression(evaluator, setup)
+				if err != nil {
+					t.Fatalf("Error setting up expression '%s': %v", setup, err)
+				}
+			}
+
+			// Test the actual expression
+			result, err := evaluateExpression(evaluator, tt.input)
+			if err != nil {
+				t.Fatalf("Error evaluating expression: %v", err)
+			}
+			if result != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestLiteralSymbolPatternRegression(t *testing.T) {
+	// This test specifically covers the bug where literal symbol patterns
+	// incorrectly matched any argument instead of requiring exact matches.
+	// The original bug: bool_test(s1) := 1; bool_test(s2) := 2; bool_test(x_) := 3; bool_test(100) returned 1
+	tests := []struct {
+		name     string
+		setup    []string
+		input    string
+		expected string
+	}{
+		{
+			name: "Original bug case - symbol literals should not match integers",
+			setup: []string{
+				"bool_test(s1) := 1",
+				"bool_test(s2) := 2",
+				"bool_test(x_) := 3",
+			},
+			input:    "bool_test(100)",
+			expected: "3",
+		},
+		{
+			name: "Symbol literals should match exact symbols",
+			setup: []string{
+				"bool_test(s1) := 1",
+				"bool_test(s2) := 2",
+				"bool_test(x_) := 3",
+			},
+			input:    "bool_test(s1)",
+			expected: "1",
+		},
+		{
+			name: "Second symbol literal should match",
+			setup: []string{
+				"bool_test(s1) := 1",
+				"bool_test(s2) := 2",
+				"bool_test(x_) := 3",
+			},
+			input:    "bool_test(s2)",
+			expected: "2",
+		},
+		{
+			name: "Different symbol should fallback to pattern",
+			setup: []string{
+				"bool_test(s1) := 1",
+				"bool_test(s2) := 2",
+				"bool_test(x_) := 3",
+			},
+			input:    "bool_test(s3)",
+			expected: "3",
+		},
+		{
+			name: "Multiple argument literal patterns",
+			setup: []string{
+				"compare(First, Second) := \"first and second\"",
+				"compare(Alpha, Beta) := \"alpha and beta\"",
+				"compare(x_, y_) := \"other comparison\"",
+			},
+			input:    "compare(First, Second)",
+			expected: "\"first and second\"",
+		},
+		{
+			name: "Multiple argument literal patterns - partial match should fallback",
+			setup: []string{
+				"compare(First, Second) := \"first and second\"",
+				"compare(Alpha, Beta) := \"alpha and beta\"",
+				"compare(x_, y_) := \"other comparison\"",
+			},
+			input:    "compare(First, Third)",
+			expected: "\"other comparison\"",
+		},
+		{
+			name: "Mixed literals and symbols",
+			setup: []string{
+				"operation(Add, x, y) := x + y",
+				"operation(Multiply, x, y) := x * y",
+				"operation(op_, x_, y_) := \"unknown op\"",
+			},
+			input:    "operation(Add, x, y)",
+			expected: "Plus(x, y)",
+		},
+		{
+			name: "Mixed literals fallback to pattern",
+			setup: []string{
+				"operation(Add, x, y) := x + y",
+				"operation(Multiply, x, y) := x * y",
+				"operation(op_, x_, y_) := \"unknown op\"",
+			},
+			input:    "operation(Subtract, 5, 3)",
+			expected: "\"unknown op\"",
+		},
+		{
+			name: "Complex literal pattern specificity",
+			setup: []string{
+				"process(Error, critical) := \"critical error\"",
+				"process(Error, x_) := \"regular error\"",
+				"process(Warning, x_) := \"warning message\"",
+				"process(x_, y_) := \"general message\"",
+			},
+			input:    "process(Error, critical)",
+			expected: "\"critical error\"",
+		},
+		{
+			name: "Complex literal pattern - non-critical error",
+			setup: []string{
+				"process(Error, critical) := \"critical error\"",
+				"process(Error, x_) := \"regular error\"",
+				"process(Warning, x_) := \"warning message\"",
+				"process(x_, y_) := \"general message\"",
+			},
+			input:    "process(Error, minor)",
+			expected: "\"regular error\"",
+		},
+		{
+			name: "Complex literal pattern - warning",
+			setup: []string{
+				"process(Error, critical) := \"critical error\"",
+				"process(Error, x_) := \"regular error\"",
+				"process(Warning, x_) := \"warning message\"",
+				"process(x_, y_) := \"general message\"",
+			},
+			input:    "process(Warning, test)",
+			expected: "\"warning message\"",
+		},
+		{
+			name: "Complex literal pattern - general fallback",
+			setup: []string{
+				"process(Error, critical) := \"critical error\"",
+				"process(Error, x_) := \"regular error\"",
+				"process(Warning, x_) := \"warning message\"",
+				"process(x_, y_) := \"general message\"",
+			},
+			input:    "process(Info, test)",
+			expected: "\"general message\"",
+		},
 	}
 
 	for _, tt := range tests {
@@ -901,10 +1171,10 @@ func TestSameFunctionNameDifferentPatterns(t *testing.T) {
 				"double(x_) := \"cannot double\"",
 			},
 			input:    "double(3.5)",
-			expected: "7",
+			expected: "7.0",
 			checkType: func(result string) bool {
 				// Should be real (has decimal point)
-				return result == "7"
+				return result == "7.0"
 			},
 		},
 		{
@@ -1254,7 +1524,7 @@ func TestHeadPatterns(t *testing.T) {
 				"identity(expr_) := expr",
 			},
 			input:    "identity(Power(2, 3))",
-			expected: "8",
+			expected: "8.0",
 		},
 		{
 			name: "Fallback pattern for non-matching structure",
