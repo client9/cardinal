@@ -16,6 +16,6 @@ test:  build
 clean:
 	rm -f repl cmd/repl/repl
 	rm -f main wrapgen
-	rm -f *.bak*
+	find . -name '*.bak*' | xargs rm -f
 	rm -f *_wrappers.go
 	rm -f builtin_setup.go
