@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/client9/sexpr/core"
 )
 
 type Precedence int
@@ -135,7 +137,7 @@ func (p *Parser) ParseAtom() Expr {
 		expr = p.parseGroupedExpression()
 	case SEMICOLON, EOF:
 		// Empty expression - return Null without consuming token
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	default:
 		p.addError(fmt.Sprintf("unexpected token: %s", p.currentToken.String()))
 		return nil
@@ -152,13 +154,13 @@ func (p *Parser) parseSymbolOrList() Expr {
 		return p.parseList(symbolToken.Value)
 	}
 
-	return NewSymbolAtom(symbolToken.Value)
+	return core.NewSymbol(symbolToken.Value)
 }
 
 func (p *Parser) parseList(head string) Expr {
 	p.nextToken() // consume '('
 
-	elements := []Expr{NewSymbolAtom(head)}
+	elements := []Expr{core.NewSymbol(head)}
 
 	if p.currentToken.Type == RPAREN {
 		p.nextToken() // consume ')'
@@ -197,7 +199,7 @@ func (p *Parser) parseListLiteral() Expr {
 	p.nextToken() // consume '['
 
 	// Create a List expression with "List" as the head
-	elements := []Expr{NewSymbolAtom("List")}
+	elements := []Expr{core.NewSymbol("List")}
 
 	// Handle empty list []
 	if p.currentToken.Type == RBRACKET {
@@ -254,7 +256,7 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	if p.currentToken.Type == RBRACE {
 		p.nextToken() // consume '}'
 		// Create Association function call with no arguments for empty association
-		return NewList(NewSymbolAtom("Association"))
+		return NewList(core.NewSymbol("Association"))
 	}
 
 	// Parse expressions (expecting Rule expressions from key:value infix parsing)
@@ -295,19 +297,19 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	}
 
 	// Create Association function call with Rule expressions
-	elements := []Expr{NewSymbolAtom("Association")}
+	elements := []Expr{core.NewSymbol("Association")}
 	elements = append(elements, rules...)
 	return NewList(elements...)
 }
 
 func (p *Parser) parseInteger() Expr {
-	value, err := strconv.Atoi(p.currentToken.Value)
+	value, err := strconv.ParseInt(p.currentToken.Value, 10, 64)
 	if err != nil {
 		p.addError(fmt.Sprintf("invalid integer: %s", p.currentToken.Value))
 		return nil
 	}
 
-	return NewIntAtom(value)
+	return core.NewInteger(value)
 }
 
 func (p *Parser) parseFloat() Expr {
@@ -317,17 +319,17 @@ func (p *Parser) parseFloat() Expr {
 		return nil
 	}
 
-	return NewFloatAtom(value)
+	return core.NewReal(value)
 }
 
 func (p *Parser) parseString() Expr {
 	value := p.unescapeString(p.currentToken.Value)
-	return NewStringAtom(value)
+	return core.NewString(value)
 }
 
 func (p *Parser) parseBoolean() Expr {
 	value := p.currentToken.Value == "True"
-	return NewBoolAtom(value)
+	return core.NewBool(value)
 }
 
 func (p *Parser) unescapeString(s string) string {
@@ -356,13 +358,6 @@ func (p *Parser) unescapeString(s string) string {
 		}
 	}
 	return result.String()
-}
-
-func (p *Parser) peekPrecedence() Precedence {
-	if prec, ok := precedences[p.peekToken.Type]; ok {
-		return prec
-	}
-	return PrecedenceLowest
 }
 
 func (p *Parser) currentPrecedence() Precedence {
@@ -415,43 +410,43 @@ func (p *Parser) parsePrefixExpression() Expr {
 func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 	switch operator {
 	case SEMICOLON:
-		return NewList(NewSymbolAtom("CompoundStatement"), left, right)
+		return NewList(core.NewSymbol("CompoundStatement"), left, right)
 	case SET:
-		return NewList(NewSymbolAtom("Set"), left, right)
+		return NewList(core.NewSymbol("Set"), left, right)
 	case SETDELAYED:
-		return NewList(NewSymbolAtom("SetDelayed"), left, right)
+		return NewList(core.NewSymbol("SetDelayed"), left, right)
 	case UNSET:
-		return NewList(NewSymbolAtom("Unset"), left)
+		return NewList(core.NewSymbol("Unset"), left)
 	case COLON:
-		return NewList(NewSymbolAtom("Rule"), left, right)
+		return NewList(core.NewSymbol("Rule"), left, right)
 	case OR:
-		return NewList(NewSymbolAtom("Or"), left, right)
+		return NewList(core.NewSymbol("Or"), left, right)
 	case AND:
-		return NewList(NewSymbolAtom("And"), left, right)
+		return NewList(core.NewSymbol("And"), left, right)
 	case EQUAL:
-		return NewList(NewSymbolAtom("Equal"), left, right)
+		return NewList(core.NewSymbol("Equal"), left, right)
 	case UNEQUAL:
-		return NewList(NewSymbolAtom("Unequal"), left, right)
+		return NewList(core.NewSymbol("Unequal"), left, right)
 	case SAMEQ:
-		return NewList(NewSymbolAtom("SameQ"), left, right)
+		return NewList(core.NewSymbol("SameQ"), left, right)
 	case UNSAMEQ:
-		return NewList(NewSymbolAtom("UnsameQ"), left, right)
+		return NewList(core.NewSymbol("UnsameQ"), left, right)
 	case LESS:
-		return NewList(NewSymbolAtom("Less"), left, right)
+		return NewList(core.NewSymbol("Less"), left, right)
 	case GREATER:
-		return NewList(NewSymbolAtom("Greater"), left, right)
+		return NewList(core.NewSymbol("Greater"), left, right)
 	case LESSEQUAL:
-		return NewList(NewSymbolAtom("LessEqual"), left, right)
+		return NewList(core.NewSymbol("LessEqual"), left, right)
 	case GREATEREQUAL:
-		return NewList(NewSymbolAtom("GreaterEqual"), left, right)
+		return NewList(core.NewSymbol("GreaterEqual"), left, right)
 	case PLUS:
-		return NewList(NewSymbolAtom("Plus"), left, right)
+		return NewList(core.NewSymbol("Plus"), left, right)
 	case MINUS:
-		return NewList(NewSymbolAtom("Subtract"), left, right)
+		return NewList(core.NewSymbol("Subtract"), left, right)
 	case MULTIPLY:
-		return NewList(NewSymbolAtom("Times"), left, right)
+		return NewList(core.NewSymbol("Times"), left, right)
 	case DIVIDE:
-		return NewList(NewSymbolAtom("Divide"), left, right)
+		return NewList(core.NewSymbol("Divide"), left, right)
 	default:
 		p.addError(fmt.Sprintf("unknown infix operator: %d", operator))
 		return nil
@@ -461,7 +456,7 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 	switch operator {
 	case MINUS:
-		return NewList(NewSymbolAtom("Minus"), operand)
+		return NewList(core.NewSymbol("Minus"), operand)
 	case PLUS:
 		return operand // unary plus is identity
 	default:
@@ -515,7 +510,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			return expr
 		}
 		p.nextToken() // consume ']'
-		return NewList(NewSymbolAtom("Part"), expr, firstExpr)
+		return NewList(core.NewSymbol("Part"), expr, firstExpr)
 
 	} else if p.currentToken.Type == COLON {
 		// Slice syntax: expr[start:end] or expr[:end] or expr[start:]
@@ -543,7 +538,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// If start is negative, use Take(expr, start) for last n elements
 			// If start is positive, use Drop(expr, start-1) since Drop removes the first n elements
 			// But we can't easily detect negative at parse time, so we'll use a special function
-			return NewList(NewSymbolAtom("TakeFrom"), expr, startExpr)
+			return NewList(core.NewSymbol("TakeFrom"), expr, startExpr)
 		} else {
 			// Parse end expression
 			endExpr = p.parseSliceExpression()
@@ -556,10 +551,10 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// Generate appropriate slice expression
 			if startExpr == nil {
 				// [:end] syntax - Take first n elements
-				return NewList(NewSymbolAtom("Take"), expr, endExpr)
+				return NewList(core.NewSymbol("Take"), expr, endExpr)
 			} else {
 				// [start:end] syntax - Slice operation
-				return NewList(NewSymbolAtom("SliceRange"), expr, startExpr, endExpr)
+				return NewList(core.NewSymbol("SliceRange"), expr, startExpr, endExpr)
 			}
 		}
 	} else {
@@ -582,20 +577,21 @@ func (p *Parser) isSliceExpression(expr Expr) bool {
 		return false
 	}
 
-	head, ok := list.Elements[0].(Atom)
-	if !ok || head.AtomType != SymbolAtom {
+	headName, ok := core.ExtractSymbol(list.Elements[0])
+	if !ok {
 		return false
 	}
-
-	headName := head.Value.(string)
 	return headName == "Part" || headName == "SliceRange" || headName == "Take" || headName == "TakeFrom"
 }
 
 // createSliceAssignment creates the appropriate slice assignment AST node
 func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 	list := sliceExpr.(List)
-	head := list.Elements[0].(Atom)
-	headName := head.Value.(string)
+	headName, ok := core.ExtractSymbol(list.Elements[0])
+	if !ok {
+		p.addError(fmt.Sprintf("Unknown slice expression type: %v", list.Elements[0]))
+		return nil
+	}
 
 	switch headName {
 	case "Part":
@@ -604,7 +600,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("Part expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList(NewSymbolAtom("PartSet"), list.Elements[1], list.Elements[2], value)
+		return NewList(core.NewSymbol("PartSet"), list.Elements[1], list.Elements[2], value)
 
 	case "SliceRange":
 		// SliceRange(expr, start, end) = value -> SliceSet(expr, start, end, value)
@@ -612,7 +608,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("SliceRange expression must have exactly 3 arguments for assignment")
 			return nil
 		}
-		return NewList(NewSymbolAtom("SliceSet"), list.Elements[1], list.Elements[2], list.Elements[3], value)
+		return NewList(core.NewSymbol("SliceSet"), list.Elements[1], list.Elements[2], list.Elements[3], value)
 
 	case "Take":
 		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
@@ -620,7 +616,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("Take expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList(NewSymbolAtom("SliceSet"), list.Elements[1], NewIntAtom(1), list.Elements[2], value)
+		return NewList(core.NewSymbol("SliceSet"), list.Elements[1], core.NewInteger(1), list.Elements[2], value)
 
 	case "TakeFrom":
 		// TakeFrom(expr, start) = value -> SliceSet(expr, start, -1, value)
@@ -629,7 +625,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("TakeFrom expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList(NewSymbolAtom("SliceSet"), list.Elements[1], list.Elements[2], NewIntAtom(-1), value)
+		return NewList(core.NewSymbol("SliceSet"), list.Elements[1], list.Elements[2], core.NewInteger(-1), value)
 
 	default:
 		p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))

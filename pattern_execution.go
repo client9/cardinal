@@ -28,8 +28,8 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr Expr, ctx *Con
 	// Handle symbolic patterns first
 	if isPattern, nameExpr, blankExpr := core.IsSymbolicPattern(pattern); isPattern {
 		var varName string
-		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-			varName = nameAtom.Value.(string)
+		if name, ok := core.ExtractSymbol(nameExpr); ok {
+			varName = name
 		}
 
 		// Check if the blank expression matches
@@ -50,45 +50,39 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr Expr, ctx *Con
 
 	// Handle different expression types
 	switch p := pattern.(type) {
-	case Atom:
-		if p.AtomType == SymbolAtom {
-			varName := p.Value.(string)
-			// Check if it's a pattern variable
-			if core.IsPatternVariable(varName) {
-				info := core.ParsePatternInfo(varName)
-				if info.Type == core.BlankPattern {
-					// Check type constraint if present
-					if !core.MatchesType(expr, info.TypeName) {
-						return false
-					}
-
-					// Bind the variable if named
-					if info.VarName != "" {
-						ctx.Set(info.VarName, expr)
-					}
-					return true
-				}
-				// Sequence patterns need special handling in list context
-				return false
-			} else {
-				// Regular symbol behavior depends on context
-				if isParameter {
-					// In parameter lists, regular symbols bind to values
-					ctx.Set(varName, expr)
-					return true
-				} else {
-					// In head patterns, regular symbols require exact matches
-					if exprAtom, ok := expr.(Atom); ok && exprAtom.AtomType == SymbolAtom {
-						return exprAtom.Value.(string) == varName
-					}
+	case core.Symbol:
+		varName := p.String()
+		// Check if it's a pattern variable
+		if core.IsPatternVariable(varName) {
+			info := core.ParsePatternInfo(varName)
+			if info.Type == core.BlankPattern {
+				// Check type constraint if present
+				if !core.MatchesType(expr, info.TypeName) {
 					return false
 				}
+
+				// Bind the variable if named
+				if info.VarName != "" {
+					ctx.Set(info.VarName, expr)
+				}
+				return true
+			}
+			// Sequence patterns need special handling in list context
+			return false
+		} else {
+			// Regular symbol behavior depends on context
+			if isParameter {
+				// In parameter lists, regular symbols bind to values
+				ctx.Set(varName, expr)
+				return true
+			} else {
+				// In head patterns, regular symbols require exact matches
+				if exprName, ok := core.ExtractSymbol(expr); ok {
+					return exprName == varName
+				}
+				return false
 			}
 		}
-
-		// Other atom types must match exactly
-		return p.Equal(expr)
-
 	case List:
 		exprList, ok := expr.(List)
 		if !ok {
@@ -113,8 +107,8 @@ func (pe *PatternExecutor) matchBlankWithBinding(blankExpr, expr Expr, ctx *Cont
 	// Check type constraint if present
 	if typeExpr != nil {
 		var typeName string
-		if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-			typeName = typeAtom.Value.(string)
+		if name, ok := core.ExtractSymbol(typeExpr); ok {
+			typeName = name
 		}
 		if !core.MatchesType(expr, typeName) {
 			return false
@@ -175,8 +169,8 @@ func (pe *PatternExecutor) hasSequencePatterns(patternList List) bool {
 		}
 
 		// Check for string-based sequence patterns
-		if atom, ok := elem.(Atom); ok && atom.AtomType == SymbolAtom {
-			name := atom.Value.(string)
+		if atom, ok := elem.(core.String); ok {
+			name := atom.String()
 			if core.IsPatternVariable(name) {
 				info := core.ParsePatternInfo(name)
 				if info.Type == core.BlankSequencePattern || info.Type == core.BlankNullSequencePattern {
@@ -239,7 +233,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 
 			// Bind variable if named
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
+				ctx.Set(patternInfo.VarName, NewList(append([]Expr{core.NewSymbol("List")}, sequenceExprs...)...))
 			}
 
 			exprIndex += len(sequenceExprs)
@@ -251,7 +245,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 
 			// Bind variable if named (can be empty list)
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
+				ctx.Set(patternInfo.VarName, NewList(append([]Expr{core.NewSymbol("List")}, sequenceExprs...)...))
 			}
 
 			exprIndex += len(sequenceExprs)
@@ -289,8 +283,7 @@ func (pe *PatternExecutor) getPatternTypeInfo(pattern Expr) core.PatternInfo {
 	}
 
 	// Check string-based pattern
-	if atom, ok := pattern.(Atom); ok && atom.AtomType == SymbolAtom {
-		name := atom.Value.(string)
+	if name, ok := core.ExtractSymbol(pattern); ok {
 		if core.IsPatternVariable(name) {
 			return core.ParsePatternInfo(name)
 		}

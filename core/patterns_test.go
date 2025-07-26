@@ -9,15 +9,15 @@ import (
 func TestCreateBlankExpr(t *testing.T) {
 	// Test blank without type constraint
 	blank := CreateBlankExpr(nil)
-	expected := List{Elements: []Expr{NewSymbolAtom("Blank")}}
+	expected := List{Elements: []Expr{NewSymbol("Blank")}}
 	if !reflect.DeepEqual(blank, expected) {
 		t.Errorf("CreateBlankExpr(nil) = %v, want %v", blank, expected)
 	}
 
 	// Test blank with type constraint
-	typeExpr := NewSymbolAtom("Integer")
+	typeExpr := NewSymbol("Integer")
 	blankTyped := CreateBlankExpr(typeExpr)
-	expectedTyped := List{Elements: []Expr{NewSymbolAtom("Blank"), typeExpr}}
+	expectedTyped := List{Elements: []Expr{NewSymbol("Blank"), typeExpr}}
 	if !reflect.DeepEqual(blankTyped, expectedTyped) {
 		t.Errorf("CreateBlankExpr(Integer) = %v, want %v", blankTyped, expectedTyped)
 	}
@@ -26,26 +26,26 @@ func TestCreateBlankExpr(t *testing.T) {
 func TestCreateBlankSequenceExpr(t *testing.T) {
 	// Test sequence without type constraint
 	seq := CreateBlankSequenceExpr(nil)
-	expected := List{Elements: []Expr{NewSymbolAtom("BlankSequence")}}
+	expected := List{Elements: []Expr{NewSymbol("BlankSequence")}}
 	if !reflect.DeepEqual(seq, expected) {
 		t.Errorf("CreateBlankSequenceExpr(nil) = %v, want %v", seq, expected)
 	}
 
 	// Test sequence with type constraint
-	typeExpr := NewSymbolAtom("String")
+	typeExpr := NewSymbol("String")
 	seqTyped := CreateBlankSequenceExpr(typeExpr)
-	expectedTyped := List{Elements: []Expr{NewSymbolAtom("BlankSequence"), typeExpr}}
+	expectedTyped := List{Elements: []Expr{NewSymbol("BlankSequence"), typeExpr}}
 	if !reflect.DeepEqual(seqTyped, expectedTyped) {
 		t.Errorf("CreateBlankSequenceExpr(String) = %v, want %v", seqTyped, expectedTyped)
 	}
 }
 
 func TestCreatePatternExpr(t *testing.T) {
-	nameExpr := NewSymbolAtom("x")
+	nameExpr := NewSymbol("x")
 	blankExpr := CreateBlankExpr(nil)
 	pattern := CreatePatternExpr(nameExpr, blankExpr)
 
-	expected := List{Elements: []Expr{NewSymbolAtom("Pattern"), nameExpr, blankExpr}}
+	expected := List{Elements: []Expr{NewSymbol("Pattern"), nameExpr, blankExpr}}
 	if !reflect.DeepEqual(pattern, expected) {
 		t.Errorf("CreatePatternExpr = %v, want %v", pattern, expected)
 	}
@@ -60,11 +60,11 @@ func TestIsSymbolicBlank(t *testing.T) {
 		expectTypeExpr Expr
 	}{
 		{CreateBlankExpr(nil), true, "Blank", nil},
-		{CreateBlankExpr(NewSymbolAtom("Integer")), true, "Blank", NewSymbolAtom("Integer")},
+		{CreateBlankExpr(NewSymbol("Integer")), true, "Blank", NewSymbol("Integer")},
 		{CreateBlankSequenceExpr(nil), true, "BlankSequence", nil},
-		{CreateBlankNullSequenceExpr(NewSymbolAtom("String")), true, "BlankNullSequence", NewSymbolAtom("String")},
-		{NewSymbolAtom("x"), false, "", nil},
-		{NewIntAtom(42), false, "", nil},
+		{CreateBlankNullSequenceExpr(NewSymbol("String")), true, "BlankNullSequence", NewSymbol("String")},
+		{NewSymbol("x"), false, "", nil},
+		{NewInteger(42), false, "", nil},
 	}
 
 	for _, test := range tests {
@@ -82,7 +82,7 @@ func TestIsSymbolicBlank(t *testing.T) {
 }
 
 func TestIsSymbolicPattern(t *testing.T) {
-	nameExpr := NewSymbolAtom("x")
+	nameExpr := NewSymbol("x")
 	blankExpr := CreateBlankExpr(nil)
 	pattern := CreatePatternExpr(nameExpr, blankExpr)
 
@@ -99,7 +99,7 @@ func TestIsSymbolicPattern(t *testing.T) {
 	}
 
 	// Test non-pattern
-	isPattern, _, _ = IsSymbolicPattern(NewSymbolAtom("x"))
+	isPattern, _, _ = IsSymbolicPattern(NewSymbol("x"))
 	if isPattern {
 		t.Error("IsSymbolicPattern should return false for non-Pattern expression")
 	}
@@ -161,13 +161,13 @@ func TestConvertPatternStringToSymbolic(t *testing.T) {
 		name     string
 		expected func() Expr
 	}{
-		{"x_", func() Expr { return CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(nil)) }},
-		{"x_Integer", func() Expr { return CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(NewSymbolAtom("Integer"))) }},
+		{"x_", func() Expr { return CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)) }},
+		{"x_Integer", func() Expr { return CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer"))) }},
 		{"_", func() Expr { return CreateBlankExpr(nil) }},
-		{"_Integer", func() Expr { return CreateBlankExpr(NewSymbolAtom("Integer")) }},
-		{"x__", func() Expr { return CreatePatternExpr(NewSymbolAtom("x"), CreateBlankSequenceExpr(nil)) }},
-		{"x___", func() Expr { return CreatePatternExpr(NewSymbolAtom("x"), CreateBlankNullSequenceExpr(nil)) }},
-		{"regular", func() Expr { return NewSymbolAtom("regular") }},
+		{"_Integer", func() Expr { return CreateBlankExpr(NewSymbol("Integer")) }},
+		{"x__", func() Expr { return CreatePatternExpr(NewSymbol("x"), CreateBlankSequenceExpr(nil)) }},
+		{"x___", func() Expr { return CreatePatternExpr(NewSymbol("x"), CreateBlankNullSequenceExpr(nil)) }},
+		{"regular", func() Expr { return NewSymbol("regular") }},
 	}
 
 	for _, test := range tests {
@@ -207,17 +207,17 @@ func TestMatchesType(t *testing.T) {
 		typeName string
 		expected bool
 	}{
-		{NewIntAtom(42), "Integer", true},
-		{NewIntAtom(42), "Number", true},
-		{NewIntAtom(42), "String", false},
-		{NewFloatAtom(3.14), "Real", true},
-		{NewFloatAtom(3.14), "Number", true},
-		{NewStringAtom("hello"), "String", true},
-		{NewSymbolAtom("x"), "Symbol", true},
-		{NewList(NewSymbolAtom("List")), "List", true},
-		{NewIntAtom(42), "", true}, // No constraint
-		{NewObjectExpr("CustomType", NewIntAtom(1)), "CustomType", true},
-		{NewObjectExpr("CustomType", NewIntAtom(1)), "OtherType", false},
+		{NewInteger(42), "Integer", true},
+		{NewInteger(42), "Number", true},
+		{NewInteger(42), "String", false},
+		{NewReal(3.14), "Real", true},
+		{NewReal(3.14), "Number", true},
+		{NewString("hello"), "String", true},
+		{NewSymbol("x"), "Symbol", true},
+		{NewList(NewSymbol("List")), "List", true},
+		{NewInteger(42), "", true}, // No constraint
+		{NewObjectExpr("CustomType", NewInteger(1)), "CustomType", true},
+		{NewObjectExpr("CustomType", NewInteger(1)), "OtherType", false},
 	}
 
 	for _, test := range tests {
@@ -250,12 +250,12 @@ func TestGetPatternSpecificity(t *testing.T) {
 		pattern  Expr
 		expected PatternSpecificity
 	}{
-		{NewIntAtom(42), SpecificityLiteral},
-		{NewSymbolAtom("x"), SpecificityLiteral},
+		{NewInteger(42), SpecificityLiteral},
+		{NewSymbol("x"), SpecificityLiteral},
 		{CreateBlankExpr(nil), SpecificityGeneral},
-		{CreateBlankExpr(NewSymbolAtom("Integer")), SpecificityBuiltinType},
-		{CreateBlankExpr(NewSymbolAtom("CustomType")), SpecificityUserType},
-		{CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(nil)), SpecificityGeneral},
+		{CreateBlankExpr(NewSymbol("Integer")), SpecificityBuiltinType},
+		{CreateBlankExpr(NewSymbol("CustomType")), SpecificityUserType},
+		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)), SpecificityGeneral},
 	}
 
 	for _, test := range tests {
@@ -271,22 +271,22 @@ func TestLiteralSymbolPatterns(t *testing.T) {
 	matcher := NewPatternMatcher()
 
 	// These should match exactly
-	if !matcher.TestMatch(NewSymbolAtom("s1"), NewSymbolAtom("s1")) {
+	if !matcher.TestMatch(NewSymbol("s1"), NewSymbol("s1")) {
 		t.Error("s1 pattern should match s1 symbol")
 	}
 
 	// These should NOT match
-	if matcher.TestMatch(NewSymbolAtom("s1"), NewSymbolAtom("s2")) {
+	if matcher.TestMatch(NewSymbol("s1"), NewSymbol("s2")) {
 		t.Error("s1 pattern should NOT match s2 symbol")
 	}
 
 	// Symbol pattern should NOT match integer
-	if matcher.TestMatch(NewSymbolAtom("s1"), NewIntAtom(100)) {
+	if matcher.TestMatch(NewSymbol("s1"), NewInteger(100)) {
 		t.Error("s1 pattern should NOT match integer 100")
 	}
 
 	// Symbol pattern should NOT match different types
-	if matcher.TestMatch(NewSymbolAtom("True"), NewSymbolAtom("False")) {
+	if matcher.TestMatch(NewSymbol("True"), NewSymbol("False")) {
 		t.Error("True pattern should NOT match False symbol")
 	}
 }
@@ -301,27 +301,27 @@ func TestPatternMatcher(t *testing.T) {
 		expected bool
 	}{
 		// Literal matches
-		{NewIntAtom(42), NewIntAtom(42), true},
-		{NewIntAtom(42), NewIntAtom(43), false},
-		{NewSymbolAtom("x"), NewSymbolAtom("x"), true},
-		{NewSymbolAtom("x"), NewSymbolAtom("y"), false},
+		{NewInteger(42), NewInteger(42), true},
+		{NewInteger(42), NewInteger(43), false},
+		{NewSymbol("x"), NewSymbol("x"), true},
+		{NewSymbol("x"), NewSymbol("y"), false},
 
 		// Blank patterns
-		{CreateBlankExpr(nil), NewIntAtom(42), true},
-		{CreateBlankExpr(nil), NewStringAtom("hello"), true},
-		{CreateBlankExpr(NewSymbolAtom("Integer")), NewIntAtom(42), true},
-		{CreateBlankExpr(NewSymbolAtom("Integer")), NewStringAtom("hello"), false},
+		{CreateBlankExpr(nil), NewInteger(42), true},
+		{CreateBlankExpr(nil), NewString("hello"), true},
+		{CreateBlankExpr(NewSymbol("Integer")), NewInteger(42), true},
+		{CreateBlankExpr(NewSymbol("Integer")), NewString("hello"), false},
 
 		// Pattern expressions
-		{CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(nil)), NewIntAtom(42), true},
-		{CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(NewSymbolAtom("String"))), NewStringAtom("hello"), true},
-		{CreatePatternExpr(NewSymbolAtom("x"), CreateBlankExpr(NewSymbolAtom("String"))), NewIntAtom(42), false},
+		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)), NewInteger(42), true},
+		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewString("hello"), true},
+		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewInteger(42), false},
 
 		// List patterns
-		{NewList(NewSymbolAtom("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
-			NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)), true},
-		{NewList(NewSymbolAtom("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
-			NewList(NewSymbolAtom("Times"), NewIntAtom(1), NewIntAtom(2)), false},
+		{NewList(NewSymbol("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
+			NewList(NewSymbol("Plus"), NewInteger(1), NewInteger(2)), true},
+		{NewList(NewSymbol("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
+			NewList(NewSymbol("Times"), NewInteger(1), NewInteger(2)), false},
 	}
 
 	for _, test := range tests {

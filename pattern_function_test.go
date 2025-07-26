@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"strings"
 	"testing"
 )
@@ -39,7 +40,7 @@ func TestPatternFunctionRegistry(t *testing.T) {
 	// Register a simple pattern
 	err := registry.RegisterPatternBuiltin("test(x_)", func(args []Expr, ctx *Context) Expr {
 		if len(args) != 1 {
-			return NewSymbolAtom("error")
+			return core.NewSymbol("error")
 		}
 		return args[0] // Return the argument unchanged
 	})
@@ -49,7 +50,7 @@ func TestPatternFunctionRegistry(t *testing.T) {
 	}
 
 	// Test pattern matching
-	funcDef, bindings := registry.FindMatchingFunction("test", []Expr{NewIntAtom(42)})
+	funcDef, bindings := registry.FindMatchingFunction("test", []Expr{core.NewInteger(42)})
 
 	if funcDef == nil {
 		t.Fatalf("Expected to find matching function")

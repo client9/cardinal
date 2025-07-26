@@ -182,6 +182,10 @@ func (a Association) Type() string {
 	return "Association"
 }
 
+func (a Association) IsAtom() bool {
+	return false
+}
+
 // Equal implements Expr interface
 func (a Association) Equal(rhs Expr) bool {
 	rhsAssoc, ok := rhs.(Association)

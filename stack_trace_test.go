@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"strings"
 	"testing"
 )
@@ -56,9 +57,9 @@ func TestEvaluationStack_GetFrames(t *testing.T) {
 	stack := NewEvaluationStack(10)
 
 	// Push multiple frames
-	stack.Push("func1", "expr1")
-	stack.Push("func2", "expr2")
-	stack.Push("func3", "expr3")
+	_ = stack.Push("func1", "expr1")
+	_ = stack.Push("func2", "expr2")
+	_ = stack.Push("func3", "expr3")
 
 	frames := stack.GetFrames()
 
@@ -143,9 +144,9 @@ func TestStackTrace_ErrorPropagation(t *testing.T) {
 	// Test that errors include stack traces
 	// Divide[1, 0] should give an error with stack trace
 	expr := NewList(
-		NewSymbolAtom("Divide"),
-		NewIntAtom(1),
-		NewIntAtom(0),
+		core.NewSymbol("Divide"),
+		core.NewInteger(1),
+		core.NewInteger(0),
 	)
 
 	result := eval.Evaluate(expr)
@@ -175,12 +176,12 @@ func TestStackTrace_NestedErrors(t *testing.T) {
 	// Test nested function calls with errors
 	// Plus[1, Divide[2, 0]] should show both Plus and Divide in stack trace
 	expr := NewList(
-		NewSymbolAtom("Plus"),
-		NewIntAtom(1),
+		core.NewSymbol("Plus"),
+		core.NewInteger(1),
 		NewList(
-			NewSymbolAtom("Divide"),
-			NewIntAtom(2),
-			NewIntAtom(0),
+			core.NewSymbol("Divide"),
+			core.NewInteger(2),
+			core.NewInteger(0),
 		),
 	)
 
@@ -209,8 +210,8 @@ func TestStackTrace_StringFunctions(t *testing.T) {
 	// Test basic functionality - no need for errors since pattern-based functions
 	// return unchanged expressions for non-matching patterns (which is correct behavior)
 	expr := NewList(
-		NewSymbolAtom("StringLength"),
-		NewStringAtom("test"),
+		core.NewSymbol("StringLength"),
+		core.NewString("test"),
 	)
 
 	result := eval.Evaluate(expr)
@@ -228,7 +229,7 @@ func TestErrorExpr_DetailedMessage(t *testing.T) {
 		{Function: "Divide", Expression: "Divide[1, 0]", Location: ""},
 	}
 
-	errorExpr := NewErrorExprWithStack("DivisionByZero", "Cannot divide by zero", []Expr{NewIntAtom(1), NewIntAtom(0)}, frames)
+	errorExpr := NewErrorExprWithStack("DivisionByZero", "Cannot divide by zero", []Expr{core.NewInteger(1), core.NewInteger(0)}, frames)
 
 	detailed := errorExpr.GetDetailedMessage()
 

@@ -2,6 +2,7 @@ package sexpr
 
 import (
 	"fmt"
+	"github.com/client9/sexpr/core"
 	"sort"
 	"testing"
 )
@@ -88,7 +89,7 @@ func TestPatternSorting_Direct(t *testing.T) {
 
 		funcDef := FunctionDef{
 			Pattern:     pattern,
-			GoImpl:      func(args []Expr, ctx *Context) Expr { return NewIntAtom(0) },
+			GoImpl:      func(args []Expr, ctx *Context) Expr { return core.NewInteger(0) },
 			Specificity: int(getPatternSpecificity(pattern)),
 			IsBuiltin:   true,
 		}
@@ -192,7 +193,7 @@ func TestFindFirstMatch_Direct(t *testing.T) {
 		err := registry.RegisterPatternBuiltins(map[string]PatternFunc{
 			p.pattern: func(r string) PatternFunc {
 				return func(args []Expr, ctx *Context) Expr {
-					return NewSymbolAtom(r)
+					return core.NewSymbol(r)
 				}
 			}(result),
 		})
@@ -260,7 +261,7 @@ func TestComplexPatternSpecificity(t *testing.T) {
 		err := registry.RegisterPatternBuiltins(map[string]PatternFunc{
 			patternStr: func(r string) PatternFunc {
 				return func(args []Expr, ctx *Context) Expr {
-					return NewSymbolAtom(r)
+					return core.NewSymbol(r)
 				}
 			}(result),
 		})
@@ -433,7 +434,7 @@ func TestUtility_ShowRegistryOrder(t *testing.T) {
 		err := registry.RegisterPatternBuiltins(map[string]PatternFunc{
 			patternStr: func(r string) PatternFunc {
 				return func(args []Expr, ctx *Context) Expr {
-					return NewSymbolAtom(r)
+					return core.NewSymbol(r)
 				}
 			}(result),
 		})

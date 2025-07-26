@@ -1,24 +1,25 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
+
 	"fmt"
 )
 
 // AttributesExpr gets the attributes of a symbol
 func AttributesExpr(expr Expr, ctx *Context) Expr {
 	// The argument should be a symbol
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(expr); ok {
 
 		// Get the attributes from the symbol table
 		attrs := ctx.symbolTable.Attributes(symbolName)
 
 		// Convert attributes to a list of symbols
 		attrElements := make([]Expr, len(attrs)+1)
-		attrElements[0] = NewSymbolAtom("List")
+		attrElements[0] = core.NewSymbol("List")
 
 		for i, attr := range attrs {
-			attrElements[i+1] = NewSymbolAtom(attr.String())
+			attrElements[i+1] = core.NewSymbol(attr.String())
 		}
 
 		return List{Elements: attrElements}
@@ -48,18 +49,16 @@ func WrapAttributesExpr(args []Expr, ctx *Context) Expr {
 // SetAttributesSingle sets a single attribute on a symbol
 func SetAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
 	// The first argument should be a symbol
-	if atom, ok := symbol.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
 		// The second argument should be an attribute symbol
-		if attrAtom, ok := attr.(Atom); ok && attrAtom.AtomType == SymbolAtom {
-			attrName := attrAtom.Value.(string)
+		if attrName, ok := core.ExtractSymbol(attr); ok {
 
 			// Convert string to Attribute
 			if attribute, ok := StringToAttribute(attrName); ok {
 				// Set the attribute on the symbol
 				ctx.symbolTable.SetAttributes(symbolName, []Attribute{attribute})
-				return NewSymbolAtom("Null")
+				return core.NewSymbolNull()
 			}
 
 			return NewErrorExpr("ArgumentError",
@@ -74,16 +73,14 @@ func SetAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
 // SetAttributesList sets multiple attributes on a symbol
 func SetAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 	// The first argument should be a symbol
-	if atom, ok := symbol.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
 		// Process each attribute in the list (skip head at index 0)
 		var attributes []Attribute
 		for i := 1; i < len(attrList.Elements); i++ {
 			attrExpr := attrList.Elements[i]
 
-			if attrAtom, ok := attrExpr.(Atom); ok && attrAtom.AtomType == SymbolAtom {
-				attrName := attrAtom.Value.(string)
+			if attrName, ok := core.ExtractSymbol(attrExpr); ok {
 
 				// Convert string to Attribute
 				if attribute, ok := StringToAttribute(attrName); ok {
@@ -100,7 +97,7 @@ func SetAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 
 		// Set all attributes on the symbol
 		ctx.symbolTable.SetAttributes(symbolName, attributes)
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	}
 
 	return NewErrorExpr("ArgumentError",
@@ -110,18 +107,16 @@ func SetAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 // ClearAttributesSingle clears a single attribute from a symbol
 func ClearAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
 	// The first argument should be a symbol
-	if atom, ok := symbol.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
 		// The second argument should be an attribute symbol
-		if attrAtom, ok := attr.(Atom); ok && attrAtom.AtomType == SymbolAtom {
-			attrName := attrAtom.Value.(string)
+		if attrName, ok := core.ExtractSymbol(attr); ok {
 
 			// Convert string to Attribute
 			if attribute, ok := StringToAttribute(attrName); ok {
 				// Clear the attribute from the symbol
 				ctx.symbolTable.ClearAttributes(symbolName, []Attribute{attribute})
-				return NewSymbolAtom("Null")
+				return core.NewSymbolNull()
 			}
 
 			return NewErrorExpr("ArgumentError",
@@ -136,15 +131,13 @@ func ClearAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
 // ClearAttributesList clears multiple attributes from a symbol
 func ClearAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 	// The first argument should be a symbol
-	if atom, ok := symbol.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
 		// Process each attribute in the list (skip head at index 0)
 		for i := 1; i < len(attrList.Elements); i++ {
 			attrExpr := attrList.Elements[i]
 
-			if attrAtom, ok := attrExpr.(Atom); ok && attrAtom.AtomType == SymbolAtom {
-				attrName := attrAtom.Value.(string)
+			if attrName, ok := core.ExtractSymbol(attrExpr); ok {
 
 				// Convert string to Attribute
 				if attribute, ok := StringToAttribute(attrName); ok {
@@ -160,7 +153,7 @@ func ClearAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 			}
 		}
 
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	}
 
 	return NewErrorExpr("ArgumentError",
@@ -263,13 +256,12 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 func PatternSpecificityExpr(pattern Expr, ctx *Context) Expr {
 	// Calculate specificity directly from the pattern expression
 	specificity := getPatternSpecificity(pattern)
-	return NewIntAtom(int(specificity))
+	return core.NewInteger(int64(specificity))
 }
 
 // ShowPatternsExpr lists all registered patterns for a function name
 func ShowPatternsExpr(functionName Expr, ctx *Context) Expr {
-	if atom, ok := functionName.(Atom); ok && atom.AtomType == SymbolAtom {
-		funcName := atom.Value.(string)
+	if funcName, ok := core.ExtractSymbol(functionName); ok {
 
 		// Get function definitions from the registry
 		definitions := ctx.functionRegistry.GetFunctionDefinitions(funcName)
@@ -280,7 +272,7 @@ func ShowPatternsExpr(functionName Expr, ctx *Context) Expr {
 
 		// Create a list of pattern information
 		elements := make([]Expr, len(definitions)+1)
-		elements[0] = NewSymbolAtom("List")
+		elements[0] = core.NewSymbol("List")
 
 		for i, def := range definitions {
 			// Create a rule showing pattern -> specificity
@@ -288,9 +280,9 @@ func ShowPatternsExpr(functionName Expr, ctx *Context) Expr {
 			specificityStr := fmt.Sprintf("%d", def.Specificity)
 
 			ruleElements := []Expr{
-				NewSymbolAtom("Rule"),
-				NewStringAtom(patternStr),
-				NewStringAtom(specificityStr),
+				core.NewSymbol("Rule"),
+				core.NewString(patternStr),
+				core.NewString(specificityStr),
 			}
 
 			elements[i+1] = List{Elements: ruleElements}

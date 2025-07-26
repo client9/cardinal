@@ -1,12 +1,6 @@
 package core
 
-import (
-	"fmt"
-	"strconv"
-	"strings"
-	"unicode/utf8"
-)
-
+/*
 // AtomType represents the type of an atomic value
 type AtomType int
 
@@ -68,6 +62,10 @@ func (a Atom) Type() string {
 	default:
 		return "unknown"
 	}
+}
+
+func (a Atom) IsAtom() bool {
+	return true
 }
 
 func (a Atom) Equal(rhs Expr) bool {
@@ -335,4 +333,26 @@ func (a Atom) SetSlice(start, stop int64, values Expr) Expr {
 	}
 
 	return NewStringAtom(string(newRunes))
+}
+*/
+// Temporary old Atom constructors - to be removed
+func NewStringAtom(s string) Expr {
+	return NewString(s)
+	//return Atom{AtomType: StringAtom, Value: s}
+}
+
+func NewIntAtom(i int) Expr {
+	return NewInteger(int64(i))
+}
+
+func NewFloatAtom(f float64) Expr {
+	return NewReal(f)
+}
+
+func NewSymbolAtom(s string) Expr {
+	return NewSymbol(s)
+}
+
+func NewBoolAtom(b bool) Expr {
+	return NewBool(b)
 }

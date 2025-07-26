@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
@@ -190,17 +191,17 @@ func TestTrueFalseBehavior(t *testing.T) {
 // TestTrueFalseInternalConsistency tests that True/False behavior is internally consistent
 func TestTrueFalseInternalConsistency(t *testing.T) {
 	// Test that True and False symbols are recognized consistently by utility functions
-	trueExpr := NewSymbolAtom("True")
-	falseExpr := NewSymbolAtom("False")
+	trueExpr := core.NewBool(true)
+	falseExpr := core.NewBool(false)
 
 	t.Run("isBool recognizes True symbol", func(t *testing.T) {
-		if !isBool(trueExpr) {
+		if !core.IsBool(trueExpr) {
 			t.Error("isBool should recognize True symbol as boolean")
 		}
 	})
 
 	t.Run("isBool recognizes False symbol", func(t *testing.T) {
-		if !isBool(falseExpr) {
+		if !core.IsBool(falseExpr) {
 			t.Error("isBool should recognize False symbol as boolean")
 		}
 	})
@@ -241,17 +242,13 @@ func TestTrueFalseLexerParserBehavior(t *testing.T) {
 			t.Fatalf("Parse error: %v", err)
 		}
 
-		atom, ok := expr.(Atom)
+		symbol, ok := expr.(core.Symbol)
 		if !ok {
-			t.Fatalf("Expected Atom, got %T", expr)
+			t.Fatalf("Expected Symbol, got %T", expr)
 		}
 
-		if atom.AtomType != SymbolAtom {
-			t.Errorf("Expected SymbolAtom, got %v", atom.AtomType)
-		}
-
-		if atom.Value != "True" {
-			t.Errorf("Expected 'True', got %v", atom.Value)
+		if string(symbol) != "True" {
+			t.Errorf("Expected 'True', got %v", string(symbol))
 		}
 	})
 
@@ -261,17 +258,13 @@ func TestTrueFalseLexerParserBehavior(t *testing.T) {
 			t.Fatalf("Parse error: %v", err)
 		}
 
-		atom, ok := expr.(Atom)
+		symbol, ok := expr.(core.Symbol)
 		if !ok {
-			t.Fatalf("Expected Atom, got %T", expr)
+			t.Fatalf("Expected Symbol, got %T", expr)
 		}
 
-		if atom.AtomType != SymbolAtom {
-			t.Errorf("Expected SymbolAtom, got %v", atom.AtomType)
-		}
-
-		if atom.Value != "False" {
-			t.Errorf("Expected 'False', got %v", atom.Value)
+		if string(symbol) != "False" {
+			t.Errorf("Expected 'False', got %v", string(symbol))
 		}
 	})
 }

@@ -6,30 +6,15 @@ import (
 
 // Re-export core types for backward compatibility
 type Expr = core.Expr
-type AtomType = core.AtomType
-type Atom = core.Atom
 type List = core.List
 type StackFrame = core.StackFrame
 type ErrorExpr = core.ErrorExpr
 type ObjectExpr = core.ObjectExpr
 
-// Re-export core constants
-const (
-	StringAtom = core.StringAtom
-	IntAtom    = core.IntAtom
-	FloatAtom  = core.FloatAtom
-	SymbolAtom = core.SymbolAtom
-)
-
 // Re-export core constructor functions for backward compatibility
 var (
 	NewErrorExpr          = core.NewErrorExpr
 	NewErrorExprWithStack = core.NewErrorExprWithStack
-	NewStringAtom         = core.NewStringAtom
-	NewIntAtom            = core.NewIntAtom
-	NewFloatAtom          = core.NewFloatAtom
-	NewBoolAtom           = core.NewBoolAtom
-	NewSymbolAtom         = core.NewSymbolAtom
 	NewList               = core.NewList
 	NewObjectExpr         = core.NewObjectExpr
 )

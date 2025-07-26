@@ -10,9 +10,9 @@ func TestTakeAndDropFunctions(t *testing.T) {
 	// Helper function to create test lists
 	createList := func(elements ...string) core.List {
 		exprs := make([]core.Expr, len(elements)+1)
-		exprs[0] = core.NewSymbolAtom("List")
+		exprs[0] = core.NewSymbol("List")
 		for i, elem := range elements {
-			exprs[i+1] = core.NewSymbolAtom(elem)
+			exprs[i+1] = core.NewSymbol(elem)
 		}
 		return core.List{Elements: exprs}
 	}
@@ -20,9 +20,9 @@ func TestTakeAndDropFunctions(t *testing.T) {
 	// Helper function to create integer list spec
 	createIntList := func(nums ...int64) core.List {
 		exprs := make([]core.Expr, len(nums)+1)
-		exprs[0] = core.NewSymbolAtom("List")
+		exprs[0] = core.NewSymbol("List")
 		for i, num := range nums {
-			exprs[i+1] = core.NewIntAtom(int(num))
+			exprs[i+1] = core.NewInteger(num)
 		}
 		return core.List{Elements: exprs}
 	}
@@ -160,9 +160,9 @@ func TestTakeDropEdgeCases(t *testing.T) {
 	// Helper function to create test lists
 	createList := func(elements ...string) core.List {
 		exprs := make([]core.Expr, len(elements)+1)
-		exprs[0] = core.NewSymbolAtom("List")
+		exprs[0] = core.NewSymbol("List")
 		for i, elem := range elements {
-			exprs[i+1] = core.NewSymbolAtom(elem)
+			exprs[i+1] = core.NewSymbol(elem)
 		}
 		return core.List{Elements: exprs}
 	}
@@ -170,9 +170,9 @@ func TestTakeDropEdgeCases(t *testing.T) {
 	// Helper function to create integer list spec
 	createIntList := func(nums ...int64) core.List {
 		exprs := make([]core.Expr, len(nums)+1)
-		exprs[0] = core.NewSymbolAtom("List")
+		exprs[0] = core.NewSymbol("List")
 		for i, num := range nums {
-			exprs[i+1] = core.NewIntAtom(int(num))
+			exprs[i+1] = core.NewInteger(num)
 		}
 		return core.List{Elements: exprs}
 	}

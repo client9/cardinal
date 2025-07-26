@@ -1,12 +1,13 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
 func TestErrorExpr_Basic(t *testing.T) {
 	// Test ErrorExpr construction and methods
-	err := NewErrorExpr("TestError", "This is a test error", []Expr{NewIntAtom(1), NewIntAtom(2)})
+	err := NewErrorExpr("TestError", "This is a test error", []Expr{core.NewInteger(1), core.NewInteger(2)})
 
 	if err.ErrorType != "TestError" {
 		t.Errorf("expected ErrorType 'TestError', got '%s'", err.ErrorType)
@@ -29,8 +30,8 @@ func TestErrorExpr_Basic(t *testing.T) {
 func TestIsError(t *testing.T) {
 	// Test IsError function
 	errorExpr := NewErrorExpr("TestError", "test", nil)
-	intExpr := NewIntAtom(42)
-	listExpr := List{Elements: []Expr{NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)}}
+	intExpr := core.NewInteger(42)
+	listExpr := List{Elements: []Expr{core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)}}
 
 	if !IsError(errorExpr) {
 		t.Error("IsError should return true for ErrorExpr")

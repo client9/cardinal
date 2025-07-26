@@ -18,19 +18,19 @@ func TestRotateLeft(t *testing.T) {
 		// Basic List rotation
 		{
 			name:     "List rotate left by 1",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        1,
 			expected: "List(2, 3, 4, 5, 1)",
 		},
 		{
 			name:     "List rotate left by 2",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        2,
 			expected: "List(3, 4, 5, 1, 2)",
 		},
 		{
 			name:     "List rotate left by 3",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        3,
 			expected: "List(1, 2, 3)",
 		},
@@ -38,7 +38,7 @@ func TestRotateLeft(t *testing.T) {
 		// Zero rotation
 		{
 			name:     "List rotate left by 0",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        0,
 			expected: "List(1, 2, 3)",
 		},
@@ -46,13 +46,13 @@ func TestRotateLeft(t *testing.T) {
 		// Negative rotation (should behave like RotateRight)
 		{
 			name:     "List rotate left by -1 (equivalent to rotate right by 1)",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        -1,
 			expected: "List(5, 1, 2, 3, 4)",
 		},
 		{
 			name:     "List rotate left by -3",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        -3,
 			expected: "List(3, 4, 5, 1, 2)",
 		},
@@ -60,13 +60,13 @@ func TestRotateLeft(t *testing.T) {
 		// Rotation larger than length
 		{
 			name:     "List rotate left by length + 1",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        4, // length is 3, so this is 4 % 3 = 1
 			expected: "List(2, 3, 1)",
 		},
 		{
 			name:     "List rotate left by 2 * length + 2",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        8, // length is 3, so this is 8 % 3 = 2
 			expected: "List(3, 1, 2)",
 		},
@@ -74,25 +74,25 @@ func TestRotateLeft(t *testing.T) {
 		// String rotation
 		{
 			name:     "String rotate left by 1",
-			input:    core.NewStringAtom("hello"),
+			input:    core.NewString("hello"),
 			n:        1,
 			expected: "\"elloh\"",
 		},
 		{
 			name:     "String rotate left by 0",
-			input:    core.NewStringAtom("hello"),
+			input:    core.NewString("hello"),
 			n:        0,
 			expected: "\"hello\"",
 		},
 		{
 			name:     "String rotate left by -1",
-			input:    core.NewStringAtom("hello"),
+			input:    core.NewString("hello"),
 			n:        -1,
 			expected: "\"ohell\"",
 		},
 		{
 			name:     "String rotate left by length + 2",
-			input:    core.NewStringAtom("abc"),
+			input:    core.NewString("abc"),
 			n:        5, // length is 3, so this is 5 % 3 = 2
 			expected: "\"cab\"",
 		},
@@ -126,13 +126,13 @@ func TestRotateLeft(t *testing.T) {
 		// Empty sequences
 		{
 			name:     "Empty list rotate left",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List")}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List")}},
 			n:        5,
 			expected: "List()",
 		},
 		{
 			name:     "Empty string rotate left",
-			input:    core.NewStringAtom(""),
+			input:    core.NewString(""),
 			n:        3,
 			expected: "\"\"",
 		},
@@ -146,13 +146,13 @@ func TestRotateLeft(t *testing.T) {
 		// Single element sequences
 		{
 			name:     "Single element list rotate left",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(42)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(42)}},
 			n:        10,
 			expected: "List(42)",
 		},
 		{
 			name:     "Single character string rotate left",
-			input:    core.NewStringAtom("x"),
+			input:    core.NewString("x"),
 			n:        -5,
 			expected: "\"x\"",
 		},
@@ -160,13 +160,13 @@ func TestRotateLeft(t *testing.T) {
 		// Error cases
 		{
 			name:    "Non-sliceable type (integer)",
-			input:   core.NewIntAtom(42),
+			input:   core.NewInteger(42),
 			n:       1,
 			isError: true,
 		},
 		{
 			name:    "Non-sliceable type (symbol)",
-			input:   core.NewSymbolAtom("test"),
+			input:   core.NewSymbol("test"),
 			n:       2,
 			isError: true,
 		},
@@ -205,19 +205,19 @@ func TestRotateRight(t *testing.T) {
 		// Basic List rotation
 		{
 			name:     "List rotate right by 1",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        1,
 			expected: "List(5, 1, 2, 3, 4)",
 		},
 		{
 			name:     "List rotate right by 2",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        2,
 			expected: "List(4, 5, 1, 2, 3)",
 		},
 		{
 			name:     "List rotate right by 3",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        3,
 			expected: "List(1, 2, 3)",
 		},
@@ -225,7 +225,7 @@ func TestRotateRight(t *testing.T) {
 		// Zero rotation
 		{
 			name:     "List rotate right by 0",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        0,
 			expected: "List(1, 2, 3)",
 		},
@@ -233,13 +233,13 @@ func TestRotateRight(t *testing.T) {
 		// Negative rotation (should behave like RotateLeft)
 		{
 			name:     "List rotate right by -1 (equivalent to rotate left by 1)",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        -1,
 			expected: "List(2, 3, 4, 5, 1)",
 		},
 		{
 			name:     "List rotate right by -3",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3), core.NewIntAtom(4), core.NewIntAtom(5)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3), core.NewInteger(4), core.NewInteger(5)}},
 			n:        -3,
 			expected: "List(4, 5, 1, 2, 3)",
 		},
@@ -247,13 +247,13 @@ func TestRotateRight(t *testing.T) {
 		// Rotation larger than length
 		{
 			name:     "List rotate right by length + 1",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        4, // length is 3, so this is 4 % 3 = 1
 			expected: "List(3, 1, 2)",
 		},
 		{
 			name:     "List rotate right by 2 * length + 2",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(1), core.NewIntAtom(2), core.NewIntAtom(3)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)}},
 			n:        8, // length is 3, so this is 8 % 3 = 2
 			expected: "List(2, 3, 1)",
 		},
@@ -261,25 +261,25 @@ func TestRotateRight(t *testing.T) {
 		// String rotation
 		{
 			name:     "String rotate right by 1",
-			input:    core.NewStringAtom("hello"),
+			input:    core.NewString("hello"),
 			n:        1,
 			expected: "\"ohell\"",
 		},
 		{
 			name:     "String rotate right by 0",
-			input:    core.NewStringAtom("hello"),
+			input:    core.NewString("hello"),
 			n:        0,
 			expected: "\"hello\"",
 		},
 		{
 			name:     "String rotate right by -1",
-			input:    core.NewStringAtom("hello"),
+			input:    core.NewString("hello"),
 			n:        -1,
 			expected: "\"elloh\"",
 		},
 		{
 			name:     "String rotate right by length + 2",
-			input:    core.NewStringAtom("abc"),
+			input:    core.NewString("abc"),
 			n:        5, // length is 3, so this is 5 % 3 = 2
 			expected: "\"bca\"",
 		},
@@ -313,13 +313,13 @@ func TestRotateRight(t *testing.T) {
 		// Empty sequences
 		{
 			name:     "Empty list rotate right",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List")}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List")}},
 			n:        5,
 			expected: "List()",
 		},
 		{
 			name:     "Empty string rotate right",
-			input:    core.NewStringAtom(""),
+			input:    core.NewString(""),
 			n:        3,
 			expected: "\"\"",
 		},
@@ -333,13 +333,13 @@ func TestRotateRight(t *testing.T) {
 		// Single element sequences
 		{
 			name:     "Single element list rotate right",
-			input:    core.List{Elements: []core.Expr{core.NewSymbolAtom("List"), core.NewIntAtom(42)}},
+			input:    core.List{Elements: []core.Expr{core.NewSymbol("List"), core.NewInteger(42)}},
 			n:        10,
 			expected: "List(42)",
 		},
 		{
 			name:     "Single character string rotate right",
-			input:    core.NewStringAtom("x"),
+			input:    core.NewString("x"),
 			n:        -5,
 			expected: "\"x\"",
 		},
@@ -347,13 +347,13 @@ func TestRotateRight(t *testing.T) {
 		// Error cases
 		{
 			name:    "Non-sliceable type (integer)",
-			input:   core.NewIntAtom(42),
+			input:   core.NewInteger(42),
 			n:       1,
 			isError: true,
 		},
 		{
 			name:    "Non-sliceable type (symbol)",
-			input:   core.NewSymbolAtom("test"),
+			input:   core.NewSymbol("test"),
 			n:       2,
 			isError: true,
 		},

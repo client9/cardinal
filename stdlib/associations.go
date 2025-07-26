@@ -44,8 +44,7 @@ func AssociationRules(rules ...core.Expr) core.Expr {
 	for _, rule := range rules {
 		if ruleList, ok := rule.(core.List); ok && len(ruleList.Elements) == 3 {
 			// Check if this is Rule[key, value]
-			if headAtom, ok := ruleList.Elements[0].(core.Atom); ok &&
-				headAtom.AtomType == core.SymbolAtom && headAtom.Value.(string) == "Rule" {
+			if headName, ok := core.ExtractSymbol(ruleList.Elements[0]); ok && headName == "Rule" {
 
 				key := ruleList.Elements[1]
 				value := ruleList.Elements[2]

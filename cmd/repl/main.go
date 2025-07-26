@@ -4,18 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
-
-	"github.com/client9/sexpr"
+	//	"github.com/client9/sexpr"
 )
 
 func main() {
 	// Define command line flags
 	var (
-		prompt     = flag.String("prompt", "sexpr> ", "REPL prompt string")
-		help       = flag.Bool("help", false, "Show help message")
-		file       = flag.String("file", "", "Execute expressions from file instead of interactive mode")
-		cmd        = flag.String("c", "", "Execute expression from command line")
-		withUint64 = flag.Bool("with-uint64", false, "Enable experimental Uint64 type system")
+		prompt = flag.String("prompt", "sexpr> ", "REPL prompt string")
+		help   = flag.Bool("help", false, "Show help message")
+		file   = flag.String("file", "", "Execute expressions from file instead of interactive mode")
+		cmd    = flag.String("c", "", "Execute expression from command line")
+		//withUint64 = flag.Bool("with-uint64", false, "Enable experimental Uint64 type system")
 	)
 
 	flag.Parse()
@@ -29,16 +28,16 @@ func main() {
 	// Create REPL instance
 	repl := NewREPL()
 	repl.SetPrompt(*prompt)
-
-	// Enable Uint64 extension if requested
-	if *withUint64 {
-		if err := sexpr.RegisterUint64(repl.GetEvaluator().GetContext().GetFunctionRegistry()); err != nil {
-			fmt.Fprintf(os.Stderr, "Error enabling Uint64 system: %v\n", err)
-			os.Exit(1)
+	/*
+		// Enable Uint64 extension if requested
+		if *withUint64 {
+			if err := sexpr.RegisterUint64(repl.GetEvaluator().GetContext().GetFunctionRegistry()); err != nil {
+				fmt.Fprintf(os.Stderr, "Error enabling Uint64 system: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("Uint64 type system enabled. Try: Uint64(42), Uint64(\"#FF\"), Plus(Uint64(10), 5)")
 		}
-		fmt.Println("Uint64 type system enabled. Try: Uint64(42), Uint64(\"#FF\"), Plus(Uint64(10), 5)")
-	}
-
+	*/
 	// if expression is entered on command line, execute it
 	if *cmd != "" {
 		if err := repl.processLine(*cmd); err != nil {

@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
@@ -396,8 +397,8 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "pi constant",
 			input: "Pi",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(Atom); ok && atom.AtomType == FloatAtom {
-					val := atom.Value.(float64)
+				if real, ok := result.(core.Real); ok {
+					val := float64(real)
 					return val > 3.14 && val < 3.15 // Approximate check
 				}
 				return false
@@ -407,8 +408,8 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			name:  "e constant",
 			input: "E",
 			checkFunc: func(result Expr) bool {
-				if atom, ok := result.(Atom); ok && atom.AtomType == FloatAtom {
-					val := atom.Value.(float64)
+				if real, ok := result.(core.Real); ok {
+					val := float64(real)
 					return val > 2.71 && val < 2.72 // Approximate check
 				}
 				return false
@@ -419,8 +420,8 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			input: "True",
 			checkFunc: func(result Expr) bool {
 				// True is now a symbol, not a BoolAtom (Mathematica compatibility)
-				if atom, ok := result.(Atom); ok && atom.AtomType == SymbolAtom {
-					return atom.Value.(string) == "True"
+				if symbolName, ok := core.ExtractSymbol(result); ok {
+					return symbolName == "True"
 				}
 				return false
 			},
@@ -430,8 +431,8 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 			input: "False",
 			checkFunc: func(result Expr) bool {
 				// False is now a symbol, not a BoolAtom (Mathematica compatibility)
-				if atom, ok := result.(Atom); ok && atom.AtomType == SymbolAtom {
-					return atom.Value.(string) == "False"
+				if symbolName, ok := core.ExtractSymbol(result); ok {
+					return symbolName == "False"
 				}
 				return false
 			},

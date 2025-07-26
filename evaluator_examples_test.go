@@ -2,6 +2,7 @@ package sexpr
 
 import (
 	"fmt"
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
@@ -112,11 +113,11 @@ func Example_evaluatorConstants() {
 	// Mathematical constants
 	expr, _ := ParseString("Pi")
 	result := eval.Evaluate(expr)
-	fmt.Printf("Pi = %.6f\n", result.(Atom).Value.(float64))
+	fmt.Printf("Pi = %.6f\n", float64(result.(core.Real)))
 
 	expr, _ = ParseString("E")
 	result = eval.Evaluate(expr)
-	fmt.Printf("E = %.6f\n", result.(Atom).Value.(float64))
+	fmt.Printf("E = %.6f\n", float64(result.(core.Real)))
 
 	// Boolean constants
 	expr, _ = ParseString("True")

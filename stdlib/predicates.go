@@ -8,16 +8,18 @@ import (
 
 // IntegerQExpr checks if an expression is an integer
 func IntegerQExpr(expr core.Expr) bool {
-	if atom, ok := expr.(core.Atom); ok {
-		return atom.AtomType == core.IntAtom
+	// Check new Integer type first
+	if _, ok := expr.(core.Integer); ok {
+		return true
 	}
 	return false
 }
 
 // FloatQExpr checks if an expression is a float
 func FloatQExpr(expr core.Expr) bool {
-	if atom, ok := expr.(core.Atom); ok {
-		return atom.AtomType == core.FloatAtom
+	// Check new Real type first
+	if _, ok := expr.(core.Real); ok {
+		return true
 	}
 	return false
 }
@@ -29,8 +31,9 @@ func NumberQExpr(expr core.Expr) bool {
 
 // StringQExpr checks if an expression is a string
 func StringQExpr(expr core.Expr) bool {
-	if atom, ok := expr.(core.Atom); ok {
-		return atom.AtomType == core.StringAtom
+	// Check new String type first
+	if _, ok := expr.(core.String); ok {
+		return true
 	}
 	return false
 }
@@ -53,17 +56,16 @@ func ListQExpr(expr core.Expr) bool {
 
 // AtomQExpr checks if an expression is an atom
 func AtomQExpr(expr core.Expr) bool {
-	_, isAtom := expr.(core.Atom)
-	return isAtom
+	return expr.IsAtom()
 }
 
 // TrueQExpr check is an expression is explicity True
 func TrueQExpr(expr core.Expr) bool {
-	a, ok := expr.(core.Atom)
-	if !ok {
-		return false
+	// Check new Symbol type first
+	if symbolName, ok := core.ExtractSymbol(expr); ok {
+		return symbolName == "True"
 	}
-	return a.AtomType == core.SymbolAtom && a.String() == "True"
+	return false
 }
 
 // Output format functions - all return string
@@ -85,31 +87,27 @@ func InputFormExpr(expr core.Expr) string {
 // HeadExpr returns the head/type of an expression
 func HeadExpr(expr core.Expr) core.Expr {
 	switch ex := expr.(type) {
-	case core.Atom:
-		switch ex.AtomType {
-		case core.IntAtom:
-			return core.NewSymbolAtom("Integer")
-		case core.FloatAtom:
-			return core.NewSymbolAtom("Real")
-		case core.StringAtom:
-			return core.NewSymbolAtom("String")
-		case core.SymbolAtom:
-			return core.NewSymbolAtom("Symbol")
-		default:
-			return core.NewSymbolAtom("Unknown")
-		}
+	// New atomic types
+	case core.Integer:
+		return core.NewSymbol("Integer")
+	case core.Real:
+		return core.NewSymbol("Real")
+	case core.String:
+		return core.NewSymbol("String")
+	case core.Symbol:
+		return core.NewSymbol("Symbol")
 	case core.List:
 		if len(ex.Elements) == 0 {
-			return core.NewSymbolAtom("List")
+			return core.NewSymbol("List")
 		} else {
 			// For non-empty lists, the head is the first element
 			// This matches Mathematica semantics where f[x,y] has head f
 			return ex.Elements[0]
 		}
 	case core.ObjectExpr:
-		return core.NewSymbolAtom(ex.TypeName)
+		return core.NewSymbol(ex.TypeName)
 	default:
-		return core.NewSymbolAtom("Unknown")
+		return core.NewSymbol("Unknown")
 	}
 	// Note: ErrorExpr is not handled here - wrapper will propagate errors
 }

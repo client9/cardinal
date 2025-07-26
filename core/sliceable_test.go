@@ -6,7 +6,7 @@ import (
 
 func TestSliceableInterface(t *testing.T) {
 	// Test List implements Sliceable
-	list := List{Elements: []Expr{NewSymbolAtom("List"), NewIntAtom(1), NewIntAtom(2), NewIntAtom(3)}}
+	list := List{Elements: []Expr{NewSymbol("List"), NewInteger(1), NewInteger(2), NewInteger(3)}}
 
 	if !IsSliceable(list) {
 		t.Error("List should be sliceable")
@@ -19,19 +19,19 @@ func TestSliceableInterface(t *testing.T) {
 
 	// Test ElementAt
 	elem := sliceable.ElementAt(2)
-	if !elem.Equal(NewIntAtom(2)) {
+	if !elem.Equal(NewInteger(2)) {
 		t.Errorf("ElementAt(2) expected 2, got %v", elem)
 	}
 
 	// Test Slice
 	slice := sliceable.Slice(1, 2)
-	expectedSlice := List{Elements: []Expr{NewSymbolAtom("List"), NewIntAtom(1), NewIntAtom(2)}}
+	expectedSlice := List{Elements: []Expr{NewSymbol("List"), NewInteger(1), NewInteger(2)}}
 	if !slice.Equal(expectedSlice) {
 		t.Errorf("Slice(1,2) expected %v, got %v", expectedSlice, slice)
 	}
 
 	// Test String Atom implements Sliceable
-	str := NewStringAtom("hello")
+	str := NewString("hello")
 
 	if !IsSliceable(str) {
 		t.Error("String Atom should be sliceable")
@@ -44,13 +44,13 @@ func TestSliceableInterface(t *testing.T) {
 
 	// Test ElementAt on string
 	char := strSliceable.ElementAt(2)
-	if !char.Equal(NewStringAtom("e")) {
+	if !char.Equal(NewString("e")) {
 		t.Errorf("String ElementAt(2) expected 'e', got %v", char)
 	}
 
 	// Test Slice on string
 	substr := strSliceable.Slice(2, 4)
-	if !substr.Equal(NewStringAtom("ell")) {
+	if !substr.Equal(NewString("ell")) {
 		t.Errorf("String Slice(2,4) expected 'ell', got %v", substr)
 	}
 
@@ -68,7 +68,7 @@ func TestSliceableInterface(t *testing.T) {
 
 	// Test ElementAt on ByteArray
 	byte1 := baSliceable.ElementAt(1)
-	if !byte1.Equal(NewIntAtom(65)) {
+	if !byte1.Equal(NewInteger(65)) {
 		t.Errorf("ByteArray ElementAt(1) expected 65, got %v", byte1)
 	}
 
@@ -80,7 +80,7 @@ func TestSliceableInterface(t *testing.T) {
 	}
 
 	// Test non-sliceable type
-	intAtom := NewIntAtom(42)
+	intAtom := NewInteger(42)
 	if IsSliceable(intAtom) {
 		t.Error("Int Atom should not be sliceable")
 	}

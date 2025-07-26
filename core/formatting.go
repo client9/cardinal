@@ -26,8 +26,8 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 	}
 
 	// Check if this is a special function that has infix/shortcut representation
-	if headAtom, ok := l.Elements[0].(Atom); ok && headAtom.AtomType == SymbolAtom {
-		head := headAtom.Value.(string)
+	if sym, ok := l.Elements[0].(Symbol); ok {
+		head := sym.String()
 
 		switch head {
 		case "List":
@@ -49,8 +49,7 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 			var pairs []string
 			for _, elem := range l.Elements[1:] {
 				if ruleList, ok := elem.(List); ok && len(ruleList.Elements) == 3 {
-					if headAtom, ok := ruleList.Elements[0].(Atom); ok &&
-						headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "Rule" {
+					if headAtom, ok := ruleList.Elements[0].(Symbol); ok && headAtom.String() == "Rule" {
 						key := ruleList.Elements[1].InputForm()
 						value := ruleList.Elements[2].InputForm()
 						pairs = append(pairs, fmt.Sprintf("%s: %s", key, value))

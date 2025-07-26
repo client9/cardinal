@@ -3,6 +3,8 @@ package sexpr
 import (
 	"fmt"
 	"sort"
+
+	"github.com/client9/sexpr/core"
 )
 
 // PatternFunc represents a Go function that can be called with pattern-matched arguments
@@ -31,12 +33,14 @@ func NewFunctionRegistry() *FunctionRegistry {
 
 // matchBlankExpression matches a blank expression (Blank[], BlankSequence[], BlankNullSequence[]) against an expression
 func matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
+	// fmt.Printf("DEBUG: matchBlankExpression: blankExpr=%v (%T), expr=%v (%T)\n", blankExpr, blankExpr, expr, expr)
 	if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
 		// Check type constraint if present
 		if typeExpr != nil {
 			var typeName string
-			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-				typeName = typeAtom.Value.(string)
+			// Check for new Symbol type first
+			if name, ok := core.ExtractSymbol(typeExpr); ok {
+				typeName = name
 			}
 			if !matchesType(expr, typeName) {
 				return false
@@ -59,22 +63,29 @@ func matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
 
 // convertParsedPatternToSymbolic converts a parsed pattern to use symbolic pattern representation
 func convertParsedPatternToSymbolic(pattern Expr) Expr {
+	// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: input=%v (%T)\n", pattern, pattern)
 	switch p := pattern.(type) {
-	case Atom:
-		if p.AtomType == SymbolAtom {
-			patternStr := p.Value.(string)
-			// Convert pattern strings like "x_", "_Integer", etc. to symbolic
+	// New Symbol type
+	case core.Symbol:
+		patternStr := string(p)
+		// Convert pattern strings like "x_", "_Integer", etc. to symbolic
+		if isPatternVariable(patternStr) {
 			return ConvertPatternStringToSymbolic(patternStr)
+		} else {
+			// Regular symbols (like function names) should stay as core.Symbol
+			return p
 		}
-		return p
 	case List:
 		// Convert all elements in the list
 		newElements := make([]Expr, len(p.Elements))
 		for i, elem := range p.Elements {
 			newElements[i] = convertParsedPatternToSymbolic(elem)
 		}
-		return List{Elements: newElements}
+		result := List{Elements: newElements}
+		// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: List result=%v\n", result)
+		return result
 	default:
+		// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: default case, returning input=%v (%T)\n", pattern, pattern)
 		return pattern
 	}
 }
@@ -91,8 +102,8 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 	symbolicPattern := convertParsedPatternToSymbolic(pattern)
 
 	// Debug: print what was parsed and converted
-	// fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
-	// fmt.Printf("DEBUG: Symbolic pattern -> %v\n", symbolicPattern)
+	// // fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
+	// // fmt.Printf("DEBUG: Symbolic pattern -> %v\n", symbolicPattern)
 
 	// Extract function name from original pattern (before conversion)
 	functionName, err := extractFunctionName(pattern)
@@ -109,7 +120,13 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		IsBuiltin:   true,
 	}
 
+	// Debug the stored pattern
+	// if list, ok := symbolicPattern.(List); ok && len(list.Elements) > 0 {
+	//	// fmt.Printf("DEBUG: Stored pattern head type: %T\n", list.Elements[0])
+	// }
+
 	// Register the function definition
+	// // fmt.Printf("DEBUG: Registering function '%s' with specificity %d\n", functionName, funcDef.Specificity)
 	r.registerFunctionDef(functionName, funcDef)
 	return nil
 }
@@ -132,7 +149,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 		return fmt.Errorf("cannot extract function name from pattern: %v", err)
 	}
 
-	// fmt.Printf("DEBUG: RegisterUserFunction: function=%s, pattern=%v, body=%v\\n", functionName, pattern, body)
+	// // fmt.Printf("DEBUG: RegisterUserFunction: function=%s, pattern=%v, body=%v\\n", functionName, pattern, body)
 
 	// Create function definition using compound specificity
 	funcDef := FunctionDef{
@@ -152,19 +169,16 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []Expr) (*FunctionDef, map[string]Expr) {
 	definitions, exists := r.functions[functionName]
 	if !exists {
-		// fmt.Printf("DEBUG: No functions found for '%s'. Available functions: %v\\n", functionName, r.GetAllFunctionNames())
+		// fmt.Printf("DEBUG: No functions found for '%s'. Available functions: %v\n", functionName, r.GetAllFunctionNames())
 		return nil, nil
 	}
-	// fmt.Printf("DEBUG: Found %d definitions for function '%s'\\n", len(definitions), functionName)
+	// fmt.Printf("DEBUG: Found %d definitions for function '%s'\n", len(definitions), functionName)
 
 	// Try each definition in order (most specific first)
 	for _, def := range definitions {
-		// fmt.Printf("DEBUG: Trying to match pattern %v against %s(%v)\\n", def.Pattern, functionName, args)
 		if matches, bindings := matchesPattern(def.Pattern, functionName, args); matches {
-			// fmt.Printf("DEBUG: Pattern MATCHED with bindings: %v\\n", bindings)
 			return &def, bindings
 		}
-		// fmt.Printf("DEBUG: Pattern did NOT match\\n")
 	}
 	return nil, nil
 }
@@ -194,8 +208,16 @@ func (r *FunctionRegistry) GetAllFunctionNames() []string {
 func (r *FunctionRegistry) CallFunction(callExpr Expr, ctx *Context) (Expr, bool) {
 	// Extract function name and arguments from the call expression
 	if list, ok := callExpr.(List); ok && len(list.Elements) > 0 {
-		if headAtom, ok := list.Elements[0].(Atom); ok && headAtom.AtomType == SymbolAtom {
-			functionName := headAtom.Value.(string)
+		var functionName string
+		var found bool
+
+		// Check for new Symbol type first
+		if name, ok := core.ExtractSymbol(list.Elements[0]); ok {
+			functionName = name
+			found = true
+		}
+
+		if found {
 			args := list.Elements[1:]
 
 			// Find matching function definition
@@ -315,13 +337,13 @@ func extractTypeConstraints(pattern Expr) []string {
 		// Check if this is a symbolic pattern with type constraint
 		if isPattern, _, blankExpr := isSymbolicPattern(pattern); isPattern {
 			if isBlank, _, typeExpr := isSymbolicBlank(blankExpr); isBlank && typeExpr != nil {
-				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-					types = append(types, typeAtom.Value.(string))
+				if typeName, ok := core.ExtractSymbol(typeExpr); ok {
+					types = append(types, typeName)
 				}
 			}
 		} else if isBlank, _, typeExpr := isSymbolicBlank(pattern); isBlank && typeExpr != nil {
-			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-				types = append(types, typeAtom.Value.(string))
+			if typeName, ok := core.ExtractSymbol(typeExpr); ok {
+				types = append(types, typeName)
 			}
 		}
 	}
@@ -369,17 +391,16 @@ func typesCouldOverlap(type1, type2 string) bool {
 // extractFunctionName extracts the function name from a pattern
 func extractFunctionName(pattern Expr) (string, error) {
 	switch p := pattern.(type) {
-	case Atom:
-		if p.AtomType == SymbolAtom {
-			return p.Value.(string), nil
-		}
-		return "", fmt.Errorf("pattern must be a symbol or function call")
+	// New Symbol type
+	case core.Symbol:
+		return string(p), nil
 	case List:
 		if len(p.Elements) == 0 {
 			return "", fmt.Errorf("empty list pattern")
 		}
-		if head, ok := p.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
-			return head.Value.(string), nil
+		// Check for new Symbol type first
+		if head, ok := core.ExtractSymbol(p.Elements[0]); ok {
+			return head, nil
 		}
 		return "", fmt.Errorf("pattern head must be a symbol")
 	default:
@@ -391,10 +412,10 @@ func extractFunctionName(pattern Expr) (string, error) {
 func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[string]Expr) {
 	// Create a mock function call to match against the pattern
 	mockCall := List{Elements: make([]Expr, len(args)+1)}
-	mockCall.Elements[0] = NewSymbolAtom(functionName)
+	mockCall.Elements[0] = core.NewSymbol(functionName)
 	copy(mockCall.Elements[1:], args)
 
-	// fmt.Printf("DEBUG: matchesPattern: pattern=%v, mockCall=%v\\n", pattern, mockCall)
+	// // fmt.Printf("DEBUG: matchesPattern: pattern=%v, mockCall=%v\\n", pattern, mockCall)
 
 	// Use a simple pattern matching approach without creating a new evaluator
 	// This avoids infinite recursion from evaluator creation
@@ -430,14 +451,15 @@ func directMatchPattern(pattern Expr, expr Expr, ctx *Context) bool {
 
 // directMatchPatternWithContext handles pattern matching with context about parameter vs literal positions
 func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isParameter bool) bool {
-	// fmt.Printf("DEBUG: directMatchPattern: pattern=%v (%T), expr=%v (%T)\\n", pattern, pattern, expr, expr)
+	// // fmt.Printf("DEBUG: directMatchPattern: pattern=%v (%T), expr=%v (%T)\n", pattern, pattern, expr, expr)
 
 	// First, check if this is a symbolic pattern (new system)
 	if isPattern, nameExpr, blankExpr := isSymbolicPattern(pattern); isPattern {
+		// // fmt.Printf("DEBUG: Found symbolic pattern: name=%v, blank=%v\n", nameExpr, blankExpr)
 		// Handle Pattern[name, blank] - extract the name and match the blank
 		varName := ""
-		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-			varName = nameAtom.Value.(string)
+		if name, ok := core.ExtractSymbol(nameExpr); ok {
+			varName = name
 		}
 
 		// Match the blank part
@@ -453,66 +475,61 @@ func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isPara
 
 	// Check if this is a direct symbolic blank (new system)
 	if isBlank, _, _ := isSymbolicBlank(pattern); isBlank {
+		// // fmt.Printf("DEBUG: Found symbolic blank pattern\n")
 		return matchBlankExpression(pattern, expr, ctx)
 	}
 
 	// Fall back to string-based pattern matching (legacy system)
+	// // fmt.Printf("DEBUG: Falling back to legacy pattern matching\n")
 	switch p := pattern.(type) {
-	case Atom:
-		if p.AtomType == SymbolAtom {
-			varName := p.Value.(string)
-			// fmt.Printf("DEBUG: Symbol atom case: varName='%s'\\n", varName)
-			// Check if it's a pattern variable
-			if isPatternVariable(varName) {
-				// fmt.Printf("DEBUG: '%s' is a pattern variable\\n", varName)
-				info := parsePatternInfo(varName)
-				if info.Type == BlankNullSequencePattern {
-					// This should not happen for single expressions - sequence patterns need special handling
+	case core.Symbol:
+		varName := string(p)
+		// // fmt.Printf("DEBUG: core.Symbol case: varName='%s'\n", varName)
+		// Check if it's a pattern variable
+		if isPatternVariable(varName) {
+			// // fmt.Printf("DEBUG: '%s' is a pattern variable\n", varName)
+			info := parsePatternInfo(varName)
+			if info.Type == BlankNullSequencePattern {
+				// This should not happen for single expressions - sequence patterns need special handling
+				return false
+			} else if info.Type == BlankSequencePattern {
+				// This should not happen for single expressions - sequence patterns need special handling
+				return false
+			} else if info.Type == BlankPattern {
+				// Check type constraint if present
+				if !matchesType(expr, info.TypeName) {
 					return false
-				} else if info.Type == BlankSequencePattern {
-					// This should not happen for single expressions - sequence patterns need special handling
-					return false
-				} else if info.Type == BlankPattern {
-					// Check type constraint if present
-					if !matchesType(expr, info.TypeName) {
-						return false
-					}
-					// Bind the variable
-					if info.VarName != "" {
-						ctx.Set(info.VarName, expr)
-					}
-					return true
 				}
+				// Bind the variable
+				if info.VarName != "" {
+					ctx.Set(info.VarName, expr)
+				}
+				return true
+			}
+		} else {
+			// fmt.Printf("DEBUG: '%s' is NOT a pattern variable, isParameter=%v\n", varName, isParameter)
+			// Regular symbol (not a pattern variable)
+			if isParameter {
+				// In parameter position, regular symbols bind to arguments
+				ctx.Set(varName, expr)
+				// fmt.Printf("DEBUG: Bound parameter %s to %v\n", varName, expr)
+				return true
 			} else {
-				// fmt.Printf("DEBUG: '%s' is NOT a pattern variable\\n", varName)
-				// Regular symbol (not a pattern variable)
-				if isParameter {
-					// In parameter position, regular symbols bind to arguments
-					ctx.Set(varName, expr)
-					return true
-				} else {
-					// Not in parameter position, must match literally
-					if exprAtom, ok := expr.(Atom); ok && exprAtom.AtomType == SymbolAtom {
-						// fmt.Printf("DEBUG: Comparing literal symbols: pattern '%s' vs expr '%s'\\n", varName, exprAtom.Value.(string))
-						result := varName == exprAtom.Value.(string)
-						// fmt.Printf("DEBUG: Literal symbol comparison result: %v\\n", result)
-						return result
-					}
-					// fmt.Printf("DEBUG: expr is not a symbol atom: %T\\n", expr)
-					return false
+				// Not in parameter position, must match literally
+				// fmt.Printf("DEBUG: Literal symbol matching: pattern='%s' vs expr=%v (%T)\n", varName, expr, expr)
+				if exprName, ok := core.ExtractSymbol(expr); ok {
+					result := varName == exprName
+					// fmt.Printf("DEBUG: Symbol comparison: '%s' == '%s' -> %v\n", varName, exprName, result)
+					return result
 				}
+				// fmt.Printf("DEBUG: expr is not a symbol: %T\n", expr)
+				return false
 			}
 		}
-		// For literal atoms, they must be exactly equal
-		if exprAtom, ok := expr.(Atom); ok {
-			// fmt.Printf("DEBUG: Comparing literal atoms: pattern %v (%T, type=%v, value=%v) vs expr %v (%T, type=%v, value=%v)\\n",
-			//	p, p, p.AtomType, p.Value, exprAtom, exprAtom, exprAtom.AtomType, exprAtom.Value)
-			result := p.AtomType == exprAtom.AtomType && p.Value == exprAtom.Value
-			// fmt.Printf("DEBUG: Literal atom comparison result: %v\\n", result)
-			return result
-		}
 		return false
-
+	case core.Integer, core.Real, core.String:
+		// For literal atoms, they must be exactly equal
+		return p.Equal(expr)
 	case List:
 		if exprList, ok := expr.(List); ok {
 			// Both are lists - need to match structure and handle sequence patterns
@@ -523,11 +540,6 @@ func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isPara
 	default:
 		return false
 	}
-}
-
-// matchListPattern matches a list pattern against a list expression
-func matchListPattern(patternList List, exprList List, ctx *Context) bool {
-	return matchListPatternWithContext(patternList, exprList, ctx, false)
 }
 
 // matchListPatternWithContext matches a list pattern against a list expression with context
@@ -549,14 +561,14 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 		if isPattern, nameExpr, blankExpr := isSymbolicPattern(patternElem); isPattern {
 			if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
 				varName := ""
-				if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-					varName = nameAtom.Value.(string)
+				if name, ok := core.ExtractSymbol(nameExpr); ok {
+					varName = name
 				}
 
 				typeName := ""
 				if typeExpr != nil {
-					if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-						typeName = typeAtom.Value.(string)
+					if name, ok := core.ExtractSymbol(typeExpr); ok {
+						typeName = name
 					}
 				}
 
@@ -580,8 +592,8 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 		if isBlank, blankType, typeExpr := isSymbolicBlank(patternElem); isBlank {
 			typeName := ""
 			if typeExpr != nil {
-				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-					typeName = typeAtom.Value.(string)
+				if name, ok := core.ExtractSymbol(typeExpr); ok {
+					typeName = name
 				}
 			}
 
@@ -601,8 +613,7 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 		}
 
 		// Fall back to string-based sequence pattern detection
-		if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
-			varName := atom.Value.(string)
+		if varName, ok := core.ExtractSymbol(patternElem); ok {
 			if isPatternVariable(varName) {
 				info := parsePatternInfo(varName)
 
@@ -621,8 +632,7 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 		isParameterPosition := exprIdx > 0
 		if isParameterPosition {
 			// Check if this is a symbol that should match literally
-			if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
-				symbolName := atom.Value.(string)
+			if symbolName, ok := core.ExtractSymbol(patternElem); ok {
 				// Specific symbols that should match literally, not bind
 				// This includes boolean constants and other system symbols
 				if isLiteralSymbol(symbolName) {
@@ -648,8 +658,7 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 			if isPattern, nameExpr, blankExpr := isSymbolicPattern(patternElem); isPattern {
 				if isBlank, blankType, _ := isSymbolicBlank(blankExpr); isBlank && blankType == "BlankNullSequence" {
 					// Bind to empty list
-					if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-						varName := nameAtom.Value.(string)
+					if varName, ok := core.ExtractSymbol(nameExpr); ok {
 						if varName != "" {
 							ctx.Set(varName, List{Elements: []Expr{}})
 						}
@@ -667,8 +676,7 @@ func matchListPatternWithContext(patternList List, exprList List, ctx *Context, 
 			}
 
 			// Fall back to string-based null sequence patterns
-			if atom, ok := patternElem.(Atom); ok && atom.AtomType == SymbolAtom {
-				varName := atom.Value.(string)
+			if varName, ok := core.ExtractSymbol(patternElem); ok {
 				if isPatternVariable(varName) {
 					info := parsePatternInfo(varName)
 					if info.Type == BlankNullSequencePattern {
@@ -736,9 +744,9 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 
 		// Bind the sequence variable
 		if info.VarName != "" {
-			// fmt.Printf("DEBUG: Binding sequence var '%s' to List with %d elements: %v\n", info.VarName, len(seqElements), seqElements)
+			// // fmt.Printf("DEBUG: Binding sequence var '%s' to List with %d elements: %v\n", info.VarName, len(seqElements), seqElements)
 			// Create a proper List with "List" as the first element
-			listElements := append([]Expr{NewSymbolAtom("List")}, seqElements...)
+			listElements := append([]Expr{core.NewSymbol("List")}, seqElements...)
 			testCtx.Set(info.VarName, List{Elements: listElements})
 		}
 
@@ -749,7 +757,7 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 				// Copy bindings to original context
 				for varName, value := range testCtx.variables {
 					if _, exists := ctx.variables[varName]; !exists {
-						// fmt.Printf("DEBUG: Copying variable '%s' = %v (type: %T)\n", varName, value, value)
+						// // fmt.Printf("DEBUG: Copying variable '%s' = %v (type: %T)\n", varName, value, value)
 						ctx.Set(varName, value)
 					}
 				}
@@ -773,13 +781,6 @@ func matchSequencePattern(patternList List, patternIdx int, exprList List, exprI
 	}
 
 	return false
-}
-
-// calculatePatternSpecificity calculates the specificity score for a pattern (deprecated)
-// Higher scores indicate more specific patterns
-// Use getPatternSpecificity directly for new code
-func calculatePatternSpecificity(pattern Expr) int {
-	return int(getPatternSpecificity(pattern))
 }
 
 // isLiteralSymbol determines if a symbol should be treated as a literal match rather than a parameter

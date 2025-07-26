@@ -71,6 +71,10 @@ func (b ByteArray) Type() string {
 	return "ByteArray"
 }
 
+func (b ByteArray) IsAtom() bool {
+	return false
+}
+
 func (b ByteArray) Equal(rhs Expr) bool {
 	rhsByteArray, ok := rhs.(ByteArray)
 	if !ok {
@@ -152,7 +156,7 @@ func (b ByteArray) Append(data ...byte) ByteArray {
 }
 
 // ToStringAtom converts the ByteArray to a string atom (assuming UTF-8 encoding)
-func (b ByteArray) ToStringAtom() Atom {
+func (b ByteArray) ToStringAtom() Expr {
 	return NewStringAtom(string(b.data))
 }
 
@@ -182,13 +186,12 @@ func (b ByteArray) Join(other Sliceable) Expr {
 // Returns an error Expr if index is out of bounds or value is not a valid byte
 func (b ByteArray) SetElementAt(n int64, value Expr) Expr {
 	// Validate that value is an integer representing a valid byte (0-255)
-	valueAtom, ok := value.(Atom)
-	if !ok || valueAtom.AtomType != IntAtom {
+	byteValue, ok := value.(Integer)
+	if !ok {
 		return NewErrorExpr("TypeError",
 			"ByteArray assignment requires integer value (0-255)", []Expr{b, value})
 	}
 
-	byteValue := valueAtom.Value.(int)
 	if byteValue < 0 || byteValue > 255 {
 		return NewErrorExpr("ValueError",
 			fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue),
@@ -322,8 +325,7 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 	}
 
 	// Handle single integer (representing a byte)
-	if valueAtom, ok := values.(Atom); ok && valueAtom.AtomType == IntAtom {
-		byteValue := valueAtom.Value.(int)
+	if byteValue, ok := values.(Integer); ok {
 		if byteValue < 0 || byteValue > 255 {
 			return nil, NewErrorExpr("ValueError",
 				fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue),
@@ -339,8 +341,7 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 		bytes := make([]byte, len(elements))
 
 		for i, elem := range elements {
-			if elemAtom, ok := elem.(Atom); ok && elemAtom.AtomType == IntAtom {
-				byteValue := elemAtom.Value.(int)
+			if byteValue, ok := elem.(Integer); ok {
 				if byteValue < 0 || byteValue > 255 {
 					return nil, NewErrorExpr("ValueError",
 						fmt.Sprintf("Byte value %d at position %d is out of range (0-255)", byteValue, i+1),

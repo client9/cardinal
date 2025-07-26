@@ -27,11 +27,11 @@ type Sliceable interface {
 
 // IsSliceable checks if an expression implements the Sliceable interface and actually supports slicing
 func IsSliceable(expr Expr) bool {
-	switch e := expr.(type) {
+	switch expr.(type) {
 	case List:
 		return true
-	case Atom:
-		return e.AtomType == StringAtom
+	case String:
+		return true
 	case ByteArray:
 		return true
 	default:

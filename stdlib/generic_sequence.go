@@ -191,11 +191,8 @@ func createEmpty(expr core.Expr) core.Expr {
 			return core.List{Elements: []core.Expr{e.Elements[0]}}
 		}
 		return core.List{Elements: []core.Expr{core.NewSymbolAtom("List")}}
-	case core.Atom:
-		if e.AtomType == core.StringAtom {
-			return core.NewStringAtom("")
-		}
-		return core.NewErrorExpr("TypeError", "Cannot create empty version of non-string atom", []core.Expr{expr})
+	case core.String:
+		return core.NewStringAtom("")
 	case core.ByteArray:
 		return core.NewByteArray(nil)
 	default:

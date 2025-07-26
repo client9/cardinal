@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
@@ -13,43 +14,43 @@ func TestExtractInt64(t *testing.T) {
 	}{
 		{
 			name:     "valid integer",
-			expr:     NewIntAtom(42),
+			expr:     core.NewInteger(42),
 			expected: 42,
 			ok:       true,
 		},
 		{
 			name:     "negative integer",
-			expr:     NewIntAtom(-123),
+			expr:     core.NewInteger(-123),
 			expected: -123,
 			ok:       true,
 		},
 		{
 			name:     "zero",
-			expr:     NewIntAtom(0),
+			expr:     core.NewInteger(0),
 			expected: 0,
 			ok:       true,
 		},
 		{
 			name:     "float atom",
-			expr:     NewFloatAtom(3.14),
+			expr:     core.NewReal(3.14),
 			expected: 0,
 			ok:       false,
 		},
 		{
 			name:     "string atom",
-			expr:     NewStringAtom("hello"),
+			expr:     core.NewString("hello"),
 			expected: 0,
 			ok:       false,
 		},
 		{
 			name:     "symbol atom",
-			expr:     NewSymbolAtom("x"),
+			expr:     core.NewSymbol("x"),
 			expected: 0,
 			ok:       false,
 		},
 		{
 			name:     "list",
-			expr:     NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
+			expr:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
 			expected: 0,
 			ok:       false,
 		},
@@ -77,37 +78,37 @@ func TestExtractFloat64(t *testing.T) {
 	}{
 		{
 			name:     "valid float",
-			expr:     NewFloatAtom(3.14),
+			expr:     core.NewReal(3.14),
 			expected: 3.14,
 			ok:       true,
 		},
 		{
 			name:     "zero float",
-			expr:     NewFloatAtom(0.0),
+			expr:     core.NewReal(0.0),
 			expected: 0.0,
 			ok:       true,
 		},
 		{
 			name:     "negative float",
-			expr:     NewFloatAtom(-2.718),
+			expr:     core.NewReal(-2.718),
 			expected: -2.718,
 			ok:       true,
 		},
 		{
 			name:     "integer atom",
-			expr:     NewIntAtom(42),
+			expr:     core.NewInteger(42),
 			expected: 0,
 			ok:       false,
 		},
 		{
 			name:     "string atom",
-			expr:     NewStringAtom("3.14"),
+			expr:     core.NewString("3.14"),
 			expected: 0,
 			ok:       false,
 		},
 		{
 			name:     "symbol atom",
-			expr:     NewSymbolAtom("Pi"),
+			expr:     core.NewSymbol("Pi"),
 			expected: 0,
 			ok:       false,
 		},
@@ -135,37 +136,37 @@ func TestExtractString(t *testing.T) {
 	}{
 		{
 			name:     "valid string",
-			expr:     NewStringAtom("hello"),
+			expr:     core.NewString("hello"),
 			expected: "hello",
 			ok:       true,
 		},
 		{
 			name:     "empty string",
-			expr:     NewStringAtom(""),
+			expr:     core.NewString(""),
 			expected: "",
 			ok:       true,
 		},
 		{
 			name:     "string with spaces",
-			expr:     NewStringAtom("hello world"),
+			expr:     core.NewString("hello world"),
 			expected: "hello world",
 			ok:       true,
 		},
 		{
 			name:     "integer atom",
-			expr:     NewIntAtom(42),
+			expr:     core.NewInteger(42),
 			expected: "",
 			ok:       false,
 		},
 		{
 			name:     "float atom",
-			expr:     NewFloatAtom(3.14),
+			expr:     core.NewReal(3.14),
 			expected: "",
 			ok:       false,
 		},
 		{
 			name:     "symbol atom",
-			expr:     NewSymbolAtom("hello"),
+			expr:     core.NewSymbol("hello"),
 			expected: "",
 			ok:       false,
 		},
@@ -193,43 +194,43 @@ func TestExtractBool(t *testing.T) {
 	}{
 		{
 			name:     "True symbol",
-			expr:     NewBoolAtom(true), // This creates NewSymbolAtom("True")
+			expr:     core.NewBool(true), // This creates core.NewBool(true)
 			expected: true,
 			ok:       true,
 		},
 		{
 			name:     "False symbol",
-			expr:     NewBoolAtom(false), // This creates NewSymbolAtom("False")
+			expr:     core.NewBool(false), // This creates core.NewBool(false)
 			expected: false,
 			ok:       true,
 		},
 		{
 			name:     "manual True symbol",
-			expr:     NewSymbolAtom("True"),
+			expr:     core.NewBool(true),
 			expected: true,
 			ok:       true,
 		},
 		{
 			name:     "manual False symbol",
-			expr:     NewSymbolAtom("False"),
+			expr:     core.NewBool(false),
 			expected: false,
 			ok:       true,
 		},
 		{
 			name:     "other symbol",
-			expr:     NewSymbolAtom("x"),
+			expr:     core.NewSymbol("x"),
 			expected: false,
 			ok:       false,
 		},
 		{
 			name:     "integer atom",
-			expr:     NewIntAtom(1),
+			expr:     core.NewInteger(1),
 			expected: false,
 			ok:       false,
 		},
 		{
 			name:     "string atom",
-			expr:     NewStringAtom("True"),
+			expr:     core.NewString("True"),
 			expected: false,
 			ok:       false,
 		},
@@ -264,25 +265,25 @@ func TestCopyExprList(t *testing.T) {
 		{
 			name:     "single arg",
 			head:     "Plus",
-			args:     []Expr{NewIntAtom(42)},
+			args:     []Expr{core.NewInteger(42)},
 			expected: "Plus(42)",
 		},
 		{
 			name:     "multiple args",
 			head:     "Plus",
-			args:     []Expr{NewIntAtom(1), NewIntAtom(2), NewIntAtom(3)},
+			args:     []Expr{core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)},
 			expected: "Plus(1, 2, 3)",
 		},
 		{
 			name:     "mixed types",
 			head:     "Equal",
-			args:     []Expr{NewIntAtom(42), NewSymbolAtom("x")},
+			args:     []Expr{core.NewInteger(42), core.NewSymbol("x")},
 			expected: "Equal(42, x)",
 		},
 		{
 			name:     "nested expression",
 			head:     "Outer",
-			args:     []Expr{NewList(NewSymbolAtom("Inner"), NewIntAtom(1))},
+			args:     []Expr{NewList(core.NewSymbol("Inner"), core.NewInteger(1))},
 			expected: "Outer(Inner(1))",
 		},
 	}
@@ -302,7 +303,7 @@ func TestCopyExprList(t *testing.T) {
 			}
 
 			// Verify head
-			if headAtom, ok := result.Elements[0].(Atom); !ok || headAtom.Value.(string) != tt.head {
+			if headSymbol, ok := result.Elements[0].(core.Symbol); !ok || string(headSymbol) != tt.head {
 				t.Errorf("CopyExprList head = %s, want %s",
 					result.Elements[0].String(), tt.head)
 			}
@@ -323,28 +324,28 @@ func TestHelperFunctionsWithRealExpressions(t *testing.T) {
 	ctx := NewContext()
 
 	// Create complex expressions for testing
-	plusExpr := NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2))
-	timesExpr := NewList(NewSymbolAtom("Times"), NewFloatAtom(2.5), NewFloatAtom(4.0))
+	plusExpr := NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2))
+	timesExpr := NewList(core.NewSymbol("Times"), core.NewReal(2.5), core.NewReal(4.0))
 
 	// Test that helper functions work correctly with real expressions
-	if val, ok := ExtractInt64(NewIntAtom(42)); !ok || val != 42 {
+	if val, ok := ExtractInt64(core.NewInteger(42)); !ok || val != 42 {
 		t.Error("ExtractInt64 failed on real integer")
 	}
 
-	if val, ok := ExtractFloat64(NewFloatAtom(3.14)); !ok || val != 3.14 {
+	if val, ok := ExtractFloat64(core.NewReal(3.14)); !ok || val != 3.14 {
 		t.Error("ExtractFloat64 failed on real float")
 	}
 
-	if val, ok := ExtractString(NewStringAtom("test")); !ok || val != "test" {
+	if val, ok := ExtractString(core.NewString("test")); !ok || val != "test" {
 		t.Error("ExtractString failed on real string")
 	}
 
-	if val, ok := ExtractBool(NewBoolAtom(true)); !ok || val != true {
+	if val, ok := ExtractBool(core.NewBool(true)); !ok || val != true {
 		t.Error("ExtractBool failed on real boolean")
 	}
 
 	// Test CopyExprList with real expressions
-	copied := CopyExprList("Plus", []Expr{NewIntAtom(1), NewSymbolAtom("x")})
+	copied := CopyExprList("Plus", []Expr{core.NewInteger(1), core.NewSymbol("x")})
 	expected := "Plus(1, x)"
 	if copied.String() != expected {
 		t.Errorf("CopyExprList with real expressions = %s, want %s", copied.String(), expected)

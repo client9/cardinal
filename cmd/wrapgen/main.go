@@ -504,13 +504,6 @@ var functionSpecs = []FunctionSpec{
 		SymbolName: "Print",
 		Attributes: []string{},
 	},
-	{
-		Pattern:    "Print(label_String, x_)",
-		Function:   stdlib.PrintLabel,
-		OutputFile: "output_wrappers.go",
-		SymbolName: "PrintLabel",
-		Attributes: []string{},
-	},
 	// Note: PatternSpecificity and ShowPatterns are implemented directly in builtin_funcs.go
 	// because they need access to pattern parsing and function registry functionality
 }
@@ -738,13 +731,13 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 		"getReturnConversion": func(returnType string) string {
 			switch returnType {
 			case "int64":
-				return "return core.NewIntAtom(int(result))"
+				return "return core.NewInteger(result)"
 			case "float64":
-				return "return core.NewFloatAtom(result)"
+				return "return core.NewReal(result)"
 			case "string":
-				return "return core.NewStringAtom(result)"
+				return "return core.NewString(result)"
 			case "bool":
-				return "return core.NewBoolAtom(result)"
+				return "return core.NewBool(result)"
 			case "Expr":
 				return "return result"
 			default:

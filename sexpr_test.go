@@ -1,68 +1,69 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
 func TestAtom_String(t *testing.T) {
 	tests := []struct {
 		name     string
-		atom     Atom
+		atom     Expr
 		expected string
 	}{
 		{
 			name:     "string atom",
-			atom:     NewStringAtom("hello world"),
+			atom:     core.NewString("hello world"),
 			expected: `"hello world"`,
 		},
 		{
 			name:     "integer atom",
-			atom:     NewIntAtom(42),
+			atom:     core.NewInteger(42),
 			expected: "42",
 		},
 		{
 			name:     "float atom",
-			atom:     NewFloatAtom(3.14159),
+			atom:     core.NewReal(3.14159),
 			expected: "3.14159",
 		},
 		{
 			name:     "boolean true atom",
-			atom:     NewBoolAtom(true),
+			atom:     core.NewBool(true),
 			expected: "True",
 		},
 		{
 			name:     "boolean false atom",
-			atom:     NewBoolAtom(false),
+			atom:     core.NewBool(false),
 			expected: "False",
 		},
 		{
 			name:     "symbol atom",
-			atom:     NewSymbolAtom("mySymbol"),
+			atom:     core.NewSymbol("mySymbol"),
 			expected: "mySymbol",
 		},
 		{
 			name:     "empty string atom",
-			atom:     NewStringAtom(""),
+			atom:     core.NewString(""),
 			expected: `""`,
 		},
 		{
 			name:     "zero integer atom",
-			atom:     NewIntAtom(0),
+			atom:     core.NewInteger(0),
 			expected: "0",
 		},
 		{
 			name:     "negative integer atom",
-			atom:     NewIntAtom(-123),
+			atom:     core.NewInteger(-123),
 			expected: "-123",
 		},
 		{
 			name:     "zero float atom",
-			atom:     NewFloatAtom(0.0),
+			atom:     core.NewReal(0.0),
 			expected: "0.0",
 		},
 		{
 			name:     "negative float atom",
-			atom:     NewFloatAtom(-2.5),
+			atom:     core.NewReal(-2.5),
 			expected: "-2.5",
 		},
 	}
@@ -80,33 +81,33 @@ func TestAtom_String(t *testing.T) {
 func TestAtom_Type(t *testing.T) {
 	tests := []struct {
 		name     string
-		atom     Atom
+		atom     Expr
 		expected string
 	}{
 		{
 			name:     "string atom type",
-			atom:     NewStringAtom("test"),
-			expected: "string",
+			atom:     core.NewString("test"),
+			expected: "String",
 		},
 		{
 			name:     "integer atom type",
-			atom:     NewIntAtom(42),
-			expected: "int",
+			atom:     core.NewInteger(42),
+			expected: "Integer",
 		},
 		{
 			name:     "float atom type",
-			atom:     NewFloatAtom(3.14),
-			expected: "float64",
+			atom:     core.NewReal(3.14),
+			expected: "Real",
 		},
 		{
 			name:     "boolean atom type",
-			atom:     NewBoolAtom(true),
-			expected: "symbol",
+			atom:     core.NewBool(true),
+			expected: "Symbol",
 		},
 		{
 			name:     "symbol atom type",
-			atom:     NewSymbolAtom("x"),
-			expected: "symbol",
+			atom:     core.NewSymbol("x"),
+			expected: "Symbol",
 		},
 	}
 
@@ -133,27 +134,27 @@ func TestList_String(t *testing.T) {
 		},
 		{
 			name:     "single element list",
-			list:     NewList(NewSymbolAtom("Plus")),
+			list:     NewList(core.NewSymbol("Plus")),
 			expected: "Plus()",
 		},
 		{
 			name:     "simple function call",
-			list:     NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
+			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
 			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "mixed types",
-			list:     NewList(NewSymbolAtom("List"), NewIntAtom(1), NewFloatAtom(2.5), NewStringAtom("hello"), NewBoolAtom(true)),
+			list:     NewList(core.NewSymbol("List"), core.NewInteger(1), core.NewReal(2.5), core.NewString("hello"), core.NewBool(true)),
 			expected: `List(1, 2.5, "hello", True)`,
 		},
 		{
 			name:     "nested list",
-			list:     NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewList(NewSymbolAtom("Times"), NewIntAtom(2), NewIntAtom(3))),
+			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), NewList(core.NewSymbol("Times"), core.NewInteger(2), core.NewInteger(3))),
 			expected: "Plus(1, Times(2, 3))",
 		},
 		{
 			name:     "deeply nested",
-			list:     NewList(NewSymbolAtom("f"), NewList(NewSymbolAtom("g"), NewList(NewSymbolAtom("h"), NewIntAtom(1)))),
+			list:     NewList(core.NewSymbol("f"), NewList(core.NewSymbol("g"), NewList(core.NewSymbol("h"), core.NewInteger(1)))),
 			expected: "f(g(h(1)))",
 		},
 	}
@@ -181,7 +182,7 @@ func TestList_Type(t *testing.T) {
 		},
 		{
 			name:     "non-empty list type",
-			list:     NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
+			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
 			expected: "list",
 		},
 	}
@@ -205,38 +206,38 @@ func TestConstructorFunctions(t *testing.T) {
 	}{
 		{
 			name:          "NewStringAtom",
-			constructor:   func() Expr { return NewStringAtom("test") },
-			expectedType:  "string",
+			constructor:   func() Expr { return core.NewString("test") },
+			expectedType:  "String",
 			expectedValue: "test",
 		},
 		{
 			name:          "NewIntAtom",
-			constructor:   func() Expr { return NewIntAtom(42) },
-			expectedType:  "int",
+			constructor:   func() Expr { return core.NewInteger(42) },
+			expectedType:  "Integer",
 			expectedValue: 42,
 		},
 		{
 			name:          "NewFloatAtom",
-			constructor:   func() Expr { return NewFloatAtom(3.14) },
-			expectedType:  "float64",
+			constructor:   func() Expr { return core.NewReal(3.14) },
+			expectedType:  "Real",
 			expectedValue: 3.14,
 		},
 		{
 			name:          "NewBoolAtom true",
-			constructor:   func() Expr { return NewBoolAtom(true) },
-			expectedType:  "symbol",
+			constructor:   func() Expr { return core.NewBool(true) },
+			expectedType:  "Symbol",
 			expectedValue: "True",
 		},
 		{
 			name:          "NewBoolAtom false",
-			constructor:   func() Expr { return NewBoolAtom(false) },
-			expectedType:  "symbol",
+			constructor:   func() Expr { return core.NewBool(false) },
+			expectedType:  "Symbol",
 			expectedValue: "False",
 		},
 		{
 			name:          "NewSymbolAtom",
-			constructor:   func() Expr { return NewSymbolAtom("mySymbol") },
-			expectedType:  "symbol",
+			constructor:   func() Expr { return core.NewSymbol("mySymbol") },
+			expectedType:  "Symbol",
 			expectedValue: "mySymbol",
 		},
 	}
@@ -249,14 +250,42 @@ func TestConstructorFunctions(t *testing.T) {
 				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
 			}
 
-			atom, ok := expr.(Atom)
-			if !ok {
-				t.Errorf("expected Atom, got %T", expr)
-				return
-			}
-
-			if atom.Value != tt.expectedValue {
-				t.Errorf("expected value %v, got %v", tt.expectedValue, atom.Value)
+			// Check value based on the expected type
+			switch tt.expectedType {
+			case "String":
+				if str, ok := expr.(core.String); ok {
+					if string(str) != tt.expectedValue {
+						t.Errorf("expected value %v, got %v", tt.expectedValue, string(str))
+					}
+				} else {
+					t.Errorf("expected String, got %T", expr)
+				}
+			case "Integer":
+				if integer, ok := expr.(core.Integer); ok {
+					if int64(integer) != int64(tt.expectedValue.(int)) {
+						t.Errorf("expected value %v, got %v", tt.expectedValue, int64(integer))
+					}
+				} else {
+					t.Errorf("expected Integer, got %T", expr)
+				}
+			case "Real":
+				if real, ok := expr.(core.Real); ok {
+					if float64(real) != tt.expectedValue.(float64) {
+						t.Errorf("expected value %v, got %v", tt.expectedValue, float64(real))
+					}
+				} else {
+					t.Errorf("expected Real, got %T", expr)
+				}
+			case "Symbol":
+				if symbolName, ok := core.ExtractSymbol(expr); ok {
+					if symbolName != tt.expectedValue {
+						t.Errorf("expected value %v, got %v", tt.expectedValue, symbolName)
+					}
+				} else {
+					t.Errorf("expected Symbol, got %T", expr)
+				}
+			default:
+				t.Errorf("unknown expected type: %s", tt.expectedType)
 			}
 		})
 	}
@@ -277,19 +306,19 @@ func TestNewList(t *testing.T) {
 		},
 		{
 			name:           "single element",
-			elements:       []Expr{NewIntAtom(1)},
+			elements:       []Expr{core.NewInteger(1)},
 			expectedLength: 1,
 			expectedType:   "list",
 		},
 		{
 			name:           "multiple elements",
-			elements:       []Expr{NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)},
+			elements:       []Expr{core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)},
 			expectedLength: 3,
 			expectedType:   "list",
 		},
 		{
 			name:           "nested list",
-			elements:       []Expr{NewSymbolAtom("f"), NewList(NewSymbolAtom("g"), NewIntAtom(1))},
+			elements:       []Expr{core.NewSymbol("f"), NewList(core.NewSymbol("g"), core.NewInteger(1))},
 			expectedLength: 2,
 			expectedType:   "list",
 		},
@@ -319,41 +348,41 @@ func TestComplexExpressions(t *testing.T) {
 		{
 			name: "mathematical expression",
 			expr: NewList(
-				NewSymbolAtom("Plus"),
-				NewList(NewSymbolAtom("Times"), NewIntAtom(2), NewSymbolAtom("x")),
-				NewIntAtom(5),
+				core.NewSymbol("Plus"),
+				NewList(core.NewSymbol("Times"), core.NewInteger(2), core.NewSymbol("x")),
+				core.NewInteger(5),
 			),
 			expected: "Plus(Times(2, x), 5)",
 		},
 		{
 			name: "function definition",
 			expr: NewList(
-				NewSymbolAtom("Function"),
-				NewStringAtom("x"),
-				NewList(NewSymbolAtom("Power"), NewSymbolAtom("x"), NewIntAtom(2)),
+				core.NewSymbol("Function"),
+				core.NewString("x"),
+				NewList(core.NewSymbol("Power"), core.NewSymbol("x"), core.NewInteger(2)),
 			),
 			expected: `Function("x", Power(x, 2))`,
 		},
 		{
 			name: "conditional expression",
 			expr: NewList(
-				NewSymbolAtom("If"),
-				NewList(NewSymbolAtom("Greater"), NewSymbolAtom("x"), NewIntAtom(0)),
-				NewSymbolAtom("x"),
-				NewList(NewSymbolAtom("Minus"), NewSymbolAtom("x")),
+				core.NewSymbol("If"),
+				NewList(core.NewSymbol("Greater"), core.NewSymbol("x"), core.NewInteger(0)),
+				core.NewSymbol("x"),
+				NewList(core.NewSymbol("Minus"), core.NewSymbol("x")),
 			),
 			expected: "If(Greater(x, 0), x, Minus(x))",
 		},
 		{
 			name: "list with mixed types",
 			expr: NewList(
-				NewSymbolAtom("List"),
-				NewIntAtom(1),
-				NewFloatAtom(2.5),
-				NewStringAtom("hello"),
-				NewBoolAtom(true),
-				NewBoolAtom(false),
-				NewSymbolAtom("x"),
+				core.NewSymbol("List"),
+				core.NewInteger(1),
+				core.NewReal(2.5),
+				core.NewString("hello"),
+				core.NewBool(true),
+				core.NewBool(false),
+				core.NewSymbol("x"),
 			),
 			expected: `List(1, 2.5, "hello", True, False, x)`,
 		},

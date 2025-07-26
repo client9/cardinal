@@ -9,35 +9,40 @@ import (
 
 // ExtractInt64 safely extracts an int64 value from an Expr
 func ExtractInt64(expr Expr) (int64, bool) {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == IntAtom {
-		return int64(atom.Value.(int)), true
+	// Check new Integer type first
+	if i, ok := expr.(Integer); ok {
+		return int64(i), true
 	}
 	return 0, false
 }
 
 // ExtractFloat64 safely extracts a float64 value from an Expr
 func ExtractFloat64(expr Expr) (float64, bool) {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == FloatAtom {
-		return atom.Value.(float64), true
+	// Check new Real type first
+	if r, ok := expr.(Real); ok {
+		return float64(r), true
 	}
 	return 0, false
 }
 
 // ExtractString safely extracts a string value from an Expr
 func ExtractString(expr Expr) (string, bool) {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == StringAtom {
-		return atom.Value.(string), true
+	// Check new String type first
+	if s, ok := expr.(String); ok {
+		return string(s), true
 	}
 	return "", false
 }
 
 // ExtractBool safely extracts a boolean value from an Expr
-// Note: NewBoolAtom returns symbols "True"/"False", so we check for those
+// Note: NewBool returns symbols "True"/"False", so we check for those
 func ExtractBool(expr Expr) (bool, bool) {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		if atom.Value.(string) == "True" {
+	// Check new Symbol type first
+	if s, ok := expr.(Symbol); ok {
+		symbolName := string(s)
+		if symbolName == "True" {
 			return true, true
-		} else if atom.Value.(string) == "False" {
+		} else if symbolName == "False" {
 			return false, true
 		}
 	}
@@ -56,7 +61,7 @@ func ExtractByteArray(expr Expr) (ByteArray, bool) {
 // This is useful for builtin functions that need to return unchanged expressions
 func CopyExprList(head string, args []Expr) List {
 	elements := make([]Expr, len(args)+1)
-	elements[0] = NewSymbolAtom(head)
+	elements[0] = NewSymbol(head) // Use new Symbol constructor
 	copy(elements[1:], args)
 	return List{Elements: elements}
 }
@@ -92,13 +97,12 @@ func (e *ErrorExpr) GetDetailedMessage() string {
 
 // GetNumericValue safely extracts a numeric value (int or float) as float64 from an Expr
 func GetNumericValue(expr Expr) (float64, bool) {
-	if atom, ok := expr.(Atom); ok {
-		switch atom.AtomType {
-		case IntAtom:
-			return float64(atom.Value.(int)), true
-		case FloatAtom:
-			return atom.Value.(float64), true
-		}
+	// Check new atomic types first
+	if i, ok := expr.(Integer); ok {
+		return float64(i), true
+	}
+	if r, ok := expr.(Real); ok {
+		return float64(r), true
 	}
 	return 0, false
 }
@@ -111,8 +115,9 @@ func IsNumeric(expr Expr) bool {
 
 // IsBool checks if an expression is a boolean value (True/False symbol)
 func IsBool(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		val := atom.Value.(string)
+	// Check new Symbol type first
+	if s, ok := expr.(Symbol); ok {
+		val := string(s)
 		return val == "True" || val == "False"
 	}
 	return false
@@ -120,8 +125,18 @@ func IsBool(expr Expr) bool {
 
 // IsSymbol checks if an expression is a symbol
 func IsSymbol(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		return atom.AtomType == SymbolAtom
+	// Check new Symbol type first
+	if _, ok := expr.(Symbol); ok {
+		return true
 	}
 	return false
+}
+
+// ExtractSymbol safely extracts a symbol name from an Expr
+func ExtractSymbol(expr Expr) (string, bool) {
+	// Check new Symbol type first
+	if s, ok := expr.(Symbol); ok {
+		return string(s), true
+	}
+	return "", false
 }

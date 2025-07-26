@@ -63,23 +63,21 @@ type CompoundSpecificity struct {
 
 // isLiteral checks if an expression is a literal value (number, string, etc.)
 func isLiteral(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		switch atom.AtomType {
-		case IntAtom, FloatAtom, StringAtom:
-			return true
-		case SymbolAtom:
-			symbolName := atom.Value.(string)
-			// Any symbol that is NOT a pattern variable is considered a literal
-			return !isPatternVariable(symbolName)
-		}
+	// Check new atomic types first
+	switch ex := expr.(type) {
+	case core.Integer, core.Real, core.String:
+		return true
+	case core.Symbol:
+		symbolName := string(ex)
+		// Any symbol that is NOT a pattern variable is considered a literal
+		return !isPatternVariable(symbolName)
 	}
 	return false
 }
 
 // isSpecificType checks if a pattern variable has a specific builtin type constraint
 func isSpecificType(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(expr); ok {
 		if isPatternVariable(symbolName) {
 			info := parsePatternInfo(symbolName)
 			return getTypeSpecificity(info.TypeName) == SpecificityBuiltinSpecific
@@ -136,7 +134,7 @@ func DebugPatternSpecificity(pattern Expr) string {
 	case List:
 		if len(pat.Elements) > 1 {
 			// Check if this is a compound pattern
-			if head, ok := pat.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
+			if core.IsSymbol(pat.Elements[0]) {
 				compound := calculateCompoundSpecificity(pat)
 				result := fmt.Sprintf("Pattern: %s\n", pattern.String())
 				result += fmt.Sprintf("Type: Compound Pattern\n")
@@ -173,17 +171,15 @@ func DebugPatternSpecificity(pattern Expr) string {
 // getPatternSpecificityBasic calculates specificity for a single pattern element (non-compound)
 func getPatternSpecificityBasic(pattern Expr) PatternSpecificity {
 	switch pat := pattern.(type) {
-	case Atom:
-		if pat.AtomType == SymbolAtom {
-			symbolName := pat.Value.(string)
-			if isPatternVariable(symbolName) {
-				patternInfo := parsePatternInfo(symbolName)
-				return getPatternVariableSpecificity(patternInfo)
-			}
-			// Regular symbol (should not occur in patterns, but handle it)
-			return SpecificityLiteral
+	case core.Integer, core.Real, core.String:
+		return SpecificityLiteral
+	case core.Symbol:
+		symbolName := pat.String()
+		if isPatternVariable(symbolName) {
+			patternInfo := parsePatternInfo(symbolName)
+			return getPatternVariableSpecificity(patternInfo)
 		}
-		// Literal atom (number, string, boolean)
+		// Regular symbol (should not occur in patterns, but handle it)
 		return SpecificityLiteral
 	case List:
 		// Handle symbolic Pattern expressions: Pattern(x, Blank(...))
@@ -205,8 +201,8 @@ func (e *Evaluator) matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context
 		// Check type constraint if present
 		if typeExpr != nil {
 			var typeName string
-			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-				typeName = typeAtom.Value.(string)
+			if name, ok := core.ExtractSymbol(typeExpr); ok {
+				typeName = name
 			}
 			if !matchesType(expr, typeName) {
 				return false
@@ -243,8 +239,8 @@ func (e *Evaluator) matchPatternInternal(pattern Expr, expr Expr, ctx *Context, 
 	if isPattern, nameExpr, blankExpr := isSymbolicPattern(pattern); isPattern {
 		// This is a Pattern[name, blank] expression
 		var varName string
-		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-			varName = nameAtom.Value.(string)
+		if name, ok := core.ExtractSymbol(nameExpr); ok {
+			varName = name
 		}
 
 		// Check if the blank expression matches
@@ -264,34 +260,28 @@ func (e *Evaluator) matchPatternInternal(pattern Expr, expr Expr, ctx *Context, 
 	}
 
 	switch pat := pattern.(type) {
-	case Atom:
-		if pat.AtomType == SymbolAtom {
-			symbolName := pat.Value.(string)
-			// Check if this is a pattern variable (ends with _) - backward compatibility
-			if isPatternVariable(symbolName) {
-				// Convert to symbolic and match
-				symbolicPattern := ConvertPatternStringToSymbolic(symbolName)
-				return e.matchPatternInternal(symbolicPattern, expr, ctx, isParameterList)
-			} else {
-				// Regular symbol behavior depends on context
-				if isParameterList {
-					// In parameter lists, regular symbols bind to values
-					ctx.Set(symbolName, expr)
-					return true
-				} else {
-					// In head patterns, regular symbols require exact matches
-					if exprAtom, ok := expr.(Atom); ok && exprAtom.AtomType == SymbolAtom {
-						return exprAtom.Value.(string) == symbolName
-					}
-					return false
-				}
-			}
+	case core.Integer, core.Real, core.String:
+		return pat.Equal(expr)
+	case core.Symbol:
+		symbolName := pat.String()
+		// Check if this is a pattern variable (ends with _) - backward compatibility
+		if isPatternVariable(symbolName) {
+			// Convert to symbolic and match
+			symbolicPattern := ConvertPatternStringToSymbolic(symbolName)
+			return e.matchPatternInternal(symbolicPattern, expr, ctx, isParameterList)
 		} else {
-			// Literal atom - exact match required
-			if exprAtom, ok := expr.(Atom); ok {
-				return pat.AtomType == exprAtom.AtomType && pat.Value == exprAtom.Value
+			// Regular symbol behavior depends on context
+			if isParameterList {
+				// In parameter lists, regular symbols bind to values
+				ctx.Set(symbolName, expr)
+				return true
+			} else {
+				// In head patterns, regular symbols require exact matches
+				if exprName, ok := core.ExtractSymbol(expr); ok {
+					return exprName == symbolName
+				}
+				return false
 			}
-			return false
 		}
 	case List:
 		// Match structured expressions like Plus(x_, y_)
@@ -335,8 +325,7 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 		pattern := patterns[patternIndex]
 
 		// Check if this pattern is a sequence pattern
-		if atom, ok := pattern.(Atom); ok && atom.AtomType == SymbolAtom {
-			symbolName := atom.Value.(string)
+		if symbolName, ok := core.ExtractSymbol(pattern); ok {
 			if isPatternVariable(symbolName) {
 				patternInfo := parsePatternInfo(symbolName)
 
@@ -397,7 +386,7 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 
 					// Bind variable if named
 					if patternInfo.VarName != "" {
-						ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
+						ctx.Set(patternInfo.VarName, NewList(append([]Expr{core.NewSymbol("List")}, sequenceExprs...)...))
 					}
 
 					patternIndex++
@@ -431,7 +420,7 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 
 					// Bind variable if named (can be empty list)
 					if patternInfo.VarName != "" {
-						ctx.Set(patternInfo.VarName, NewList(append([]Expr{NewSymbolAtom("List")}, sequenceExprs...)...))
+						ctx.Set(patternInfo.VarName, NewList(append([]Expr{core.NewSymbol("List")}, sequenceExprs...)...))
 					}
 
 					patternIndex++
@@ -472,7 +461,7 @@ func (e *Evaluator) matchSequencePatterns(patterns []Expr, exprs []Expr, ctx *Co
 // getPatternSpecificity calculates the specificity of a single pattern
 func getPatternSpecificity(pattern Expr) PatternSpecificity {
 	switch pat := pattern.(type) {
-	case Atom:
+	case core.Integer, core.Real, core.String, core.Symbol:
 		return getPatternSpecificityBasic(pattern)
 	case List:
 		// Handle symbolic Pattern expressions: Pattern(x, Blank(...))
@@ -485,7 +474,7 @@ func getPatternSpecificity(pattern Expr) PatternSpecificity {
 		// Compound pattern like Plus(x_, y_) - use compound specificity calculation
 		if len(pat.Elements) > 1 {
 			// Check if head is a function name (symbol literal)
-			if head, ok := pat.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
+			if core.IsSymbol(pat.Elements[0]) {
 				// This is a compound pattern - use compound specificity
 				compound := calculateCompoundSpecificity(pat)
 				return PatternSpecificity(compound.TotalScore)
@@ -529,17 +518,15 @@ func getBlankExprSpecificity(blankExpr Expr) PatternSpecificity {
 		case "BlankNullSequence":
 			return SpecificityNullSequence // BlankNullSequence() - least specific
 		}
-	case Atom:
-		if blank.AtomType == SymbolAtom {
-			symbol := blank.Value.(string)
-			switch symbol {
-			case "Blank":
-				return SpecificityGeneral
-			case "BlankSequence":
-				return SpecificitySequence
-			case "BlankNullSequence":
-				return SpecificityNullSequence
-			}
+	case core.Symbol:
+		symbol := blank.String()
+		switch symbol {
+		case "Blank":
+			return SpecificityGeneral
+		case "BlankSequence":
+			return SpecificitySequence
+		case "BlankNullSequence":
+			return SpecificityNullSequence
 		}
 	}
 	return SpecificityGeneral
@@ -597,16 +584,6 @@ func getPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 	return baseSpecificity
 }
 
-// isBuiltinType checks if a type name is a built-in type
-func isBuiltinType(typeName string) bool {
-	switch typeName {
-	case "Integer", "Real", "Float", "Number", "Numeric", "String", "Boolean", "Bool", "Symbol", "Atom", "List":
-		return true
-	default:
-		return false
-	}
-}
-
 // isPatternVariable checks if a symbol name represents a pattern variable
 func isPatternVariable(name string) bool {
 	// Pattern variables have the form: [varname][underscores][typename]
@@ -645,37 +622,11 @@ func isPatternVariable(name string) bool {
 	return false
 }
 
-// parsePatternVariable parses a pattern variable name and returns the variable name and type constraint
-func parsePatternVariable(name string) (varName string, typeName string) {
-	if !isPatternVariable(name) {
-		return "", ""
-	}
-
-	// Split by underscore
-	parts := strings.Split(name, "_")
-
-	if len(parts) == 2 {
-		if parts[0] == "" && parts[1] == "" {
-			// Anonymous pattern: _ -> varName="", typeName=""
-			return "", ""
-		} else if parts[1] == "" {
-			// Simple pattern: x_ -> varName="x", typeName=""
-			return parts[0], ""
-		} else if parts[0] != "" {
-			// Named pattern: x_Integer -> varName="x", typeName="Integer"
-			return parts[0], parts[1]
-		}
-	}
-
-	// Invalid pattern
-	return "", ""
-}
-
 // ConvertPatternStringToSymbolic converts a pattern string (like "x_Integer") to a symbolic expression
 func ConvertPatternStringToSymbolic(name string) Expr {
 	if !isPatternVariable(name) {
 		// Not a pattern variable, return as regular symbol
-		return NewSymbolAtom(name)
+		return core.NewSymbol(name)
 	}
 
 	// Count consecutive underscores to determine pattern type
@@ -691,7 +642,7 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 	}
 
 	if underscoreStart == -1 {
-		return NewSymbolAtom(name) // No underscore found, regular symbol
+		return core.NewSymbol(name) // No underscore found, regular symbol
 	}
 
 	// Count consecutive underscores
@@ -713,7 +664,7 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 	var blankExpr Expr
 	var typeExpr Expr
 	if typeName != "" {
-		typeExpr = NewSymbolAtom(typeName)
+		typeExpr = core.NewSymbol(typeName)
 	}
 
 	switch underscoreCount {
@@ -724,12 +675,12 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 	case 3:
 		blankExpr = core.CreateBlankNullSequenceExpr(typeExpr)
 	default:
-		return NewSymbolAtom(name) // Invalid pattern, return as symbol
+		return core.NewSymbol(name) // Invalid pattern, return as symbol
 	}
 
 	// If there's a variable name, wrap in Pattern[name, blank]
 	if varName != "" {
-		return core.CreatePatternExpr(NewSymbolAtom(varName), blankExpr)
+		return core.CreatePatternExpr(core.NewSymbol(varName), blankExpr)
 	}
 
 	// Anonymous pattern, just return the blank expression
@@ -796,8 +747,7 @@ func parsePatternInfo(name string) PatternInfo {
 // isSymbolicBlank checks if an expression is a symbolic Blank[], BlankSequence[], or BlankNullSequence[]
 func isSymbolicBlank(expr Expr) (bool, string, Expr) {
 	if list, ok := expr.(List); ok && len(list.Elements) >= 1 {
-		if head, ok := list.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
-			headName := head.Value.(string)
+		if headName, ok := core.ExtractSymbol(list.Elements[0]); ok {
 			switch headName {
 			case "Blank", "BlankSequence", "BlankNullSequence":
 				var typeExpr Expr
@@ -814,8 +764,8 @@ func isSymbolicBlank(expr Expr) (bool, string, Expr) {
 // isSymbolicPattern checks if an expression is a Pattern[name, blank]
 func isSymbolicPattern(expr Expr) (bool, Expr, Expr) {
 	if list, ok := expr.(List); ok && len(list.Elements) == 3 {
-		if head, ok := list.Elements[0].(Atom); ok && head.AtomType == SymbolAtom {
-			if head.Value.(string) == "Pattern" {
+		if headName, ok := core.ExtractSymbol(list.Elements[0]); ok {
+			if headName == "Pattern" {
 				return true, list.Elements[1], list.Elements[2] // name, blank
 			}
 		}
@@ -828,15 +778,15 @@ func getSymbolicPatternInfo(expr Expr) PatternInfo {
 	// Check if it's a Pattern[name, blank]
 	if isPattern, nameExpr, blankExpr := isSymbolicPattern(expr); isPattern {
 		var varName string
-		if nameAtom, ok := nameExpr.(Atom); ok && nameAtom.AtomType == SymbolAtom {
-			varName = nameAtom.Value.(string)
+		if name, ok := core.ExtractSymbol(nameExpr); ok {
+			varName = name
 		}
 
 		if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
 			var typeName string
 			if typeExpr != nil {
-				if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-					typeName = typeAtom.Value.(string)
+				if name, ok := core.ExtractSymbol(typeExpr); ok {
+					typeName = name
 				}
 			}
 
@@ -858,8 +808,8 @@ func getSymbolicPatternInfo(expr Expr) PatternInfo {
 	if isBlank, blankType, typeExpr := isSymbolicBlank(expr); isBlank {
 		var typeName string
 		if typeExpr != nil {
-			if typeAtom, ok := typeExpr.(Atom); ok && typeAtom.AtomType == SymbolAtom {
-				typeName = typeAtom.Value.(string)
+			if name, ok := core.ExtractSymbol(typeExpr); ok {
+				typeName = name
 			}
 		}
 
@@ -890,30 +840,29 @@ func matchesType(expr Expr, typeName string) bool {
 	// Handle built-in types first
 	switch typeName {
 	case "Integer":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == IntAtom
-		}
-	case "Real", "Float":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == FloatAtom
-		}
-	case "Number", "Numeric":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == IntAtom || atom.AtomType == FloatAtom
-		}
-	case "String":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == StringAtom
-		}
-	case "Boolean", "Bool":
-		return isBool(expr)
-	case "Symbol":
-		if atom, ok := expr.(Atom); ok {
-			return atom.AtomType == SymbolAtom
-		}
-	case "Atom":
-		_, ok := expr.(Atom)
+		_, ok := expr.(core.Integer)
 		return ok
+	case "Real", "Float":
+		_, ok := expr.(core.Real)
+		return ok
+	case "Number", "Numeric":
+		if _, ok := expr.(core.Integer); ok {
+			return true
+		}
+		if _, ok := expr.(core.Real); ok {
+			return true
+		}
+		return false
+	case "String":
+		_, ok := expr.(core.String)
+		return ok
+	case "Boolean", "Bool":
+		return core.IsBool(expr)
+	case "Symbol":
+		return core.IsSymbol(expr)
+	case "Atom":
+		// Use the IsAtom() method which handles both old and new types
+		return expr.IsAtom()
 	case "List":
 		_, ok := expr.(List)
 		return ok
@@ -928,12 +877,10 @@ func matchesType(expr Expr, typeName string) bool {
 
 		// Handle arbitrary head symbols (e.g., Color, Point, etc.)
 		if list, ok := expr.(List); ok && len(list.Elements) > 0 {
-			if headAtom, ok := list.Elements[0].(Atom); ok && headAtom.AtomType == SymbolAtom {
-				return headAtom.Value.(string) == typeName
+			if headName, ok := core.ExtractSymbol(list.Elements[0]); ok {
+				return headName == typeName
 			}
 		}
 		return false
 	}
-
-	return false
 }

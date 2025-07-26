@@ -36,6 +36,10 @@ func (e *ErrorExpr) Type() string {
 	return "error"
 }
 
+func (e *ErrorExpr) IsAtom() bool {
+	return false
+}
+
 func (e *ErrorExpr) Equal(rhs Expr) bool {
 	rhsError, ok := rhs.(*ErrorExpr)
 	if !ok {

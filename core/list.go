@@ -26,8 +26,14 @@ func (l List) String() string {
 
 	// Check if this is a List literal (head is "List")
 	if len(l.Elements) > 0 {
-		if headAtom, ok := l.Elements[0].(Atom); ok &&
-			headAtom.AtomType == SymbolAtom && headAtom.Value.(string) == "List" {
+		isListLiteral := false
+
+		// Check new Symbol type first
+		if headSymbol, ok := l.Elements[0].(Symbol); ok && headSymbol.String() == "List" {
+			isListLiteral = true
+		}
+
+		if isListLiteral {
 			// This is a list literal: [element1, element2, ...]
 			var elements []string
 			for _, elem := range l.Elements[1:] {
@@ -72,6 +78,10 @@ func (l List) Equal(rhs Expr) bool {
 	}
 
 	return true
+}
+
+func (l List) IsAtom() bool {
+	return false
 }
 
 // Sliceable interface implementation

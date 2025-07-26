@@ -2,6 +2,24 @@ package core
 
 // Constructor functions for core types
 
+// New constructor functions for atomic types
+func NewString(s string) String  { return String(s) }
+func NewInteger(i int64) Integer { return Integer(i) }
+func NewReal(f float64) Real     { return Real(f) }
+func NewSymbol(s string) Symbol  { return Symbol(s) }
+
+// NewSymbolNull creates the Null symbol
+func NewSymbolNull() Symbol { return Symbol("Null") }
+
+// NewBool creates a boolean symbol (True/False) for Mathematica compatibility
+func NewBool(value bool) Symbol {
+	if value {
+		return Symbol("True")
+	} else {
+		return Symbol("False")
+	}
+}
+
 // NewErrorExpr creates a new error expression
 func NewErrorExpr(errorType, message string, args []Expr) *ErrorExpr {
 	return &ErrorExpr{
@@ -22,38 +40,6 @@ func NewErrorExprWithStack(errorType, message string, args []Expr, stack []Stack
 	}
 }
 
-// NewStringAtom creates a new string atom
-func NewStringAtom(value string) Atom {
-	return Atom{AtomType: StringAtom, Value: value}
-}
-
-// NewIntAtom creates a new integer atom
-func NewIntAtom(value int) Atom {
-	return Atom{AtomType: IntAtom, Value: value}
-}
-
-// NewFloatAtom creates a new float atom
-func NewFloatAtom(value float64) Atom {
-	return Atom{AtomType: FloatAtom, Value: value}
-}
-
-// NewBoolAtom creates a boolean atom (returns True/False symbols)
-func NewBoolAtom(value bool) Atom {
-	// Return True/False symbols instead of BoolAtom for Mathematica compatibility
-	// This makes our system fully symbolic like Mathematica
-	if value {
-		return NewSymbolAtom("True")
-	} else {
-		return NewSymbolAtom("False")
-	}
-}
-
-// NewSymbolAtom creates a new symbol atom
-func NewSymbolAtom(value string) Atom {
-	return Atom{AtomType: SymbolAtom, Value: value}
-}
-
-// NewList creates a new list with the given elements
 func NewList(elements ...Expr) List {
 	return List{Elements: elements}
 }

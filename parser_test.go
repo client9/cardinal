@@ -1,6 +1,7 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"strings"
 	"testing"
 )
@@ -425,37 +426,37 @@ func TestParser_ParseAtoms(t *testing.T) {
 		{
 			name:         "symbol atom",
 			input:        "mySymbol",
-			expectedType: "symbol",
+			expectedType: "Symbol",
 			expectedVal:  "mySymbol",
 		},
 		{
 			name:         "integer atom",
 			input:        "123",
-			expectedType: "int",
+			expectedType: "Integer",
 			expectedVal:  123,
 		},
 		{
 			name:         "float atom",
 			input:        "45.67",
-			expectedType: "float64",
+			expectedType: "Real",
 			expectedVal:  45.67,
 		},
 		{
 			name:         "string atom",
 			input:        `"test string"`,
-			expectedType: "string",
+			expectedType: "String",
 			expectedVal:  "test string",
 		},
 		{
 			name:         "boolean true atom",
 			input:        "True",
-			expectedType: "symbol",
+			expectedType: "Symbol",
 			expectedVal:  "True",
 		},
 		{
 			name:         "boolean false atom",
 			input:        "False",
-			expectedType: "symbol",
+			expectedType: "Symbol",
 			expectedVal:  "False",
 		},
 	}
@@ -472,14 +473,42 @@ func TestParser_ParseAtoms(t *testing.T) {
 				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
 			}
 
-			atom, ok := expr.(Atom)
-			if !ok {
-				t.Errorf("expected Atom, got %T", expr)
-				return
-			}
-
-			if atom.Value != tt.expectedVal {
-				t.Errorf("expected value %v, got %v", tt.expectedVal, atom.Value)
+			// Check value based on the expected type
+			switch tt.expectedType {
+			case "Symbol":
+				if symbolName, ok := core.ExtractSymbol(expr); ok {
+					if symbolName != tt.expectedVal {
+						t.Errorf("expected value %v, got %v", tt.expectedVal, symbolName)
+					}
+				} else {
+					t.Errorf("expected Symbol, got %T", expr)
+				}
+			case "Integer":
+				if integer, ok := expr.(core.Integer); ok {
+					if int64(integer) != int64(tt.expectedVal.(int)) {
+						t.Errorf("expected value %v, got %v", tt.expectedVal, int64(integer))
+					}
+				} else {
+					t.Errorf("expected Integer, got %T", expr)
+				}
+			case "Real":
+				if real, ok := expr.(core.Real); ok {
+					if float64(real) != tt.expectedVal.(float64) {
+						t.Errorf("expected value %v, got %v", tt.expectedVal, float64(real))
+					}
+				} else {
+					t.Errorf("expected Real, got %T", expr)
+				}
+			case "String":
+				if str, ok := expr.(core.String); ok {
+					if string(str) != tt.expectedVal.(string) {
+						t.Errorf("expected value %v, got %v", tt.expectedVal, string(str))
+					}
+				} else {
+					t.Errorf("expected String, got %T", expr)
+				}
+			default:
+				t.Errorf("unknown expected type: %s", tt.expectedType)
 			}
 		})
 	}
@@ -543,14 +572,14 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 
-			head, ok := list.Elements[0].(Atom)
+			head, ok := core.ExtractSymbol(list.Elements[0])
 			if !ok {
-				t.Errorf("expected head to be Atom, got %T", list.Elements[0])
+				t.Errorf("expected head to be Symbol, got %T", list.Elements[0])
 				return
 			}
 
-			if head.Value != tt.expectedHead {
-				t.Errorf("expected head %q, got %q", tt.expectedHead, head.Value)
+			if head != tt.expectedHead {
+				t.Errorf("expected head %q, got %q", tt.expectedHead, head)
 			}
 
 			argCount := len(list.Elements) - 1 // Subtract head

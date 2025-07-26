@@ -47,21 +47,13 @@ func (e *Evaluator) evaluate(expr Expr, ctx *Context) Expr {
 	}
 	defer ctx.stack.Pop()
 
-	switch ex := expr.(type) {
-	case Atom:
-		return e.evaluateAtom(ex, ctx)
-	case List:
-		return e.evaluateList(ex, ctx)
-	default:
-		return expr
-	}
+	return e.evaluateExpr(expr, ctx)
 }
 
-// evaluateAtom evaluates an atomic expression
-func (e *Evaluator) evaluateAtom(atom Atom, ctx *Context) Expr {
-	switch atom.AtomType {
-	case SymbolAtom:
-		symbolName := atom.Value.(string)
+func (e *Evaluator) evaluateExpr(expr Expr, ctx *Context) Expr {
+	switch ex := expr.(type) {
+	case core.Symbol:
+		symbolName := string(ex)
 
 		// Check for variable binding first
 		if value, ok := ctx.Get(symbolName); ok {
@@ -74,10 +66,15 @@ func (e *Evaluator) evaluateAtom(atom Atom, ctx *Context) Expr {
 		}
 
 		// Return the symbol itself if not bound
-		return atom
+		return ex
+	case core.String, core.Integer, core.Real:
+		// New atomic types evaluate to themselves
+		return ex
+	case List:
+		return e.evaluateList(ex, ctx)
 	default:
-		// Numbers, strings, etc. evaluate to themselves
-		return atom
+		// All other types (ByteArray, Association, ErrorExpr, etc.) evaluate to themselves
+		return expr
 	}
 }
 
@@ -100,10 +97,8 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 	}
 
 	// Extract function name from evaluated head
-	var headName string
-	if headAtom, ok := evaluatedHead.(Atom); ok && headAtom.AtomType == SymbolAtom {
-		headName = headAtom.Value.(string)
-	} else {
+	headName, ok := core.ExtractSymbol(evaluatedHead)
+	if !ok {
 		// Head is not a symbol, return unevaluated
 		return list
 	}
@@ -143,7 +138,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 	}
 
 	// Create the function call expression for pattern matching
-	callExpr := NewList(append([]Expr{NewSymbolAtom(headName)}, evaluatedArgs...)...)
+	callExpr := NewList(append([]Expr{core.NewSymbol(headName)}, evaluatedArgs...)...)
 
 	// Try to find a matching pattern in the function registry
 	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx); found {
@@ -219,8 +214,8 @@ func (e *Evaluator) applyFlat(headName string, list List) List {
 	for _, arg := range args {
 		// If the argument is the same function, flatten it
 		if argList, ok := arg.(List); ok && len(argList.Elements) > 0 {
-			if argHead, ok := argList.Elements[0].(Atom); ok && argHead.AtomType == SymbolAtom {
-				if argHead.Value.(string) == headName {
+			if argHeadName, ok := core.ExtractSymbol(argList.Elements[0]); ok {
+				if argHeadName == headName {
 					// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
 					newArgs = append(newArgs, argList.Elements[1:]...)
 					continue
@@ -297,15 +292,15 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Conte
 func (e *Evaluator) getBuiltinConstant(name string) (Expr, bool) {
 	switch name {
 	case "Pi":
-		return NewFloatAtom(math.Pi), true
+		return core.NewReal(math.Pi), true
 	case "E":
-		return NewFloatAtom(math.E), true
+		return core.NewReal(math.E), true
 	case "True":
-		return NewSymbolAtom("True"), true
+		return core.NewBool(true), true
 	case "False":
-		return NewSymbolAtom("False"), true
+		return core.NewBool(false), true
 	case "Null":
-		return NewSymbolAtom("Null"), true
+		return core.NewSymbolNull(), true
 	}
 	return nil, false
 }
@@ -314,70 +309,44 @@ func (e *Evaluator) getBuiltinConstant(name string) (Expr, bool) {
 
 // isNumeric checks if an expression is numeric
 func isNumeric(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		return atom.AtomType == IntAtom || atom.AtomType == FloatAtom
+	// Check new atomic types first
+	switch expr.(type) {
+	case core.Integer, core.Real:
+		return true
 	}
 	return false
 }
 
 // getNumericValue extracts numeric value from an expression
 func getNumericValue(expr Expr) (float64, bool) {
-	if atom, ok := expr.(Atom); ok {
-		switch atom.AtomType {
-		case IntAtom:
-			return float64(atom.Value.(int)), true
-		case FloatAtom:
-			return atom.Value.(float64), true
-		}
+	// Check new atomic types first
+	switch ex := expr.(type) {
+	case core.Integer:
+		return float64(ex), true
+	case core.Real:
+		return float64(ex), true
 	}
 	return 0, false
 }
 
 // createNumericResult creates appropriate numeric result (int if whole, float otherwise)
 func createNumericResult(value float64) Expr {
-	if value == float64(int(value)) {
-		return NewIntAtom(int(value))
+	if value == float64(int64(value)) {
+		return core.NewInteger(int64(value))
 	}
-	return NewFloatAtom(value)
-}
-
-// isBool checks if an expression is a boolean symbol
-func isBool(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
-		return symbolName == "True" || symbolName == "False"
-	}
-	return false
+	return core.NewReal(value)
 }
 
 // getBoolValue extracts boolean value from an expression
+// NOTE: This wraps core.ExtractBool for backward compatibility
 func getBoolValue(expr Expr) (bool, bool) {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
-		switch symbolName {
-		case "True":
-			return true, true
-		case "False":
-			return false, true
-		}
-	}
-	return false, false
+	return core.ExtractBool(expr)
 }
 
 // isSymbol checks if an expression is a symbol
+// NOTE: This wraps core.IsSymbol for backward compatibility
 func isSymbol(expr Expr) bool {
-	if atom, ok := expr.(Atom); ok {
-		return atom.AtomType == SymbolAtom
-	}
-	return false
-}
-
-// getSymbolName extracts symbol name from an expression
-func getSymbolName(expr Expr) (string, bool) {
-	if atom, ok := expr.(Atom); ok && atom.AtomType == SymbolAtom {
-		return atom.Value.(string), true
-	}
-	return "", false
+	return core.IsSymbol(expr)
 }
 
 // patternsEqual compares two patterns for equivalence
@@ -394,19 +363,19 @@ func patternsEqual(pattern1, pattern2 Expr) bool {
 
 	// For non-patterns or when one is a pattern and one isn't, do exact comparison
 	switch p1 := pattern1.(type) {
-	case Atom:
-		if p2, ok := pattern2.(Atom); ok {
+	case core.Integer, core.Real, core.String:
+		return pattern1.Equal(pattern2)
+	case core.Symbol:
+		if name2, ok := core.ExtractSymbol(pattern2); ok {
 			// For symbol atoms that are pattern variables, ignore the variable name
-			if p1.AtomType == SymbolAtom && p2.AtomType == SymbolAtom {
-				name1 := p1.Value.(string)
-				name2 := p2.Value.(string)
-				if isPatternVariable(name1) && isPatternVariable(name2) {
-					info1 := parsePatternInfo(name1)
-					info2 := parsePatternInfo(name2)
-					return info1.Type == info2.Type && info1.TypeName == info2.TypeName
-				}
+			name1 := string(p1)
+			// name2 already extracted above
+			if isPatternVariable(name1) && isPatternVariable(name2) {
+				info1 := parsePatternInfo(name1)
+				info2 := parsePatternInfo(name2)
+				return info1.Type == info2.Type && info1.TypeName == info2.TypeName
 			}
-			return p1.AtomType == p2.AtomType && p1.Value == p2.Value
+			return name1 == name2
 		}
 		return false
 	case List:
@@ -481,7 +450,7 @@ func (e *Evaluator) evaluateIf(args []Expr, ctx *Context) Expr {
 			if len(args) == 3 {
 				return e.evaluate(args[2], ctx)
 			} else {
-				return NewSymbolAtom("Null")
+				return core.NewSymbolNull()
 			}
 		}
 	}
@@ -497,8 +466,7 @@ func (e *Evaluator) evaluateSet(args []Expr, ctx *Context) Expr {
 	}
 
 	// First argument should be a symbol (don't evaluate it)
-	if atom, ok := args[0].(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(args[0]); ok {
 
 		// Evaluate the value
 		value := e.evaluate(args[1], ctx)
@@ -527,8 +495,7 @@ func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
 	if list, ok := lhs.(List); ok && len(list.Elements) >= 1 {
 		// This is a function definition
 		headExpr := list.Elements[0]
-		if headAtom, ok := headExpr.(Atom); ok && headAtom.AtomType == SymbolAtom {
-			functionName := headAtom.Value.(string)
+		if functionName, ok := core.ExtractSymbol(headExpr); ok {
 
 			// Register the pattern with the function registry
 			err := ctx.functionRegistry.RegisterFunction(functionName, lhs, func(args []Expr, ctx *Context) Expr {
@@ -544,16 +511,15 @@ func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
 				return NewErrorExpr("DefinitionError", err.Error(), args)
 			}
 
-			return NewSymbolAtom("Null")
+			return core.NewSymbolNull()
 		}
 	}
 
 	// Handle simple variable assignment: x := value
-	if atom, ok := lhs.(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(lhs); ok {
 		// For SetDelayed, store the unevaluated RHS
 		ctx.Set(symbolName, rhs)
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	}
 
 	return NewErrorExpr("ArgumentError", "Invalid left-hand side for SetDelayed", args)
@@ -565,11 +531,10 @@ func (e *Evaluator) evaluateUnset(args []Expr, ctx *Context) Expr {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("Unset expects 1 argument, got %d", len(args)), args)
 	}
 
-	if atom, ok := args[0].(Atom); ok && atom.AtomType == SymbolAtom {
-		symbolName := atom.Value.(string)
+	if symbolName, ok := core.ExtractSymbol(args[0]); ok {
 		// Remove the variable binding
 		delete(ctx.variables, symbolName)
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	}
 
 	return NewErrorExpr("ArgumentError", "Argument to Unset must be a symbol", args)
@@ -578,13 +543,13 @@ func (e *Evaluator) evaluateUnset(args []Expr, ctx *Context) Expr {
 // evaluateHold implements the Hold special form
 func (e *Evaluator) evaluateHold(args []Expr, ctx *Context) Expr {
 	// Hold returns its arguments unevaluated wrapped in Hold
-	return NewList(append([]Expr{NewSymbolAtom("Hold")}, args...)...)
+	return NewList(append([]Expr{core.NewSymbol("Hold")}, args...)...)
 }
 
 // evaluateEvaluate implements the Evaluate special form
 func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
 	if len(args) == 0 {
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	}
 
 	if len(args) == 1 {
@@ -593,7 +558,7 @@ func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
 	}
 
 	// Multiple arguments - evaluate all and return the last result
-	var result Expr = NewSymbolAtom("Null")
+	var result Expr = core.NewSymbolNull()
 	for _, arg := range args {
 		result = e.evaluate(arg, ctx)
 		if IsError(result) {
@@ -606,10 +571,10 @@ func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
 // evaluateCompoundExpression implements the CompoundExpression special form
 func (e *Evaluator) evaluateCompoundExpression(args []Expr, ctx *Context) Expr {
 	if len(args) == 0 {
-		return NewSymbolAtom("Null")
+		return core.NewSymbolNull()
 	}
 
-	var result Expr = NewSymbolAtom("Null")
+	var result Expr = core.NewSymbolNull()
 	for _, arg := range args {
 		result = e.evaluate(arg, ctx)
 		if IsError(result) {
@@ -622,7 +587,7 @@ func (e *Evaluator) evaluateCompoundExpression(args []Expr, ctx *Context) Expr {
 // evaluateAnd implements the And special form with short-circuit evaluation
 func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
 	if len(args) == 0 {
-		return NewSymbolAtom("True")
+		return core.NewBool(true)
 	}
 
 	var nonBooleanArgs []Expr
@@ -636,7 +601,7 @@ func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
 
 		if boolVal, isBool := getBoolValue(result); isBool {
 			if !boolVal {
-				return NewSymbolAtom("False") // Short-circuit on first False
+				return core.NewBool(false) // Short-circuit on first False
 			}
 			// True values are eliminated (identity for And)
 		} else {
@@ -647,19 +612,19 @@ func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
 
 	// Handle results based on remaining non-boolean arguments
 	if len(nonBooleanArgs) == 0 {
-		return NewSymbolAtom("True") // All were True
+		return core.NewBool(true) // All were True
 	} else if len(nonBooleanArgs) == 1 {
 		return nonBooleanArgs[0] // Single non-boolean argument
 	} else {
 		// Multiple non-boolean arguments, return simplified And expression
-		return NewList(append([]Expr{NewSymbolAtom("And")}, nonBooleanArgs...)...)
+		return NewList(append([]Expr{core.NewSymbol("And")}, nonBooleanArgs...)...)
 	}
 }
 
 // evaluateOr implements the Or special form with short-circuit evaluation
 func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 	if len(args) == 0 {
-		return NewSymbolAtom("False")
+		return core.NewBool(false)
 	}
 
 	var nonBooleanArgs []Expr
@@ -672,7 +637,7 @@ func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 
 		if boolVal, isBool := getBoolValue(result); isBool {
 			if boolVal {
-				return NewSymbolAtom("True") // Short-circuit on first True
+				return core.NewBool(true) // Short-circuit on first True
 			}
 			// False values are eliminated (identity for Or)
 		} else {
@@ -683,12 +648,12 @@ func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 
 	// Handle results based on remaining non-boolean arguments
 	if len(nonBooleanArgs) == 0 {
-		return NewSymbolAtom("False") // All were False
+		return core.NewBool(false) // All were False
 	} else if len(nonBooleanArgs) == 1 {
 		return nonBooleanArgs[0] // Single non-boolean argument
 	} else {
 		// Multiple non-boolean arguments, return simplified Or expression
-		return NewList(append([]Expr{NewSymbolAtom("Or")}, nonBooleanArgs...)...)
+		return NewList(append([]Expr{core.NewSymbol("Or")}, nonBooleanArgs...)...)
 	}
 }
 
@@ -771,12 +736,12 @@ func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 	if start < 0 {
 		// Negative start: use Take to get last |start| elements
 		// Take([1,2,3,4,5], -2) gives [4,5]
-		return e.evaluate(NewList(NewSymbolAtom("Take"), expr, NewIntAtom(int(start))), ctx)
+		return e.evaluate(NewList(core.NewSymbol("Take"), expr, core.NewInteger(start)), ctx)
 	} else {
 		// Positive start: use Drop to remove first (start-1) elements
 		// Drop([1,2,3,4,5], 2) gives [3,4,5] (for start=3, 1-indexed)
 		dropCount := start - 1
-		return e.evaluate(NewList(NewSymbolAtom("Drop"), expr, NewIntAtom(int(dropCount))), ctx)
+		return e.evaluate(NewList(core.NewSymbol("Drop"), expr, core.NewInteger(dropCount)), ctx)
 	}
 }
 
@@ -864,7 +829,9 @@ func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
 
 	// Extract integer value for end (handle special case of -1 for "to end")
 	var end int64
-	if endAtom, ok := endExpr.(Atom); ok && endAtom.AtomType == IntAtom && endAtom.Value.(int) == -1 {
+
+	// TODO: UGLY
+	if endAtom, ok := endExpr.(core.Integer); ok && int(endAtom) == -1 {
 		// Special case: -1 means "to end of sequence"
 		end = sliceable.(interface{ Length() int64 }).Length()
 	} else {

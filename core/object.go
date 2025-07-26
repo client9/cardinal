@@ -26,6 +26,10 @@ func (o ObjectExpr) Type() string {
 	return o.TypeName // Return the registered type name
 }
 
+func (o ObjectExpr) IsAtom() bool {
+	return false // ObjectExpr is a wrapper, so it's not atomic
+}
+
 func (o ObjectExpr) Equal(rhs Expr) bool {
 	rhsObj, ok := rhs.(ObjectExpr)
 	if !ok || o.TypeName != rhsObj.TypeName {

@@ -1,93 +1,94 @@
 package sexpr
 
 import (
+	"github.com/client9/sexpr/core"
 	"testing"
 )
 
 func TestAtomEqual(t *testing.T) {
 	tests := []struct {
 		name     string
-		atom1    Atom
+		atom1    Expr
 		atom2    Expr
 		expected bool
 	}{
 		// Same atoms
 		{
 			name:     "same integers",
-			atom1:    NewIntAtom(42),
-			atom2:    NewIntAtom(42),
+			atom1:    core.NewInteger(42),
+			atom2:    core.NewInteger(42),
 			expected: true,
 		},
 		{
 			name:     "same floats",
-			atom1:    NewFloatAtom(3.14),
-			atom2:    NewFloatAtom(3.14),
+			atom1:    core.NewReal(3.14),
+			atom2:    core.NewReal(3.14),
 			expected: true,
 		},
 		{
 			name:     "same strings",
-			atom1:    NewStringAtom("hello"),
-			atom2:    NewStringAtom("hello"),
+			atom1:    core.NewString("hello"),
+			atom2:    core.NewString("hello"),
 			expected: true,
 		},
 		{
 			name:     "same symbols",
-			atom1:    NewSymbolAtom("x"),
-			atom2:    NewSymbolAtom("x"),
+			atom1:    core.NewSymbol("x"),
+			atom2:    core.NewSymbol("x"),
 			expected: true,
 		},
 
 		// Different atoms
 		{
 			name:     "different integers",
-			atom1:    NewIntAtom(42),
-			atom2:    NewIntAtom(43),
+			atom1:    core.NewInteger(42),
+			atom2:    core.NewInteger(43),
 			expected: false,
 		},
 		{
 			name:     "different floats",
-			atom1:    NewFloatAtom(3.14),
-			atom2:    NewFloatAtom(2.71),
+			atom1:    core.NewReal(3.14),
+			atom2:    core.NewReal(2.71),
 			expected: false,
 		},
 		{
 			name:     "different strings",
-			atom1:    NewStringAtom("hello"),
-			atom2:    NewStringAtom("world"),
+			atom1:    core.NewString("hello"),
+			atom2:    core.NewString("world"),
 			expected: false,
 		},
 		{
 			name:     "different symbols",
-			atom1:    NewSymbolAtom("x"),
-			atom2:    NewSymbolAtom("y"),
+			atom1:    core.NewSymbol("x"),
+			atom2:    core.NewSymbol("y"),
 			expected: false,
 		},
 
 		// Different types
 		{
 			name:     "int vs float",
-			atom1:    NewIntAtom(42),
-			atom2:    NewFloatAtom(42.0),
+			atom1:    core.NewInteger(42),
+			atom2:    core.NewReal(42.0),
 			expected: false,
 		},
 		{
 			name:     "int vs string",
-			atom1:    NewIntAtom(42),
-			atom2:    NewStringAtom("42"),
+			atom1:    core.NewInteger(42),
+			atom2:    core.NewString("42"),
 			expected: false,
 		},
 		{
 			name:     "symbol vs string",
-			atom1:    NewSymbolAtom("hello"),
-			atom2:    NewStringAtom("hello"),
+			atom1:    core.NewSymbol("hello"),
+			atom2:    core.NewString("hello"),
 			expected: false,
 		},
 
 		// Atom vs non-atom
 		{
 			name:     "atom vs list",
-			atom1:    NewIntAtom(42),
-			atom2:    NewList(NewSymbolAtom("List"), NewIntAtom(42)),
+			atom1:    core.NewInteger(42),
+			atom2:    NewList(core.NewSymbol("List"), core.NewInteger(42)),
 			expected: false,
 		},
 	}
@@ -120,32 +121,32 @@ func TestListEqual(t *testing.T) {
 		// Same single element lists
 		{
 			name:     "same single element",
-			list1:    NewList(NewIntAtom(42)),
-			list2:    NewList(NewIntAtom(42)),
+			list1:    NewList(core.NewInteger(42)),
+			list2:    NewList(core.NewInteger(42)),
 			expected: true,
 		},
 
 		// Same multi-element lists
 		{
 			name:     "same multi-element",
-			list1:    NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-			list2:    NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
+			list1:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list2:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
 			expected: true,
 		},
 
 		// Different lengths
 		{
 			name:     "different lengths",
-			list1:    NewList(NewIntAtom(1)),
-			list2:    NewList(NewIntAtom(1), NewIntAtom(2)),
+			list1:    NewList(core.NewInteger(1)),
+			list2:    NewList(core.NewInteger(1), core.NewInteger(2)),
 			expected: false,
 		},
 
 		// Different elements
 		{
 			name:     "different elements",
-			list1:    NewList(NewIntAtom(1), NewIntAtom(2)),
-			list2:    NewList(NewIntAtom(1), NewIntAtom(3)),
+			list1:    NewList(core.NewInteger(1), core.NewInteger(2)),
+			list2:    NewList(core.NewInteger(1), core.NewInteger(3)),
 			expected: false,
 		},
 
@@ -153,14 +154,14 @@ func TestListEqual(t *testing.T) {
 		{
 			name: "nested lists same",
 			list1: NewList(
-				NewSymbolAtom("f"),
-				NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-				NewIntAtom(3),
+				core.NewSymbol("f"),
+				NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+				core.NewInteger(3),
 			),
 			list2: NewList(
-				NewSymbolAtom("f"),
-				NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-				NewIntAtom(3),
+				core.NewSymbol("f"),
+				NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+				core.NewInteger(3),
 			),
 			expected: true,
 		},
@@ -169,14 +170,14 @@ func TestListEqual(t *testing.T) {
 		{
 			name: "nested lists different",
 			list1: NewList(
-				NewSymbolAtom("f"),
-				NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-				NewIntAtom(3),
+				core.NewSymbol("f"),
+				NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+				core.NewInteger(3),
 			),
 			list2: NewList(
-				NewSymbolAtom("f"),
-				NewList(NewSymbolAtom("Times"), NewIntAtom(1), NewIntAtom(2)),
-				NewIntAtom(3),
+				core.NewSymbol("f"),
+				NewList(core.NewSymbol("Times"), core.NewInteger(1), core.NewInteger(2)),
+				core.NewInteger(3),
 			),
 			expected: false,
 		},
@@ -184,8 +185,8 @@ func TestListEqual(t *testing.T) {
 		// List vs non-list
 		{
 			name:     "list vs atom",
-			list1:    NewList(NewIntAtom(42)),
-			list2:    NewIntAtom(42),
+			list1:    NewList(core.NewInteger(42)),
+			list2:    core.NewInteger(42),
 			expected: false,
 		},
 	}
@@ -217,10 +218,10 @@ func TestErrorEqual(t *testing.T) {
 		{
 			name: "same error with args",
 			error1: NewErrorExpr("ArgumentError", "Wrong number of args", []Expr{
-				NewIntAtom(1), NewIntAtom(2),
+				core.NewInteger(1), core.NewInteger(2),
 			}),
 			error2: NewErrorExpr("ArgumentError", "Wrong number of args", []Expr{
-				NewIntAtom(1), NewIntAtom(2),
+				core.NewInteger(1), core.NewInteger(2),
 			}),
 			expected: true,
 		},
@@ -245,10 +246,10 @@ func TestErrorEqual(t *testing.T) {
 		{
 			name: "different arguments",
 			error1: NewErrorExpr("ArgumentError", "Wrong args", []Expr{
-				NewIntAtom(1),
+				core.NewInteger(1),
 			}),
 			error2: NewErrorExpr("ArgumentError", "Wrong args", []Expr{
-				NewIntAtom(2),
+				core.NewInteger(2),
 			}),
 			expected: false,
 		},
@@ -257,7 +258,7 @@ func TestErrorEqual(t *testing.T) {
 		{
 			name:     "error vs atom",
 			error1:   NewErrorExpr("DivisionByZero", "Division by zero", []Expr{}),
-			error2:   NewIntAtom(42),
+			error2:   core.NewInteger(42),
 			expected: false,
 		},
 	}
@@ -343,14 +344,14 @@ func TestListsEqualFunction(t *testing.T) {
 	}{
 		{
 			name:     "same lists",
-			list1:    NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-			list2:    NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
+			list1:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list2:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
 			expected: true,
 		},
 		{
 			name:     "different lists",
-			list1:    NewList(NewSymbolAtom("Plus"), NewIntAtom(1), NewIntAtom(2)),
-			list2:    NewList(NewSymbolAtom("Times"), NewIntAtom(1), NewIntAtom(2)),
+			list1:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list2:    NewList(core.NewSymbol("Times"), core.NewInteger(1), core.NewInteger(2)),
 			expected: false,
 		},
 		{
