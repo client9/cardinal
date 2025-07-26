@@ -137,7 +137,7 @@ func DebugPatternSpecificity(pattern Expr) string {
 			if core.IsSymbol(pat.Elements[0]) {
 				compound := calculateCompoundSpecificity(pat)
 				result := fmt.Sprintf("Pattern: %s\n", pattern.String())
-				result += fmt.Sprintf("Type: Compound Pattern\n")
+				result += fmt.Sprintf("Type: %s\n", "Compound Pattern")
 				result += fmt.Sprintf("Arguments: %d\n", len(pat.Elements)-1)
 				result += fmt.Sprintf("Base Score: %d\n", compound.BaseScore)
 				result += fmt.Sprintf("Literal Bonus: %d\n", compound.LiteralBonus)

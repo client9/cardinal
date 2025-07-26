@@ -175,4 +175,3 @@ func (st *SymbolTable) Reset() {
 
 	st.attributes = make(map[string]map[Attribute]bool)
 }
-

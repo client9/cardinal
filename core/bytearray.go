@@ -12,10 +12,10 @@ import (
 // rather than as "type ByteArray []byte" to ensure immutability. This design
 // prevents several issues:
 //
-// 1. Slice sharing: Go slices share underlying arrays, so "type ByteArray []byte"
-//    would allow mutations to be visible across copies
-// 2. Direct access: Users could directly modify bytes with b[i] = newValue
-// 3. No encapsulation: Can't control access or enforce defensive copying
+//  1. Slice sharing: Go slices share underlying arrays, so "type ByteArray []byte"
+//     would allow mutations to be visible across copies
+//  2. Direct access: Users could directly modify bytes with b[i] = newValue
+//  3. No encapsulation: Can't control access or enforce defensive copying
 //
 // The struct-based approach ensures immutability through:
 // - Private data field (no direct access)
