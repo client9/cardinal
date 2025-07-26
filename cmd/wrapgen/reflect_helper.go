@@ -18,19 +18,19 @@ type ReflectionInfo struct {
 
 // FunctionSpec is used for reflection analysis (legacy compatibility)
 type FunctionSpec struct {
-	Pattern      string      // "Plus(x__Integer)" - the full pattern
-	Function     interface{} // Function reference for reflection
-	FunctionName string      // "PlusIntegers" - derived from Function name
-	WrapperName  string      // "WrapPlusIntegers" - derived from FunctionName
-	IsVariadic   bool        // derived from Function signature
-	ParamType    string      // For variadic: derived from Function signature
-	ParamTypes   []string    // For fixed arity: derived from Function signature
-	ReturnType   string      // derived from Function signature
-	ReturnsError bool        // derived from Function signature (has error return)
+	Pattern      string   // "Plus(x__Integer)" - the full pattern
+	Function     any      // Function reference for reflection
+	FunctionName string   // "PlusIntegers" - derived from Function name
+	WrapperName  string   // "WrapPlusIntegers" - derived from FunctionName
+	IsVariadic   bool     // derived from Function signature
+	ParamType    string   // For variadic: derived from Function signature
+	ParamTypes   []string // For fixed arity: derived from Function signature
+	ReturnType   string   // derived from Function signature
+	ReturnsError bool     // derived from Function signature (has error return)
 }
 
 // analyzeFunctionSignature uses reflection to analyze a function's signature
-func analyzeFunctionSignature(fn interface{}) (ReflectionInfo, error) {
+func analyzeFunctionSignature(fn any) (ReflectionInfo, error) {
 	if fn == nil {
 		return ReflectionInfo{}, fmt.Errorf("function is nil")
 	}

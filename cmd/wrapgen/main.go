@@ -1,3 +1,41 @@
+// Package main implements the wrapgen code generator for s-expression wrapper functions.
+//
+// Wrapgen analyzes Go functions using reflection and generates type-safe wrapper
+// functions that convert between Go types and s-expression types (core.Expr).
+//
+// # Validation Modes
+//
+// The system supports three validation modes controlled by the -validation flag:
+//
+//   - trust (production): Direct type assertions with no validation overhead.
+//     Assumes input types are correct and performs direct casts like:
+//     arg.(core.Integer) or arg.(core.Real)
+//     This mode is fastest but will panic on type mismatches.
+//
+//   - debug (development): Full validation with panic on type mismatch.
+//     Uses core.ExtractInt64(), core.ExtractFloat64(), etc. and panics
+//     with detailed error messages on validation failures. Useful for
+//     development and debugging.
+//
+//   - graceful (fallback): Full validation with graceful error handling.
+//     Uses validation functions but returns unevaluated expressions
+//     (core.CopyExprList) instead of panicking on type mismatches.
+//     Allows the system to continue processing invalid inputs.
+//
+// # Code Generation
+//
+// For each symbol (e.g., Plus, Times), wrapgen generates:
+//   - Individual wrapper file (e.g., wrapped/plus.go)
+//   - Pattern-based dispatch registration in builtin_setup.go
+//   - Type-safe parameter conversion and return value handling
+//   - Validation code appropriate to the selected mode
+//
+// # Performance Optimizations
+//
+//   - Expr parameters: When Go functions accept core.Expr parameters,
+//     no conversion is needed - args are passed directly
+//   - Variadic optimization: Detects when conversions are unnecessary
+//   - Trust mode: Eliminates all validation overhead for production builds
 package main
 
 import (
@@ -9,420 +47,17 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-
-	// Import stdlib functions for reflection
-	"github.com/client9/sexpr/stdlib"
 )
-
-// SymbolSpec defines a complete symbol with its attributes and functions
-type SymbolSpec struct {
-	Name       string                   // "Plus" - the symbol name
-	Attributes []string                 // ["Flat", "Orderless"] - symbol attributes
-	Functions  map[string]interface{}   // "(x__Integer)" -> stdlib.PlusIntegers
-	Constants  map[string]interface{}   // For symbols like Pi, E that have constant values
-}
-
-// Symbol specifications organized by symbol name
-var symbolSpecs = map[string]SymbolSpec{
-	// Arithmetic Operations
-	"Plus": {
-		Name:       "Plus",
-		Attributes: []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
-		Functions: map[string]interface{}{
-			"()":           stdlib.PlusIdentity,
-			"(x__Integer)": stdlib.PlusIntegers,
-			"(x__Real)":    stdlib.PlusReals,
-			"(x__Number)":  stdlib.PlusNumbers,
-		},
-	},
-	"Times": {
-		Name:       "Times",
-		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
-		Functions: map[string]interface{}{
-			"()":           stdlib.TimesIdentity,
-			"(x__Integer)": stdlib.TimesIntegers,
-			"(x__Real)":    stdlib.TimesReals,
-			"(x__Number)":  stdlib.TimesNumbers,
-		},
-	},
-	"Power": {
-		Name:       "Power",
-		Attributes: []string{"OneIdentity"},
-		Functions: map[string]interface{}{
-			"(base_Real, exp_Integer)": stdlib.PowerReal,
-			"(x_Number, y_Number)":     stdlib.PowerExprs,
-		},
-	},
-	"Subtract": {
-		Name:       "Subtract",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Integer, y_Integer)": stdlib.SubtractIntegers,
-			"(x_Number, y_Number)":   stdlib.SubtractExprs,
-		},
-	},
-	"Divide": {
-		Name:       "Divide",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Integer, y_Integer)": stdlib.DivideIntegers,
-			"(x_Number, y_Number)":   stdlib.DivideExprs,
-		},
-	},
-
-	// Comparison Operations
-	"Equal": {
-		Name:       "Equal",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Integer, y_Integer)": stdlib.EqualInts,
-			"(x_Real, y_Real)":       stdlib.EqualFloats,
-			"(x_Number, y_Number)":   stdlib.EqualNumbers,
-			"(x_String, y_String)":   stdlib.EqualStrings,
-			"(x_, y_)":               stdlib.EqualExprs,
-		},
-	},
-	"Unequal": {
-		Name:       "Unequal",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Integer, y_Integer)": stdlib.UnequalInts,
-			"(x_Real, y_Real)":       stdlib.UnequalFloats,
-			"(x_Number, y_Number)":   stdlib.UnequalNumbers,
-			"(x_String, y_String)":   stdlib.UnequalStrings,
-			"(x_, y_)":               stdlib.UnequalExprs,
-		},
-	},
-	"Less": {
-		Name:       "Less",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Number, y_Number)": stdlib.LessNumber,
-		},
-	},
-	"Greater": {
-		Name:       "Greater",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Number, y_Number))": stdlib.GreaterNumber,
-		},
-	},
-	"LessEqual": {
-		Name:       "LessEqual",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Number, y_Number)": stdlib.LessEqualNumber,
-		},
-	},
-	"GreaterEqual": {
-		Name:       "GreaterEqual",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Number, y_Number)": stdlib.GreaterEqualNumber,
-		},
-	},
-	"SameQ": {
-		Name:       "SameQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, y_)": stdlib.SameQExprs,
-		},
-	},
-	"UnsameQ": {
-		Name:       "UnsameQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, y_)": stdlib.UnsameQExprs,
-		},
-	},
-
-	// Type Predicates
-	"IntegerQ": {
-		Name:       "IntegerQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.IntegerQExpr,
-		},
-	},
-	"FloatQ": {
-		Name:       "FloatQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.FloatQExpr,
-		},
-	},
-	"NumberQ": {
-		Name:       "NumberQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.NumberQExpr,
-		},
-	},
-	"StringQ": {
-		Name:       "StringQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.StringQExpr,
-		},
-	},
-	"BooleanQ": {
-		Name:       "BooleanQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.BooleanQExpr,
-		},
-	},
-	"SymbolQ": {
-		Name:       "SymbolQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.SymbolQExpr,
-		},
-	},
-	"TrueQ": {
-		Name:       "TrueQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.TrueQExpr,
-		},
-	},
-	"ListQ": {
-		Name:       "ListQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.ListQExpr,
-		},
-	},
-	"AtomQ": {
-		Name:       "AtomQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.AtomQExpr,
-		},
-	},
-	"Head": {
-		Name:       "Head",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.HeadExpr,
-		},
-	},
-
-	// Output Format Functions
-	"FullForm": {
-		Name:       "FullForm",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.FullFormExpr,
-		},
-	},
-	"InputForm": {
-		Name:       "InputForm",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.InputFormExpr,
-		},
-	},
-
-	// List Operations
-	"Length": {
-		Name:       "Length",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.LengthExpr,
-		},
-	},
-	"First": {
-		Name:       "First",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_List)": stdlib.FirstExpr,
-			"(x_)":     stdlib.First,
-		},
-	},
-	"Last": {
-		Name:       "Last",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_List)": stdlib.LastExpr,
-			"(x_)":     stdlib.Last,
-		},
-	},
-	"Rest": {
-		Name:       "Rest",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_List)": stdlib.RestExpr,
-			"(x_)":     stdlib.Rest,
-		},
-	},
-	"Most": {
-		Name:       "Most",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_List)": stdlib.MostExpr,
-			"(x_)":     stdlib.Most,
-		},
-	},
-	"Append": {
-		Name:       "Append",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_List, y_)":       stdlib.ListAppend,
-			"(x_String, y_String)": stdlib.StringAppend,
-		},
-	},
-
-	// Sequence Operations
-	"Take": {
-		Name:       "Take",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, n_Integer)":                    stdlib.Take,
-			"(x_, List(n_Integer, m_Integer))": stdlib.TakeRange,
-		},
-	},
-	"Drop": {
-		Name:       "Drop",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, n_Integer)":                    stdlib.Drop,
-			"(x_, List(n_Integer, m_Integer))": stdlib.DropRange,
-		},
-	},
-	"Part": {
-		Name:       "Part",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, n_Integer)":        stdlib.Part,
-			"(x_Association, y_)":   stdlib.PartAssociation,
-		},
-	},
-	"Reverse": {
-		Name: "Reverse",
-		Attributes: []string{},
-		Functions: map[string]interface{} {
-			"(x_String)": stdlib.StringReverse,
-		},
-	},
-	"RotateLeft": {
-		Name:       "RotateLeft",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, n_Integer)": stdlib.RotateLeft,
-		},
-	},
-	"RotateRight": {
-		Name:       "RotateRight",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, n_Integer)": stdlib.RotateRight,
-		},
-	},
-
-	// Logical Operations
-	"Not": {
-		Name:       "Not",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.NotExpr,
-		},
-	},
-	"MatchQ": {
-		Name:       "MatchQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_, y_)": stdlib.MatchQExprs,
-		},
-	},
-
-	// String Operations
-	"StringLength": {
-		Name:       "StringLength",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_String)": stdlib.StringLengthRunes,
-		},
-	},
-	"ByteArray": {
-		Name:       "ByteArray",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_String)": stdlib.ByteArrayFromString,
-		},
-	},
-
-	// Association Operations
-	"AssociationQ": {
-		Name:       "AssociationQ",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.AssociationQExpr,
-		},
-	},
-	"Keys": {
-		Name:       "Keys",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Association)": stdlib.KeysExpr,
-		},
-	},
-	"Values": {
-		Name:       "Values",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_Association)": stdlib.ValuesExpr,
-		},
-	},
-	"Association": {
-		Name:       "Association",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x___Rule)": stdlib.AssociationRules,
-		},
-	},
-
-	// Output Operations
-	"Print": {
-		Name:       "Print",
-		Attributes: []string{},
-		Functions: map[string]interface{}{
-			"(x_)": stdlib.Print,
-		},
-	},
-
-	// Constants (symbols with values but no functions)
-	"Pi": {
-		Name:       "Pi",
-		Attributes: []string{"Constant", "Protected"},
-		Constants:  map[string]interface{}{"Pi": 3.141592653589793},
-	},
-	"E": {
-		Name:       "E",
-		Attributes: []string{"Constant", "Protected"},
-		Constants:  map[string]interface{}{"E": 2.718281828459045},
-	},
-	"True": {
-		Name:       "True",
-		Attributes: []string{"Constant", "Protected"},
-		Constants:  map[string]interface{}{"True": "True"},
-	},
-	"False": {
-		Name:       "False",
-		Attributes: []string{"Constant", "Protected"},
-		Constants:  map[string]interface{}{"False": "False"},
-	},
-}
 
 // FunctionInfo contains expanded information about a symbol's function
 type FunctionInfo struct {
 	SymbolName   string // "Plus"
 	Pattern      string // "Plus(x__Integer)"
-	FunctionName string // "PlusIntegers" 
+	FunctionName string // "PlusIntegers"
 	WrapperName  string // "WrapPlusIntegers"
 	IsVariadic   bool
 	ParamType    string   // For variadic functions
-	ParamTypes   []string // For fixed-arity functions  
+	ParamTypes   []string // For fixed-arity functions
 	ReturnType   string
 	ReturnsError bool
 }
@@ -464,12 +99,12 @@ func main() {
 		// Generate file for this symbol
 		filename := strings.ToLower(symbolName) + ".go"
 		outputPath := filepath.Join(*outputDir, filename)
-		
+
 		err := generateSymbolFile(outputPath, symbolName, symbolFunctions, *validationMode)
 		if err != nil {
 			log.Fatalf("Error generating %s: %v", outputPath, err)
 		}
-		
+
 		totalFunctions += len(symbolFunctions)
 	}
 
@@ -492,7 +127,7 @@ func processSymbolSpecs(specs map[string]SymbolSpec) ([]FunctionInfo, error) {
 	for symbolName, symbol := range specs {
 		for patternSuffix, function := range symbol.Functions {
 			fullPattern := symbolName + patternSuffix
-			
+
 			// Create function spec for reflection analysis
 			funcSpec := FunctionSpec{
 				Pattern:  fullPattern,
@@ -546,24 +181,36 @@ import (
 // Generated from pattern: {{.Pattern}}
 func {{.WrapperName}}(args []core.Expr) core.Expr {
 {{- if .IsVariadic}}
-	{{- if and (ne .ParamType "Expr") (ne $.ValidationMode "trust")}}
+	{{- if eq .ParamType "Expr"}}
+	// No conversion needed - pass args directly
+	{{- else}}
+	{{- if ne $.ValidationMode "trust"}}
 	funcName := "{{.Pattern | extractFuncName}}"
 	{{- end}}
 	
 	// Convert all args to {{.ParamType}}
-	{{if eq .ParamType "Expr"}}convertedArgs := make([]core.Expr, len(args)){{else}}convertedArgs := make([]{{.ParamType}}, len(args)){{end}}
+	convertedArgs := make([]{{.ParamType}}, len(args))
 	for i, arg := range args {
 		{{getConversionWithMode .ParamType $.ValidationMode $.SymbolName}}
 	}
+	{{- end}}
 	
 	// Call business logic function
 	{{- if .ReturnsError}}
+	{{- if eq .ParamType "Expr"}}
+	result, err := stdlib.{{.FunctionName}}(args...)
+	{{- else}}
 	result, err := stdlib.{{.FunctionName}}(convertedArgs...)
+	{{- end}}
 	if err != nil {
 		return core.NewErrorExpr(err.Error(), err.Error(), args)
 	}
 	{{- else}}
+	{{- if eq .ParamType "Expr"}}
+	result := stdlib.{{.FunctionName}}(args...)
+	{{- else}}
 	result := stdlib.{{.FunctionName}}(convertedArgs...)
+	{{- end}}
 	{{- end}}
 	
 	// Convert result back to Expr
@@ -810,7 +457,7 @@ func getFixedConversionWithMode(paramTypes []string, validationMode, symbolName 
 	var conversions []string
 	for i, paramType := range paramTypes {
 		varName := fmt.Sprintf("arg%d", i)
-		
+
 		if validationMode == "trust" {
 			// Trust mode - direct type assertions
 			switch paramType {
@@ -843,7 +490,7 @@ func getFixedConversionWithMode(paramTypes []string, validationMode, symbolName 
 			if validationMode == "debug" {
 				fallbackAction = fmt.Sprintf("\t\tpanic(fmt.Sprintf(\"Type mismatch in %s: expected %s, got %%T\", args[%d]))", symbolName, paramType, i)
 			}
-			
+
 			switch paramType {
 			case "ByteArray":
 				conversions = append(conversions, fmt.Sprintf("\t%s, ok := core.ByteArray(args[%d])", varName, i))
