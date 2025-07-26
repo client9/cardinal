@@ -1,7 +1,6 @@
 
 build:
-	go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go
-	go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go -setup builtin_setup.go
+	time go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
 
@@ -17,5 +16,5 @@ clean:
 	rm -f repl cmd/repl/repl
 	rm -f main wrapgen
 	find . -name '*.bak*' | xargs rm -f
-	rm -f *_wrappers.go
+	rm -rf wrapped
 	rm -f builtin_setup.go

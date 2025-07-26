@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
-	//	"log"
 	"reflect"
 	"runtime"
 	"strings"
 )
 
-// FunctionInfo contains analyzed information about a function signature
-type FunctionInfo struct {
+// ReflectionInfo contains analyzed information about a function signature
+type ReflectionInfo struct {
 	Name         string   // Full function name from runtime
 	IsVariadic   bool     // true if function takes variadic args
 	ParamTypes   []string // Parameter types as strings
@@ -17,15 +16,28 @@ type FunctionInfo struct {
 	ReturnsError bool     // true if second return type is error
 }
 
+// FunctionSpec is used for reflection analysis (legacy compatibility)
+type FunctionSpec struct {
+	Pattern      string      // "Plus(x__Integer)" - the full pattern
+	Function     interface{} // Function reference for reflection
+	FunctionName string      // "PlusIntegers" - derived from Function name
+	WrapperName  string      // "WrapPlusIntegers" - derived from FunctionName
+	IsVariadic   bool        // derived from Function signature
+	ParamType    string      // For variadic: derived from Function signature
+	ParamTypes   []string    // For fixed arity: derived from Function signature
+	ReturnType   string      // derived from Function signature
+	ReturnsError bool        // derived from Function signature (has error return)
+}
+
 // analyzeFunctionSignature uses reflection to analyze a function's signature
-func analyzeFunctionSignature(fn interface{}) (FunctionInfo, error) {
+func analyzeFunctionSignature(fn interface{}) (ReflectionInfo, error) {
 	if fn == nil {
-		return FunctionInfo{}, fmt.Errorf("function is nil")
+		return ReflectionInfo{}, fmt.Errorf("function is nil")
 	}
 
 	t := reflect.TypeOf(fn)
 	if t.Kind() != reflect.Func {
-		return FunctionInfo{}, fmt.Errorf("expected function, got %s", t.Kind())
+		return ReflectionInfo{}, fmt.Errorf("expected function, got %s", t.Kind())
 	}
 
 	// Get function name from runtime
@@ -54,7 +66,7 @@ func analyzeFunctionSignature(fn interface{}) (FunctionInfo, error) {
 		}
 	}
 
-	return FunctionInfo{
+	return ReflectionInfo{
 		Name:         fullName,
 		IsVariadic:   t.IsVariadic(),
 		ParamTypes:   paramTypes,
@@ -65,7 +77,7 @@ func analyzeFunctionSignature(fn interface{}) (FunctionInfo, error) {
 
 // typeToString converts a reflect.Type to a string representation suitable for code generation
 func typeToString(t reflect.Type) string {
-	// this switch is a problem
+	// Handle variadic slice types
 	switch t.Kind() {
 	case reflect.Slice:
 		// Handle variadic slice types like []int64 -> int64
@@ -78,50 +90,17 @@ func typeToString(t reflect.Type) string {
 		return typeToString(t.Elem())
 	}
 
-	// Don't use "t.Kind()" since it removes types.
-	//	switch t.Kind() {
-
+	// Use type name if available
 	if t.Name() != "" {
 		return t.Name()
 	}
 
-	// unclear how it falls to here
+	// Fall back to string representation
 	return t.String()
-	/*
-	   switch t.Name() {
-	   case "Number":
-
-	   	return "Number"
-
-	   case "string":
-
-	   	return "string"
-
-	   case "int64":
-
-	   	return "int64"
-
-	   case "float64":
-
-	   	return "float64"
-
-	   case "bool":
-
-	   	return "bool"
-
-	   case "":
-
-	   	return t.String()
-
-	   default:
-
-	   		return t.Name()
-	   	}
-	*/
 }
 
 // extractFunctionName extracts just the function name from a full runtime name
-// e.g., "github.com/client9/sexpr.PlusIntegers" -> "PlusIntegers"
+// e.g., "github.com/client9/sexpr/stdlib.PlusIntegers" -> "PlusIntegers"
 func extractFunctionName(fullName string) string {
 	parts := strings.Split(fullName, ".")
 	if len(parts) > 0 {

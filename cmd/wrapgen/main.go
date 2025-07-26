@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -13,614 +14,536 @@ import (
 	"github.com/client9/sexpr/stdlib"
 )
 
-// FunctionSpec defines a function and its pattern for wrapper generation
-type FunctionSpec struct {
-	Pattern    string   // "Plus(x__Integer)" - MANUAL: domain-specific pattern
-	OutputFile string   // "arithmetic_wrappers.go" - MANUAL: organization choice
-	SymbolName string   // "Plus" - MANUAL: symbol name for attribute setup
-	Attributes []string // ["Flat", "Orderless", "OneIdentity"] - MANUAL: domain knowledge
-
-	// HYBRID: Either specify Function (for reflection) OR manual fields (legacy)
-	Function interface{} // PlusIntegers - NEW: actual function reference for reflection
-
-	// AUTO-DERIVED: These will be populated by reflection if Function is provided
-	FunctionName string   // "PlusIntegers" - derived from Function name
-	WrapperName  string   // "WrapPlusIntegers" - derived from FunctionName
-	IsVariadic   bool     // derived from Function signature
-	ParamType    string   // For variadic: derived from Function signature
-	ParamTypes   []string // For fixed arity: derived from Function signature
-	ReturnType   string   // derived from Function signature
-	ReturnsError bool     // derived from Function signature (has error return)
+// SymbolSpec defines a complete symbol with its attributes and functions
+type SymbolSpec struct {
+	Name       string                   // "Plus" - the symbol name
+	Attributes []string                 // ["Flat", "Orderless"] - symbol attributes
+	Functions  map[string]interface{}   // "(x__Integer)" -> stdlib.PlusIntegers
+	Constants  map[string]interface{}   // For symbols like Pi, E that have constant values
 }
 
-// FunctionGroup groups functions by output file
-type FunctionGroup struct {
-	OutputFile string
-	Functions  []FunctionSpec
-}
-
-// Organized function specifications with output file destinations
-var functionSpecs = []FunctionSpec{
-	{
-		Pattern:    "Plus()",
-		Function:   stdlib.PlusIdentity,
-		OutputFile: "arithmetric_wrappers.go",
-	},
-	{
-		Pattern:    "Times()",
-		Function:   stdlib.TimesIdentity,
-		OutputFile: "arithmetric_wrappers.go",
-	},
-	{
-		Pattern:    "Plus(x__Integer)",
-		Function:   stdlib.PlusIntegers,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Plus",
+// Symbol specifications organized by symbol name
+var symbolSpecs = map[string]SymbolSpec{
+	// Arithmetic Operations
+	"Plus": {
+		Name:       "Plus",
 		Attributes: []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
+		Functions: map[string]interface{}{
+			"()":           stdlib.PlusIdentity,
+			"(x__Integer)": stdlib.PlusIntegers,
+			"(x__Real)":    stdlib.PlusReals,
+			"(x__Number)":  stdlib.PlusNumbers,
+		},
 	},
-	{
-		Pattern:    "Plus(x__Real)",
-		Function:   stdlib.PlusReals,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Plus",
-		Attributes: []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
-	},
-	{
-		Pattern:    "Times(x__Integer)",
-		Function:   stdlib.TimesIntegers,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Times",
+	"Times": {
+		Name:       "Times",
 		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
+		Functions: map[string]interface{}{
+			"()":           stdlib.TimesIdentity,
+			"(x__Integer)": stdlib.TimesIntegers,
+			"(x__Real)":    stdlib.TimesReals,
+			"(x__Number)":  stdlib.TimesNumbers,
+		},
 	},
-	{
-		Pattern:    "Times(x__Real)",
-		Function:   stdlib.TimesReals,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Times",
-		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
-	},
-	{
-		Pattern:    "Plus(x__Number)",
-		Function:   stdlib.PlusNumbers,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Plus",
-	},
-	{
-		Pattern:    "Times(x__Number)",
-		Function:   stdlib.TimesNumbers,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Times",
-		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
-	},
-	{
-		Pattern:    "Power(base_Real, exp_Integer)",
-		Function:   stdlib.PowerReal,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Power",
+	"Power": {
+		Name:       "Power",
 		Attributes: []string{"OneIdentity"},
+		Functions: map[string]interface{}{
+			"(base_Real, exp_Integer)": stdlib.PowerReal,
+			"(x_Number, y_Number)":     stdlib.PowerExprs,
+		},
 	},
-	{
-		Pattern:    "Subtract(x_Integer, y_Integer)",
-		Function:   stdlib.SubtractIntegers,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Subtract",
+	"Subtract": {
+		Name:       "Subtract",
 		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Integer, y_Integer)": stdlib.SubtractIntegers,
+			"(x_Number, y_Number)":   stdlib.SubtractExprs,
+		},
 	},
-	{
-		Pattern:    "Subtract(x_Number, y_Number)",
-		Function:   stdlib.SubtractExprs,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Subtract",
+	"Divide": {
+		Name:       "Divide",
 		Attributes: []string{},
-	},
-	{
-		Pattern:    "Divide(x_Integer, y_Integer)",
-		Function:   stdlib.DivideIntegers,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Divide",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Divide(x_Number, y_Number)",
-		Function:   stdlib.DivideExprs,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Divide",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Power(x_Number, y_Number)",
-		Function:   stdlib.PowerExprs,
-		OutputFile: "arithmetic_wrappers.go",
-		SymbolName: "Power",
-		Attributes: []string{"OneIdentity"},
-	},
-	{
-		Pattern:    "Equal(x_Integer, y_Integer)",
-		Function:   stdlib.EqualInts,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "Equal",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Equal(x_Real, y_Real)",
-		Function:   stdlib.EqualFloats,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Equal(x_Number, y_Number)",
-		Function:   stdlib.EqualNumbers,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Equal(x_String, y_String)",
-		Function:   stdlib.EqualStrings,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Unequal(x_Integer, y_Integer)",
-		Function:   stdlib.UnequalInts,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "Unequal",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Unequal(x_Real, y_Real)",
-		Function:   stdlib.UnequalFloats,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Unequal(x_Number, y_Number)",
-		Function:   stdlib.UnequalNumbers,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Unequal(x_String, y_String)",
-		Function:   stdlib.UnequalStrings,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Less(x_Number, y_Number)",
-		Function:   stdlib.LessNumber,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "Less",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Greater(x_Number, y_Number))",
-		Function:   stdlib.GreaterNumber,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "Greater",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "LessEqual(x_Number, y_Number)",
-		Function:   stdlib.LessEqualNumber,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "LessEqual",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "GreaterEqual(x_Number, y_Number)",
-		Function:   stdlib.GreaterEqualNumber,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "GreaterEqual",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Equal(x_, y_)",
-		Function:   stdlib.EqualExprs,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "Unequal(x_, y_)",
-		Function:   stdlib.UnequalExprs,
-		OutputFile: "comparison_wrappers.go",
-	},
-	{
-		Pattern:    "SameQ(x_, y_)",
-		Function:   stdlib.SameQExprs,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "SameQ",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "UnsameQ(x_, y_)",
-		Function:   stdlib.UnsameQExprs,
-		OutputFile: "comparison_wrappers.go",
-		SymbolName: "UnsameQ",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "IntegerQ(x_)",
-		Function:   stdlib.IntegerQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "FloatQ(x_)",
-		Function:   stdlib.FloatQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "NumberQ(x_)",
-		Function:   stdlib.NumberQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "StringQ(x_)",
-		Function:   stdlib.StringQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "BooleanQ(x_)",
-		Function:   stdlib.BooleanQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "SymbolQ(x_)",
-		Function:   stdlib.SymbolQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "TrueQ(x_)",
-		Function:   stdlib.TrueQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "ListQ(x_)",
-		Function:   stdlib.ListQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "AtomQ(x_)",
-		Function:   stdlib.AtomQExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "Head(x_)",
-		Function:   stdlib.HeadExpr,
-		OutputFile: "type_predicate_wrappers.go",
-	},
-	{
-		Pattern:    "FullForm(x_)",
-		Function:   stdlib.FullFormExpr,
-		OutputFile: "output_format_wrappers.go",
-	},
-	{
-		Pattern:    "InputForm(x_)",
-		Function:   stdlib.InputFormExpr,
-		OutputFile: "output_format_wrappers.go",
-	},
-	{
-		Pattern:    "Length(x_)",
-		Function:   stdlib.LengthExpr,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Length",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "First(x_List)",
-		Function:   stdlib.FirstExpr,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "First",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Last(x_List)",
-		Function:   stdlib.LastExpr,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Last",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Rest(x_List)",
-		Function:   stdlib.RestExpr,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Rest",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Most(x_List)",
-		Function:   stdlib.MostExpr,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Most",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Take(x_, n_Integer)",
-		Function:   stdlib.Take,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Take",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Take(x_, List(n_Integer, m_Integer))",
-		Function:   stdlib.TakeRange,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Take",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Drop(x_, n_Integer)",
-		Function:   stdlib.Drop,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Drop",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Drop(x_, List(n_Integer, m_Integer))",
-		Function:   stdlib.DropRange,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Drop",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Part(x_, n_Integer)",
-		Function:   stdlib.Part,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Part",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Rest(x_)",
-		Function:   stdlib.Rest,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Rest",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Most(x_)",
-		Function:   stdlib.Most,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Most",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "First(x_)",
-		Function:   stdlib.First,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "First",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Last(x_)",
-		Function:   stdlib.Last,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "Last",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Not(x_)",
-		Function:   stdlib.NotExpr,
-		OutputFile: "logical_wrappers.go",
-		SymbolName: "Not",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "StringLength(x_String)",
-		Function:   stdlib.StringLengthRunes,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "StringLength",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Append(x_List, y_)",
-		Function:   stdlib.ListAppend,
-		OutputFile: "list_wrappers.go",
-		SymbolName: "Append",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Append(x_String, y_String)",
-		Function:   stdlib.StringAppend,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "Append",
-		Attributes: []string{},
-	},
-	/* ByteArray not supported yet
-	{
-		Pattern:    "Append(x_ByteArray, y_Integer)",
-		Function:   stdlib.ByteArrayAppend,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "Append",
-		Attributes: []string{},
-	},
-	*/
-	{
-		Pattern:    "ByteArray(x_String)",
-		Function:   stdlib.ByteArrayFromString,
-		OutputFile: "string_wrappers.go",
-		SymbolName: "ByteArray",
-		Attributes: []string{},
-	},
-	/* List(x___Integer) --> []int64 not supported yet
-	{
-		Pattern:    "ByteArray(List(x___Integer))",
-		Function:   stdlib.ByteArrayFromInts,
-		OutputFile: "string_wrappers.go",
-		Attributes: []string{},
-	},
-	*/
-	{
-		Pattern:    "AssociationQ(x_)",
-		Function:   stdlib.AssociationQExpr,
-		OutputFile: "association_wrappers.go",
-		SymbolName: "AssociationQ",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Keys(x_Association)",
-		Function:   stdlib.KeysExpr,
-		OutputFile: "association_wrappers.go",
-		SymbolName: "Keys",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Values(x_Association)",
-		Function:   stdlib.ValuesExpr,
-		OutputFile: "association_wrappers.go",
-		SymbolName: "Values",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Association(x___Rule)",
-		Function:   stdlib.AssociationRules,
-		OutputFile: "association_wrappers.go",
-		SymbolName: "Association",
-		Attributes: []string{},
-	},
-	{
-		Pattern:    "Part(x_Association, y_)",
-		Function:   stdlib.PartAssociation,
-		OutputFile: "association_wrappers.go",
-		SymbolName: "Part",
-		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Integer, y_Integer)": stdlib.DivideIntegers,
+			"(x_Number, y_Number)":   stdlib.DivideExprs,
+		},
 	},
 
-	{
-		Pattern:    "MatchQ(x_, y_)",
-		Function:   stdlib.MatchQExprs,
-		OutputFile: "logical_wrappers.go",
-		SymbolName: "MatchQ",
+	// Comparison Operations
+	"Equal": {
+		Name:       "Equal",
 		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Integer, y_Integer)": stdlib.EqualInts,
+			"(x_Real, y_Real)":       stdlib.EqualFloats,
+			"(x_Number, y_Number)":   stdlib.EqualNumbers,
+			"(x_String, y_String)":   stdlib.EqualStrings,
+			"(x_, y_)":               stdlib.EqualExprs,
+		},
 	},
-	{
-		Pattern:    "RotateLeft(x_, n_Integer)",
-		Function:   stdlib.RotateLeft,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "RotateLeft",
+	"Unequal": {
+		Name:       "Unequal",
 		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Integer, y_Integer)": stdlib.UnequalInts,
+			"(x_Real, y_Real)":       stdlib.UnequalFloats,
+			"(x_Number, y_Number)":   stdlib.UnequalNumbers,
+			"(x_String, y_String)":   stdlib.UnequalStrings,
+			"(x_, y_)":               stdlib.UnequalExprs,
+		},
 	},
-	{
-		Pattern:    "RotateRight(x_, n_Integer)",
-		Function:   stdlib.RotateRight,
-		OutputFile: "sequence_wrappers.go",
-		SymbolName: "RotateRight",
+	"Less": {
+		Name:       "Less",
 		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Number, y_Number)": stdlib.LessNumber,
+		},
 	},
-	{
-		Pattern:    "Print(x_)",
-		Function:   stdlib.Print,
-		OutputFile: "output_wrappers.go",
-		SymbolName: "Print",
+	"Greater": {
+		Name:       "Greater",
 		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Number, y_Number))": stdlib.GreaterNumber,
+		},
 	},
-	// Note: PatternSpecificity and ShowPatterns are implemented directly in builtin_funcs.go
-	// because they need access to pattern parsing and function registry functionality
+	"LessEqual": {
+		Name:       "LessEqual",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Number, y_Number)": stdlib.LessEqualNumber,
+		},
+	},
+	"GreaterEqual": {
+		Name:       "GreaterEqual",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Number, y_Number)": stdlib.GreaterEqualNumber,
+		},
+	},
+	"SameQ": {
+		Name:       "SameQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, y_)": stdlib.SameQExprs,
+		},
+	},
+	"UnsameQ": {
+		Name:       "UnsameQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, y_)": stdlib.UnsameQExprs,
+		},
+	},
+
+	// Type Predicates
+	"IntegerQ": {
+		Name:       "IntegerQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.IntegerQExpr,
+		},
+	},
+	"FloatQ": {
+		Name:       "FloatQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.FloatQExpr,
+		},
+	},
+	"NumberQ": {
+		Name:       "NumberQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.NumberQExpr,
+		},
+	},
+	"StringQ": {
+		Name:       "StringQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.StringQExpr,
+		},
+	},
+	"BooleanQ": {
+		Name:       "BooleanQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.BooleanQExpr,
+		},
+	},
+	"SymbolQ": {
+		Name:       "SymbolQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.SymbolQExpr,
+		},
+	},
+	"TrueQ": {
+		Name:       "TrueQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.TrueQExpr,
+		},
+	},
+	"ListQ": {
+		Name:       "ListQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.ListQExpr,
+		},
+	},
+	"AtomQ": {
+		Name:       "AtomQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.AtomQExpr,
+		},
+	},
+	"Head": {
+		Name:       "Head",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.HeadExpr,
+		},
+	},
+
+	// Output Format Functions
+	"FullForm": {
+		Name:       "FullForm",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.FullFormExpr,
+		},
+	},
+	"InputForm": {
+		Name:       "InputForm",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.InputFormExpr,
+		},
+	},
+
+	// List Operations
+	"Length": {
+		Name:       "Length",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.LengthExpr,
+		},
+	},
+	"First": {
+		Name:       "First",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_List)": stdlib.FirstExpr,
+			"(x_)":     stdlib.First,
+		},
+	},
+	"Last": {
+		Name:       "Last",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_List)": stdlib.LastExpr,
+			"(x_)":     stdlib.Last,
+		},
+	},
+	"Rest": {
+		Name:       "Rest",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_List)": stdlib.RestExpr,
+			"(x_)":     stdlib.Rest,
+		},
+	},
+	"Most": {
+		Name:       "Most",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_List)": stdlib.MostExpr,
+			"(x_)":     stdlib.Most,
+		},
+	},
+	"Append": {
+		Name:       "Append",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_List, y_)":       stdlib.ListAppend,
+			"(x_String, y_String)": stdlib.StringAppend,
+		},
+	},
+
+	// Sequence Operations
+	"Take": {
+		Name:       "Take",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, n_Integer)":                    stdlib.Take,
+			"(x_, List(n_Integer, m_Integer))": stdlib.TakeRange,
+		},
+	},
+	"Drop": {
+		Name:       "Drop",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, n_Integer)":                    stdlib.Drop,
+			"(x_, List(n_Integer, m_Integer))": stdlib.DropRange,
+		},
+	},
+	"Part": {
+		Name:       "Part",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, n_Integer)":        stdlib.Part,
+			"(x_Association, y_)":   stdlib.PartAssociation,
+		},
+	},
+	"RotateLeft": {
+		Name:       "RotateLeft",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, n_Integer)": stdlib.RotateLeft,
+		},
+	},
+	"RotateRight": {
+		Name:       "RotateRight",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, n_Integer)": stdlib.RotateRight,
+		},
+	},
+
+	// Logical Operations
+	"Not": {
+		Name:       "Not",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.NotExpr,
+		},
+	},
+	"MatchQ": {
+		Name:       "MatchQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_, y_)": stdlib.MatchQExprs,
+		},
+	},
+
+	// String Operations
+	"StringLength": {
+		Name:       "StringLength",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_String)": stdlib.StringLengthRunes,
+		},
+	},
+	"ByteArray": {
+		Name:       "ByteArray",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_String)": stdlib.ByteArrayFromString,
+		},
+	},
+
+	// Association Operations
+	"AssociationQ": {
+		Name:       "AssociationQ",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.AssociationQExpr,
+		},
+	},
+	"Keys": {
+		Name:       "Keys",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Association)": stdlib.KeysExpr,
+		},
+	},
+	"Values": {
+		Name:       "Values",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_Association)": stdlib.ValuesExpr,
+		},
+	},
+	"Association": {
+		Name:       "Association",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x___Rule)": stdlib.AssociationRules,
+		},
+	},
+
+	// Output Operations
+	"Print": {
+		Name:       "Print",
+		Attributes: []string{},
+		Functions: map[string]interface{}{
+			"(x_)": stdlib.Print,
+		},
+	},
+
+	// Constants (symbols with values but no functions)
+	"Pi": {
+		Name:       "Pi",
+		Attributes: []string{"Constant", "Protected"},
+		Constants:  map[string]interface{}{"Pi": 3.141592653589793},
+	},
+	"E": {
+		Name:       "E",
+		Attributes: []string{"Constant", "Protected"},
+		Constants:  map[string]interface{}{"E": 2.718281828459045},
+	},
+	"True": {
+		Name:       "True",
+		Attributes: []string{"Constant", "Protected"},
+		Constants:  map[string]interface{}{"True": "True"},
+	},
+	"False": {
+		Name:       "False",
+		Attributes: []string{"Constant", "Protected"},
+		Constants:  map[string]interface{}{"False": "False"},
+	},
 }
 
-// processFunctionSpecs processes all function specs, filling in auto-derived fields via reflection
-func processFunctionSpecs(specs []FunctionSpec) ([]FunctionSpec, error) {
-	processed := make([]FunctionSpec, len(specs))
-	copy(processed, specs)
-
-	for i := range processed {
-		err := processed[i].fillFromReflection()
-		if err != nil {
-			return nil, fmt.Errorf("error processing spec %d (%s): %v", i, processed[i].Pattern, err)
-		}
-	}
-
-	return processed, nil
+// FunctionInfo contains expanded information about a symbol's function
+type FunctionInfo struct {
+	SymbolName   string // "Plus"
+	Pattern      string // "Plus(x__Integer)"
+	FunctionName string // "PlusIntegers" 
+	WrapperName  string // "WrapPlusIntegers"
+	IsVariadic   bool
+	ParamType    string   // For variadic functions
+	ParamTypes   []string // For fixed-arity functions  
+	ReturnType   string
+	ReturnsError bool
 }
 
 func main() {
 	var (
-		outputDir = flag.String("dir", ".", "Output directory for generated files")
-		single    = flag.String("single", "", "Generate single file with all wrappers")
-		setupFile = flag.String("setup", "", "Generate builtin setup file (builtin_setup.go)")
+		outputDir = flag.String("dir", "wrapped", "Output directory for generated files")
+		setupFile = flag.String("setup", "builtin_setup.go", "Generate builtin setup file")
 	)
 	flag.Parse()
 
-	// Process function specs with reflection analysis
-	processedSpecs, err := processFunctionSpecs(functionSpecs)
+	// Create output directory
+	if err := os.MkdirAll(*outputDir, 0755); err != nil {
+		log.Fatalf("Error creating output directory %s: %v", *outputDir, err)
+	}
+
+	// Process all symbols and generate function info
+	allFunctions, err := processSymbolSpecs(symbolSpecs)
 	if err != nil {
-		log.Fatalf("Error processing function specs: %v", err)
+		log.Fatalf("Error processing symbol specs: %v", err)
 	}
 
-	if *setupFile != "" {
-		// Generate builtin_setup.go file
-		err := generateBuiltinSetupFile(*setupFile, processedSpecs)
-		if err != nil {
-			log.Fatalf("Error generating setup file: %v", err)
-		}
-		//fmt.Printf("Generated builtin setup file: %s\n", *setupFile)
-		return
-	}
-
-	if *single != "" {
-		// Generate all functions in a single file
-		err := generateSingleFile(*single, processedSpecs)
-		if err != nil {
-			log.Fatalf("Error generating single file: %v", err)
-		}
-		//fmt.Printf("Generated %d wrappers in %s\n", len(processedSpecs), *single)
-		return
-	}
-
-	// Group functions by output file
-	groups := groupFunctionsByFile(processedSpecs)
-
-	// Generate each file
+	// Generate one file per symbol
 	totalFunctions := 0
-	for _, group := range groups {
-		outputPath := fmt.Sprintf("%s/%s", strings.TrimSuffix(*outputDir, "/"), group.OutputFile)
-		err := generateWrapperFile(outputPath, group.Functions)
+	for symbolName, symbol := range symbolSpecs {
+		if len(symbol.Functions) == 0 {
+			continue // Skip constants-only symbols
+		}
+
+		// Get functions for this symbol
+		var symbolFunctions []FunctionInfo
+		for _, fn := range allFunctions {
+			if fn.SymbolName == symbolName {
+				symbolFunctions = append(symbolFunctions, fn)
+			}
+		}
+
+		// Generate file for this symbol
+		filename := strings.ToLower(symbolName) + ".go"
+		outputPath := filepath.Join(*outputDir, filename)
+		
+		err := generateSymbolFile(outputPath, symbolName, symbolFunctions)
 		if err != nil {
 			log.Fatalf("Error generating %s: %v", outputPath, err)
 		}
-		//fmt.Printf("Generated %d wrappers in %s\n", len(group.Functions), outputPath)
-		totalFunctions += len(group.Functions)
+		
+		totalFunctions += len(symbolFunctions)
 	}
 
-	//fmt.Printf("Total: %d wrappers across %d files\n", totalFunctions, len(groups))
-}
-
-// groupFunctionsByFile groups function specs by their output file
-func groupFunctionsByFile(specs []FunctionSpec) []FunctionGroup {
-	fileMap := make(map[string][]FunctionSpec)
-
-	for _, spec := range specs {
-		fileMap[spec.OutputFile] = append(fileMap[spec.OutputFile], spec)
+	// Always generate builtin_setup.go file
+	err = generateBuiltinSetupFile(*setupFile, symbolSpecs, allFunctions)
+	if err != nil {
+		log.Fatalf("Error generating setup file: %v", err)
 	}
 
-	var groups []FunctionGroup
-	for outputFile, functions := range fileMap {
-		groups = append(groups, FunctionGroup{
-			OutputFile: outputFile,
-			Functions:  functions,
-		})
+	// Generate common types file for wrapped package
+	err = generateWrappedTypesFile(filepath.Join(*outputDir, "types.go"))
+	if err != nil {
+		log.Fatalf("Error generating wrapped types file: %v", err)
 	}
 
-	return groups
+	fmt.Printf("Generated %d wrappers across %d symbols in %s/\n", totalFunctions, len(symbolSpecs), *outputDir)
+	fmt.Printf("Generated builtin setup file: %s\n", *setupFile)
 }
 
-// generateSingleFile generates all wrappers in a single file
-func generateSingleFile(outputFile string, specs []FunctionSpec) error {
-	return generateWrapperFile(outputFile, specs)
+// processSymbolSpecs converts symbol specs to function info using reflection
+func processSymbolSpecs(specs map[string]SymbolSpec) ([]FunctionInfo, error) {
+	var allFunctions []FunctionInfo
+
+	for symbolName, symbol := range specs {
+		for patternSuffix, function := range symbol.Functions {
+			fullPattern := symbolName + patternSuffix
+			
+			// Create function spec for reflection analysis
+			funcSpec := FunctionSpec{
+				Pattern:  fullPattern,
+				Function: function,
+			}
+
+			// Analyze with reflection
+			err := funcSpec.fillFromReflection()
+			if err != nil {
+				return nil, fmt.Errorf("error analyzing %s: %v", fullPattern, err)
+			}
+
+			// Convert to FunctionInfo
+			funcInfo := FunctionInfo{
+				SymbolName:   symbolName,
+				Pattern:      fullPattern,
+				FunctionName: funcSpec.FunctionName,
+				WrapperName:  funcSpec.WrapperName,
+				IsVariadic:   funcSpec.IsVariadic,
+				ParamType:    funcSpec.ParamType,
+				ParamTypes:   funcSpec.ParamTypes,
+				ReturnType:   funcSpec.ReturnType,
+				ReturnsError: funcSpec.ReturnsError,
+			}
+
+			allFunctions = append(allFunctions, funcInfo)
+		}
+	}
+
+	return allFunctions, nil
 }
 
-// generateWrapperFile generates a wrapper file for the given functions
-func generateWrapperFile(outputFile string, functions []FunctionSpec) error {
+// generateSymbolFile generates a wrapper file for a single symbol
+func generateSymbolFile(outputPath, symbolName string, functions []FunctionInfo) error {
 	tmpl := `// Code generated by wrapgen; DO NOT EDIT.
+// Symbol: {{.SymbolName}}
 
-package sexpr
+package wrapped
 
 import (
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/stdlib"
 )
 
-{{range .}}
+{{range .Functions}}
 // {{.WrapperName}} wraps {{.FunctionName}} for the pattern system
 // Generated from pattern: {{.Pattern}}
-func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
+func {{.WrapperName}}(args []core.Expr, ctx Context) core.Expr {
 {{- if .IsVariadic}}
 	{{- if ne .ParamType "Expr"}}
 	funcName := "{{.Pattern | extractFuncName}}"
 	{{- end}}
 	
 	// Convert all args to {{.ParamType}}
-	convertedArgs := make([]{{.ParamType}}, len(args))
+	{{if eq .ParamType "Expr"}}convertedArgs := make([]core.Expr, len(args)){{else}}convertedArgs := make([]{{.ParamType}}, len(args)){{end}}
 	for i, arg := range args {
 		{{.ParamType | getConversion}}
 	}
@@ -629,7 +552,7 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 	{{- if .ReturnsError}}
 	result, err := stdlib.{{.FunctionName}}(convertedArgs...)
 	if err != nil {
-		return NewErrorExpr(err.Error(), err.Error(), args)
+		return core.NewErrorExpr(err.Error(), err.Error(), args)
 	}
 	{{- else}}
 	result := stdlib.{{.FunctionName}}(convertedArgs...)
@@ -640,7 +563,7 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 {{- else}}
 	// Validate argument count
 	if len(args) != {{len .ParamTypes}} {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError", 
 			"{{.FunctionName}} expects {{len .ParamTypes}} arguments", args)
 	}
 	
@@ -650,7 +573,7 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 	{{- if .ReturnsError}}
 	result, err := stdlib.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
 	if err != nil {
-		return NewErrorExpr(err.Error(), err.Error(), args)
+		return core.NewErrorExpr(err.Error(), err.Error(), args)
 	}
 	{{- else}}
 	result := stdlib.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
@@ -663,8 +586,163 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 
 {{end}}`
 
-	// Custom template functions using the new public helper functions
-	funcMap := template.FuncMap{
+	// Template data
+	data := struct {
+		SymbolName string
+		Functions  []FunctionInfo
+	}{
+		SymbolName: symbolName,
+		Functions:  functions,
+	}
+
+	// Use same template functions as before
+	funcMap := getTemplateFunctions()
+
+	// Create and execute template
+	t, err := template.New("symbol").Funcs(funcMap).Parse(tmpl)
+	if err != nil {
+		return err
+	}
+
+	// Generate code
+	var buf strings.Builder
+	err = t.Execute(&buf, data)
+	if err != nil {
+		return err
+	}
+
+	// Format the generated code
+	formatted, err := format.Source([]byte(buf.String()))
+	if err != nil {
+		// If formatting fails, write unformatted code
+		formatted = []byte(buf.String())
+	}
+
+	// Write to file
+	return os.WriteFile(outputPath, formatted, 0644)
+}
+
+// generateBuiltinSetupFile generates the builtin_setup.go file
+func generateBuiltinSetupFile(outputFile string, symbols map[string]SymbolSpec, functions []FunctionInfo) error {
+	tmpl := `// Code generated by wrapgen. DO NOT EDIT.
+
+package sexpr
+
+import (
+	"fmt"
+	"github.com/client9/sexpr/wrapped"
+)
+
+// setupBuiltinAttributes sets up standard attributes for built-in functions
+func setupBuiltinAttributes(symbolTable *SymbolTable) {
+	// Reset attributes
+	symbolTable.Reset()
+
+{{range $name, $symbol := .Symbols}}{{if $symbol.Attributes}}	// {{$name}} attributes
+	symbolTable.SetAttributes("{{$name}}", []Attribute{ {{range $i, $attr := $symbol.Attributes}}{{if $i}}, {{end}}{{$attr}}{{end}} })
+{{end}}{{end}}
+	// Pattern symbols  
+	symbolTable.SetAttributes("Blank", []Attribute{Protected})
+	symbolTable.SetAttributes("BlankSequence", []Attribute{Protected})
+	symbolTable.SetAttributes("BlankNullSequence", []Attribute{Protected})
+	symbolTable.SetAttributes("Pattern", []Attribute{Protected})
+}
+
+// registerDefaultBuiltins registers all built-in functions with their patterns
+func registerDefaultBuiltins(registry *FunctionRegistry) {
+	// Register built-in functions with pattern-based dispatch
+	builtinPatterns := map[string]PatternFunc{
+		// Generated pattern registrations
+{{range .Functions}}		"{{.Pattern}}": func(args []Expr, ctx *Context) Expr {
+			return wrapped.{{.WrapperName}}(args, ctx)
+		}, // {{.FunctionName}}
+{{end}}
+
+		// Special attribute manipulation functions (require context)
+		"Attributes(x_)":              WrapAttributesExpr,
+		"SetAttributes(x_, y_List)":   WrapSetAttributesList,
+		"SetAttributes(x_, y_)":       WrapSetAttributesSingle,
+		"ClearAttributes(x_, y_List)": WrapClearAttributesList,
+		"ClearAttributes(x_, y_)":     WrapClearAttributesSingle,
+		
+		// Special debugging functions (require context and main package access)
+		"PatternSpecificity(pattern_)":      WrapPatternSpecificity,
+		"ShowPatterns(functionName_Symbol)": WrapShowPatterns,
+	}
+
+	// Register patterns with the function registry
+	err := registry.RegisterPatternBuiltins(builtinPatterns)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to register builtin patterns: %v", err))
+	}
+}
+`
+
+	// Template data
+	data := struct {
+		Symbols   map[string]SymbolSpec
+		Functions []FunctionInfo
+	}{
+		Symbols:   symbols,
+		Functions: functions,
+	}
+
+	// Create and execute template
+	t, err := template.New("setup").Parse(tmpl)
+	if err != nil {
+		return err
+	}
+
+	// Generate code
+	var buf strings.Builder
+	err = t.Execute(&buf, data)
+	if err != nil {
+		return err
+	}
+
+	// Format the generated code
+	formatted, err := format.Source([]byte(buf.String()))
+	if err != nil {
+		// If formatting fails, write unformatted code
+		formatted = []byte(buf.String())
+	}
+
+	// Write to file
+	return os.WriteFile(outputFile, formatted, 0644)
+}
+
+// generateWrappedTypesFile generates a common types file for the wrapped package
+func generateWrappedTypesFile(outputPath string) error {
+	tmpl := `// Code generated by wrapgen; DO NOT EDIT.
+// Common types for the wrapped package
+
+package wrapped
+
+import (
+	"github.com/client9/sexpr/core"
+)
+
+// Context interface to avoid circular import
+type Context interface {
+	Get(string) (core.Expr, bool)
+	Set(string, core.Expr)
+}
+`
+
+	// Format the generated code
+	formatted, err := format.Source([]byte(tmpl))
+	if err != nil {
+		// If formatting fails, write unformatted code
+		formatted = []byte(tmpl)
+	}
+
+	// Write to file
+	return os.WriteFile(outputPath, formatted, 0644)
+}
+
+// getTemplateFunctions returns the template function map (same as before)
+func getTemplateFunctions() template.FuncMap {
+	return template.FuncMap{
 		"extractFuncName": func(pattern string) string {
 			for i, c := range pattern {
 				if c == '(' {
@@ -672,32 +750,6 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 				}
 			}
 			return pattern
-		},
-		"getEmptyCase": func(funcName string) string {
-			switch funcName {
-			default:
-				return "return CopyExprList(funcName, args)"
-			}
-		},
-		"getSingleCase": func(paramType string) string {
-			switch paramType {
-			case "int64":
-				return `if atom, ok := args[0].(Atom); ok && atom.AtomType == IntAtom {
-			return args[0] // Return directly
-		}
-		// Fall back to original if not integer
-		return CopyExprList(funcName, args)`
-			case "float64":
-				return `if atom, ok := args[0].(Atom); ok && atom.AtomType == FloatAtom {
-			return args[0] // Return directly
-		}
-		// Fall back to original if not real
-		return CopyExprList(funcName, args)`
-			case "Expr":
-				return "return args[0]"
-			default:
-				return "return args[0]"
-			}
 		},
 		"getConversion": func(paramType string) string {
 			switch paramType {
@@ -750,13 +802,11 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 				varName := fmt.Sprintf("arg%d", i)
 				switch paramType {
 				case "ByteArray":
-
 					conversions = append(conversions, fmt.Sprintf("	%s, ok := core.ByteArray(args[%d])", varName, i))
 					conversions = append(conversions, "	if !ok {")
 					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
 					conversions = append(conversions, "	}")
 				case "Number":
-
 					conversions = append(conversions, fmt.Sprintf("	%s, ok := stdlib.ExtractNumber(args[%d])", varName, i))
 					conversions = append(conversions, "	if !ok {")
 					conversions = append(conversions, "		return core.CopyExprList(\"FUNC\", args)")
@@ -815,137 +865,4 @@ func {{.WrapperName}}(args []core.Expr, ctx *Context) core.Expr {
 			return s
 		},
 	}
-
-	// Create and execute template
-	t, err := template.New("wrappers").Funcs(funcMap).Parse(tmpl)
-	if err != nil {
-		return err
-	}
-
-	// Generate code
-	var buf strings.Builder
-	err = t.Execute(&buf, functions)
-	if err != nil {
-		return err
-	}
-
-	// Format the generated code
-	formatted, err := format.Source([]byte(buf.String()))
-	if err != nil {
-		// If formatting fails, write unformatted code
-		formatted = []byte(buf.String())
-	}
-
-	// Write to file
-	return os.WriteFile(outputFile, formatted, 0644)
-}
-
-// generateBuiltinSetupFile generates a builtin_setup.go file with both attribute setup and registration
-func generateBuiltinSetupFile(outputFile string, functions []FunctionSpec) error {
-	tmpl := `// Code generated by wrapgen. DO NOT EDIT.
-
-package sexpr
-
-import (
-	"fmt"
-)
-
-// setupBuiltinAttributes sets up standard attributes for built-in functions
-func setupBuiltinAttributes(symbolTable *SymbolTable) {
-	// Reset attributes
-	symbolTable.Reset()
-
-{{range .UniqueSymbols}}{{if .Attributes}}	// {{.SymbolName}} attributes
-	symbolTable.SetAttributes("{{.SymbolName}}", []Attribute{ {{range $i, $attr := .Attributes}}{{if $i}}, {{end}}{{$attr}}{{end}} })
-{{end}}{{end}}
-	// Constants
-	symbolTable.SetAttributes("Pi", []Attribute{Constant, Protected})
-	symbolTable.SetAttributes("E", []Attribute{Constant, Protected})
-	symbolTable.SetAttributes("True", []Attribute{Constant, Protected})
-	symbolTable.SetAttributes("False", []Attribute{Constant, Protected})
-
-	// Pattern symbols
-	symbolTable.SetAttributes("Blank", []Attribute{Protected})
-	symbolTable.SetAttributes("BlankSequence", []Attribute{Protected})
-	symbolTable.SetAttributes("BlankNullSequence", []Attribute{Protected})
-	symbolTable.SetAttributes("Pattern", []Attribute{Protected})
-}
-
-// registerDefaultBuiltins registers all built-in functions with their patterns
-func registerDefaultBuiltins(registry *FunctionRegistry) {
-	// Register built-in functions with pattern-based dispatch
-	builtinPatterns := map[string]PatternFunc{
-		// Generated pattern registrations
-{{range .Functions}}		"{{.Pattern}}": {{.WrapperName}}, // {{.FunctionName}}
-{{end}}
-
-		// Special attribute manipulation functions (require context)
-		"Attributes(x_)":              WrapAttributesExpr,
-		"SetAttributes(x_, y_List)":   WrapSetAttributesList,
-		"SetAttributes(x_, y_)":       WrapSetAttributesSingle,
-		"ClearAttributes(x_, y_List)": WrapClearAttributesList,
-		"ClearAttributes(x_, y_)":     WrapClearAttributesSingle,
-		
-		// Special debugging functions (require context and main package access)
-		"PatternSpecificity(pattern_)":      WrapPatternSpecificity,
-		"ShowPatterns(functionName_Symbol)": WrapShowPatterns,
-	}
-
-	// Register patterns with the function registry
-	err := registry.RegisterPatternBuiltins(builtinPatterns)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to register builtin patterns: %v", err))
-	}
-}
-`
-
-	// Create template data structure
-	type TemplateData struct {
-		Functions     []FunctionSpec
-		UniqueSymbols []FunctionSpec
-	}
-
-	// Get unique symbols (deduplicated by SymbolName)
-	symbolMap := make(map[string]FunctionSpec)
-	for _, fn := range functions {
-		if fn.SymbolName != "" {
-			// Keep the one with the most attributes
-			if existing, exists := symbolMap[fn.SymbolName]; !exists || len(fn.Attributes) > len(existing.Attributes) {
-				symbolMap[fn.SymbolName] = fn
-			}
-		}
-	}
-
-	var uniqueSymbols []FunctionSpec
-	for _, symbol := range symbolMap {
-		uniqueSymbols = append(uniqueSymbols, symbol)
-	}
-
-	data := TemplateData{
-		Functions:     functions,
-		UniqueSymbols: uniqueSymbols,
-	}
-
-	// Create and execute template
-	t, err := template.New("setup").Parse(tmpl)
-	if err != nil {
-		return err
-	}
-
-	// Generate code
-	var buf strings.Builder
-	err = t.Execute(&buf, data)
-	if err != nil {
-		return err
-	}
-
-	// Format the generated code
-	formatted, err := format.Source([]byte(buf.String()))
-	if err != nil {
-		// If formatting fails, write unformatted code
-		formatted = []byte(buf.String())
-	}
-
-	// Write to file
-	return os.WriteFile(outputFile, formatted, 0644)
 }
