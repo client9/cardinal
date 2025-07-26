@@ -1,6 +1,6 @@
 
 build:
-	time go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go
+	time go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go cmd/wrapgen/symbols.go
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
 
