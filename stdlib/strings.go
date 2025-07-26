@@ -27,6 +27,29 @@ func StringAppend(lhs, rhs string) string {
 	return lhs + rhs
 }
 
+// StringReverse reverses a string
+func StringReverse(lhs string) string {
+	runes := []rune(lhs)
+
+	// Iterate with two pointers, one from the beginning and one from the end, swapping elements.
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+
+	// Convert the reversed rune slice back to a string.
+	return string(runes)
+}
+
+// ByteArrayReverse reverses a byte array
+func ByteArrayReverse(lhs []byte) []byte {
+	end := len(lhs) -1 	
+	ba := make([]byte, len(lhs))
+	for i, b := range lhs { 
+		ba[end -i] = b
+	}
+	return ba
+}
+
 // ByteArrayAppend adds one byte to the end of a ByteArray
 func ByteArrayAppend(lhs core.ByteArray, b int64) core.Expr {
 	return lhs.Append(byte(b))
