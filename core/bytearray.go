@@ -7,6 +7,25 @@ import (
 )
 
 // ByteArray represents an array of bytes as a first-class expression type
+//
+// Design Note: ByteArray is implemented as a struct with a private []byte field
+// rather than as "type ByteArray []byte" to ensure immutability. This design
+// prevents several issues:
+//
+// 1. Slice sharing: Go slices share underlying arrays, so "type ByteArray []byte"
+//    would allow mutations to be visible across copies
+// 2. Direct access: Users could directly modify bytes with b[i] = newValue
+// 3. No encapsulation: Can't control access or enforce defensive copying
+//
+// The struct-based approach ensures immutability through:
+// - Private data field (no direct access)
+// - Defensive copying in NewByteArray() constructor
+// - Defensive copying in Data() accessor
+// - All operations return new ByteArray instances
+//
+// This follows functional programming principles and provides thread-safety,
+// which is essential for s-expression evaluation where data structures should
+// be immutable during pattern matching and evaluation.
 type ByteArray struct {
 	data []byte
 }
