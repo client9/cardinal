@@ -1,5 +1,8 @@
 
-build:
+generate:
+	go generate ./...
+
+build: generate
 	time go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go cmd/wrapgen/symbols.go
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
@@ -18,3 +21,7 @@ clean:
 	find . -name '*.bak*' | xargs rm -f
 	rm -rf wrapped
 	rm -f builtin_setup.go
+	rm -f attribute_string.go
+
+setup:
+	go get golang.org/x/tools/cmd/stringer

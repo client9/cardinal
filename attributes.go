@@ -1,5 +1,7 @@
 package sexpr
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=Attribute
+
 import (
 	"fmt"
 	"sort"
@@ -26,39 +28,26 @@ const (
 	Temporary
 )
 
-// AttributeNames maps attribute constants to their string representations
-var AttributeNames = map[Attribute]string{
-	HoldAll:         "HoldAll",
-	HoldFirst:       "HoldFirst",
-	HoldRest:        "HoldRest",
-	Flat:            "Flat",
-	Orderless:       "Orderless",
-	OneIdentity:     "OneIdentity",
-	Listable:        "Listable",
-	Constant:        "Constant",
-	NumericFunction: "NumericFunction",
-	Protected:       "Protected",
-	ReadProtected:   "ReadProtected",
-	Locked:          "Locked",
-	Temporary:       "Temporary",
-}
+// stringToAttribute provides reverse lookup from string to Attribute
+// This map is automatically populated using the stringer-generated String() method
+var stringToAttribute map[string]Attribute
 
 // StringToAttribute converts a string name to an attribute
 func StringToAttribute(name string) (Attribute, bool) {
-	for attr, attrName := range AttributeNames {
-		if attrName == name {
-			return attr, true
-		}
+	if stringToAttribute == nil {
+		initStringToAttributeMap()
 	}
-	return 0, false
+	attr, ok := stringToAttribute[name]
+	return attr, ok
 }
 
-// String returns the string representation of an attribute
-func (a Attribute) String() string {
-	if name, ok := AttributeNames[a]; ok {
-		return name
+// initStringToAttributeMap initializes the reverse lookup map using stringer output
+func initStringToAttributeMap() {
+	stringToAttribute = make(map[string]Attribute)
+	// Iterate through all possible attribute values
+	for i := HoldAll; i <= Temporary; i++ {
+		stringToAttribute[i.String()] = i
 	}
-	return fmt.Sprintf("Attribute(%d)", int(a))
 }
 
 // SymbolTable manages attributes for symbols
@@ -187,36 +176,3 @@ func (st *SymbolTable) Reset() {
 	st.attributes = make(map[string]map[Attribute]bool)
 }
 
-// parseAttribute parses an attribute name string into an Attribute enum value
-func parseAttribute(attrName string) (Attribute, error) {
-	switch attrName {
-	case "HoldAll":
-		return HoldAll, nil
-	case "HoldFirst":
-		return HoldFirst, nil
-	case "HoldRest":
-		return HoldRest, nil
-	case "Flat":
-		return Flat, nil
-	case "Orderless":
-		return Orderless, nil
-	case "OneIdentity":
-		return OneIdentity, nil
-	case "Listable":
-		return Listable, nil
-	case "Constant":
-		return Constant, nil
-	case "NumericFunction":
-		return NumericFunction, nil
-	case "Protected":
-		return Protected, nil
-	case "ReadProtected":
-		return ReadProtected, nil
-	case "Locked":
-		return Locked, nil
-	case "Temporary":
-		return Temporary, nil
-	default:
-		return HoldAll, fmt.Errorf("unknown attribute: %s", attrName)
-	}
-}
