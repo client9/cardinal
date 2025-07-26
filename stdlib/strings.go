@@ -42,10 +42,10 @@ func StringReverse(lhs string) string {
 
 // ByteArrayReverse reverses a byte array
 func ByteArrayReverse(lhs []byte) []byte {
-	end := len(lhs) -1 	
+	end := len(lhs) - 1
 	ba := make([]byte, len(lhs))
-	for i, b := range lhs { 
-		ba[end -i] = b
+	for i, b := range lhs {
+		ba[end-i] = b
 	}
 	return ba
 }
