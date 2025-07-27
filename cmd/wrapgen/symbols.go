@@ -339,8 +339,16 @@ var symbolSpecs = map[string]SymbolSpec{
 		Name:       "Replace",
 		Attributes: []string{},
 		Functions: map[string]any{
-			"(x_, r_Rule)":             stdlib.ReplaceExpr,
+			"(x_, r_Rule)":            stdlib.ReplaceExpr,
 			"(x_, List(rule___Rule))": stdlib.ReplaceWithRules,
+		},
+	},
+	"ReplaceAll": {
+		Name:       "ReplaceAll",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(x_, r_Rule)":            stdlib.ReplaceAllExpr,
+			"(x_, List(rule___Rule))": stdlib.ReplaceAllWithRules,
 		},
 	},
 

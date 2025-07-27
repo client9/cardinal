@@ -153,11 +153,48 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 				}
 			}
 		}
+		// Re-evaluate function results until fixed point for proper symbolic computation
+		// Only re-evaluate non-atomic expressions to avoid infinite recursion
+		if !result.IsAtom() && !result.Equal(callExpr) {
+			return e.evaluateToFixedPoint(result, ctx)
+		}
 		return result
 	}
 
 	// No pattern matched, return the unevaluated expression
 	return callExpr
+}
+
+// evaluateToFixedPoint continues evaluating an expression until it reaches a fixed point
+// (no more changes occur) or until a maximum number of iterations to prevent infinite loops
+func (e *Evaluator) evaluateToFixedPoint(expr Expr, ctx *Context) Expr {
+	const maxIterations = 100 // Prevent infinite loops
+	current := expr
+
+	for i := 0; i < maxIterations; i++ {
+		next := e.evaluate(current, ctx)
+
+		// Check if we've reached a fixed point (no more changes)
+		if next.Equal(current) {
+			return next
+		}
+
+		// Check for errors
+		if IsError(next) {
+			return next
+		}
+
+		// If the result is atomic, we can't evaluate further
+		if next.IsAtom() {
+			return next
+		}
+
+		current = next
+	}
+
+	// If we've hit the iteration limit, return what we have
+	// This prevents infinite loops while still allowing significant evaluation
+	return current
 }
 
 // evaluateArguments evaluates arguments based on hold attributes

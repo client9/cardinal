@@ -190,9 +190,9 @@ func createEmpty(expr core.Expr) core.Expr {
 		if len(e.Elements) > 0 {
 			return core.List{Elements: []core.Expr{e.Elements[0]}}
 		}
-		return core.List{Elements: []core.Expr{core.NewSymbolAtom("List")}}
+		return core.List{Elements: []core.Expr{core.NewSymbol("List")}}
 	case core.String:
-		return core.NewStringAtom("")
+		return core.NewString("")
 	case core.ByteArray:
 		return core.NewByteArray(nil)
 	default:

@@ -203,13 +203,13 @@ func ParsePatternVariable(name string) (varName string, typeName string) {
 // ConvertPatternStringToSymbolic converts string-based patterns to symbolic expressions
 func ConvertPatternStringToSymbolic(name string) Expr {
 	if !IsPatternVariable(name) {
-		return NewSymbolAtom(name)
+		return NewSymbol(name)
 	}
 
 	// Count underscores to determine pattern type
 	underscoreCount := strings.Count(name, "_")
 	if underscoreCount > 3 {
-		return NewSymbolAtom(name) // Invalid pattern
+		return NewSymbol(name) // Invalid pattern
 	}
 
 	// Extract variable name and type
@@ -247,7 +247,7 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 	// Create type expression if present
 	var typeExpr Expr
 	if typeName != "" {
-		typeExpr = NewSymbolAtom(typeName)
+		typeExpr = NewSymbol(typeName)
 	}
 
 	// Create appropriate blank expression
@@ -260,12 +260,12 @@ func ConvertPatternStringToSymbolic(name string) Expr {
 	case 3:
 		blankExpr = CreateBlankNullSequenceExpr(typeExpr)
 	default:
-		return NewSymbolAtom(name) // Invalid pattern, return as symbol
+		return NewSymbol(name) // Invalid pattern, return as symbol
 	}
 
 	// If there's a variable name, wrap in Pattern[name, blank]
 	if varName != "" {
-		return CreatePatternExpr(NewSymbolAtom(varName), blankExpr)
+		return CreatePatternExpr(NewSymbol(varName), blankExpr)
 	}
 
 	// Anonymous pattern, just return the blank expression

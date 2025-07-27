@@ -37,7 +37,7 @@ func (e *ErrorExpr) Type() string {
 }
 
 func (e *ErrorExpr) IsAtom() bool {
-	return false
+	return true // ErrorExpr is atomic in symbolic computation - a complete value that doesn't need re-evaluation
 }
 
 func (e *ErrorExpr) Equal(rhs Expr) bool {

@@ -183,7 +183,7 @@ func (a Association) Type() string {
 }
 
 func (a Association) IsAtom() bool {
-	return false
+	return true // Association is atomic in symbolic computation - a complete value that doesn't need re-evaluation
 }
 
 // Equal implements Expr interface

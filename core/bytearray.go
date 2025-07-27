@@ -91,7 +91,7 @@ func (b ByteArray) Type() string {
 }
 
 func (b ByteArray) IsAtom() bool {
-	return false
+	return true // ByteArray is atomic in symbolic computation - a complete value that doesn't need re-evaluation
 }
 
 func (b ByteArray) Equal(rhs Expr) bool {
@@ -125,7 +125,7 @@ func (b ByteArray) ElementAt(n int64) Expr {
 	}
 
 	// Convert to 0-based index and return byte as integer
-	return NewIntAtom(int(b.data[n-1]))
+	return NewInteger(int64(b.data[n-1]))
 }
 
 // Slice returns a new ByteArray containing bytes from start to stop (inclusive, 1-indexed)
@@ -176,7 +176,7 @@ func (b ByteArray) Append(data ...byte) ByteArray {
 
 // ToStringAtom converts the ByteArray to a string atom (assuming UTF-8 encoding)
 func (b ByteArray) ToStringAtom() Expr {
-	return NewStringAtom(string(b.data))
+	return NewString(string(b.data))
 }
 
 // Join joins this ByteArray with another sliceable of the same type

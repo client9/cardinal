@@ -1,12 +1,13 @@
 
-generate:
-	go generate ./...
 
 build: generate
-	go get golang.org/x/tools/cmd/stringer
 	go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go cmd/wrapgen/symbols.go
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
+
+generate:
+	go get golang.org/x/tools/cmd/stringer
+	go generate ./...
 
 lint:
 	go mod tidy

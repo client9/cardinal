@@ -33,7 +33,7 @@ func TestSimpleVariablePatterns(t *testing.T) {
 		{
 			name:     "Mixed literal and pattern parameters",
 			input:    "mixed(x, y_) := x * y + 1; mixed(x, 3)",
-			expected: "Plus(1, Times(x, 3))",
+			expected: "Plus(1, Times(3, x))", // Due Times being Orderless
 		},
 	}
 

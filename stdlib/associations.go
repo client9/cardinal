@@ -22,7 +22,7 @@ func AssociationQExpr(expr core.Expr) bool {
 func KeysExpr(assoc core.Association) core.Expr {
 	keys := assoc.Keys()
 	// Return as List[key1, key2, ...]
-	elements := []core.Expr{core.NewSymbolAtom("List")}
+	elements := []core.Expr{core.NewSymbol("List")}
 	elements = append(elements, keys...)
 	return core.NewList(elements...)
 }
@@ -31,7 +31,7 @@ func KeysExpr(assoc core.Association) core.Expr {
 func ValuesExpr(assoc core.Association) core.Expr {
 	values := assoc.Values()
 	// Return as List[value1, value2, ...]
-	elements := []core.Expr{core.NewSymbolAtom("List")}
+	elements := []core.Expr{core.NewSymbol("List")}
 	elements = append(elements, values...)
 	return core.NewList(elements...)
 }

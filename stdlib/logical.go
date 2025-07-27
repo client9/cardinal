@@ -11,11 +11,11 @@ func NotExpr(expr core.Expr) core.Expr {
 	// Check if the expression is a boolean value (True/False symbol)
 	if core.IsBool(expr) {
 		val, _ := core.ExtractBool(expr)
-		return core.NewBoolAtom(!val)
+		return core.NewBool(!val)
 	}
 
 	// Return unchanged expression if not boolean (symbolic behavior)
-	return core.NewList(core.NewSymbolAtom("Not"), expr)
+	return core.NewList(core.NewSymbol("Not"), expr)
 }
 
 // MatchQExprs checks if an expression matches a pattern (pure test, no variable binding)
@@ -75,5 +75,73 @@ func ReplaceWithRules(expr core.Expr, rulesList core.Expr) core.Expr {
 	}
 
 	// No rules matched or invalid list structure, return original expression
+	return expr
+}
+
+// ReplaceAllExpr applies a single rule to all subexpressions recursively
+// ReplaceAll(expr, Rule(pattern, replacement)) -> expr with all matching subexpressions replaced
+func ReplaceAllExpr(expr core.Expr, rule core.Expr) core.Expr {
+	// First try to apply the rule to the current expression
+	result := ReplaceExpr(expr, rule)
+
+	// If the rule matched at this level, we're done (don't recurse into replacement)
+	if !result.Equal(expr) {
+		return result
+	}
+
+	// If no match at this level, recursively apply to subexpressions
+	if list, ok := expr.(core.List); ok && len(list.Elements) > 0 {
+		// Create new list with transformed elements
+		newElements := make([]core.Expr, len(list.Elements))
+		changed := false
+
+		for i, element := range list.Elements {
+			newElement := ReplaceAllExpr(element, rule)
+			newElements[i] = newElement
+			if !newElement.Equal(element) {
+				changed = true
+			}
+		}
+
+		if changed {
+			return core.NewList(newElements...)
+		}
+	}
+
+	// No changes made, return original expression
+	return expr
+}
+
+// ReplaceAllWithRules applies a list of rules to all subexpressions recursively
+// ReplaceAll(expr, List(Rule1, Rule2, ...)) -> expr with all matching subexpressions replaced
+func ReplaceAllWithRules(expr core.Expr, rulesList core.Expr) core.Expr {
+	// First try to apply rules to the current expression
+	result := ReplaceWithRules(expr, rulesList)
+
+	// If a rule matched at this level, we're done (don't recurse into replacement)
+	if !result.Equal(expr) {
+		return result
+	}
+
+	// If no match at this level, recursively apply to subexpressions
+	if list, ok := expr.(core.List); ok && len(list.Elements) > 0 {
+		// Create new list with transformed elements
+		newElements := make([]core.Expr, len(list.Elements))
+		changed := false
+
+		for i, element := range list.Elements {
+			newElement := ReplaceAllWithRules(element, rulesList)
+			newElements[i] = newElement
+			if !newElement.Equal(element) {
+				changed = true
+			}
+		}
+
+		if changed {
+			return core.NewList(newElements...)
+		}
+	}
+
+	// No changes made, return original expression
 	return expr
 }
