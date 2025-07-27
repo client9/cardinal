@@ -46,3 +46,34 @@ func ReplaceExpr(expr core.Expr, rule core.Expr) core.Expr {
 	// If no match or invalid rule, return original expression
 	return expr
 }
+
+// ReplaceWithRules applies a list of rules to an expression
+// Replace(expr, List(Rule1, Rule2, ...)) -> replacement from first matching rule, else expr
+func ReplaceWithRules(expr core.Expr, rulesList core.Expr) core.Expr {
+	// Extract List(Rule1, Rule2, ...)
+	if list, ok := rulesList.(core.List); ok && len(list.Elements) >= 1 {
+		head := list.Elements[0]
+		if headSymbol, ok := head.(core.Symbol); ok && headSymbol.String() == "List" {
+			// Iterate through each rule in order
+			for i := 1; i < len(list.Elements); i++ {
+				rule := list.Elements[i]
+
+				// Validate that this element is actually a Rule
+				if ruleExpr, ok := rule.(core.List); ok && len(ruleExpr.Elements) == 3 {
+					if ruleHead, ok := ruleExpr.Elements[0].(core.Symbol); ok && ruleHead.String() == "Rule" {
+						// Try to apply this rule using existing ReplaceExpr logic
+						result := ReplaceExpr(expr, rule)
+						if !result.Equal(expr) {
+							// Rule matched and produced a different result - return it
+							return result
+						}
+					}
+				}
+				// If this element is not a valid Rule, continue to next element
+			}
+		}
+	}
+
+	// No rules matched or invalid list structure, return original expression
+	return expr
+}
