@@ -36,8 +36,10 @@ const (
 	GREATEREQUAL
 	AND
 	OR
+	NOT
 	SAMEQ
 	UNSAMEQ
+	CARET
 	SEMICOLON
 	WHITESPACE
 	ILLEGAL
@@ -109,10 +111,14 @@ func (t Token) String() string {
 		return "AND"
 	case OR:
 		return "OR"
+	case NOT:
+		return "NOT"
 	case SAMEQ:
 		return "SAMEQ"
 	case UNSAMEQ:
 		return "UNSAMEQ"
+	case CARET:
+		return "CARET"
 	case WHITESPACE:
 		return "WHITESPACE"
 	case ILLEGAL:
@@ -235,21 +241,13 @@ func (l *Lexer) NextToken() Token {
 	case '+':
 		tok = Token{Type: PLUS, Value: string(l.ch), Position: l.position - 1}
 	case '-':
-		// Check if this is a negative number literal
-		if isDigit(l.peekChar()) {
-			tok.Position = l.position - 1
-			l.readChar() // consume the '-'
-			value, tokenType := l.readNumber()
-			tok.Value = "-" + value
-			tok.Type = tokenType
-			return tok
-		} else {
-			tok = Token{Type: MINUS, Value: string(l.ch), Position: l.position - 1}
-		}
+		tok = Token{Type: MINUS, Value: string(l.ch), Position: l.position - 1}
 	case '*':
 		tok = Token{Type: MULTIPLY, Value: string(l.ch), Position: l.position - 1}
 	case '/':
 		tok = Token{Type: DIVIDE, Value: string(l.ch), Position: l.position - 1}
+	case '^':
+		tok = Token{Type: CARET, Value: string(l.ch), Position: l.position - 1}
 	case '(':
 		tok = Token{Type: LPAREN, Value: string(l.ch), Position: l.position - 1}
 	case ')':
@@ -303,7 +301,7 @@ func (l *Lexer) NextToken() Token {
 			l.readChar() // consume '='
 			return tok
 		} else {
-			tok = Token{Type: ILLEGAL, Value: string(l.ch), Position: l.position - 1}
+			tok = Token{Type: NOT, Value: string(l.ch), Position: l.position - 1}
 		}
 	case '<':
 		if l.peekChar() == '=' {

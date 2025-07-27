@@ -24,3 +24,25 @@ func MatchQExprs(expr, pattern core.Expr) bool {
 	matcher := core.NewPatternMatcher()
 	return matcher.TestMatch(pattern, expr)
 }
+
+// ReplaceExpr applies a single rule to an expression
+// Replace(expr, Rule(pattern, replacement)) -> replacement if expr matches pattern, else expr
+func ReplaceExpr(expr core.Expr, rule core.Expr) core.Expr {
+	// Extract pattern and replacement from Rule(pattern, replacement)
+	if ruleList, ok := rule.(core.List); ok && len(ruleList.Elements) == 3 {
+		head := ruleList.Elements[0]
+		if headSymbol, ok := head.(core.Symbol); ok && headSymbol.String() == "Rule" {
+			pattern := ruleList.Elements[1]
+			replacement := ruleList.Elements[2]
+
+			// For now, implement exact matching only
+			// TODO: Implement full pattern matching with variable binding
+			if pattern.Equal(expr) {
+				return replacement
+			}
+		}
+	}
+
+	// If no match or invalid rule, return original expression
+	return expr
+}

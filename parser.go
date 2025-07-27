@@ -21,11 +21,13 @@ const (
 	PrecedenceComparison // <, >, <=, >=
 	PrecedenceSum        // +, -
 	PrecedenceProduct    // *, /
-	PrecedencePrefix     // -x, +x
+	PrecedenceUnary      // unary -x, +x (lower than power)
+	PrecedencePower      // ^ (right associative)
+	PrecedencePostfix    // high precedence postfix operators
 )
 
 var precedences = map[TokenType]Precedence{
-	LBRACKET:     PrecedencePrefix, // High precedence for postfix indexing
+	LBRACKET:     PrecedencePostfix, // High precedence for postfix indexing
 	SEMICOLON:    PrecedenceCompound,
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
@@ -45,6 +47,8 @@ var precedences = map[TokenType]Precedence{
 	MINUS:        PrecedenceSum,
 	MULTIPLY:     PrecedenceProduct,
 	DIVIDE:       PrecedenceProduct,
+	CARET:        PrecedencePower,
+	NOT:          PrecedenceUnary,
 }
 
 type Parser struct {
@@ -132,6 +136,8 @@ func (p *Parser) ParseAtom() Expr {
 	case MINUS:
 		expr = p.parsePrefixExpression()
 	case PLUS:
+		expr = p.parsePrefixExpression()
+	case NOT:
 		expr = p.parsePrefixExpression()
 	case LPAREN:
 		expr = p.parseGroupedExpression()
@@ -369,7 +375,7 @@ func (p *Parser) currentPrecedence() Precedence {
 
 func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
 	switch tokenType {
-	case SEMICOLON, SET, SETDELAYED, UNSET, COLON, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE:
+	case SEMICOLON, SET, SETDELAYED, UNSET, COLON, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE, CARET:
 		return true
 	default:
 		return false
@@ -394,15 +400,21 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 	}
 
 	p.nextToken()
-	right := p.parseInfixExpression(precedence)
 
+	// Power (^) is right-associative, so use precedence - 1
+	if operator.Type == CARET {
+		right := p.parseInfixExpression(precedence - 1)
+		return p.createInfixExpr(operator.Type, left, right)
+	}
+
+	right := p.parseInfixExpression(precedence)
 	return p.createInfixExpr(operator.Type, left, right)
 }
 
 func (p *Parser) parsePrefixExpression() Expr {
 	operator := p.currentToken
 	p.nextToken()
-	right := p.parseInfixExpression(PrecedencePrefix)
+	right := p.parseInfixExpression(PrecedenceUnary)
 
 	return p.createPrefixExpr(operator.Type, right)
 }
@@ -447,6 +459,8 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 		return NewList(core.NewSymbol("Times"), left, right)
 	case DIVIDE:
 		return NewList(core.NewSymbol("Divide"), left, right)
+	case CARET:
+		return NewList(core.NewSymbol("Power"), left, right)
 	default:
 		p.addError(fmt.Sprintf("unknown infix operator: %d", operator))
 		return nil
@@ -459,6 +473,8 @@ func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 		return NewList(core.NewSymbol("Minus"), operand)
 	case PLUS:
 		return operand // unary plus is identity
+	case NOT:
+		return NewList(core.NewSymbol("Not"), operand)
 	default:
 		p.addError(fmt.Sprintf("unknown prefix operator: %d", operator))
 		return nil

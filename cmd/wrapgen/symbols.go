@@ -52,6 +52,15 @@ var symbolSpecs = map[string]SymbolSpec{
 			"(x_Number, y_Number)":   stdlib.SubtractExprs,
 		},
 	},
+	"Minus": {
+		Name:       "Minus",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(x_Integer)": stdlib.MinusInteger,
+			"(x_Real)":    stdlib.MinusReal,
+			"(x_)":        stdlib.MinusExpr,
+		},
+	},
 	"Divide": {
 		Name:       "Divide",
 		Attributes: []string{},
@@ -324,6 +333,13 @@ var symbolSpecs = map[string]SymbolSpec{
 		Attributes: []string{},
 		Functions: map[string]any{
 			"(x_, y_)": stdlib.MatchQExprs,
+		},
+	},
+	"Replace": {
+		Name:       "Replace",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(x_, r_Rule)": stdlib.ReplaceExpr,
 		},
 	},
 

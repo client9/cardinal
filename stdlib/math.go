@@ -3,6 +3,8 @@ package stdlib
 import (
 	"fmt"
 	"math"
+
+	"github.com/client9/sexpr/core"
 )
 
 // Arithmetic functions for mathematical operations
@@ -74,6 +76,25 @@ func PowerReal(base float64, exp int64) float64 {
 		result *= base
 	}
 	return result
+}
+
+// MinusInteger returns the negation of an integer
+func MinusInteger(x int64) int64 {
+	return -x
+}
+
+// MinusReal returns the negation of a real number
+func MinusReal(x float64) float64 {
+	return -x
+}
+
+// MinusExpr converts Minus(x) to Times(-1, x) as per Mathematica
+func MinusExpr(x core.Expr) core.Expr {
+	return core.NewList(
+		core.NewSymbol("Times"),
+		core.NewInteger(-1),
+		x,
+	)
 }
 
 // SubtractIntegers performs integer subtraction

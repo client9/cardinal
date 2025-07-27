@@ -196,7 +196,7 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "unary minus",
 			input:    "-5",
-			expected: "-5",
+			expected: "Minus(5)",
 			hasError: false,
 		},
 		{
