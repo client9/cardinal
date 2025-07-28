@@ -31,6 +31,18 @@ func NewFunctionRegistry() *FunctionRegistry {
 	}
 }
 
+// calculatePatternSpecificity calculates specificity for compound patterns
+func calculatePatternSpecificity(pattern Expr) int {
+	// For compound patterns (List), use compound specificity calculation
+	if list, ok := pattern.(List); ok {
+		cs := core.CalculateCompoundSpecificity(list)
+		return cs.TotalScore
+	}
+
+	// For simple patterns, use the regular specificity (cast to int)
+	return int(core.GetPatternSpecificity(pattern))
+}
+
 // RegisterPatternBuiltin registers a built-in function with a pattern from Go code
 func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl PatternFunc) error {
 	// Parse the pattern string
@@ -53,7 +65,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		Pattern:     pattern,
 		Body:        nil,
 		GoImpl:      impl,
-		Specificity: int(core.GetPatternSpecificity(pattern)),
+		Specificity: calculatePatternSpecificity(pattern),
 		IsBuiltin:   true,
 	}
 
@@ -93,7 +105,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 		Pattern:     pattern,
 		Body:        body,
 		GoImpl:      nil,
-		Specificity: int(core.GetPatternSpecificity(pattern)),
+		Specificity: calculatePatternSpecificity(pattern),
 		IsBuiltin:   false,
 	}
 
@@ -193,7 +205,7 @@ func (r *FunctionRegistry) RegisterFunction(functionName string, pattern Expr, i
 		Pattern:     pattern,
 		Body:        nil,
 		GoImpl:      implementation,
-		Specificity: int(core.GetPatternSpecificity(pattern)),
+		Specificity: calculatePatternSpecificity(pattern),
 		IsBuiltin:   false,
 	}
 
@@ -329,18 +341,14 @@ func typesCouldOverlap(type1, type2 string) bool {
 // extractFunctionName extracts the function name from a pattern
 func extractFunctionName(pattern Expr) (string, error) {
 	switch p := pattern.(type) {
-	// New Symbol type
+
+	// unclear how core.Symbol would be triggered.
 	case core.Symbol:
+		// This is questionable.  Indicates some other issue
+		panic("Why symbol?")
 		return string(p), nil
 	case List:
-		if len(p.Elements) == 0 {
-			return "", fmt.Errorf("empty list pattern")
-		}
-		// Check for new Symbol type first
-		if head, ok := core.ExtractSymbol(p.Elements[0]); ok {
-			return head, nil
-		}
-		return "", fmt.Errorf("pattern head must be a symbol")
+		return p.Type(), nil
 	default:
 		return "", fmt.Errorf("invalid pattern type")
 	}
@@ -348,6 +356,11 @@ func extractFunctionName(pattern Expr) (string, error) {
 
 // matchesPattern checks if a pattern matches the given arguments and returns variable bindings
 func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[string]Expr) {
+
+	// TODO: for unknown reasons the original expression is chopped up into the
+	// function name and args.  But now it needs to restored to a complete express
+	// Since it's immutable unclear why we are copying it.
+
 	// Create a mock function call to match against the pattern
 	mockCall := List{Elements: make([]Expr, len(args)+1)}
 	mockCall.Elements[0] = core.NewSymbol(functionName)

@@ -445,4 +445,21 @@ var symbolSpecs = map[string]SymbolSpec{
 		Attributes: []string{"Constant", "Protected"},
 		Constants:  map[string]any{"False": "False"},
 	},
+
+	// Attribute manipulation functions
+	"SetAttributes": {
+		Name:       "SetAttributes",
+		Attributes: []string{"HoldFirst"},
+		Functions:  map[string]any{}, // SetAttributes is handled as special function in builtin_setup
+	},
+	"ClearAttributes": {
+		Name:       "ClearAttributes",
+		Attributes: []string{"HoldFirst"},
+		Functions:  map[string]any{}, // ClearAttributes is handled as special function in builtin_setup
+	},
+	"Attributes": {
+		Name:       "Attributes",
+		Attributes: []string{"HoldFirst"},
+		Functions:  map[string]any{}, // Attributes is handled as special function in builtin_setup
+	},
 }
