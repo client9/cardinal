@@ -90,11 +90,7 @@ func MinusReal(x float64) float64 {
 
 // MinusExpr converts Minus(x) to Times(-1, x) as per Mathematica
 func MinusExpr(x core.Expr) core.Expr {
-	return core.NewList(
-		core.NewSymbol("Times"),
-		core.NewInteger(-1),
-		x,
-	)
+	return core.NewList("Times", core.NewInteger(-1), x)
 }
 
 // SubtractIntegers performs integer subtraction

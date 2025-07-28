@@ -214,7 +214,7 @@ func TestMatchesType(t *testing.T) {
 		{NewReal(3.14), "Number", true},
 		{NewString("hello"), "String", true},
 		{NewSymbol("x"), "Symbol", true},
-		{NewList(NewSymbol("List")), "List", true},
+		{NewList("List"), "List", true},
 		{NewInteger(42), "", true}, // No constraint
 		{NewObjectExpr("CustomType", NewInteger(1)), "CustomType", true},
 		{NewObjectExpr("CustomType", NewInteger(1)), "OtherType", false},
@@ -318,10 +318,10 @@ func TestPatternMatcher(t *testing.T) {
 		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewInteger(42), false},
 
 		// List patterns
-		{NewList(NewSymbol("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
-			NewList(NewSymbol("Plus"), NewInteger(1), NewInteger(2)), true},
-		{NewList(NewSymbol("Plus"), CreateBlankExpr(nil), CreateBlankExpr(nil)),
-			NewList(NewSymbol("Times"), NewInteger(1), NewInteger(2)), false},
+		{NewList("Plus", CreateBlankExpr(nil), CreateBlankExpr(nil)),
+			NewList("Plus", NewInteger(1), NewInteger(2)), true},
+		{NewList("Plus", CreateBlankExpr(nil), CreateBlankExpr(nil)),
+			NewList("Times", NewInteger(1), NewInteger(2)), false},
 	}
 
 	for _, test := range tests {

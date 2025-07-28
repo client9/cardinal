@@ -40,7 +40,18 @@ func NewErrorExprWithStack(errorType, message string, args []Expr, stack []Stack
 	}
 }
 
-func NewList(elements ...Expr) List {
+// NewList creates a new List with a Symbol head and arguments
+// This reflects the s-expression semantics where lists are function calls
+func NewList(head string, args ...Expr) List {
+	elements := make([]Expr, len(args)+1)
+	elements[0] = NewSymbol(head)
+	copy(elements[1:], args)
+	return List{Elements: elements}
+}
+
+// NewListFromExprs creates a List directly from expressions (for special cases)
+// Use NewList instead when possible, as it enforces the Symbol-head convention
+func NewListFromExprs(elements ...Expr) List {
 	return List{Elements: elements}
 }
 

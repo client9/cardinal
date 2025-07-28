@@ -200,7 +200,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 		}
 
 		// Sum all arguments using Plus through evaluator
-		plusList := NewList(append([]Expr{core.NewSymbol("Plus")}, args...)...)
+		plusList := NewList("Plus", args...)
 		sumResult := eval.evaluate(plusList, ctx)
 
 		// If sum failed, propagate the error
@@ -210,7 +210,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 
 		// Divide by count (use float to ensure real division)
 		count := core.NewReal(float64(len(args)))
-		divideList := NewList(core.NewSymbol("Divide"), sumResult, count)
+		divideList := NewList("Divide", sumResult, count)
 		avgResult := eval.evaluate(divideList, ctx)
 
 		return avgResult

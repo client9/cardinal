@@ -15,7 +15,7 @@ func NotExpr(expr core.Expr) core.Expr {
 	}
 
 	// Return unchanged expression if not boolean (symbolic behavior)
-	return core.NewList(core.NewSymbol("Not"), expr)
+	return core.NewList("Not", expr)
 }
 
 // MatchQExprs checks if an expression matches a pattern (pure test, no variable binding)
@@ -105,7 +105,7 @@ func ReplaceAllExpr(expr core.Expr, rule core.Expr) core.Expr {
 		}
 
 		if changed {
-			return core.NewList(newElements...)
+			return core.NewListFromExprs(newElements...)
 		}
 	}
 
@@ -139,7 +139,7 @@ func ReplaceAllWithRules(expr core.Expr, rulesList core.Expr) core.Expr {
 		}
 
 		if changed {
-			return core.NewList(newElements...)
+			return core.NewListFromExprs(newElements...)
 		}
 	}
 

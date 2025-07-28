@@ -24,7 +24,7 @@ func KeysExpr(assoc core.Association) core.Expr {
 	// Return as List[key1, key2, ...]
 	elements := []core.Expr{core.NewSymbol("List")}
 	elements = append(elements, keys...)
-	return core.NewList(elements...)
+	return core.NewListFromExprs(elements...)
 }
 
 // ValuesExpr returns the values of an association as a List
@@ -33,7 +33,7 @@ func ValuesExpr(assoc core.Association) core.Expr {
 	// Return as List[value1, value2, ...]
 	elements := []core.Expr{core.NewSymbol("List")}
 	elements = append(elements, values...)
-	return core.NewList(elements...)
+	return core.NewListFromExprs(elements...)
 }
 
 // AssociationRules creates an Association from a sequence of Rule expressions

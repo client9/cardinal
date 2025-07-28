@@ -12,12 +12,17 @@ func main() {
 	var (
 		prompt = flag.String("prompt", "sexpr> ", "REPL prompt string")
 		help   = flag.Bool("help", false, "Show help message")
-		file   = flag.String("file", "", "Execute expressions from file instead of interactive mode")
-		cmd    = flag.String("c", "", "Execute expression from command line")
+		//file   = flag.String("file", "", "Execute expressions from file instead of interactive mode")
+		cmd = flag.String("c", "", "Execute expression from command line")
 		//withUint64 = flag.Bool("with-uint64", false, "Enable experimental Uint64 type system")
 	)
 
 	flag.Parse()
+	args := flag.Args()
+	file := ""
+	if len(args) > 0 {
+		file = args[0]
+	}
 
 	// Show help if requested
 	if *help {
@@ -48,8 +53,8 @@ func main() {
 	}
 
 	// If file is specified, execute it
-	if *file != "" {
-		if err := repl.ExecuteFile(*file); err != nil {
+	if file != "" {
+		if err := repl.ExecuteFile(file); err != nil {
 			fmt.Fprintf(os.Stderr, "Error executing file: %v\n", err)
 			os.Exit(1)
 		}
@@ -65,21 +70,20 @@ func main() {
 
 // showHelp displays help information
 func showHelp() {
-	fmt.Println(`S-Expression REPL - Interactive calculator and symbolic computation system
+	fmt.Println(`S-Expression REPL - Symbolic computation system
 
 Usage:
-  repl [flags]
+  repl [flags] [file]
 
 Flags:
   -prompt string    Set the REPL prompt (default "sexpr> ")
-  -file string      Execute expressions from file instead of interactive mode
-  -with-uint64     Enable experimental Uint64 type system
-  -help            Show this help message
+  -c expression     Evaluate expression and exit
+  -help             Show this help message
 
 Examples:
-  repl                           # Start interactive REPL
-  repl -prompt "calc> "          # Start with custom prompt
-  repl -file examples.sexpr      # Execute file and exit
+  repl                               # Start interactive REPL
+  repl -c 'InputForm(List(1,2,3))'   # Prints [1,2,3]
+  repl examples.sexpr                # Execute file and exit
 
 For detailed usage information, start the REPL and type 'help'.`)
 }

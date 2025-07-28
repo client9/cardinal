@@ -233,7 +233,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 
 			// Bind variable if named
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, NewList(append([]Expr{core.NewSymbol("List")}, sequenceExprs...)...))
+				ctx.Set(patternInfo.VarName, NewList("List", sequenceExprs...))
 			}
 
 			exprIndex += len(sequenceExprs)
@@ -245,7 +245,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 
 			// Bind variable if named (can be empty list)
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, NewList(append([]Expr{core.NewSymbol("List")}, sequenceExprs...)...))
+				ctx.Set(patternInfo.VarName, NewList("List", sequenceExprs...))
 			}
 
 			exprIndex += len(sequenceExprs)

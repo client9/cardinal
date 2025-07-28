@@ -144,7 +144,7 @@ func TestStackTrace_ErrorPropagation(t *testing.T) {
 	// Test that errors include stack traces
 	// Divide[1, 0] should give an error with stack trace
 	expr := NewList(
-		core.NewSymbol("Divide"),
+		"Divide",
 		core.NewInteger(1),
 		core.NewInteger(0),
 	)
@@ -176,10 +176,10 @@ func TestStackTrace_NestedErrors(t *testing.T) {
 	// Test nested function calls with errors
 	// Plus[1, Divide[2, 0]] should show both Plus and Divide in stack trace
 	expr := NewList(
-		core.NewSymbol("Plus"),
+		"Plus",
 		core.NewInteger(1),
 		NewList(
-			core.NewSymbol("Divide"),
+			"Divide",
 			core.NewInteger(2),
 			core.NewInteger(0),
 		),
@@ -210,7 +210,7 @@ func TestStackTrace_StringFunctions(t *testing.T) {
 	// Test basic functionality - no need for errors since pattern-based functions
 	// return unchanged expressions for non-matching patterns (which is correct behavior)
 	expr := NewList(
-		core.NewSymbol("StringLength"),
+		"StringLength",
 		core.NewString("test"),
 	)
 

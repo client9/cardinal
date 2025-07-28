@@ -214,7 +214,7 @@ func TestSliceAssignmentImmutability(t *testing.T) {
 	evaluator := NewEvaluator()
 
 	// Set up original list
-	evaluator.GetContext().Set("original", NewList(core.NewSymbol("List"), core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)))
+	evaluator.GetContext().Set("original", NewList("List", core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)))
 
 	// Perform assignment
 	expr, err := ParseString("original[1] = 99")

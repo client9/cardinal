@@ -129,32 +129,32 @@ func TestList_String(t *testing.T) {
 	}{
 		{
 			name:     "empty list",
-			list:     NewList(),
+			list:     NewList("List"),
 			expected: "List()",
 		},
 		{
 			name:     "single element list",
-			list:     NewList(core.NewSymbol("Plus")),
+			list:     NewList("Plus"),
 			expected: "Plus()",
 		},
 		{
 			name:     "simple function call",
-			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list:     NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "mixed types",
-			list:     NewList(core.NewSymbol("List"), core.NewInteger(1), core.NewReal(2.5), core.NewString("hello"), core.NewBool(true)),
+			list:     NewList("List", core.NewInteger(1), core.NewReal(2.5), core.NewString("hello"), core.NewBool(true)),
 			expected: `List(1, 2.5, "hello", True)`,
 		},
 		{
 			name:     "nested list",
-			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), NewList(core.NewSymbol("Times"), core.NewInteger(2), core.NewInteger(3))),
+			list:     NewList("Plus", core.NewInteger(1), NewList("Times", core.NewInteger(2), core.NewInteger(3))),
 			expected: "Plus(1, Times(2, 3))",
 		},
 		{
 			name:     "deeply nested",
-			list:     NewList(core.NewSymbol("f"), NewList(core.NewSymbol("g"), NewList(core.NewSymbol("h"), core.NewInteger(1)))),
+			list:     NewList("f", NewList("g", NewList("h", core.NewInteger(1)))),
 			expected: "f(g(h(1)))",
 		},
 	}
@@ -177,12 +177,12 @@ func TestList_Type(t *testing.T) {
 	}{
 		{
 			name:     "empty list type",
-			list:     NewList(),
+			list:     NewList("List"),
 			expected: "List",
 		},
 		{
 			name:     "non-empty list type",
-			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list:     NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 			expected: "Plus",
 		},
 	}
@@ -320,7 +320,7 @@ func TestNewList(t *testing.T) {
 		},
 		{
 			name:           "nested list",
-			elements:       []Expr{core.NewSymbol("f"), NewList(core.NewSymbol("g"), core.NewInteger(1))},
+			elements:       []Expr{core.NewSymbol("f"), NewList("g", core.NewInteger(1))},
 			expectedLength: 2,
 			expectedType:   "f",
 		},
@@ -328,7 +328,7 @@ func TestNewList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			list := NewList(tt.elements...)
+			list := core.NewListFromExprs(tt.elements...)
 
 			if list.Type() != tt.expectedType {
 				t.Errorf("expected type %q, got %q", tt.expectedType, list.Type())
@@ -349,9 +349,8 @@ func TestComplexExpressions(t *testing.T) {
 	}{
 		{
 			name: "mathematical expression",
-			expr: NewList(
-				core.NewSymbol("Plus"),
-				NewList(core.NewSymbol("Times"), core.NewInteger(2), core.NewSymbol("x")),
+			expr: NewList("Plus",
+				NewList("Times", core.NewInteger(2), core.NewSymbol("x")),
 				core.NewInteger(5),
 			),
 			expected: "Plus(Times(2, x), 5)",
@@ -359,26 +358,26 @@ func TestComplexExpressions(t *testing.T) {
 		{
 			name: "function definition",
 			expr: NewList(
-				core.NewSymbol("Function"),
+				"Function",
 				core.NewString("x"),
-				NewList(core.NewSymbol("Power"), core.NewSymbol("x"), core.NewInteger(2)),
+				NewList("Power", core.NewSymbol("x"), core.NewInteger(2)),
 			),
 			expected: `Function("x", Power(x, 2))`,
 		},
 		{
 			name: "conditional expression",
 			expr: NewList(
-				core.NewSymbol("If"),
-				NewList(core.NewSymbol("Greater"), core.NewSymbol("x"), core.NewInteger(0)),
+				"If",
+				NewList("Greater", core.NewSymbol("x"), core.NewInteger(0)),
 				core.NewSymbol("x"),
-				NewList(core.NewSymbol("Minus"), core.NewSymbol("x")),
+				NewList("Minus", core.NewSymbol("x")),
 			),
 			expected: "If(Greater(x, 0), x, Minus(x))",
 		},
 		{
 			name: "list with mixed types",
 			expr: NewList(
-				core.NewSymbol("List"),
+				"List",
 				core.NewInteger(1),
 				core.NewReal(2.5),
 				core.NewString("hello"),

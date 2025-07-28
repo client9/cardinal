@@ -138,7 +138,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 	}
 
 	// Create the function call expression for pattern matching
-	callExpr := NewList(append([]Expr{core.NewSymbol(headName)}, evaluatedArgs...)...)
+	callExpr := NewList(headName, evaluatedArgs...)
 
 	// Try to find a matching pattern in the function registry
 	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx); found {
@@ -262,7 +262,7 @@ func (e *Evaluator) applyFlat(headName string, list List) List {
 		newArgs = append(newArgs, arg)
 	}
 
-	return NewList(append([]Expr{head}, newArgs...)...)
+	return core.NewListFromExprs(append([]Expr{head}, newArgs...)...)
 }
 
 // applyOrderless implements the Orderless attribute (commutativity)
@@ -279,7 +279,7 @@ func (e *Evaluator) applyOrderless(list List) List {
 		return args[i].String() < args[j].String()
 	})
 
-	return NewList(append([]Expr{head}, args...)...)
+	return core.NewListFromExprs(append([]Expr{head}, args...)...)
 }
 
 // applyOneIdentity implements the OneIdentity attribute
@@ -588,14 +588,14 @@ func (e *Evaluator) evaluateUnset(args []Expr, ctx *Context) Expr {
 // evaluateHold implements the Hold special form
 func (e *Evaluator) evaluateHold(args []Expr, ctx *Context) Expr {
 	// Hold returns its arguments unevaluated wrapped in Hold
-	return NewList(append([]Expr{core.NewSymbol("Hold")}, args...)...)
+	return NewList("Hold", args...)
 }
 
 // evaluatePattern implements the Pattern special form
 func (e *Evaluator) evaluatePattern(args []Expr, ctx *Context) Expr {
 	// Pattern expressions should remain unevaluated during normal evaluation
 	// They are only processed during pattern matching operations
-	return NewList(append([]Expr{core.NewSymbol("Pattern")}, args...)...)
+	return NewList("Pattern", args...)
 }
 
 // evaluateEvaluate implements the Evaluate special form
@@ -669,7 +669,7 @@ func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
 		return nonBooleanArgs[0] // Single non-boolean argument
 	} else {
 		// Multiple non-boolean arguments, return simplified And expression
-		return NewList(append([]Expr{core.NewSymbol("And")}, nonBooleanArgs...)...)
+		return NewList("And", nonBooleanArgs...)
 	}
 }
 
@@ -705,7 +705,7 @@ func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 		return nonBooleanArgs[0] // Single non-boolean argument
 	} else {
 		// Multiple non-boolean arguments, return simplified Or expression
-		return NewList(append([]Expr{core.NewSymbol("Or")}, nonBooleanArgs...)...)
+		return NewList("Or", nonBooleanArgs...)
 	}
 }
 
@@ -788,12 +788,12 @@ func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 	if start < 0 {
 		// Negative start: use Take to get last |start| elements
 		// Take([1,2,3,4,5], -2) gives [4,5]
-		return e.evaluate(NewList(core.NewSymbol("Take"), expr, core.NewInteger(start)), ctx)
+		return e.evaluate(NewList("Take", expr, core.NewInteger(start)), ctx)
 	} else {
 		// Positive start: use Drop to remove first (start-1) elements
 		// Drop([1,2,3,4,5], 2) gives [3,4,5] (for start=3, 1-indexed)
 		dropCount := start - 1
-		return e.evaluate(NewList(core.NewSymbol("Drop"), expr, core.NewInteger(dropCount)), ctx)
+		return e.evaluate(NewList("Drop", expr, core.NewInteger(dropCount)), ctx)
 	}
 }
 
@@ -1086,7 +1086,7 @@ func (e *Evaluator) evaluateTableSimple(expr Expr, n int64, ctx *Context) Expr {
 	}
 
 	if n == 0 {
-		return core.NewList(core.NewSymbol("List"))
+		return core.NewList("List")
 	}
 
 	// Create result list with proper capacity
@@ -1104,7 +1104,7 @@ func (e *Evaluator) evaluateTableSimple(expr Expr, n int64, ctx *Context) Expr {
 		elements[i] = evaluated
 	}
 
-	return core.NewList(elements...)
+	return core.NewListFromExprs(elements...)
 }
 
 // evaluateTableIterator implements Table(expr, List(i, start, end, increment))
@@ -1143,7 +1143,7 @@ func (e *Evaluator) evaluateTableIterator(expr Expr, iterSpec List, ctx *Context
 		}
 	}
 
-	return core.NewList(results...)
+	return core.NewListFromExprs(results...)
 }
 
 // parseTableIteratorSpec parses iterator specifications and normalizes them
@@ -1205,7 +1205,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 
 	// Validate that arithmetic and comparison operations can be evaluated
 	// Test if Plus(start, increment) evaluates to something different (not unevaluated)
-	testPlus := core.NewList(core.NewSymbol("Plus"), start, increment)
+	testPlus := core.NewList("Plus", start, increment)
 	plusResult := e.evaluate(testPlus, ctx)
 	if IsError(plusResult) {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
@@ -1217,7 +1217,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 	}
 
 	// Test if comparison operation evaluates
-	testLessEqual := core.NewList(core.NewSymbol("LessEqual"), start, end)
+	testLessEqual := core.NewList("LessEqual", start, end)
 	compareResult := e.evaluate(testLessEqual, ctx)
 	if IsError(compareResult) {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
@@ -1244,7 +1244,7 @@ func (e *Evaluator) evaluateIteratorCondition(current, end, increment Expr, ctx 
 	}
 
 	// Create and evaluate comparison expression
-	compExpr := core.NewList(core.NewSymbol(compSymbol), current, end)
+	compExpr := core.NewList(compSymbol, current, end)
 	result := e.evaluate(compExpr, ctx)
 
 	// Extract boolean result
@@ -1266,7 +1266,7 @@ func (e *Evaluator) evaluateIteratorCondition(current, end, increment Expr, ctx 
 
 // evaluateIteratorIncrement adds increment to current value using expression arithmetic
 func (e *Evaluator) evaluateIteratorIncrement(current, increment Expr, ctx *Context) Expr {
-	plusExpr := core.NewList(core.NewSymbol("Plus"), current, increment)
+	plusExpr := core.NewList("Plus", current, increment)
 	return e.evaluate(plusExpr, ctx)
 }
 
@@ -1274,7 +1274,7 @@ func (e *Evaluator) evaluateIteratorIncrement(current, increment Expr, ctx *Cont
 func (e *Evaluator) isNegativeIncrement(increment Expr, ctx *Context) bool {
 	// Create comparison: increment < 0
 	zeroExpr := core.NewInteger(0)
-	lessExpr := core.NewList(core.NewSymbol("Less"), increment, zeroExpr)
+	lessExpr := core.NewList("Less", increment, zeroExpr)
 	result := e.evaluate(lessExpr, ctx)
 
 	if boolVal, ok := core.ExtractBool(result); ok {
@@ -1288,8 +1288,8 @@ func (e *Evaluator) isNegativeIncrement(increment Expr, ctx *Context) bool {
 // evaluateWithIteratorBinding uses Block to bind iterator variable and evaluate expression
 func (e *Evaluator) evaluateWithIteratorBinding(expr Expr, variable string, value Expr, ctx *Context) Expr {
 	// Create Block(List(Set(variable, value)), expr)
-	setExpr := core.NewList(core.NewSymbol("Set"), core.NewSymbol(variable), value)
-	blockVars := core.NewList(core.NewSymbol("List"), setExpr)
+	setExpr := core.NewList("Set", core.NewSymbol(variable), value)
+	blockVars := core.NewList("List", setExpr)
 	blockArgs := []Expr{blockVars, expr}
 
 	return e.evaluateBlock(blockArgs, ctx)

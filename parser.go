@@ -177,7 +177,7 @@ func (p *Parser) parseList(head string) Expr {
 
 	if p.currentToken.Type == RPAREN {
 		p.nextToken() // consume ')'
-		return NewList(elements...)
+		return core.NewListFromExprs(elements...)
 	}
 
 	for {
@@ -205,7 +205,7 @@ func (p *Parser) parseList(head string) Expr {
 		p.nextToken()
 	}
 
-	return NewList(elements...)
+	return core.NewListFromExprs(elements...)
 }
 
 func (p *Parser) parseListLiteral() Expr {
@@ -217,7 +217,7 @@ func (p *Parser) parseListLiteral() Expr {
 	// Handle empty list []
 	if p.currentToken.Type == RBRACKET {
 		p.nextToken() // consume ']'
-		return NewList(elements...)
+		return core.NewListFromExprs(elements...)
 	}
 
 	// Parse list elements
@@ -256,7 +256,7 @@ func (p *Parser) parseListLiteral() Expr {
 		p.nextToken()
 	}
 
-	return NewList(elements...)
+	return core.NewListFromExprs(elements...)
 }
 
 func (p *Parser) parseAssociationLiteral() Expr {
@@ -269,7 +269,7 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	if p.currentToken.Type == RBRACE {
 		p.nextToken() // consume '}'
 		// Create Association function call with no arguments for empty association
-		return NewList(core.NewSymbol("Association"))
+		return NewList("Association")
 	}
 
 	// Parse expressions (expecting Rule expressions from key:value infix parsing)
@@ -312,7 +312,7 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	// Create Association function call with Rule expressions
 	elements := []Expr{core.NewSymbol("Association")}
 	elements = append(elements, rules...)
-	return NewList(elements...)
+	return core.NewListFromExprs(elements...)
 }
 
 func (p *Parser) parseInteger() Expr {
@@ -429,45 +429,45 @@ func (p *Parser) parsePrefixExpression() Expr {
 func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 	switch operator {
 	case SEMICOLON:
-		return NewList(core.NewSymbol("CompoundStatement"), left, right)
+		return NewList("CompoundStatement", left, right)
 	case SET:
-		return NewList(core.NewSymbol("Set"), left, right)
+		return NewList("Set", left, right)
 	case SETDELAYED:
-		return NewList(core.NewSymbol("SetDelayed"), left, right)
+		return NewList("SetDelayed", left, right)
 	case UNSET:
-		return NewList(core.NewSymbol("Unset"), left)
+		return NewList("Unset", left)
 	case COLON:
-		return NewList(core.NewSymbol("Rule"), left, right)
+		return NewList("Rule", left, right)
 	case OR:
-		return NewList(core.NewSymbol("Or"), left, right)
+		return NewList("Or", left, right)
 	case AND:
-		return NewList(core.NewSymbol("And"), left, right)
+		return NewList("And", left, right)
 	case EQUAL:
-		return NewList(core.NewSymbol("Equal"), left, right)
+		return NewList("Equal", left, right)
 	case UNEQUAL:
-		return NewList(core.NewSymbol("Unequal"), left, right)
+		return NewList("Unequal", left, right)
 	case SAMEQ:
-		return NewList(core.NewSymbol("SameQ"), left, right)
+		return NewList("SameQ", left, right)
 	case UNSAMEQ:
-		return NewList(core.NewSymbol("UnsameQ"), left, right)
+		return NewList("UnsameQ", left, right)
 	case LESS:
-		return NewList(core.NewSymbol("Less"), left, right)
+		return NewList("Less", left, right)
 	case GREATER:
-		return NewList(core.NewSymbol("Greater"), left, right)
+		return NewList("Greater", left, right)
 	case LESSEQUAL:
-		return NewList(core.NewSymbol("LessEqual"), left, right)
+		return NewList("LessEqual", left, right)
 	case GREATEREQUAL:
-		return NewList(core.NewSymbol("GreaterEqual"), left, right)
+		return NewList("GreaterEqual", left, right)
 	case PLUS:
-		return NewList(core.NewSymbol("Plus"), left, right)
+		return NewList("Plus", left, right)
 	case MINUS:
-		return NewList(core.NewSymbol("Subtract"), left, right)
+		return NewList("Subtract", left, right)
 	case MULTIPLY:
-		return NewList(core.NewSymbol("Times"), left, right)
+		return NewList("Times", left, right)
 	case DIVIDE:
-		return NewList(core.NewSymbol("Divide"), left, right)
+		return NewList("Divide", left, right)
 	case CARET:
-		return NewList(core.NewSymbol("Power"), left, right)
+		return NewList("Power", left, right)
 	default:
 		p.addError(fmt.Sprintf("unknown infix operator: %d", operator))
 		return nil
@@ -477,11 +477,11 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 	switch operator {
 	case MINUS:
-		return NewList(core.NewSymbol("Minus"), operand)
+		return NewList("Minus", operand)
 	case PLUS:
 		return operand // unary plus is identity
 	case NOT:
-		return NewList(core.NewSymbol("Not"), operand)
+		return NewList("Not", operand)
 	default:
 		p.addError(fmt.Sprintf("unknown prefix operator: %d", operator))
 		return nil
@@ -533,7 +533,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			return expr
 		}
 		p.nextToken() // consume ']'
-		return NewList(core.NewSymbol("Part"), expr, firstExpr)
+		return NewList("Part", expr, firstExpr)
 
 	} else if p.currentToken.Type == COLON {
 		// Slice syntax: expr[start:end] or expr[:end] or expr[start:]
@@ -561,7 +561,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// If start is negative, use Take(expr, start) for last n elements
 			// If start is positive, use Drop(expr, start-1) since Drop removes the first n elements
 			// But we can't easily detect negative at parse time, so we'll use a special function
-			return NewList(core.NewSymbol("TakeFrom"), expr, startExpr)
+			return NewList("TakeFrom", expr, startExpr)
 		} else {
 			// Parse end expression
 			endExpr = p.parseSliceExpression()
@@ -574,10 +574,10 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// Generate appropriate slice expression
 			if startExpr == nil {
 				// [:end] syntax - Take first n elements
-				return NewList(core.NewSymbol("Take"), expr, endExpr)
+				return NewList("Take", expr, endExpr)
 			} else {
 				// [start:end] syntax - Slice operation
-				return NewList(core.NewSymbol("SliceRange"), expr, startExpr, endExpr)
+				return NewList("SliceRange", expr, startExpr, endExpr)
 			}
 		}
 	} else {
@@ -623,7 +623,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("Part expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList(core.NewSymbol("PartSet"), list.Elements[1], list.Elements[2], value)
+		return NewList("PartSet", list.Elements[1], list.Elements[2], value)
 
 	case "SliceRange":
 		// SliceRange(expr, start, end) = value -> SliceSet(expr, start, end, value)
@@ -631,7 +631,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("SliceRange expression must have exactly 3 arguments for assignment")
 			return nil
 		}
-		return NewList(core.NewSymbol("SliceSet"), list.Elements[1], list.Elements[2], list.Elements[3], value)
+		return NewList("SliceSet", list.Elements[1], list.Elements[2], list.Elements[3], value)
 
 	case "Take":
 		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
@@ -639,7 +639,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("Take expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList(core.NewSymbol("SliceSet"), list.Elements[1], core.NewInteger(1), list.Elements[2], value)
+		return NewList("SliceSet", list.Elements[1], core.NewInteger(1), list.Elements[2], value)
 
 	case "TakeFrom":
 		// TakeFrom(expr, start) = value -> SliceSet(expr, start, -1, value)
@@ -648,7 +648,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("TakeFrom expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList(core.NewSymbol("SliceSet"), list.Elements[1], list.Elements[2], core.NewInteger(-1), value)
+		return NewList("SliceSet", list.Elements[1], list.Elements[2], core.NewInteger(-1), value)
 
 	default:
 		p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))
@@ -674,21 +674,21 @@ func (p *Parser) parseUnderscorePattern() Expr {
 	var blankExpr Expr
 	if underscoreCount >= 3 {
 		if typeName != "" {
-			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"), core.NewSymbol(typeName))
+			blankExpr = core.NewList("BlankNullSequence", core.NewSymbol(typeName))
 		} else {
-			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"))
+			blankExpr = core.NewList("BlankNullSequence")
 		}
 	} else if underscoreCount == 2 {
 		if typeName != "" {
-			blankExpr = core.NewList(core.NewSymbol("BlankSequence"), core.NewSymbol(typeName))
+			blankExpr = core.NewList("BlankSequence", core.NewSymbol(typeName))
 		} else {
-			blankExpr = core.NewList(core.NewSymbol("BlankSequence"))
+			blankExpr = core.NewList("BlankSequence")
 		}
 	} else {
 		if typeName != "" {
-			blankExpr = core.NewList(core.NewSymbol("Blank"), core.NewSymbol(typeName))
+			blankExpr = core.NewList("Blank", core.NewSymbol(typeName))
 		} else {
-			blankExpr = core.NewList(core.NewSymbol("Blank"))
+			blankExpr = core.NewList("Blank")
 		}
 	}
 
@@ -714,26 +714,26 @@ func (p *Parser) parsePatternFromSymbol(varName string) Expr {
 	var blankExpr Expr
 	if underscoreCount >= 3 {
 		if typeName != "" {
-			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"), core.NewSymbol(typeName))
+			blankExpr = core.NewList("BlankNullSequence", core.NewSymbol(typeName))
 		} else {
-			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"))
+			blankExpr = core.NewList("BlankNullSequence")
 		}
 	} else if underscoreCount == 2 {
 		if typeName != "" {
-			blankExpr = core.NewList(core.NewSymbol("BlankSequence"), core.NewSymbol(typeName))
+			blankExpr = core.NewList("BlankSequence", core.NewSymbol(typeName))
 		} else {
-			blankExpr = core.NewList(core.NewSymbol("BlankSequence"))
+			blankExpr = core.NewList("BlankSequence")
 		}
 	} else {
 		if typeName != "" {
-			blankExpr = core.NewList(core.NewSymbol("Blank"), core.NewSymbol(typeName))
+			blankExpr = core.NewList("Blank", core.NewSymbol(typeName))
 		} else {
-			blankExpr = core.NewList(core.NewSymbol("Blank"))
+			blankExpr = core.NewList("Blank")
 		}
 	}
 
 	// Named pattern - wrap in Pattern(varName, blankExpr)
-	return core.NewList(core.NewSymbol("Pattern"), core.NewSymbol(varName), blankExpr)
+	return core.NewList("Pattern", core.NewSymbol(varName), blankExpr)
 }
 
 func ParseString(input string) (Expr, error) {

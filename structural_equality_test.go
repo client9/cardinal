@@ -88,7 +88,7 @@ func TestAtomEqual(t *testing.T) {
 		{
 			name:     "atom vs list",
 			atom1:    core.NewInteger(42),
-			atom2:    NewList(core.NewSymbol("List"), core.NewInteger(42)),
+			atom2:    core.NewList("List", core.NewInteger(42)),
 			expected: false,
 		},
 	}
@@ -113,54 +113,52 @@ func TestListEqual(t *testing.T) {
 		// Empty lists
 		{
 			name:     "empty lists",
-			list1:    NewList(),
-			list2:    NewList(),
+			list1:    core.NewListFromExprs(),
+			list2:    core.NewListFromExprs(),
 			expected: true,
 		},
 
 		// Same single element lists
 		{
 			name:     "same single element",
-			list1:    NewList(core.NewInteger(42)),
-			list2:    NewList(core.NewInteger(42)),
+			list1:    core.NewListFromExprs(core.NewInteger(42)),
+			list2:    core.NewListFromExprs(core.NewInteger(42)),
 			expected: true,
 		},
 
 		// Same multi-element lists
 		{
 			name:     "same multi-element",
-			list1:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
-			list2:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list1:    core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
+			list2:    core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 			expected: true,
 		},
 
 		// Different lengths
 		{
 			name:     "different lengths",
-			list1:    NewList(core.NewInteger(1)),
-			list2:    NewList(core.NewInteger(1), core.NewInteger(2)),
+			list1:    core.NewListFromExprs(core.NewInteger(1)),
+			list2:    core.NewListFromExprs(core.NewInteger(1), core.NewInteger(2)),
 			expected: false,
 		},
 
 		// Different elements
 		{
 			name:     "different elements",
-			list1:    NewList(core.NewInteger(1), core.NewInteger(2)),
-			list2:    NewList(core.NewInteger(1), core.NewInteger(3)),
+			list1:    core.NewListFromExprs(core.NewInteger(1), core.NewInteger(2)),
+			list2:    core.NewListFromExprs(core.NewInteger(1), core.NewInteger(3)),
 			expected: false,
 		},
 
 		// Nested lists - same
 		{
 			name: "nested lists same",
-			list1: NewList(
-				core.NewSymbol("f"),
-				NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list1: core.NewList("f",
+				core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 				core.NewInteger(3),
 			),
-			list2: NewList(
-				core.NewSymbol("f"),
-				NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list2: core.NewList("f",
+				core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 				core.NewInteger(3),
 			),
 			expected: true,
@@ -169,14 +167,12 @@ func TestListEqual(t *testing.T) {
 		// Nested lists - different
 		{
 			name: "nested lists different",
-			list1: NewList(
-				core.NewSymbol("f"),
-				NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list1: core.NewList("f",
+				core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 				core.NewInteger(3),
 			),
-			list2: NewList(
-				core.NewSymbol("f"),
-				NewList(core.NewSymbol("Times"), core.NewInteger(1), core.NewInteger(2)),
+			list2: core.NewList("f",
+				core.NewList("Times", core.NewInteger(1), core.NewInteger(2)),
 				core.NewInteger(3),
 			),
 			expected: false,
@@ -185,7 +181,7 @@ func TestListEqual(t *testing.T) {
 		// List vs non-list
 		{
 			name:     "list vs atom",
-			list1:    NewList(core.NewInteger(42)),
+			list1:    core.NewListFromExprs(core.NewInteger(42)),
 			list2:    core.NewInteger(42),
 			expected: false,
 		},
@@ -344,20 +340,20 @@ func TestListsEqualFunction(t *testing.T) {
 	}{
 		{
 			name:     "same lists",
-			list1:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
-			list2:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
+			list1:    core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
+			list2:    core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
 			expected: true,
 		},
 		{
 			name:     "different lists",
-			list1:    NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
-			list2:    NewList(core.NewSymbol("Times"), core.NewInteger(1), core.NewInteger(2)),
+			list1:    core.NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
+			list2:    core.NewList("Times", core.NewInteger(1), core.NewInteger(2)),
 			expected: false,
 		},
 		{
 			name:     "empty lists",
-			list1:    NewList(),
-			list2:    NewList(),
+			list1:    core.NewListFromExprs(),
+			list2:    core.NewListFromExprs(),
 			expected: true,
 		},
 	}
