@@ -240,7 +240,7 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 
 	// Check if we need to replace an existing equivalent pattern
 	for i, existingDef := range definitions {
-		if patternsEquivalent(existingDef.Pattern, newDef.Pattern) {
+		if patternsEqual(existingDef.Pattern, newDef.Pattern) {
 			// Replace existing definition
 			definitions[i] = newDef
 			r.functions[functionName] = definitions
@@ -398,9 +398,4 @@ func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[s
 		return true, result
 	}
 	return false, nil
-}
-
-// patternsEquivalent checks if two patterns are structurally equivalent (ignoring variable names)
-func patternsEquivalent(pattern1, pattern2 Expr) bool {
-	return patternsEqual(pattern1, pattern2)
 }
