@@ -40,8 +40,8 @@ var symbolSpecs = map[string]SymbolSpec{
 		Name:       "Power",
 		Attributes: []string{"OneIdentity"},
 		Functions: map[string]any{
-                       "(base_Real, exp_Integer)": stdlib.PowerReal,
-                       "(x_Number, y_Number)":     stdlib.PowerExprs,
+			"(base_Real, exp_Integer)": stdlib.PowerReal,
+			"(x_Number, y_Number)":     stdlib.PowerExprs,
 		},
 	},
 	"Subtract": {

@@ -140,4 +140,3 @@ func ExtractSymbol(expr Expr) (string, bool) {
 	}
 	return "", false
 }
-

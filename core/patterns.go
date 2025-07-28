@@ -1,8 +1,8 @@
 package core
 
 import (
-	"strings"
 	"log"
+	"strings"
 )
 
 // Pattern types and enums
@@ -331,7 +331,7 @@ func MatchesType(expr Expr, typeName string) bool {
 		}
 		return expr.Type() == typeName
 	} else {
-		log.Printf("Checking typename=%s with expr=%s",typeName, expr.Type())
+		log.Printf("Checking typename=%s with expr=%s", typeName, expr.Type())
 		switch typeName {
 		case "Association":
 			log.Printf("typeName = %s, expr = %s", typeName, expr.Type())

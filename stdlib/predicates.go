@@ -87,7 +87,6 @@ func InputFormExpr(expr core.Expr) string {
 // HeadExpr returns the head/type of an expression
 // expr.Type() returns a string, but Head returns a symbol
 // Head(Head("foo")) is Symbol("String")
-//
 func HeadExpr(expr core.Expr) core.Expr {
 	return core.NewSymbol(expr.Type())
 }

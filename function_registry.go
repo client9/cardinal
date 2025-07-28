@@ -31,36 +31,6 @@ func NewFunctionRegistry() *FunctionRegistry {
 	}
 }
 
-// matchBlankExpression matches a blank expression (Blank[], BlankSequence[], BlankNullSequence[]) against an expression
-func matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
-	// fmt.Printf("DEBUG: matchBlankExpression: blankExpr=%v (%T), expr=%v (%T)\n", blankExpr, blankExpr, expr, expr)
-	if isBlank, blankType, typeExpr := core.IsSymbolicBlank(blankExpr); isBlank {
-		// Check type constraint if present
-		if typeExpr != nil {
-			var typeName string
-			// Check for new Symbol type first
-			if name, ok := core.ExtractSymbol(typeExpr); ok {
-				typeName = name
-			}
-			if !core.MatchesType(expr, typeName) {
-				return false
-			}
-		}
-
-		// For now, single blank expressions always match single expressions
-		// BlankSequence and BlankNullSequence handling for sequences happens elsewhere
-		switch blankType {
-		case "Blank":
-			return true // Single expression always matches Blank[]
-		case "BlankSequence":
-			return true // Single expression matches BlankSequence[] (at least one)
-		case "BlankNullSequence":
-			return true // Single expression matches BlankNullSequence[] (zero or more)
-		}
-	}
-	return false
-}
-
 // convertParsedPatternToSymbolic converts a parsed pattern to use symbolic pattern representation
 func convertParsedPatternToSymbolic(pattern Expr) Expr {
 	// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: input=%v (%T)\n", pattern, pattern)
@@ -428,13 +398,6 @@ func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[s
 		return true, result
 	}
 	return false, nil
-}
-
-// isLiteralSymbol determines if a symbol should be treated as a literal match rather than a parameter
-func isLiteralSymbol(symbolName string) bool {
-	// Any symbol that is NOT a pattern variable should be treated as a literal
-	// Pattern variables are identified by containing underscores (x_, x_Integer, etc.)
-	return !core.IsPatternVariable(symbolName)
 }
 
 // patternsEquivalent checks if two patterns are structurally equivalent (ignoring variable names)
