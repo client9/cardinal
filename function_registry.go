@@ -31,35 +31,6 @@ func NewFunctionRegistry() *FunctionRegistry {
 	}
 }
 
-// convertParsedPatternToSymbolic converts a parsed pattern to use symbolic pattern representation
-func convertParsedPatternToSymbolic(pattern Expr) Expr {
-	// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: input=%v (%T)\n", pattern, pattern)
-	switch p := pattern.(type) {
-	// New Symbol type
-	case core.Symbol:
-		patternStr := string(p)
-		// Convert pattern strings like "x_", "_Integer", etc. to symbolic
-		if core.IsPatternVariable(patternStr) {
-			return core.ConvertPatternStringToSymbolic(patternStr)
-		} else {
-			// Regular symbols (like function names) should stay as core.Symbol
-			return p
-		}
-	case List:
-		// Convert all elements in the list
-		newElements := make([]Expr, len(p.Elements))
-		for i, elem := range p.Elements {
-			newElements[i] = convertParsedPatternToSymbolic(elem)
-		}
-		result := List{Elements: newElements}
-		// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: List result=%v\n", result)
-		return result
-	default:
-		// // fmt.Printf("DEBUG: convertParsedPatternToSymbolic: default case, returning input=%v (%T)\n", pattern, pattern)
-		return pattern
-	}
-}
-
 // RegisterPatternBuiltin registers a built-in function with a pattern from Go code
 func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl PatternFunc) error {
 	// Parse the pattern string
@@ -68,12 +39,8 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		return fmt.Errorf("invalid pattern syntax: %v", err)
 	}
 
-	// Convert parsed pattern to symbolic representation
-	symbolicPattern := convertParsedPatternToSymbolic(pattern)
-
 	// Debug: print what was parsed and converted
-	// // fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
-	// // fmt.Printf("DEBUG: Symbolic pattern -> %v\n", symbolicPattern)
+	//fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
 
 	// Extract function name from original pattern (before conversion)
 	functionName, err := extractFunctionName(pattern)
@@ -83,10 +50,10 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 
 	// Create function definition with symbolic pattern using compound specificity
 	funcDef := FunctionDef{
-		Pattern:     symbolicPattern,
+		Pattern:     pattern,
 		Body:        nil,
 		GoImpl:      impl,
-		Specificity: int(core.GetPatternSpecificity(symbolicPattern)),
+		Specificity: int(core.GetPatternSpecificity(pattern)),
 		IsBuiltin:   true,
 	}
 
