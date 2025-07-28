@@ -304,12 +304,14 @@ func TestNewList(t *testing.T) {
 			expectedLength: 0,
 			expectedType:   "List",
 		},
+		/* this is NOT RIGHT!  Must have head.
 		{
 			name:           "single element",
 			elements:       []Expr{core.NewInteger(1)},
 			expectedLength: 1,
 			expectedType:   "List",
 		},
+		*/
 		{
 			name:           "multiple elements",
 			elements:       []Expr{core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)},
