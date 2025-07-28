@@ -411,6 +411,12 @@ func GetPatternSpecificity(pattern Expr) PatternSpecificity {
 		return GetBlankExprSpecificity(pattern)
 	}
 
+	// Check for compound patterns (Lists like Plus(), Times(x__Integer), etc.)
+	if list, ok := pattern.(List); ok {
+		cs := CalculateCompoundSpecificity(list)
+		return PatternSpecificity(cs.TotalScore)
+	}
+
 	// Check for string-based patterns
 	if atom, ok := pattern.(Symbol); ok {
 		name := atom.String()
@@ -420,27 +426,48 @@ func GetPatternSpecificity(pattern Expr) PatternSpecificity {
 		}
 	}
 
-	// Literal patterns are most specific
-	return SpecificityLiteral
+	// Literal patterns are most specific - boost them above all pattern types
+	// Use a high multiplier to ensure they're always highest
+	return SpecificityLiteral * 100
 }
 
 // GetBlankExprSpecificity calculates specificity for blank expressions
 func GetBlankExprSpecificity(blankExpr Expr) PatternSpecificity {
-	isBlank, _, typeExpr := IsSymbolicBlank(blankExpr)
+	isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr)
 	if !isBlank {
 		return SpecificityLiteral
 	}
 
+	// Base specificity from type constraint
+	var baseSpecificity PatternSpecificity
 	if typeExpr == nil {
-		return SpecificityGeneral // Plain _
-	}
-
-	if typeAtom, ok := typeExpr.(Symbol); ok {
+		baseSpecificity = SpecificityGeneral
+	} else if typeAtom, ok := typeExpr.(Symbol); ok {
 		typeName := typeAtom.String()
-		return GetTypeSpecificity(typeName)
+		baseSpecificity = GetTypeSpecificity(typeName)
+	} else {
+		baseSpecificity = SpecificityTyped
 	}
 
-	return SpecificityTyped
+	// Adjust specificity based on blank type (sequence vs single)
+	// Use the same multiplier approach as GetPatternVariableSpecificity
+	switch blankType {
+	case "BlankNullSequence":
+		// ___ - most general (can match 0 or more)
+		return baseSpecificity*10 + 0
+
+	case "BlankSequence":
+		// __ - less general than null sequence (must match 1 or more)
+		return baseSpecificity*10 + 1
+
+	case "Blank":
+		// _ - single patterns are more specific than sequences
+		return baseSpecificity*10 + 2
+
+	default:
+		// Fallback for unknown blank types - treat as single pattern
+		return baseSpecificity*10 + 2
+	}
 }
 
 // GetTypeSpecificity calculates specificity for type constraints
@@ -458,11 +485,36 @@ func GetTypeSpecificity(typeName string) PatternSpecificity {
 
 // GetPatternVariableSpecificity calculates specificity for pattern variables
 func GetPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
+	// Base specificity from type constraint
+	var baseSpecificity PatternSpecificity
 	if info.TypeName == "" {
-		return SpecificityGeneral
+		baseSpecificity = SpecificityGeneral
+	} else {
+		baseSpecificity = GetTypeSpecificity(info.TypeName)
 	}
 
-	return GetTypeSpecificity(info.TypeName)
+	// Adjust specificity based on pattern type (sequence vs single)
+	// Use a large multiplier to create clear separation between pattern types
+	switch info.Type {
+	case BlankNullSequencePattern:
+		// x___ - most general (can match 0 or more)
+		// Multiply by 10 and add 0 (lowest)
+		return baseSpecificity*10 + 0
+
+	case BlankSequencePattern:
+		// x__ - less general than null sequence (must match 1 or more)
+		// Multiply by 10 and add 1
+		return baseSpecificity*10 + 1
+
+	case BlankPattern:
+		// x_ - single patterns are more specific than sequences
+		// Multiply by 10 and add 2 (highest for each type)
+		return baseSpecificity*10 + 2
+
+	default:
+		// Fallback for unknown pattern types - treat as single pattern
+		return baseSpecificity*10 + 2
+	}
 }
 
 // CalculateCompoundSpecificity calculates specificity for compound patterns (lists)

@@ -250,12 +250,12 @@ func TestGetPatternSpecificity(t *testing.T) {
 		pattern  Expr
 		expected PatternSpecificity
 	}{
-		{NewInteger(42), SpecificityLiteral},
-		{NewSymbol("x"), SpecificityLiteral},
-		{CreateBlankExpr(nil), SpecificityGeneral},
-		{CreateBlankExpr(NewSymbol("Integer")), SpecificityBuiltinType},
-		{CreateBlankExpr(NewSymbol("CustomType")), SpecificityUserType},
-		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)), SpecificityGeneral},
+		{NewInteger(42), SpecificityLiteral * 100},
+		{NewSymbol("x"), SpecificityLiteral * 100},
+		{CreateBlankExpr(nil), SpecificityGeneral*10 + 2},
+		{CreateBlankExpr(NewSymbol("Integer")), SpecificityBuiltinType*10 + 2},
+		{CreateBlankExpr(NewSymbol("CustomType")), SpecificityUserType*10 + 2},
+		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)), SpecificityGeneral*10 + 2},
 	}
 
 	for _, test := range tests {

@@ -61,11 +61,13 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 	}
 
 	// Create function definition with symbolic pattern using compound specificity
+	specificity := calculatePatternSpecificity(pattern)
+
 	funcDef := FunctionDef{
 		Pattern:     pattern,
 		Body:        nil,
 		GoImpl:      impl,
-		Specificity: calculatePatternSpecificity(pattern),
+		Specificity: specificity,
 		IsBuiltin:   true,
 	}
 
@@ -75,7 +77,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 	// }
 
 	// Register the function definition
-	// // fmt.Printf("DEBUG: Registering function '%s' with specificity %d\n", functionName, funcDef.Specificity)
+	// fmt.Printf("DEBUG: Registering function '%s' with specificity %d\n", functionName, funcDef.Specificity)
 	r.registerFunctionDef(functionName, funcDef)
 	return nil
 }
@@ -121,6 +123,7 @@ func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []Expr
 		// fmt.Printf("DEBUG: No functions found for '%s'. Available functions: %v\n", functionName, r.GetAllFunctionNames())
 		return nil, nil
 	}
+
 	// fmt.Printf("DEBUG: Found %d definitions for function '%s'\n", len(definitions), functionName)
 
 	// Try each definition in order (most specific first)
@@ -346,7 +349,7 @@ func extractFunctionName(pattern Expr) (string, error) {
 	case core.Symbol:
 		// This is questionable.  Indicates some other issue
 		panic("Why symbol?")
-		return string(p), nil
+		//return string(p), nil
 	case List:
 		return p.Type(), nil
 	default:

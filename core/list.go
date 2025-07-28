@@ -55,7 +55,8 @@ func (l List) InputForm() string {
 }
 
 func (l List) Type() string {
-	if l.Length() == 0 {
+	if len(l.Elements) == 0 {
+		// TODO Panic
 		return "List"
 	}
 	if name, ok := ExtractSymbol(l.Elements[0]); ok {

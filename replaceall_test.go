@@ -122,7 +122,7 @@ func TestReplaceAllWithRules(t *testing.T) {
 		{
 			name:     "ReplaceAll with recursive function application",
 			input:    `ReplaceAll(Plus(f(x), f(y)), List(f(z_) : Times(2, z)))`,
-			expected: `Plus(f(x), f(y))`, // Pattern matching not implemented yet, so no change
+			expected: `Plus(Times(2, x), Times(2, y))`, // Pattern matching works: f(x) -> Times(2, x), f(y) -> Times(2, y)
 		},
 		{
 			name:     "ReplaceAll with deeply nested Lists",
