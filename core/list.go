@@ -50,13 +50,18 @@ func (l List) String() string {
 	}
 	return fmt.Sprintf("%s(%s)", l.Elements[0].String(), strings.Join(elements[1:], ", "))
 }
-
 func (l List) InputForm() string {
 	return l.inputFormWithPrecedence(PrecedenceLowest)
 }
 
 func (l List) Type() string {
-	return "list"
+	if l.Length() == 0 {
+		return "List"
+	}
+	if name, ok := ExtractSymbol(l.Elements[0]); ok {
+		return name
+	}
+	panic("Head of List is not a symbol")
 }
 
 func (l List) Equal(rhs Expr) bool {

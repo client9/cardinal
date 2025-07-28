@@ -40,8 +40,8 @@ var symbolSpecs = map[string]SymbolSpec{
 		Name:       "Power",
 		Attributes: []string{"OneIdentity"},
 		Functions: map[string]any{
-			"(base_Real, exp_Integer)": stdlib.PowerReal,
-			"(x_Number, y_Number)":     stdlib.PowerExprs,
+                       "(base_Real, exp_Integer)": stdlib.PowerReal,
+                       "(x_Number, y_Number)":     stdlib.PowerExprs,
 		},
 	},
 	"Subtract": {
@@ -350,6 +350,23 @@ var symbolSpecs = map[string]SymbolSpec{
 			"(x_, r_Rule)":            stdlib.ReplaceAllExpr,
 			"(x_, List(rule___Rule))": stdlib.ReplaceAllWithRules,
 		},
+	},
+
+	// Control Structures
+	"Block": {
+		Name:       "Block",
+		Attributes: []string{"HoldAll"},
+		Functions:  map[string]any{}, // Block is handled as special form in evaluator
+	},
+	"Table": {
+		Name:       "Table",
+		Attributes: []string{"HoldAll"},
+		Functions:  map[string]any{}, // Table is handled as special form in evaluator
+	},
+	"Do": {
+		Name:       "Do",
+		Attributes: []string{"HoldAll"},
+		Functions:  map[string]any{}, // Do is handled as special form in evaluator
 	},
 
 	// String Operations

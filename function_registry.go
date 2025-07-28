@@ -34,7 +34,7 @@ func NewFunctionRegistry() *FunctionRegistry {
 // matchBlankExpression matches a blank expression (Blank[], BlankSequence[], BlankNullSequence[]) against an expression
 func matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
 	// fmt.Printf("DEBUG: matchBlankExpression: blankExpr=%v (%T), expr=%v (%T)\n", blankExpr, blankExpr, expr, expr)
-	if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
+	if isBlank, blankType, typeExpr := core.IsSymbolicBlank(blankExpr); isBlank {
 		// Check type constraint if present
 		if typeExpr != nil {
 			var typeName string
@@ -42,7 +42,7 @@ func matchBlankExpression(blankExpr Expr, expr Expr, ctx *Context) bool {
 			if name, ok := core.ExtractSymbol(typeExpr); ok {
 				typeName = name
 			}
-			if !matchesType(expr, typeName) {
+			if !core.MatchesType(expr, typeName) {
 				return false
 			}
 		}
@@ -69,8 +69,8 @@ func convertParsedPatternToSymbolic(pattern Expr) Expr {
 	case core.Symbol:
 		patternStr := string(p)
 		// Convert pattern strings like "x_", "_Integer", etc. to symbolic
-		if isPatternVariable(patternStr) {
-			return ConvertPatternStringToSymbolic(patternStr)
+		if core.IsPatternVariable(patternStr) {
+			return core.ConvertPatternStringToSymbolic(patternStr)
 		} else {
 			// Regular symbols (like function names) should stay as core.Symbol
 			return p
@@ -116,7 +116,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		Pattern:     symbolicPattern,
 		Body:        nil,
 		GoImpl:      impl,
-		Specificity: int(getPatternSpecificity(symbolicPattern)),
+		Specificity: int(core.GetPatternSpecificity(symbolicPattern)),
 		IsBuiltin:   true,
 	}
 
@@ -156,7 +156,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 		Pattern:     pattern,
 		Body:        body,
 		GoImpl:      nil,
-		Specificity: int(getPatternSpecificity(pattern)),
+		Specificity: int(core.GetPatternSpecificity(pattern)),
 		IsBuiltin:   false,
 	}
 
@@ -229,6 +229,7 @@ func (r *FunctionRegistry) CallFunction(callExpr Expr, ctx *Context) (Expr, bool
 			// Create child context with pattern variable bindings
 			funcCtx := NewChildContext(ctx)
 			for varName, value := range bindings {
+				funcCtx.AddScopedVar(varName) // Keep pattern variables local to this context
 				funcCtx.Set(varName, value)
 			}
 
@@ -255,7 +256,7 @@ func (r *FunctionRegistry) RegisterFunction(functionName string, pattern Expr, i
 		Pattern:     pattern,
 		Body:        nil,
 		GoImpl:      implementation,
-		Specificity: int(getPatternSpecificity(pattern)),
+		Specificity: int(core.GetPatternSpecificity(pattern)),
 		IsBuiltin:   false,
 	}
 
@@ -335,13 +336,13 @@ func extractTypeConstraints(pattern Expr) []string {
 		}
 	default:
 		// Check if this is a symbolic pattern with type constraint
-		if isPattern, _, blankExpr := isSymbolicPattern(pattern); isPattern {
-			if isBlank, _, typeExpr := isSymbolicBlank(blankExpr); isBlank && typeExpr != nil {
+		if isPattern, _, blankExpr := core.IsSymbolicPattern(pattern); isPattern {
+			if isBlank, _, typeExpr := core.IsSymbolicBlank(blankExpr); isBlank && typeExpr != nil {
 				if typeName, ok := core.ExtractSymbol(typeExpr); ok {
 					types = append(types, typeName)
 				}
 			}
-		} else if isBlank, _, typeExpr := isSymbolicBlank(pattern); isBlank && typeExpr != nil {
+		} else if isBlank, _, typeExpr := core.IsSymbolicBlank(pattern); isBlank && typeExpr != nil {
 			if typeName, ok := core.ExtractSymbol(typeExpr); ok {
 				types = append(types, typeName)
 			}
@@ -415,379 +416,25 @@ func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[s
 	mockCall.Elements[0] = core.NewSymbol(functionName)
 	copy(mockCall.Elements[1:], args)
 
-	// // fmt.Printf("DEBUG: matchesPattern: pattern=%v, mockCall=%v\\n", pattern, mockCall)
-
-	// Use a simple pattern matching approach without creating a new evaluator
-	// This avoids infinite recursion from evaluator creation
-	ctx := NewContext()
-
-	// Store the initial variable names to track what gets bound
-	initialVars := make(map[string]bool)
-	for varName := range ctx.variables {
-		initialVars[varName] = true
-	}
-
-	// Use the direct pattern matching function
-	matches := directMatchPattern(pattern, mockCall, ctx)
+	// Use the new unified pattern matching system with sequence pattern support
+	matches, bindings := core.MatchWithBindings(pattern, mockCall)
 
 	if matches {
-		// Extract the variable bindings that were created during pattern matching
-		bindings := make(map[string]Expr)
-		for varName, value := range ctx.variables {
-			// Only include variables that were bound during this match
-			if !initialVars[varName] {
-				bindings[varName] = value
-			}
+		// Convert core.PatternBindings to map[string]Expr for compatibility
+		result := make(map[string]Expr)
+		for varName, value := range bindings {
+			result[varName] = value
 		}
-		return true, bindings
+		return true, result
 	}
 	return false, nil
-}
-
-// directMatchPattern is a simplified pattern matching function without evaluator dependencies
-func directMatchPattern(pattern Expr, expr Expr, ctx *Context) bool {
-	return directMatchPatternWithContext(pattern, expr, ctx, false)
-}
-
-// directMatchPatternWithContext handles pattern matching with context about parameter vs literal positions
-func directMatchPatternWithContext(pattern Expr, expr Expr, ctx *Context, isParameter bool) bool {
-	// // fmt.Printf("DEBUG: directMatchPattern: pattern=%v (%T), expr=%v (%T)\n", pattern, pattern, expr, expr)
-
-	// First, check if this is a symbolic pattern (new system)
-	if isPattern, nameExpr, blankExpr := isSymbolicPattern(pattern); isPattern {
-		// // fmt.Printf("DEBUG: Found symbolic pattern: name=%v, blank=%v\n", nameExpr, blankExpr)
-		// Handle Pattern[name, blank] - extract the name and match the blank
-		varName := ""
-		if name, ok := core.ExtractSymbol(nameExpr); ok {
-			varName = name
-		}
-
-		// Match the blank part
-		if matchBlankExpression(blankExpr, expr, ctx) {
-			// Bind the variable if we have a name
-			if varName != "" {
-				ctx.Set(varName, expr)
-			}
-			return true
-		}
-		return false
-	}
-
-	// Check if this is a direct symbolic blank (new system)
-	if isBlank, _, _ := isSymbolicBlank(pattern); isBlank {
-		// // fmt.Printf("DEBUG: Found symbolic blank pattern\n")
-		return matchBlankExpression(pattern, expr, ctx)
-	}
-
-	// Fall back to string-based pattern matching (legacy system)
-	// // fmt.Printf("DEBUG: Falling back to legacy pattern matching\n")
-	switch p := pattern.(type) {
-	case core.Symbol:
-		varName := string(p)
-		// // fmt.Printf("DEBUG: core.Symbol case: varName='%s'\n", varName)
-		// Check if it's a pattern variable
-		if isPatternVariable(varName) {
-			// // fmt.Printf("DEBUG: '%s' is a pattern variable\n", varName)
-			info := parsePatternInfo(varName)
-			if info.Type == BlankNullSequencePattern {
-				// This should not happen for single expressions - sequence patterns need special handling
-				return false
-			} else if info.Type == BlankSequencePattern {
-				// This should not happen for single expressions - sequence patterns need special handling
-				return false
-			} else if info.Type == BlankPattern {
-				// Check type constraint if present
-				if !matchesType(expr, info.TypeName) {
-					return false
-				}
-				// Bind the variable
-				if info.VarName != "" {
-					ctx.Set(info.VarName, expr)
-				}
-				return true
-			}
-		} else {
-			// fmt.Printf("DEBUG: '%s' is NOT a pattern variable, isParameter=%v\n", varName, isParameter)
-			// Regular symbol (not a pattern variable)
-			if isParameter {
-				// In parameter position, regular symbols bind to arguments
-				ctx.Set(varName, expr)
-				// fmt.Printf("DEBUG: Bound parameter %s to %v\n", varName, expr)
-				return true
-			} else {
-				// Not in parameter position, must match literally
-				// fmt.Printf("DEBUG: Literal symbol matching: pattern='%s' vs expr=%v (%T)\n", varName, expr, expr)
-				if exprName, ok := core.ExtractSymbol(expr); ok {
-					result := varName == exprName
-					// fmt.Printf("DEBUG: Symbol comparison: '%s' == '%s' -> %v\n", varName, exprName, result)
-					return result
-				}
-				// fmt.Printf("DEBUG: expr is not a symbol: %T\n", expr)
-				return false
-			}
-		}
-		return false
-	case core.Integer, core.Real, core.String:
-		// For literal atoms, they must be exactly equal
-		return p.Equal(expr)
-	case List:
-		if exprList, ok := expr.(List); ok {
-			// Both are lists - need to match structure and handle sequence patterns
-			return matchListPatternWithContext(p, exprList, ctx, isParameter)
-		}
-		return false
-
-	default:
-		return false
-	}
-}
-
-// matchListPatternWithContext matches a list pattern against a list expression with context
-func matchListPatternWithContext(patternList List, exprList List, ctx *Context, isParameter bool) bool {
-	// Handle empty patterns
-	if len(patternList.Elements) == 0 {
-		return len(exprList.Elements) == 0
-	}
-
-	patternIdx := 0
-	exprIdx := 0
-
-	for patternIdx < len(patternList.Elements) && exprIdx < len(exprList.Elements) {
-		patternElem := patternList.Elements[patternIdx]
-
-		// Check if this pattern element is a sequence pattern (symbolic or string-based)
-
-		// First check for symbolic Pattern[name, BlankSequence/BlankNullSequence]
-		if isPattern, nameExpr, blankExpr := isSymbolicPattern(patternElem); isPattern {
-			if isBlank, blankType, typeExpr := isSymbolicBlank(blankExpr); isBlank {
-				varName := ""
-				if name, ok := core.ExtractSymbol(nameExpr); ok {
-					varName = name
-				}
-
-				typeName := ""
-				if typeExpr != nil {
-					if name, ok := core.ExtractSymbol(typeExpr); ok {
-						typeName = name
-					}
-				}
-
-				// Create PatternInfo for compatibility with existing sequence matching
-				info := PatternInfo{
-					VarName:  varName,
-					TypeName: typeName,
-				}
-
-				if blankType == "BlankNullSequence" {
-					info.Type = BlankNullSequencePattern
-					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, true)
-				} else if blankType == "BlankSequence" {
-					info.Type = BlankSequencePattern
-					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, false)
-				}
-			}
-		}
-
-		// Check for direct symbolic BlankSequence/BlankNullSequence
-		if isBlank, blankType, typeExpr := isSymbolicBlank(patternElem); isBlank {
-			typeName := ""
-			if typeExpr != nil {
-				if name, ok := core.ExtractSymbol(typeExpr); ok {
-					typeName = name
-				}
-			}
-
-			// Create PatternInfo for compatibility
-			info := PatternInfo{
-				VarName:  "", // Anonymous sequence
-				TypeName: typeName,
-			}
-
-			if blankType == "BlankNullSequence" {
-				info.Type = BlankNullSequencePattern
-				return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, true)
-			} else if blankType == "BlankSequence" {
-				info.Type = BlankSequencePattern
-				return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, false)
-			}
-		}
-
-		// Fall back to string-based sequence pattern detection
-		if varName, ok := core.ExtractSymbol(patternElem); ok {
-			if isPatternVariable(varName) {
-				info := parsePatternInfo(varName)
-
-				if info.Type == BlankNullSequencePattern {
-					// Handle x___ pattern - match zero or more elements
-					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, true)
-				} else if info.Type == BlankSequencePattern {
-					// Handle x__ pattern - match one or more elements
-					return matchSequencePattern(patternList, patternIdx, exprList, exprIdx, ctx, info, false)
-				}
-			}
-		}
-
-		// Regular pattern element - must match exactly one expression element
-		// Parameters bind to values, but some symbols should match literally
-		isParameterPosition := exprIdx > 0
-		if isParameterPosition {
-			// Check if this is a symbol that should match literally
-			if symbolName, ok := core.ExtractSymbol(patternElem); ok {
-				// Specific symbols that should match literally, not bind
-				// This includes boolean constants and other system symbols
-				if isLiteralSymbol(symbolName) {
-					isParameterPosition = false
-				}
-			}
-		}
-		if !directMatchPatternWithContext(patternElem, exprList.Elements[exprIdx], ctx, isParameterPosition) {
-			return false
-		}
-
-		patternIdx++
-		exprIdx++
-	}
-
-	// Check if we've consumed all elements appropriately
-	if patternIdx < len(patternList.Elements) {
-		// Remaining pattern elements - check if they're optional (null sequence patterns)
-		for patternIdx < len(patternList.Elements) {
-			patternElem := patternList.Elements[patternIdx]
-
-			// Check for symbolic null sequence patterns
-			if isPattern, nameExpr, blankExpr := isSymbolicPattern(patternElem); isPattern {
-				if isBlank, blankType, _ := isSymbolicBlank(blankExpr); isBlank && blankType == "BlankNullSequence" {
-					// Bind to empty list
-					if varName, ok := core.ExtractSymbol(nameExpr); ok {
-						if varName != "" {
-							ctx.Set(varName, List{Elements: []Expr{}})
-						}
-					}
-					patternIdx++
-					continue
-				}
-			}
-
-			// Check for direct symbolic BlankNullSequence
-			if isBlank, blankType, _ := isSymbolicBlank(patternElem); isBlank && blankType == "BlankNullSequence" {
-				// Anonymous null sequence - just continue
-				patternIdx++
-				continue
-			}
-
-			// Fall back to string-based null sequence patterns
-			if varName, ok := core.ExtractSymbol(patternElem); ok {
-				if isPatternVariable(varName) {
-					info := parsePatternInfo(varName)
-					if info.Type == BlankNullSequencePattern {
-						// Bind to empty list
-						if info.VarName != "" {
-							ctx.Set(info.VarName, List{Elements: []Expr{}})
-						}
-						patternIdx++
-						continue
-					}
-				}
-			}
-			return false // Non-optional pattern element without matching expression
-		}
-	}
-
-	return exprIdx == len(exprList.Elements) // All expression elements consumed
-}
-
-// matchSequencePattern handles sequence patterns (x__ and x___)
-func matchSequencePattern(patternList List, patternIdx int, exprList List, exprIdx int, ctx *Context, info PatternInfo, allowZero bool) bool {
-	// Calculate how many elements this sequence pattern should consume
-	remainingPatterns := len(patternList.Elements) - patternIdx - 1
-	remainingExprs := len(exprList.Elements) - exprIdx
-
-	// Minimum elements this sequence must consume
-	minConsume := 0
-	if !allowZero {
-		minConsume = 1
-	}
-
-	// Maximum elements this sequence can consume
-	maxConsume := remainingExprs - remainingPatterns
-
-	if maxConsume < minConsume {
-		return false
-	}
-
-	// Try consuming different numbers of elements (greedy approach)
-	for consume := maxConsume; consume >= minConsume; consume-- {
-		// Create a copy of context for this attempt
-		testCtx := NewChildContext(ctx)
-
-		// Collect the elements to bind to this sequence
-		var seqElements []Expr
-		for i := 0; i < consume; i++ {
-			if exprIdx+i < len(exprList.Elements) {
-				seqElements = append(seqElements, exprList.Elements[exprIdx+i])
-			}
-		}
-
-		// Check type constraints for sequence elements
-		if info.TypeName != "" {
-			allMatch := true
-			for _, elem := range seqElements {
-				if !matchesType(elem, info.TypeName) {
-					allMatch = false
-					break
-				}
-			}
-			if !allMatch {
-				continue // Try with fewer elements - this attempt fails
-			}
-		}
-
-		// Bind the sequence variable
-		if info.VarName != "" {
-			// // fmt.Printf("DEBUG: Binding sequence var '%s' to List with %d elements: %v\n", info.VarName, len(seqElements), seqElements)
-			// Create a proper List with "List" as the first element
-			listElements := append([]Expr{core.NewSymbol("List")}, seqElements...)
-			testCtx.Set(info.VarName, List{Elements: listElements})
-		}
-
-		// Try to match remaining patterns
-		if patternIdx+1 >= len(patternList.Elements) {
-			// This was the last pattern - check if we consumed all expressions
-			if exprIdx+consume == len(exprList.Elements) {
-				// Copy bindings to original context
-				for varName, value := range testCtx.variables {
-					if _, exists := ctx.variables[varName]; !exists {
-						// // fmt.Printf("DEBUG: Copying variable '%s' = %v (type: %T)\n", varName, value, value)
-						ctx.Set(varName, value)
-					}
-				}
-				return true
-			}
-		} else {
-			// Try to match remaining patterns
-			remainingPattern := List{Elements: patternList.Elements[patternIdx+1:]}
-			remainingExpr := List{Elements: exprList.Elements[exprIdx+consume:]}
-
-			if matchListPatternWithContext(remainingPattern, remainingExpr, testCtx, true) {
-				// Copy bindings to original context
-				for varName, value := range testCtx.variables {
-					if _, exists := ctx.variables[varName]; !exists {
-						ctx.Set(varName, value)
-					}
-				}
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 // isLiteralSymbol determines if a symbol should be treated as a literal match rather than a parameter
 func isLiteralSymbol(symbolName string) bool {
 	// Any symbol that is NOT a pattern variable should be treated as a literal
 	// Pattern variables are identified by containing underscores (x_, x_Integer, etc.)
-	return !isPatternVariable(symbolName)
+	return !core.IsPatternVariable(symbolName)
 }
 
 // patternsEquivalent checks if two patterns are structurally equivalent (ignoring variable names)

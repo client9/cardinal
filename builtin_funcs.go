@@ -255,7 +255,7 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 // PatternSpecificityExpr calculates the specificity of a pattern expression for debugging
 func PatternSpecificityExpr(pattern Expr, ctx *Context) Expr {
 	// Calculate specificity directly from the pattern expression
-	specificity := getPatternSpecificity(pattern)
+	specificity := core.GetPatternSpecificity(pattern)
 	return core.NewInteger(int64(specificity))
 }
 

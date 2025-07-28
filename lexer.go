@@ -41,6 +41,7 @@ const (
 	UNSAMEQ
 	CARET
 	SEMICOLON
+	UNDERSCORE // _
 	WHITESPACE
 	ILLEGAL
 )
@@ -119,6 +120,8 @@ func (t Token) String() string {
 		return "UNSAMEQ"
 	case CARET:
 		return "CARET"
+	case UNDERSCORE:
+		return "UNDERSCORE"
 	case WHITESPACE:
 		return "WHITESPACE"
 	case ILLEGAL:
@@ -196,6 +199,14 @@ func (l *Lexer) readString() string {
 func (l *Lexer) readIdentifier() string {
 	position := l.position - 1
 	for isLetter(l.ch) || isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[position : l.position-1]
+}
+
+func (l *Lexer) readUnderscores() string {
+	position := l.position - 1
+	for l.ch == '_' {
 		l.readChar()
 	}
 	return l.input[position : l.position-1]
@@ -344,6 +355,15 @@ func (l *Lexer) NextToken() Token {
 		tok.Value = l.readString()
 		tok.Position = l.position - len(tok.Value) - 2
 		return tok
+	case '_':
+		tok.Position = l.position - 1
+		underscoreValue := l.readUnderscores()
+		if len(underscoreValue) > 3 {
+			tok = Token{Type: ILLEGAL, Value: underscoreValue, Position: tok.Position}
+		} else {
+			tok = Token{Type: UNDERSCORE, Value: underscoreValue, Position: tok.Position}
+		}
+		return tok
 	case 0:
 		tok.Type = EOF
 		tok.Value = ""
@@ -369,7 +389,7 @@ func (l *Lexer) NextToken() Token {
 }
 
 func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
 }
 
 func isDigit(ch byte) bool {

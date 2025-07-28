@@ -229,7 +229,7 @@ func TestMatchesType(t *testing.T) {
 }
 
 func TestIsBuiltinType(t *testing.T) {
-	builtinTypes := []string{"Integer", "Real", "Number", "String", "Symbol", "List", "Atom"}
+	builtinTypes := []string{"Integer", "Real", "Number", "String", "Symbol", "List", "Rule", "ByteArray", "Association"}
 	for _, typeName := range builtinTypes {
 		if !IsBuiltinType(typeName) {
 			t.Errorf("IsBuiltinType(%q) should return true", typeName)

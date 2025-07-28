@@ -85,29 +85,9 @@ func InputFormExpr(expr core.Expr) string {
 }
 
 // HeadExpr returns the head/type of an expression
+// expr.Type() returns a string, but Head returns a symbol
+// Head(Head("foo")) is Symbol("String")
+//
 func HeadExpr(expr core.Expr) core.Expr {
-	switch ex := expr.(type) {
-	// New atomic types
-	case core.Integer:
-		return core.NewSymbol("Integer")
-	case core.Real:
-		return core.NewSymbol("Real")
-	case core.String:
-		return core.NewSymbol("String")
-	case core.Symbol:
-		return core.NewSymbol("Symbol")
-	case core.List:
-		if len(ex.Elements) == 0 {
-			return core.NewSymbol("List")
-		} else {
-			// For non-empty lists, the head is the first element
-			// This matches Mathematica semantics where f[x,y] has head f
-			return ex.Elements[0]
-		}
-	case core.ObjectExpr:
-		return core.NewSymbol(ex.TypeName)
-	default:
-		return core.NewSymbol("Unknown")
-	}
-	// Note: ErrorExpr is not handled here - wrapper will propagate errors
+	return core.NewSymbol(expr.Type())
 }

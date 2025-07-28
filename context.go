@@ -64,6 +64,7 @@ type Context struct {
 	symbolTable      *SymbolTable
 	functionRegistry *FunctionRegistry // Unified pattern-based function system
 	stack            *EvaluationStack
+	scopedVars       map[string]bool // Variables that are locally scoped (for Block)
 }
 
 // NewContext creates a new evaluation context
@@ -74,6 +75,7 @@ func NewContext() *Context {
 		symbolTable:      NewSymbolTable(),
 		functionRegistry: NewFunctionRegistry(),
 		stack:            NewEvaluationStack(1000), // Default max depth of 1000
+		scopedVars:       make(map[string]bool),
 	}
 
 	// Set up built-in attributes
@@ -93,11 +95,26 @@ func NewChildContext(parent *Context) *Context {
 		symbolTable:      parent.symbolTable,      // Share symbol table with parent
 		functionRegistry: parent.functionRegistry, // Share function registry with parent
 		stack:            parent.stack,            // Share evaluation stack with parent
+		scopedVars:       make(map[string]bool),
 	}
 }
 
 // Set sets a variable in the context
+// If this is a child context and the variable is not in scopedVars, set it in the parent
 func (c *Context) Set(name string, value Expr) {
+	// If this variable is explicitly scoped to this context, set it here
+	if c.scopedVars[name] {
+		c.variables[name] = value
+		return
+	}
+
+	// If this is a child context and variable is not scoped here, set in parent
+	if c.parent != nil {
+		c.parent.Set(name, value)
+		return
+	}
+
+	// Otherwise set in current context (root context or explicitly local)
 	c.variables[name] = value
 }
 
@@ -110,6 +127,25 @@ func (c *Context) Get(name string) (Expr, bool) {
 		return c.parent.Get(name)
 	}
 	return nil, false
+}
+
+// Delete removes a variable from the context
+func (c *Context) Delete(name string) {
+	delete(c.variables, name)
+}
+
+// AddScopedVar marks a variable as locally scoped to this context
+func (c *Context) AddScopedVar(name string) {
+	c.scopedVars[name] = true
+}
+
+// NewBlockContext creates a child context for Block evaluation with specified scoped variables
+func NewBlockContext(parent *Context, scopedVarNames []string) *Context {
+	ctx := NewChildContext(parent)
+	for _, varName := range scopedVarNames {
+		ctx.AddScopedVar(varName)
+	}
+	return ctx
 }
 
 // SetStack sets the evaluation stack for the context

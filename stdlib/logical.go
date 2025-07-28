@@ -35,10 +35,11 @@ func ReplaceExpr(expr core.Expr, rule core.Expr) core.Expr {
 			pattern := ruleList.Elements[1]
 			replacement := ruleList.Elements[2]
 
-			// For now, implement exact matching only
-			// TODO: Implement full pattern matching with variable binding
-			if pattern.Equal(expr) {
-				return replacement
+			// Use pattern matching with variable binding
+			matches, bindings := core.MatchWithBindings(pattern, expr)
+			if matches {
+				// If pattern matches, substitute variables in replacement and return it
+				return core.SubstituteBindings(replacement, bindings)
 			}
 		}
 	}

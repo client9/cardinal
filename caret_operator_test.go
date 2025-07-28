@@ -325,13 +325,13 @@ func TestCaretOperatorWithExistingOperators(t *testing.T) {
 		},
 		{
 			name:     "Power with comparison",
-			input:    "2 ^ 3 == 8",
+			input:    "2.0 ^ 3.0 == 8.0",
 			expected: "True",
 			hasError: false,
 		},
 		{
 			name:     "Power with boolean operators",
-			input:    "2 ^ 2 == 4 && 3 ^ 2 == 9",
+			input:    "2.0 ^ 2.0 == 4.0 && 3.0 ^ 2.0 == 9.0",
 			expected: "True",
 			hasError: false,
 		},

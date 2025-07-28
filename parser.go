@@ -117,6 +117,8 @@ func (p *Parser) ParseAtom() Expr {
 	switch p.currentToken.Type {
 	case SYMBOL:
 		expr = p.parseSymbolOrList()
+	case UNDERSCORE:
+		expr = p.parseUnderscorePattern()
 	case INTEGER:
 		expr = p.parseInteger()
 		p.nextToken()
@@ -155,6 +157,11 @@ func (p *Parser) ParseAtom() Expr {
 func (p *Parser) parseSymbolOrList() Expr {
 	symbolToken := p.currentToken
 	p.nextToken()
+
+	// Check if this is a pattern: SYMBOL + UNDERSCORE(s) + optional SYMBOL
+	if p.currentToken.Type == UNDERSCORE {
+		return p.parsePatternFromSymbol(symbolToken.Value)
+	}
 
 	if p.currentToken.Type == LPAREN {
 		return p.parseList(symbolToken.Value)
@@ -647,6 +654,174 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 		p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))
 		return nil
 	}
+}
+/*
+// parsePattern parses a Blank pattern (x_, x_Integer, _Integer, _)
+func (p *Parser) parsePattern() Expr {
+	tokenValue := p.currentToken.Value
+	p.nextToken() // consume the pattern token
+
+	varName, typeName := p.parsePatternToken(tokenValue)
+
+	// Create the appropriate blank expression
+	var blankExpr Expr
+	if typeName != "" {
+		blankExpr = core.NewList(core.NewSymbol("Blank"), core.NewSymbol(typeName))
+	} else {
+		blankExpr = core.NewList(core.NewSymbol("Blank"))
+	}
+
+	// If there's a variable name, wrap in Pattern(varName, blankExpr)
+	if varName != "" {
+		return core.NewList(core.NewSymbol("Pattern"), core.NewSymbol(varName), blankExpr)
+	} else {
+		// Anonymous pattern - just return the blank expression
+		return blankExpr
+	}
+}
+
+// parsePatternSequence parses a BlankSequence pattern (x__, x__Integer, __Integer, __)
+func (p *Parser) parsePatternSequence() Expr {
+	tokenValue := p.currentToken.Value
+	p.nextToken() // consume the pattern token
+
+	varName, typeName := p.parsePatternToken(tokenValue)
+
+	// Create the appropriate blank sequence expression
+	var blankExpr Expr
+	if typeName != "" {
+		blankExpr = core.NewList(core.NewSymbol("BlankSequence"), core.NewSymbol(typeName))
+	} else {
+		blankExpr = core.NewList(core.NewSymbol("BlankSequence"))
+	}
+
+	// If there's a variable name, wrap in Pattern(varName, blankExpr)
+	if varName != "" {
+		return core.NewList(core.NewSymbol("Pattern"), core.NewSymbol(varName), blankExpr)
+	} else {
+		// Anonymous pattern - just return the blank expression
+		return blankExpr
+	}
+}
+
+// parsePatternNullSequence parses a BlankNullSequence pattern (x___, x___Integer, ___Integer, ___)
+func (p *Parser) parsePatternNullSequence() Expr {
+	tokenValue := p.currentToken.Value
+	p.nextToken() // consume the pattern token
+
+	varName, typeName := p.parsePatternToken(tokenValue)
+
+	// Create the appropriate blank null sequence expression
+	var blankExpr Expr
+	if typeName != "" {
+		blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"), core.NewSymbol(typeName))
+	} else {
+		blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"))
+	}
+
+	// If there's a variable name, wrap in Pattern(varName, blankExpr)
+	if varName != "" {
+		return core.NewList(core.NewSymbol("Pattern"), core.NewSymbol(varName), blankExpr)
+	} else {
+		// Anonymous pattern - just return the blank expression
+		return blankExpr
+	}
+}
+*/
+// parsePatternToken parses the pattern token value to extract variable name and type
+// Token value format: "varName" or "varName:typeName" or "" (for anonymous)
+func (p *Parser) parsePatternToken(tokenValue string) (string, string) {
+	if tokenValue == "" {
+		return "", ""
+	}
+
+	// Check if there's a type specification (varName:typeName)
+	if strings.Contains(tokenValue, ":") {
+		parts := strings.SplitN(tokenValue, ":", 2)
+		return parts[0], parts[1]
+	}
+
+	return tokenValue, ""
+}
+
+// parseUnderscorePattern parses anonymous patterns (_, __, ___, _Integer, __Integer, ___Integer)
+func (p *Parser) parseUnderscorePattern() Expr {
+	// Get underscore count from token value
+	underscoreToken := p.currentToken
+	underscoreCount := len(underscoreToken.Value)
+	p.nextToken() // consume the underscore token
+
+	// Check if there's a type after the underscores
+	var typeName string
+	if p.currentToken.Type == SYMBOL {
+		typeName = p.currentToken.Value
+		p.nextToken()
+	}
+
+	// Create the appropriate blank expression based on underscore count
+	var blankExpr Expr
+	if underscoreCount >= 3 {
+		if typeName != "" {
+			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"), core.NewSymbol(typeName))
+		} else {
+			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"))
+		}
+	} else if underscoreCount == 2 {
+		if typeName != "" {
+			blankExpr = core.NewList(core.NewSymbol("BlankSequence"), core.NewSymbol(typeName))
+		} else {
+			blankExpr = core.NewList(core.NewSymbol("BlankSequence"))
+		}
+	} else {
+		if typeName != "" {
+			blankExpr = core.NewList(core.NewSymbol("Blank"), core.NewSymbol(typeName))
+		} else {
+			blankExpr = core.NewList(core.NewSymbol("Blank"))
+		}
+	}
+
+	// Anonymous pattern - just return the blank expression
+	return blankExpr
+}
+
+// parsePatternFromSymbol parses named patterns (x_, x__, x___, x_Integer, x__Integer, x___Integer)
+func (p *Parser) parsePatternFromSymbol(varName string) Expr {
+	// Get underscore count from token value
+	underscoreToken := p.currentToken
+	underscoreCount := len(underscoreToken.Value)
+	p.nextToken() // consume the underscore token
+
+	// Check if there's a type after the underscores
+	var typeName string
+	if p.currentToken.Type == SYMBOL {
+		typeName = p.currentToken.Value
+		p.nextToken()
+	}
+
+	// Create the appropriate blank expression based on underscore count
+	var blankExpr Expr
+	if underscoreCount >= 3 {
+		if typeName != "" {
+			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"), core.NewSymbol(typeName))
+		} else {
+			blankExpr = core.NewList(core.NewSymbol("BlankNullSequence"))
+		}
+	} else if underscoreCount == 2 {
+		if typeName != "" {
+			blankExpr = core.NewList(core.NewSymbol("BlankSequence"), core.NewSymbol(typeName))
+		} else {
+			blankExpr = core.NewList(core.NewSymbol("BlankSequence"))
+		}
+	} else {
+		if typeName != "" {
+			blankExpr = core.NewList(core.NewSymbol("Blank"), core.NewSymbol(typeName))
+		} else {
+			blankExpr = core.NewList(core.NewSymbol("Blank"))
+		}
+	}
+
+	// Named pattern - wrap in Pattern(varName, blankExpr)
+	return core.NewList(core.NewSymbol("Pattern"), core.NewSymbol(varName), blankExpr)
 }
 
 func ParseString(input string) (Expr, error) {

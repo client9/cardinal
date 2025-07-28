@@ -178,12 +178,12 @@ func TestList_Type(t *testing.T) {
 		{
 			name:     "empty list type",
 			list:     NewList(),
-			expected: "list",
+			expected: "List",
 		},
 		{
 			name:     "non-empty list type",
 			list:     NewList(core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)),
-			expected: "list",
+			expected: "Plus",
 		},
 	}
 
@@ -302,25 +302,25 @@ func TestNewList(t *testing.T) {
 			name:           "empty list",
 			elements:       []Expr{},
 			expectedLength: 0,
-			expectedType:   "list",
+			expectedType:   "List",
 		},
 		{
 			name:           "single element",
 			elements:       []Expr{core.NewInteger(1)},
 			expectedLength: 1,
-			expectedType:   "list",
+			expectedType:   "List",
 		},
 		{
 			name:           "multiple elements",
 			elements:       []Expr{core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)},
 			expectedLength: 3,
-			expectedType:   "list",
+			expectedType:   "Plus",
 		},
 		{
 			name:           "nested list",
 			elements:       []Expr{core.NewSymbol("f"), NewList(core.NewSymbol("g"), core.NewInteger(1))},
 			expectedLength: 2,
-			expectedType:   "list",
+			expectedType:   "f",
 		},
 	}
 

@@ -233,8 +233,8 @@ func TestAndOrWithVariableAssignments(t *testing.T) {
 		},
 		{
 			name:     "And with undefined variable",
-			input:    "And(a, undefined_var)", // True && undefined_var
-			expected: "undefined_var",         // Variable remains symbolic
+			input:    "And(a, undefinedVar)", // True && undefined_var
+			expected: "undefinedVar",         // Variable remains symbolic
 		},
 	}
 
