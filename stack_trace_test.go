@@ -128,7 +128,7 @@ func TestRecursionPrevention_SimpleCase(t *testing.T) {
 		return
 	}
 
-	errorExpr := result.(*ErrorExpr)
+	errorExpr := result.(*core.ErrorExpr)
 	if errorExpr.ErrorType != "RecursionError" {
 		t.Errorf("expected RecursionError, got %s", errorExpr.ErrorType)
 	}
@@ -156,7 +156,7 @@ func TestStackTrace_ErrorPropagation(t *testing.T) {
 		return
 	}
 
-	errorExpr := result.(*ErrorExpr)
+	errorExpr := result.(*core.ErrorExpr)
 
 	// Check that stack trace is present
 	if len(errorExpr.StackTrace) == 0 {
@@ -192,7 +192,7 @@ func TestStackTrace_NestedErrors(t *testing.T) {
 		return
 	}
 
-	errorExpr := result.(*ErrorExpr)
+	errorExpr := result.(*core.ErrorExpr)
 	stackTrace := errorExpr.GetStackTrace()
 
 	// Should contain both functions in the stack trace
@@ -224,7 +224,7 @@ func TestStackTrace_StringFunctions(t *testing.T) {
 
 func TestErrorExpr_DetailedMessage(t *testing.T) {
 	// Test the GetDetailedMessage method
-	frames := []StackFrame{
+	frames := []core.StackFrame{
 		{Function: "Plus", Expression: "Plus[1, 2]", Location: ""},
 		{Function: "Divide", Expression: "Divide[1, 0]", Location: ""},
 	}

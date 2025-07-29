@@ -246,7 +246,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 	if !core.IsError(result2) {
 		t.Errorf("expected error propagation, got %s", result2.String())
 	} else {
-		errorExpr := result2.(*ErrorExpr)
+		errorExpr := result2.(*core.ErrorExpr)
 		if errorExpr.ErrorType != "DivisionByZero" {
 			t.Errorf("expected DivisionByZero error, got %s", errorExpr.ErrorType)
 		}

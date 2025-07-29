@@ -144,7 +144,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx); found {
 		// Check if result is an error and needs stack trace
 		if core.IsError(result) {
-			if errorExpr, ok := result.(*ErrorExpr); ok {
+			if errorExpr, ok := result.(*core.ErrorExpr); ok {
 				// Add stack frame for this function call
 				funcCallStr := headName + "(" + formatArgs(evaluatedArgs) + ")"
 				if err := ctx.stack.Push(headName, funcCallStr); err == nil {

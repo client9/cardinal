@@ -63,7 +63,7 @@ func TestErrorPropagation(t *testing.T) {
 		return
 	}
 
-	errorExpr := result.(*ErrorExpr)
+	errorExpr := result.(*core.ErrorExpr)
 	if errorExpr.ErrorType != "DivisionByZero" {
 		t.Errorf("expected DivisionByZero error, got: %s", errorExpr.ErrorType)
 	}

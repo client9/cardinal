@@ -8,7 +8,7 @@ import (
 
 // EvaluationStack represents the current evaluation call stack
 type EvaluationStack struct {
-	frames   []StackFrame
+	frames   []core.StackFrame
 	depth    int
 	maxDepth int
 }
@@ -16,7 +16,7 @@ type EvaluationStack struct {
 // NewEvaluationStack creates a new evaluation stack with the given maximum depth
 func NewEvaluationStack(maxDepth int) *EvaluationStack {
 	return &EvaluationStack{
-		frames:   make([]StackFrame, 0, maxDepth),
+		frames:   make([]core.StackFrame, 0, maxDepth),
 		depth:    0,
 		maxDepth: maxDepth,
 	}
@@ -28,7 +28,7 @@ func (s *EvaluationStack) Push(function, expression string) error {
 		return fmt.Errorf("maximum recursion depth exceeded: %d", s.maxDepth)
 	}
 
-	frame := StackFrame{
+	frame := core.StackFrame{
 		Function:   function,
 		Expression: expression,
 		Location:   "", // Can be set later if needed
@@ -48,8 +48,8 @@ func (s *EvaluationStack) Pop() {
 }
 
 // GetFrames returns a copy of the current stack frames
-func (s *EvaluationStack) GetFrames() []StackFrame {
-	frames := make([]StackFrame, len(s.frames))
+func (s *EvaluationStack) GetFrames() []core.StackFrame {
+	frames := make([]core.StackFrame, len(s.frames))
 	copy(frames, s.frames)
 	return frames
 }
