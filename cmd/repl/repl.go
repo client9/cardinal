@@ -69,10 +69,10 @@ func (r *REPL) Run() error {
 	if r.isInteractive() {
 		_, _ = fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
 		_, _ = fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n")
-		_, _ = fmt.Fprintf(r.output, "Multi-line expressions are supported - they'll be evaluated when complete\n\n")
 	}
 
 	var currentExpr strings.Builder
+	var emptyLineCount int
 
 	for {
 		// Print prompt only in interactive mode
@@ -91,13 +91,37 @@ func (r *REPL) Run() error {
 
 		line := strings.TrimSpace(scanner.Text())
 
-		// Handle empty input - continue building expression if we have one
+		// Handle empty input
 		if line == "" {
 			if currentExpr.Len() == 0 {
 				continue
 			}
-			// For multi-line expressions, empty line doesn't reset
+			// Count consecutive empty lines in multi-line mode
+			emptyLineCount++
+			if emptyLineCount >= 2 {
+				// Two empty lines in a row - abandon current expression
+				if r.isInteractive() {
+					_, _ = fmt.Fprintf(r.output, "Expression abandoned.\n")
+				}
+				currentExpr.Reset()
+				emptyLineCount = 0
+				continue
+			}
+			// Single empty line in multi-line - continue building
 		} else {
+			emptyLineCount = 0 // Reset empty line counter
+			
+			// Check for special reset command even when building expression
+			if line == ":reset" || line == ":clear" {
+				if currentExpr.Len() > 0 {
+					if r.isInteractive() {
+						_, _ = fmt.Fprintf(r.output, "Expression abandoned.\n")
+					}
+					currentExpr.Reset()
+				}
+				continue
+			}
+			
 			// Handle special commands only if we're not building an expression
 			if currentExpr.Len() == 0 && r.handleSpecialCommands(line) {
 				continue
@@ -105,7 +129,8 @@ func (r *REPL) Run() error {
 
 			// Add line to current expression
 			if currentExpr.Len() > 0 {
-				currentExpr.WriteString(" ")
+				// Use newline instead of space to preserve comment boundaries
+				currentExpr.WriteString("\n")
 			}
 			currentExpr.WriteString(line)
 		}
@@ -142,8 +167,16 @@ func (r *REPL) tryProcessExpression(expr string) bool {
 	// Try to parse the expression
 	_, err := sexpr.ParseString(expr)
 	if err != nil {
-		// Parse failed - expression might be incomplete
-		return false
+		errStr := err.Error()
+		// Check if this looks like an incomplete expression
+		if r.isIncompleteExpression(errStr) {
+			return false
+		}
+		
+		// This looks like a real error, not just incomplete
+		_, _ = fmt.Fprintf(r.output, "Parse error: %v\n", err)
+		_, _ = fmt.Fprintf(r.output, "(Type an empty line to reset if stuck)\n")
+		return true // Reset the expression
 	}
 
 	// Parse succeeded, now evaluate it
@@ -152,6 +185,27 @@ func (r *REPL) tryProcessExpression(expr string) bool {
 	}
 
 	return true
+}
+
+// isIncompleteExpression tries to determine if a parse error indicates
+// an incomplete expression (should wait for more input) vs a real error
+func (r *REPL) isIncompleteExpression(errStr string) bool {
+	// Common patterns that indicate incomplete expressions
+	incompletePatterns := []string{
+		"unexpected EOF, expected ')'",
+		"unexpected EOF, expected ']'", 
+		"unexpected EOF, expected '}'",
+		"unexpected EOF, expected ','",
+		"unexpected EOF",
+	}
+	
+	for _, pattern := range incompletePatterns {
+		if strings.Contains(errStr, pattern) {
+			return true
+		}
+	}
+	
+	return false
 }
 
 // handleSpecialCommands handles special REPL commands
@@ -205,6 +259,11 @@ Commands:
   help           - Show this help message
   clear          - Clear all variable assignments
   attributes     - Show all symbols with their attributes
+  :reset, :clear - Abandon current multi-line expression
+  
+Multi-line input:
+  - Incomplete expressions (missing ) ] }) continue on next line
+  - Type two empty lines or :reset to abandon incomplete expression
 
 Examples:
   1 + 2 * 3                    # Arithmetic with infix notation
@@ -285,7 +344,8 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 
 		// Add the current line to the expression
 		if currentExpr.Len() > 0 {
-			currentExpr.WriteString(" ")
+			// Use newline instead of space to preserve comment boundaries
+			currentExpr.WriteString("\n")
 		}
 		currentExpr.WriteString(line)
 
@@ -335,6 +395,33 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 // GetEvaluator returns the underlying evaluator (for testing purposes)
 func (r *REPL) GetEvaluator() *sexpr.Evaluator {
 	return r.evaluator
+}
+
+// ExecuteString executes expressions from a string, handling multi-line expressions
+func (r *REPL) ExecuteString(content string) error {
+	// Parse expressions from string content, handling multi-line expressions
+	expressions, err := r.parseFileContent(content)
+	if err != nil {
+		return err
+	}
+
+	// Execute each complete expression, showing only final result for -c flag
+	var lastResult string
+	for _, exprInfo := range expressions {
+		// Execute the expression
+		result, err := r.EvaluateString(exprInfo.text)
+		if err != nil {
+			return fmt.Errorf("error in expression (line %d): %v", exprInfo.startLine, err)
+		}
+		lastResult = result
+	}
+
+	// For -c flag, just show the final result
+	if lastResult != "" {
+		_, _ = fmt.Fprintf(r.output, "%s\n", lastResult)
+	}
+
+	return nil
 }
 
 // ExecuteFile executes expressions from a file

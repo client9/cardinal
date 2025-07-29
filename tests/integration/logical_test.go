@@ -1,7 +1,9 @@
-package sexpr
+package integration
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr"
 )
 
 func TestAndOrMixedBooleanValues(t *testing.T) {
@@ -85,15 +87,7 @@ func TestAndOrMixedBooleanValues(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			evaluator := NewEvaluator()
-			result := evaluateStringSimple(t, evaluator, tt.input)
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
+	runTestCases(t, tests)
 }
 
 func TestAndOrShortCircuitWithMixed(t *testing.T) {
@@ -147,15 +141,7 @@ func TestAndOrShortCircuitWithMixed(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			evaluator := NewEvaluator()
-			result := evaluateStringSimple(t, evaluator, tt.input)
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
+	runTestCases(t, tests)
 }
 
 func TestAndOrNestedMixed(t *testing.T) {
@@ -187,24 +173,19 @@ func TestAndOrNestedMixed(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			evaluator := NewEvaluator()
-			result := evaluateStringSimple(t, evaluator, tt.input)
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
-			}
-		})
-	}
+	runTestCases(t, tests)
 }
 
 func TestAndOrWithVariableAssignments(t *testing.T) {
-	evaluator := NewEvaluator()
+	evaluator := sexpr.NewEvaluator()
 
 	// Set up some variables
-	evaluateStringSimple(t, evaluator, "Set(a, True)")
-	evaluateStringSimple(t, evaluator, "Set(b, False)")
-	evaluateStringSimple(t, evaluator, "Set(c, 42)")
+	expr, _ := sexpr.ParseString("Set(a, True)")
+	evaluator.Evaluate(expr)
+	expr, _ = sexpr.ParseString("Set(b, False)")
+	evaluator.Evaluate(expr)
+	expr, _ = sexpr.ParseString("Set(c, 42)")
+	evaluator.Evaluate(expr)
 
 	tests := []struct {
 		name     string
@@ -240,9 +221,13 @@ func TestAndOrWithVariableAssignments(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := evaluateStringSimple(t, evaluator, tt.input)
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
+			expr, err := sexpr.ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+			result := evaluator.Evaluate(expr)
+			if result.String() != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result.String())
 			}
 		})
 	}

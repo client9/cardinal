@@ -45,7 +45,7 @@ func main() {
 	*/
 	// if expression is entered on command line, execute it
 	if *cmd != "" {
-		if err := repl.processLine(*cmd); err != nil {
+		if err := repl.ExecuteString(*cmd); err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}

@@ -15,6 +15,7 @@ const (
 	PrecedenceLowest
 	PrecedenceCompound   // ; (compound statements)
 	PrecedenceAssign     // =, :=, =.
+	PrecedenceRule       // : (rule shorthand)
 	PrecedenceLogicalOr  // ||
 	PrecedenceLogicalAnd // &&
 	PrecedenceEquality   // ==, !=
@@ -32,7 +33,7 @@ var precedences = map[TokenType]Precedence{
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
 	UNSET:        PrecedenceAssign,
-	COLON:        PrecedenceAssign,
+	COLON:        PrecedenceRule,
 	OR:           PrecedenceLogicalOr,
 	AND:          PrecedenceLogicalAnd,
 	EQUAL:        PrecedenceEquality,

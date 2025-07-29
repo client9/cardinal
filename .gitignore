@@ -37,5 +37,5 @@ coverage.out
 cmd/wrapgen/wrapgen
 wrapped
 builtin_setup.go
-repl
+./repl
 attribute_string.go

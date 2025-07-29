@@ -222,3 +222,101 @@ func TestTakeDropEdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestRotateFunctions(t *testing.T) {
+	// Helper function to create test lists
+	createList := func(elements ...int64) core.List {
+		exprs := make([]core.Expr, len(elements)+1)
+		exprs[0] = core.NewSymbol("List")
+		for i, elem := range elements {
+			exprs[i+1] = core.NewInteger(elem)
+		}
+		return core.List{Elements: exprs}
+	}
+
+	t.Run("RotateLeft basic tests", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    core.List
+			n        int64
+			expected string
+		}{
+			{
+				name:     "rotate left by 1",
+				input:    createList(1, 2, 3, 4, 5),
+				n:        1,
+				expected: "List(2, 3, 4, 5, 1)",
+			},
+			{
+				name:     "rotate left by 2",
+				input:    createList(1, 2, 3, 4, 5),
+				n:        2,
+				expected: "List(3, 4, 5, 1, 2)",
+			},
+			{
+				name:     "rotate left by 0",
+				input:    createList(1, 2, 3),
+				n:        0,
+				expected: "List(1, 2, 3)",
+			},
+			{
+				name:     "rotate left by negative (equivalent to right)",
+				input:    createList(1, 2, 3, 4, 5),
+				n:        -1,
+				expected: "List(5, 1, 2, 3, 4)",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := RotateLeft(tt.input, tt.n)
+				if result.String() != tt.expected {
+					t.Errorf("expected %s, got %s", tt.expected, result.String())
+				}
+			})
+		}
+	})
+
+	t.Run("RotateRight basic tests", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    core.List
+			n        int64
+			expected string
+		}{
+			{
+				name:     "rotate right by 1",
+				input:    createList(1, 2, 3, 4, 5),
+				n:        1,
+				expected: "List(5, 1, 2, 3, 4)",
+			},
+			{
+				name:     "rotate right by 2",
+				input:    createList(1, 2, 3, 4, 5),
+				n:        2,
+				expected: "List(4, 5, 1, 2, 3)",
+			},
+			{
+				name:     "rotate right by 0",
+				input:    createList(1, 2, 3),
+				n:        0,
+				expected: "List(1, 2, 3)",
+			},
+			{
+				name:     "rotate right by negative (equivalent to left)",
+				input:    createList(1, 2, 3, 4, 5),
+				n:        -1,
+				expected: "List(2, 3, 4, 5, 1)",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := RotateRight(tt.input, tt.n)
+				if result.String() != tt.expected {
+					t.Errorf("expected %s, got %s", tt.expected, result.String())
+				}
+			})
+		}
+	})
+}

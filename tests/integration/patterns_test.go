@@ -1,7 +1,9 @@
-package sexpr
+package integration
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr"
 )
 
 func TestReplaceAllFunction(t *testing.T) {
@@ -52,15 +54,7 @@ func TestReplaceAllFunction(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			evaluator := NewEvaluator()
-			result := evaluateStringSimple(t, evaluator, test.input)
-			if result != test.expected {
-				t.Errorf("Expected %s, got %s", test.expected, result)
-			}
-		})
-	}
+	runTestCases(t, tests)
 }
 
 func TestReplaceAllWithRules(t *testing.T) {
@@ -131,15 +125,7 @@ func TestReplaceAllWithRules(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			evaluator := NewEvaluator()
-			result := evaluateStringSimple(t, evaluator, test.input)
-			if result != test.expected {
-				t.Errorf("Expected %s, got %s", test.expected, result)
-			}
-		})
-	}
+	runTestCases(t, tests)
 }
 
 func TestReplaceAllVsReplace(t *testing.T) {
@@ -182,18 +168,26 @@ func TestReplaceAllVsReplace(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			evaluator := NewEvaluator()
+			evaluator := sexpr.NewEvaluator()
 
 			// Test Replace
 			replaceInput := `Replace(` + test.expression + `, ` + test.rule + `)`
-			replaceResult := evaluateStringSimple(t, evaluator, replaceInput)
+			expr, err := sexpr.ParseString(replaceInput)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+			replaceResult := evaluator.Evaluate(expr).String()
 			if replaceResult != test.replaceExpected {
 				t.Errorf("Replace: Expected %s, got %s", test.replaceExpected, replaceResult)
 			}
 
 			// Test ReplaceAll
 			replaceAllInput := `ReplaceAll(` + test.expression + `, ` + test.rule + `)`
-			replaceAllResult := evaluateStringSimple(t, evaluator, replaceAllInput)
+			expr, err = sexpr.ParseString(replaceAllInput)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+			replaceAllResult := evaluator.Evaluate(expr).String()
 			if replaceAllResult != test.replaceAllExpected {
 				t.Errorf("ReplaceAll: Expected %s, got %s", test.replaceAllExpected, replaceAllResult)
 			}

@@ -168,6 +168,13 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
+func (l *Lexer) skipComment() {
+	// Skip from # to end of line
+	for l.ch != '\n' && l.ch != '\r' && l.ch != 0 {
+		l.readChar()
+	}
+}
+
 func (l *Lexer) readString() string {
 	position := l.position
 	l.readChar() // skip opening quote
@@ -234,7 +241,16 @@ func (l *Lexer) readNumber() (string, TokenType) {
 func (l *Lexer) NextToken() Token {
 	var tok Token
 
-	l.skipWhitespace()
+	// Skip whitespace and comments
+	for {
+		l.skipWhitespace()
+		if l.ch == '#' {
+			l.skipComment()
+			// Continue to skip any additional whitespace after comment
+			continue
+		}
+		break
+	}
 
 	switch l.ch {
 	case '[':
