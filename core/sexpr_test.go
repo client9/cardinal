@@ -1,7 +1,6 @@
-package sexpr
+package core
 
 import (
-	"github.com/client9/sexpr/core"
 	"testing"
 )
 
@@ -13,57 +12,57 @@ func TestAtom_String(t *testing.T) {
 	}{
 		{
 			name:     "string atom",
-			atom:     core.NewString("hello world"),
+			atom:     NewString("hello world"),
 			expected: `"hello world"`,
 		},
 		{
 			name:     "integer atom",
-			atom:     core.NewInteger(42),
+			atom:     NewInteger(42),
 			expected: "42",
 		},
 		{
 			name:     "float atom",
-			atom:     core.NewReal(3.14159),
+			atom:     NewReal(3.14159),
 			expected: "3.14159",
 		},
 		{
 			name:     "boolean true atom",
-			atom:     core.NewBool(true),
+			atom:     NewBool(true),
 			expected: "True",
 		},
 		{
 			name:     "boolean false atom",
-			atom:     core.NewBool(false),
+			atom:     NewBool(false),
 			expected: "False",
 		},
 		{
 			name:     "symbol atom",
-			atom:     core.NewSymbol("mySymbol"),
+			atom:     NewSymbol("mySymbol"),
 			expected: "mySymbol",
 		},
 		{
 			name:     "empty string atom",
-			atom:     core.NewString(""),
+			atom:     NewString(""),
 			expected: `""`,
 		},
 		{
 			name:     "zero integer atom",
-			atom:     core.NewInteger(0),
+			atom:     NewInteger(0),
 			expected: "0",
 		},
 		{
 			name:     "negative integer atom",
-			atom:     core.NewInteger(-123),
+			atom:     NewInteger(-123),
 			expected: "-123",
 		},
 		{
 			name:     "zero float atom",
-			atom:     core.NewReal(0.0),
+			atom:     NewReal(0.0),
 			expected: "0.0",
 		},
 		{
 			name:     "negative float atom",
-			atom:     core.NewReal(-2.5),
+			atom:     NewReal(-2.5),
 			expected: "-2.5",
 		},
 	}
@@ -86,34 +85,34 @@ func TestAtom_Type(t *testing.T) {
 	}{
 		{
 			name:     "string atom type",
-			atom:     core.NewString("test"),
+			atom:     NewString("test"),
 			expected: "String",
 		},
 		{
 			name:     "integer atom type",
-			atom:     core.NewInteger(42),
+			atom:     NewInteger(42),
 			expected: "Integer",
 		},
 		{
 			name:     "float atom type",
-			atom:     core.NewReal(3.14),
+			atom:     NewReal(3.14),
 			expected: "Real",
 		},
 		{
 			name:     "boolean atom type",
-			atom:     core.NewBool(true),
+			atom:     NewBool(true),
 			expected: "Symbol",
 		},
 		{
 			name:     "symbol atom type",
-			atom:     core.NewSymbol("x"),
+			atom:     NewSymbol("x"),
 			expected: "Symbol",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.atom.Type()
+			result := tt.atom.Head()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
@@ -139,22 +138,22 @@ func TestList_String(t *testing.T) {
 		},
 		{
 			name:     "simple function call",
-			list:     NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
+			list:     NewList("Plus", NewInteger(1), NewInteger(2)),
 			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "mixed types",
-			list:     NewList("List", core.NewInteger(1), core.NewReal(2.5), core.NewString("hello"), core.NewBool(true)),
+			list:     NewList("List", NewInteger(1), NewReal(2.5), NewString("hello"), NewBool(true)),
 			expected: `List(1, 2.5, "hello", True)`,
 		},
 		{
 			name:     "nested list",
-			list:     NewList("Plus", core.NewInteger(1), NewList("Times", core.NewInteger(2), core.NewInteger(3))),
+			list:     NewList("Plus", NewInteger(1), NewList("Times", NewInteger(2), NewInteger(3))),
 			expected: "Plus(1, Times(2, 3))",
 		},
 		{
 			name:     "deeply nested",
-			list:     NewList("f", NewList("g", NewList("h", core.NewInteger(1)))),
+			list:     NewList("f", NewList("g", NewList("h", NewInteger(1)))),
 			expected: "f(g(h(1)))",
 		},
 	}
@@ -182,14 +181,14 @@ func TestList_Type(t *testing.T) {
 		},
 		{
 			name:     "non-empty list type",
-			list:     NewList("Plus", core.NewInteger(1), core.NewInteger(2)),
+			list:     NewList("Plus", NewInteger(1), NewInteger(2)),
 			expected: "Plus",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.list.Type()
+			result := tt.list.Head()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
@@ -206,37 +205,37 @@ func TestConstructorFunctions(t *testing.T) {
 	}{
 		{
 			name:          "NewStringAtom",
-			constructor:   func() Expr { return core.NewString("test") },
+			constructor:   func() Expr { return NewString("test") },
 			expectedType:  "String",
 			expectedValue: "test",
 		},
 		{
 			name:          "NewIntAtom",
-			constructor:   func() Expr { return core.NewInteger(42) },
+			constructor:   func() Expr { return NewInteger(42) },
 			expectedType:  "Integer",
 			expectedValue: 42,
 		},
 		{
 			name:          "NewFloatAtom",
-			constructor:   func() Expr { return core.NewReal(3.14) },
+			constructor:   func() Expr { return NewReal(3.14) },
 			expectedType:  "Real",
 			expectedValue: 3.14,
 		},
 		{
 			name:          "NewBoolAtom true",
-			constructor:   func() Expr { return core.NewBool(true) },
+			constructor:   func() Expr { return NewBool(true) },
 			expectedType:  "Symbol",
 			expectedValue: "True",
 		},
 		{
 			name:          "NewBoolAtom false",
-			constructor:   func() Expr { return core.NewBool(false) },
+			constructor:   func() Expr { return NewBool(false) },
 			expectedType:  "Symbol",
 			expectedValue: "False",
 		},
 		{
 			name:          "NewSymbolAtom",
-			constructor:   func() Expr { return core.NewSymbol("mySymbol") },
+			constructor:   func() Expr { return NewSymbol("mySymbol") },
 			expectedType:  "Symbol",
 			expectedValue: "mySymbol",
 		},
@@ -246,14 +245,14 @@ func TestConstructorFunctions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expr := tt.constructor()
 
-			if expr.Type() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
+			if expr.Head() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Head())
 			}
 
 			// Check value based on the expected type
 			switch tt.expectedType {
 			case "String":
-				if str, ok := expr.(core.String); ok {
+				if str, ok := expr.(String); ok {
 					if string(str) != tt.expectedValue {
 						t.Errorf("expected value %v, got %v", tt.expectedValue, string(str))
 					}
@@ -261,7 +260,7 @@ func TestConstructorFunctions(t *testing.T) {
 					t.Errorf("expected String, got %T", expr)
 				}
 			case "Integer":
-				if integer, ok := expr.(core.Integer); ok {
+				if integer, ok := expr.(Integer); ok {
 					if int64(integer) != int64(tt.expectedValue.(int)) {
 						t.Errorf("expected value %v, got %v", tt.expectedValue, int64(integer))
 					}
@@ -269,7 +268,7 @@ func TestConstructorFunctions(t *testing.T) {
 					t.Errorf("expected Integer, got %T", expr)
 				}
 			case "Real":
-				if real, ok := expr.(core.Real); ok {
+				if real, ok := expr.(Real); ok {
 					if float64(real) != tt.expectedValue.(float64) {
 						t.Errorf("expected value %v, got %v", tt.expectedValue, float64(real))
 					}
@@ -277,7 +276,7 @@ func TestConstructorFunctions(t *testing.T) {
 					t.Errorf("expected Real, got %T", expr)
 				}
 			case "Symbol":
-				if symbolName, ok := core.ExtractSymbol(expr); ok {
+				if symbolName, ok := ExtractSymbol(expr); ok {
 					if symbolName != tt.expectedValue {
 						t.Errorf("expected value %v, got %v", tt.expectedValue, symbolName)
 					}
@@ -294,33 +293,19 @@ func TestConstructorFunctions(t *testing.T) {
 func TestNewList(t *testing.T) {
 	tests := []struct {
 		name           string
-		elements       []Expr
+		list           List
 		expectedLength int
 		expectedType   string
 	}{
 		{
-			name:           "empty list",
-			elements:       []Expr{},
-			expectedLength: 0,
-			expectedType:   "List",
-		},
-		/* this is NOT RIGHT!  Must have head.
-		{
-			name:           "single element",
-			elements:       []Expr{core.NewInteger(1)},
-			expectedLength: 1,
-			expectedType:   "List",
-		},
-		*/
-		{
 			name:           "multiple elements",
-			elements:       []Expr{core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)},
+			list:           NewList("Plus", NewInteger(1), NewInteger(2)),
 			expectedLength: 3,
 			expectedType:   "Plus",
 		},
 		{
 			name:           "nested list",
-			elements:       []Expr{core.NewSymbol("f"), NewList("g", core.NewInteger(1))},
+			list:           NewList("f", NewList("g", NewInteger(1))),
 			expectedLength: 2,
 			expectedType:   "f",
 		},
@@ -328,14 +313,12 @@ func TestNewList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			list := core.NewListFromExprs(tt.elements...)
-
-			if list.Type() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, list.Type())
+			if tt.list.Head() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.Head())
 			}
 
-			if len(list.Elements) != tt.expectedLength {
-				t.Errorf("expected length %d, got %d", tt.expectedLength, len(list.Elements))
+			if len(tt.list.Elements) != tt.expectedLength {
+				t.Errorf("expected length %d, got %d", tt.expectedLength, len(tt.list.Elements))
 			}
 		})
 	}
@@ -350,8 +333,8 @@ func TestComplexExpressions(t *testing.T) {
 		{
 			name: "mathematical expression",
 			expr: NewList("Plus",
-				NewList("Times", core.NewInteger(2), core.NewSymbol("x")),
-				core.NewInteger(5),
+				NewList("Times", NewInteger(2), NewSymbol("x")),
+				NewInteger(5),
 			),
 			expected: "Plus(Times(2, x), 5)",
 		},
@@ -359,8 +342,8 @@ func TestComplexExpressions(t *testing.T) {
 			name: "function definition",
 			expr: NewList(
 				"Function",
-				core.NewString("x"),
-				NewList("Power", core.NewSymbol("x"), core.NewInteger(2)),
+				NewString("x"),
+				NewList("Power", NewSymbol("x"), NewInteger(2)),
 			),
 			expected: `Function("x", Power(x, 2))`,
 		},
@@ -368,9 +351,9 @@ func TestComplexExpressions(t *testing.T) {
 			name: "conditional expression",
 			expr: NewList(
 				"If",
-				NewList("Greater", core.NewSymbol("x"), core.NewInteger(0)),
-				core.NewSymbol("x"),
-				NewList("Minus", core.NewSymbol("x")),
+				NewList("Greater", NewSymbol("x"), NewInteger(0)),
+				NewSymbol("x"),
+				NewList("Minus", NewSymbol("x")),
 			),
 			expected: "If(Greater(x, 0), x, Minus(x))",
 		},
@@ -378,12 +361,12 @@ func TestComplexExpressions(t *testing.T) {
 			name: "list with mixed types",
 			expr: NewList(
 				"List",
-				core.NewInteger(1),
-				core.NewReal(2.5),
-				core.NewString("hello"),
-				core.NewBool(true),
-				core.NewBool(false),
-				core.NewSymbol("x"),
+				NewInteger(1),
+				NewReal(2.5),
+				NewString("hello"),
+				NewBool(true),
+				NewBool(false),
+				NewSymbol("x"),
 			),
 			expected: `List(1, 2.5, "hello", True, False, x)`,
 		},

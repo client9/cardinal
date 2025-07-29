@@ -7,7 +7,7 @@ import (
 
 func TestErrorExpr_Basic(t *testing.T) {
 	// Test ErrorExpr construction and methods
-	err := NewErrorExpr("TestError", "This is a test error", []Expr{core.NewInteger(1), core.NewInteger(2)})
+	err := core.NewErrorExpr("TestError", "This is a test error", []core.Expr{core.NewInteger(1), core.NewInteger(2)})
 
 	if err.ErrorType != "TestError" {
 		t.Errorf("expected ErrorType 'TestError', got '%s'", err.ErrorType)
@@ -22,16 +22,16 @@ func TestErrorExpr_Basic(t *testing.T) {
 		t.Errorf("expected String() '%s', got '%s'", expected, err.String())
 	}
 
-	if err.Type() != "error" {
-		t.Errorf("expected Type() 'error', got '%s'", err.Type())
+	if err.Head() != "error" {
+		t.Errorf("expected Type() 'error', got '%s'", err.Head())
 	}
 }
 
 func TestIsError(t *testing.T) {
 	// Test IsError function
-	errorExpr := NewErrorExpr("TestError", "test", nil)
+	errorExpr := core.NewErrorExpr("TestError", "test", nil)
 	intExpr := core.NewInteger(42)
-	listExpr := List{Elements: []Expr{core.NewSymbol("Plus"), core.NewInteger(1), core.NewInteger(2)}}
+	listExpr := core.NewList("Plus", core.NewInteger(1), core.NewInteger(2))
 
 	if !IsError(errorExpr) {
 		t.Error("IsError should return true for ErrorExpr")

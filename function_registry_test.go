@@ -8,7 +8,7 @@ import (
 
 func TestFunctionRegistry_Basic(t *testing.T) {
 	ctx := NewContext()
-	args := []Expr{core.NewInteger(1), core.NewInteger(2)}
+	args := []core.Expr{core.NewInteger(1), core.NewInteger(2)}
 
 	// Test that builtin functions are registered
 	funcDef, _ := ctx.functionRegistry.FindMatchingFunction("Plus", args)
@@ -31,7 +31,7 @@ func TestFunctionRegistry_CustomFunction(t *testing.T) {
 	ctx := NewContext()
 
 	// Define a custom function using the new pattern system
-	customDouble := func(args []Expr, ctx *Context) Expr {
+	customDouble := func(args []core.Expr, ctx *Context) core.Expr {
 		if len(args) != 1 {
 			return NewErrorExpr("ArgumentError", "Double expects 1 argument", args)
 		}
@@ -42,7 +42,7 @@ func TestFunctionRegistry_CustomFunction(t *testing.T) {
 		}
 
 		// Return symbolic form if not numeric
-		return List{Elements: []Expr{core.NewSymbol("Double"), args[0]}}
+		return core.List{Elements: []core.Expr{core.NewSymbol("Double"), args[0]}}
 	}
 
 	// Register the custom function with pattern
@@ -54,7 +54,7 @@ func TestFunctionRegistry_CustomFunction(t *testing.T) {
 	}
 
 	// Test that it's registered by finding a match
-	args := []Expr{core.NewInteger(21)}
+	args := []core.Expr{core.NewInteger(21)}
 	funcDef, bindings := ctx.functionRegistry.FindMatchingFunction("Double", args)
 	if funcDef == nil {
 		t.Error("Double should be registered")
@@ -77,7 +77,7 @@ func TestFunctionRegistry_Evaluator(t *testing.T) {
 	eval := NewEvaluator()
 
 	// Define a custom Max function
-	customMax := func(args []Expr) Expr {
+	customMax := func(args []core.Expr) core.Expr {
 		if len(args) == 0 {
 			return NewErrorExpr("ArgumentError", "Max expects at least 1 argument", args)
 		}
@@ -86,10 +86,10 @@ func TestFunctionRegistry_Evaluator(t *testing.T) {
 		for _, arg := range args {
 			if !isNumeric(arg) {
 				// Return symbolic form if any argument is not numeric
-				elements := make([]Expr, len(args)+1)
+				elements := make([]core.Expr, len(args)+1)
 				elements[0] = core.NewSymbol("Max")
 				copy(elements[1:], args)
-				return List{Elements: elements}
+				return core.List{Elements: elements}
 			}
 		}
 
@@ -106,7 +106,7 @@ func TestFunctionRegistry_Evaluator(t *testing.T) {
 	}
 
 	// Register the custom function using pattern system
-	customMaxPattern := func(args []Expr, ctx *Context) Expr {
+	customMaxPattern := func(args []core.Expr, ctx *Context) core.Expr {
 		// Wrap the old function to work with new signature
 		return customMax(args)
 	}
@@ -134,7 +134,7 @@ func TestFunctionRegistry_ChildContextInheritance(t *testing.T) {
 	parentCtx := NewContext()
 
 	// Add a custom function to the parent
-	customSquare := func(args []Expr) Expr {
+	customSquare := func(args []core.Expr) core.Expr {
 		if len(args) != 1 {
 			return NewErrorExpr("ArgumentError", "Square expects 1 argument", args)
 		}
@@ -144,11 +144,11 @@ func TestFunctionRegistry_ChildContextInheritance(t *testing.T) {
 			return createNumericResult(val * val)
 		}
 
-		return List{Elements: []Expr{core.NewSymbol("Square"), args[0]}}
+		return core.List{Elements: []core.Expr{core.NewSymbol("Square"), args[0]}}
 	}
 
 	// Register custom function using pattern system
-	customSquarePattern := func(args []Expr, ctx *Context) Expr {
+	customSquarePattern := func(args []core.Expr, ctx *Context) core.Expr {
 		return customSquare(args)
 	}
 	err := parentCtx.GetFunctionRegistry().RegisterPatternBuiltins(map[string]PatternFunc{
@@ -162,14 +162,14 @@ func TestFunctionRegistry_ChildContextInheritance(t *testing.T) {
 	childCtx := NewChildContext(parentCtx)
 
 	// Child should inherit the custom function
-	args := []Expr{core.NewInteger(7)}
+	args := []core.Expr{core.NewInteger(7)}
 	funcDef, _ := childCtx.functionRegistry.FindMatchingFunction("Square", args)
 	if funcDef == nil {
 		t.Error("Child context should inherit Square function")
 	}
 
 	// Child should also inherit standard builtins
-	args2 := []Expr{core.NewInteger(1), core.NewInteger(2)}
+	args2 := []core.Expr{core.NewInteger(1), core.NewInteger(2)}
 	funcDef2, _ := childCtx.functionRegistry.FindMatchingFunction("Plus", args2)
 	if funcDef2 == nil {
 		t.Error("Child context should inherit Plus function")
@@ -187,7 +187,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 	eval := NewEvaluator()
 
 	// Define a function that uses other builtins through the evaluator
-	customAverage := func(args []Expr, ctx *Context) Expr {
+	customAverage := func(args []core.Expr, ctx *Context) core.Expr {
 		if len(args) == 0 {
 			return NewErrorExpr("ArgumentError", "Average expects at least 1 argument", args)
 		}

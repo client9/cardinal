@@ -54,7 +54,7 @@ func (l List) InputForm() string {
 	return l.inputFormWithPrecedence(PrecedenceLowest)
 }
 
-func (l List) Type() string {
+func (l List) Head() string {
 	if len(l.Elements) == 0 {
 		// TODO Panic
 		return "List"

@@ -32,7 +32,7 @@ func (e *ErrorExpr) InputForm() string {
 	return e.String()
 }
 
-func (e *ErrorExpr) Type() string {
+func (e *ErrorExpr) Head() string {
 	return "error"
 }
 

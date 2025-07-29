@@ -4,7 +4,7 @@ package core
 type Expr interface {
 	String() string
 	InputForm() string
-	Type() string
+	Head() string
 	Length() int64
 	Equal(rhs Expr) bool
 	IsAtom() bool // Distinguishes atomic vs composite types

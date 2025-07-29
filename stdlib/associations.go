@@ -22,18 +22,13 @@ func AssociationQExpr(expr core.Expr) bool {
 func KeysExpr(assoc core.Association) core.Expr {
 	keys := assoc.Keys()
 	// Return as List[key1, key2, ...]
-	elements := []core.Expr{core.NewSymbol("List")}
-	elements = append(elements, keys...)
-	return core.NewListFromExprs(elements...)
+	return core.NewList("List", keys...)
 }
 
 // ValuesExpr returns the values of an association as a List
 func ValuesExpr(assoc core.Association) core.Expr {
 	values := assoc.Values()
-	// Return as List[value1, value2, ...]
-	elements := []core.Expr{core.NewSymbol("List")}
-	elements = append(elements, values...)
-	return core.NewListFromExprs(elements...)
+	return core.NewList("List", values...)
 }
 
 // AssociationRules creates an Association from a sequence of Rule expressions

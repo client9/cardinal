@@ -295,11 +295,12 @@ package sexpr
 
 import (
 	"fmt"
+	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/wrapped"
 )
 
 // setupBuiltinAttributes sets up standard attributes for built-in functions
-func setupBuiltinAttributes(symbolTable *SymbolTable) {
+func SetupBuiltinAttributes(symbolTable *SymbolTable) {
 	// Reset attributes
 	symbolTable.Reset()
 
@@ -318,7 +319,7 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 	// Register built-in functions with pattern-based dispatch
 	builtinPatterns := map[string]PatternFunc{
 		// Generated pattern registrations
-{{range .Functions}}		"{{.Pattern}}": func(args []Expr, ctx *Context) Expr {
+{{range .Functions}}		"{{.Pattern}}": func(args []core.Expr, ctx *Context) core.Expr {
 			return wrapped.{{.WrapperName}}(args)
 		}, // {{.FunctionName}}
 {{end}}

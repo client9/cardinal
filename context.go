@@ -2,6 +2,8 @@ package sexpr
 
 import (
 	"fmt"
+
+	"github.com/client9/sexpr/core"
 )
 
 // EvaluationStack represents the current evaluation call stack
@@ -59,7 +61,7 @@ func (s *EvaluationStack) Depth() int {
 
 // Context represents the evaluation context with variable bindings and symbol attributes
 type Context struct {
-	variables        map[string]Expr
+	variables        map[string]core.Expr
 	parent           *Context
 	symbolTable      *SymbolTable
 	functionRegistry *FunctionRegistry // Unified pattern-based function system
@@ -70,7 +72,7 @@ type Context struct {
 // NewContext creates a new evaluation context
 func NewContext() *Context {
 	ctx := &Context{
-		variables:        make(map[string]Expr),
+		variables:        make(map[string]core.Expr),
 		parent:           nil,
 		symbolTable:      NewSymbolTable(),
 		functionRegistry: NewFunctionRegistry(),
@@ -79,7 +81,7 @@ func NewContext() *Context {
 	}
 
 	// Set up built-in attributes
-	setupBuiltinAttributes(ctx.symbolTable)
+	SetupBuiltinAttributes(ctx.symbolTable)
 
 	// Register default built-in functions with patterns
 	registerDefaultBuiltins(ctx.functionRegistry)
@@ -90,7 +92,7 @@ func NewContext() *Context {
 // NewChildContext creates a child context with a parent
 func NewChildContext(parent *Context) *Context {
 	return &Context{
-		variables:        make(map[string]Expr),
+		variables:        make(map[string]core.Expr),
 		parent:           parent,
 		symbolTable:      parent.symbolTable,      // Share symbol table with parent
 		functionRegistry: parent.functionRegistry, // Share function registry with parent
@@ -101,7 +103,7 @@ func NewChildContext(parent *Context) *Context {
 
 // Set sets a variable in the context
 // If this is a child context and the variable is not in scopedVars, set it in the parent
-func (c *Context) Set(name string, value Expr) {
+func (c *Context) Set(name string, value core.Expr) {
 	// If this variable is explicitly scoped to this context, set it here
 	if c.scopedVars[name] {
 		c.variables[name] = value
@@ -119,7 +121,7 @@ func (c *Context) Set(name string, value Expr) {
 }
 
 // Get retrieves a variable from the context (searches up the parent chain)
-func (c *Context) Get(name string) (Expr, bool) {
+func (c *Context) Get(name string) (core.Expr, bool) {
 	if value, ok := c.variables[name]; ok {
 		return value, true
 	}

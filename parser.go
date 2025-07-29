@@ -83,7 +83,7 @@ func (p *Parser) Errors() []string {
 	return p.errors
 }
 
-func (p *Parser) Parse() (Expr, error) {
+func (p *Parser) Parse() (core.Expr, error) {
 	expr := p.parseExpression()
 	if len(p.errors) > 0 {
 		return nil, fmt.Errorf("parse errors: %s", strings.Join(p.errors, "; "))
@@ -91,11 +91,11 @@ func (p *Parser) Parse() (Expr, error) {
 	return expr, nil
 }
 
-func (p *Parser) parseExpression() Expr {
+func (p *Parser) parseExpression() core.Expr {
 	return p.parseInfixExpression(PrecedenceLowest)
 }
 
-func (p *Parser) parseInfixExpression(precedence Precedence) Expr {
+func (p *Parser) parseInfixExpression(precedence Precedence) core.Expr {
 	left := p.ParseAtom()
 
 	for p.currentToken.Type != EOF && precedence < p.currentPrecedence() {
@@ -111,8 +111,8 @@ func (p *Parser) parseInfixExpression(precedence Precedence) Expr {
 	return left
 }
 
-func (p *Parser) ParseAtom() Expr {
-	var expr Expr
+func (p *Parser) ParseAtom() core.Expr {
+	var expr core.Expr
 
 	switch p.currentToken.Type {
 	case SYMBOL:
@@ -154,7 +154,7 @@ func (p *Parser) ParseAtom() Expr {
 	return expr
 }
 
-func (p *Parser) parseSymbolOrList() Expr {
+func (p *Parser) parseSymbolOrList() core.Expr {
 	symbolToken := p.currentToken
 	p.nextToken()
 
@@ -170,14 +170,14 @@ func (p *Parser) parseSymbolOrList() Expr {
 	return core.NewSymbol(symbolToken.Value)
 }
 
-func (p *Parser) parseList(head string) Expr {
+func (p *Parser) parseList(head string) core.Expr {
 	p.nextToken() // consume '('
 
-	elements := []Expr{core.NewSymbol(head)}
+	elements := []core.Expr{}
 
 	if p.currentToken.Type == RPAREN {
 		p.nextToken() // consume ')'
-		return core.NewListFromExprs(elements...)
+		return core.NewList(head, elements...)
 	}
 
 	for {
@@ -205,19 +205,19 @@ func (p *Parser) parseList(head string) Expr {
 		p.nextToken()
 	}
 
-	return core.NewListFromExprs(elements...)
+	return core.NewList(head, elements...)
 }
 
-func (p *Parser) parseListLiteral() Expr {
+func (p *Parser) parseListLiteral() core.Expr {
 	p.nextToken() // consume '['
 
 	// Create a List expression with "List" as the head
-	elements := []Expr{core.NewSymbol("List")}
+	elements := []core.Expr{}
 
 	// Handle empty list []
 	if p.currentToken.Type == RBRACKET {
 		p.nextToken() // consume ']'
-		return core.NewListFromExprs(elements...)
+		return core.NewList("List", elements...)
 	}
 
 	// Parse list elements
@@ -256,20 +256,20 @@ func (p *Parser) parseListLiteral() Expr {
 		p.nextToken()
 	}
 
-	return core.NewListFromExprs(elements...)
+	return core.NewList("List", elements...)
 }
 
-func (p *Parser) parseAssociationLiteral() Expr {
+func (p *Parser) parseAssociationLiteral() core.Expr {
 	p.nextToken() // consume '{'
 
 	// Create rules slice for Rule expressions
-	var rules []Expr
+	var rules []core.Expr
 
 	// Handle empty association {}
 	if p.currentToken.Type == RBRACE {
 		p.nextToken() // consume '}'
 		// Create Association function call with no arguments for empty association
-		return NewList("Association")
+		return core.NewList("Association")
 	}
 
 	// Parse expressions (expecting Rule expressions from key:value infix parsing)
@@ -310,12 +310,10 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	}
 
 	// Create Association function call with Rule expressions
-	elements := []Expr{core.NewSymbol("Association")}
-	elements = append(elements, rules...)
-	return core.NewListFromExprs(elements...)
+	return core.NewList("Association", rules...)
 }
 
-func (p *Parser) parseInteger() Expr {
+func (p *Parser) parseInteger() core.Expr {
 	value, err := strconv.ParseInt(p.currentToken.Value, 10, 64)
 	if err != nil {
 		p.addError(fmt.Sprintf("invalid integer: %s", p.currentToken.Value))
@@ -325,7 +323,7 @@ func (p *Parser) parseInteger() Expr {
 	return core.NewInteger(value)
 }
 
-func (p *Parser) parseFloat() Expr {
+func (p *Parser) parseFloat() core.Expr {
 	value, err := strconv.ParseFloat(p.currentToken.Value, 64)
 	if err != nil {
 		p.addError(fmt.Sprintf("invalid float: %s", p.currentToken.Value))
@@ -335,12 +333,12 @@ func (p *Parser) parseFloat() Expr {
 	return core.NewReal(value)
 }
 
-func (p *Parser) parseString() Expr {
+func (p *Parser) parseString() core.Expr {
 	value := p.unescapeString(p.currentToken.Value)
 	return core.NewString(value)
 }
 
-func (p *Parser) parseBoolean() Expr {
+func (p *Parser) parseBoolean() core.Expr {
 	value := p.currentToken.Value == "True"
 	return core.NewBool(value)
 }
@@ -389,7 +387,7 @@ func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
 	}
 }
 
-func (p *Parser) parseInfixOperation(left Expr) Expr {
+func (p *Parser) parseInfixOperation(left core.Expr) core.Expr {
 	operator := p.currentToken
 	precedence := p.currentPrecedence()
 
@@ -418,7 +416,7 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 	return p.createInfixExpr(operator.Type, left, right)
 }
 
-func (p *Parser) parsePrefixExpression() Expr {
+func (p *Parser) parsePrefixExpression() core.Expr {
 	operator := p.currentToken
 	p.nextToken()
 	right := p.parseInfixExpression(PrecedenceUnary)
@@ -426,69 +424,69 @@ func (p *Parser) parsePrefixExpression() Expr {
 	return p.createPrefixExpr(operator.Type, right)
 }
 
-func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
+func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core.Expr {
 	switch operator {
 	case SEMICOLON:
-		return NewList("CompoundStatement", left, right)
+		return core.NewList("CompoundStatement", left, right)
 	case SET:
-		return NewList("Set", left, right)
+		return core.NewList("Set", left, right)
 	case SETDELAYED:
-		return NewList("SetDelayed", left, right)
+		return core.NewList("SetDelayed", left, right)
 	case UNSET:
-		return NewList("Unset", left)
+		return core.NewList("Unset", left)
 	case COLON:
-		return NewList("Rule", left, right)
+		return core.NewList("Rule", left, right)
 	case OR:
-		return NewList("Or", left, right)
+		return core.NewList("Or", left, right)
 	case AND:
-		return NewList("And", left, right)
+		return core.NewList("And", left, right)
 	case EQUAL:
-		return NewList("Equal", left, right)
+		return core.NewList("Equal", left, right)
 	case UNEQUAL:
-		return NewList("Unequal", left, right)
+		return core.NewList("Unequal", left, right)
 	case SAMEQ:
-		return NewList("SameQ", left, right)
+		return core.NewList("SameQ", left, right)
 	case UNSAMEQ:
-		return NewList("UnsameQ", left, right)
+		return core.NewList("UnsameQ", left, right)
 	case LESS:
-		return NewList("Less", left, right)
+		return core.NewList("Less", left, right)
 	case GREATER:
-		return NewList("Greater", left, right)
+		return core.NewList("Greater", left, right)
 	case LESSEQUAL:
-		return NewList("LessEqual", left, right)
+		return core.NewList("LessEqual", left, right)
 	case GREATEREQUAL:
-		return NewList("GreaterEqual", left, right)
+		return core.NewList("GreaterEqual", left, right)
 	case PLUS:
-		return NewList("Plus", left, right)
+		return core.NewList("Plus", left, right)
 	case MINUS:
-		return NewList("Subtract", left, right)
+		return core.NewList("Subtract", left, right)
 	case MULTIPLY:
-		return NewList("Times", left, right)
+		return core.NewList("Times", left, right)
 	case DIVIDE:
-		return NewList("Divide", left, right)
+		return core.NewList("Divide", left, right)
 	case CARET:
-		return NewList("Power", left, right)
+		return core.NewList("Power", left, right)
 	default:
 		p.addError(fmt.Sprintf("unknown infix operator: %d", operator))
 		return nil
 	}
 }
 
-func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
+func (p *Parser) createPrefixExpr(operator TokenType, operand core.Expr) core.Expr {
 	switch operator {
 	case MINUS:
-		return NewList("Minus", operand)
+		return core.NewList("Minus", operand)
 	case PLUS:
 		return operand // unary plus is identity
 	case NOT:
-		return NewList("Not", operand)
+		return core.NewList("Not", operand)
 	default:
 		p.addError(fmt.Sprintf("unknown prefix operator: %d", operator))
 		return nil
 	}
 }
 
-func (p *Parser) parseGroupedExpression() Expr {
+func (p *Parser) parseGroupedExpression() core.Expr {
 	p.nextToken() // consume '('
 
 	expr := p.parseExpression()
@@ -503,7 +501,7 @@ func (p *Parser) parseGroupedExpression() Expr {
 }
 
 // parseIndexOrSlice handles postfix [index] and [start:end] syntax
-func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
+func (p *Parser) parseIndexOrSlice(expr core.Expr) core.Expr {
 	p.nextToken() // consume '['
 
 	// Check for empty brackets []
@@ -513,7 +511,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 	}
 
 	// Parse the first expression (could be index, start, or just ':')
-	var firstExpr Expr
+	var firstExpr core.Expr
 	var hasFirstExpr bool
 
 	if p.currentToken.Type == COLON {
@@ -533,13 +531,13 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			return expr
 		}
 		p.nextToken() // consume ']'
-		return NewList("Part", expr, firstExpr)
+		return core.NewList("Part", expr, firstExpr)
 
 	} else if p.currentToken.Type == COLON {
 		// Slice syntax: expr[start:end] or expr[:end] or expr[start:]
 		p.nextToken() // consume ':'
 
-		var startExpr, endExpr Expr
+		var startExpr, endExpr core.Expr
 
 		if hasFirstExpr {
 			startExpr = firstExpr
@@ -561,7 +559,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// If start is negative, use Take(expr, start) for last n elements
 			// If start is positive, use Drop(expr, start-1) since Drop removes the first n elements
 			// But we can't easily detect negative at parse time, so we'll use a special function
-			return NewList("TakeFrom", expr, startExpr)
+			return core.NewList("TakeFrom", expr, startExpr)
 		} else {
 			// Parse end expression
 			endExpr = p.parseSliceExpression()
@@ -574,10 +572,10 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// Generate appropriate slice expression
 			if startExpr == nil {
 				// [:end] syntax - Take first n elements
-				return NewList("Take", expr, endExpr)
+				return core.NewList("Take", expr, endExpr)
 			} else {
 				// [start:end] syntax - Slice operation
-				return NewList("SliceRange", expr, startExpr, endExpr)
+				return core.NewList("SliceRange", expr, startExpr, endExpr)
 			}
 		}
 	} else {
@@ -587,15 +585,15 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 }
 
 // parseSliceExpression parses expressions inside slice brackets, treating colons as separators
-func (p *Parser) parseSliceExpression() Expr {
+func (p *Parser) parseSliceExpression() core.Expr {
 	// Parse a simple expression that stops at colons and brackets
 	// We'll use a custom precedence that's higher than colon assignment
 	return p.parseInfixExpression(PrecedenceLogicalOr)
 }
 
 // isSliceExpression checks if an expression is a slice or part expression
-func (p *Parser) isSliceExpression(expr Expr) bool {
-	list, ok := expr.(List)
+func (p *Parser) isSliceExpression(expr core.Expr) bool {
+	list, ok := expr.(core.List)
 	if !ok || len(list.Elements) == 0 {
 		return false
 	}
@@ -608,8 +606,8 @@ func (p *Parser) isSliceExpression(expr Expr) bool {
 }
 
 // createSliceAssignment creates the appropriate slice assignment AST node
-func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
-	list := sliceExpr.(List)
+func (p *Parser) createSliceAssignment(sliceExpr core.Expr, value core.Expr) core.Expr {
+	list := sliceExpr.(core.List)
 	headName, ok := core.ExtractSymbol(list.Elements[0])
 	if !ok {
 		p.addError(fmt.Sprintf("Unknown slice expression type: %v", list.Elements[0]))
@@ -623,7 +621,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("Part expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList("PartSet", list.Elements[1], list.Elements[2], value)
+		return core.NewList("PartSet", list.Elements[1], list.Elements[2], value)
 
 	case "SliceRange":
 		// SliceRange(expr, start, end) = value -> SliceSet(expr, start, end, value)
@@ -631,7 +629,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("SliceRange expression must have exactly 3 arguments for assignment")
 			return nil
 		}
-		return NewList("SliceSet", list.Elements[1], list.Elements[2], list.Elements[3], value)
+		return core.NewList("SliceSet", list.Elements[1], list.Elements[2], list.Elements[3], value)
 
 	case "Take":
 		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
@@ -639,7 +637,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("Take expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList("SliceSet", list.Elements[1], core.NewInteger(1), list.Elements[2], value)
+		return core.NewList("SliceSet", list.Elements[1], core.NewInteger(1), list.Elements[2], value)
 
 	case "TakeFrom":
 		// TakeFrom(expr, start) = value -> SliceSet(expr, start, -1, value)
@@ -648,7 +646,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 			p.addError("TakeFrom expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return NewList("SliceSet", list.Elements[1], list.Elements[2], core.NewInteger(-1), value)
+		return core.NewList("SliceSet", list.Elements[1], list.Elements[2], core.NewInteger(-1), value)
 
 	default:
 		p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))
@@ -657,7 +655,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 }
 
 // parseUnderscorePattern parses anonymous patterns (_, __, ___, _Integer, __Integer, ___Integer)
-func (p *Parser) parseUnderscorePattern() Expr {
+func (p *Parser) parseUnderscorePattern() core.Expr {
 	// Get underscore count from token value
 	underscoreToken := p.currentToken
 	underscoreCount := len(underscoreToken.Value)
@@ -671,7 +669,7 @@ func (p *Parser) parseUnderscorePattern() Expr {
 	}
 
 	// Create the appropriate blank expression based on underscore count
-	var blankExpr Expr
+	var blankExpr core.Expr
 	if underscoreCount >= 3 {
 		if typeName != "" {
 			blankExpr = core.NewList("BlankNullSequence", core.NewSymbol(typeName))
@@ -697,7 +695,7 @@ func (p *Parser) parseUnderscorePattern() Expr {
 }
 
 // parsePatternFromSymbol parses named patterns (x_, x__, x___, x_Integer, x__Integer, x___Integer)
-func (p *Parser) parsePatternFromSymbol(varName string) Expr {
+func (p *Parser) parsePatternFromSymbol(varName string) core.Expr {
 	// Get underscore count from token value
 	underscoreToken := p.currentToken
 	underscoreCount := len(underscoreToken.Value)
@@ -711,7 +709,7 @@ func (p *Parser) parsePatternFromSymbol(varName string) Expr {
 	}
 
 	// Create the appropriate blank expression based on underscore count
-	var blankExpr Expr
+	var blankExpr core.Expr
 	if underscoreCount >= 3 {
 		if typeName != "" {
 			blankExpr = core.NewList("BlankNullSequence", core.NewSymbol(typeName))
@@ -736,7 +734,7 @@ func (p *Parser) parsePatternFromSymbol(varName string) Expr {
 	return core.NewList("Pattern", core.NewSymbol(varName), blankExpr)
 }
 
-func ParseString(input string) (Expr, error) {
+func ParseString(input string) (core.Expr, error) {
 	lexer := NewLexer(input)
 	parser := NewParser(lexer)
 	return parser.Parse()

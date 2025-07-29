@@ -29,12 +29,12 @@ func NewEvaluatorWithContext(ctx *Context) *Evaluator {
 }
 
 // Evaluate evaluates an expression in the current context
-func (e *Evaluator) Evaluate(expr Expr) Expr {
+func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
 	return e.evaluate(expr, e.context)
 }
 
 // evaluate is the main evaluation function
-func (e *Evaluator) evaluate(expr Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluate(expr core.Expr, ctx *Context) core.Expr {
 	if expr == nil {
 		return nil
 	}
@@ -43,14 +43,14 @@ func (e *Evaluator) evaluate(expr Expr, ctx *Context) Expr {
 	exprStr := expr.String()
 	if err := ctx.stack.Push("evaluate", exprStr); err != nil {
 		// Return recursion error with stack trace
-		return NewErrorExprWithStack("RecursionError", err.Error(), []Expr{expr}, ctx.stack.GetFrames())
+		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
 	}
 	defer ctx.stack.Pop()
 
 	return e.evaluateExpr(expr, ctx)
 }
 
-func (e *Evaluator) evaluateExpr(expr Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateExpr(expr core.Expr, ctx *Context) core.Expr {
 	switch ex := expr.(type) {
 	case core.Symbol:
 		symbolName := string(ex)
@@ -70,7 +70,7 @@ func (e *Evaluator) evaluateExpr(expr Expr, ctx *Context) Expr {
 	case core.String, core.Integer, core.Real:
 		// New atomic types evaluate to themselves
 		return ex
-	case List:
+	case core.List:
 		return e.evaluateList(ex, ctx)
 	default:
 		// All other types (ByteArray, Association, ErrorExpr, etc.) evaluate to themselves
@@ -79,7 +79,7 @@ func (e *Evaluator) evaluateExpr(expr Expr, ctx *Context) Expr {
 }
 
 // evaluateList evaluates a list expression
-func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
+func (e *Evaluator) evaluateList(list core.List, ctx *Context) core.Expr {
 	if len(list.Elements) == 0 {
 		return list
 	}
@@ -126,7 +126,7 @@ func (e *Evaluator) evaluateList(list List, ctx *Context) Expr {
 }
 
 // evaluatePatternFunction evaluates a function using pattern-based dispatch
-func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, ctx *Context) core.Expr {
 	// Evaluate arguments based on hold attributes
 	evaluatedArgs := e.evaluateArguments(headName, args, ctx)
 
@@ -149,7 +149,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 				funcCallStr := headName + "(" + formatArgs(evaluatedArgs) + ")"
 				if err := ctx.stack.Push(headName, funcCallStr); err == nil {
 					ctx.stack.Pop() // Immediately pop since we're just adding to trace
-					return NewErrorExprWithStack(errorExpr.ErrorType, errorExpr.Message, errorExpr.Args, ctx.stack.GetFrames())
+					return core.NewErrorExprWithStack(errorExpr.ErrorType, errorExpr.Message, errorExpr.Args, ctx.stack.GetFrames())
 				}
 			}
 		}
@@ -167,7 +167,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []Expr, ctx *C
 
 // evaluateToFixedPoint continues evaluating an expression until it reaches a fixed point
 // (no more changes occur) or until a maximum number of iterations to prevent infinite loops
-func (e *Evaluator) evaluateToFixedPoint(expr Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateToFixedPoint(expr core.Expr, ctx *Context) core.Expr {
 	const maxIterations = 100 // Prevent infinite loops
 	current := expr
 
@@ -198,8 +198,8 @@ func (e *Evaluator) evaluateToFixedPoint(expr Expr, ctx *Context) Expr {
 }
 
 // evaluateArguments evaluates arguments based on hold attributes
-func (e *Evaluator) evaluateArguments(headName string, args []Expr, ctx *Context) []Expr {
-	evaluatedArgs := make([]Expr, len(args))
+func (e *Evaluator) evaluateArguments(headName string, args []core.Expr, ctx *Context) []core.Expr {
+	evaluatedArgs := make([]core.Expr, len(args))
 
 	holdAll := ctx.symbolTable.HasAttribute(headName, HoldAll)
 	holdFirst := ctx.symbolTable.HasAttribute(headName, HoldFirst)
@@ -217,7 +217,7 @@ func (e *Evaluator) evaluateArguments(headName string, args []Expr, ctx *Context
 }
 
 // applyAttributeTransformations applies attribute-based transformations
-func (e *Evaluator) applyAttributeTransformations(headName string, list List, ctx *Context) List {
+func (e *Evaluator) applyAttributeTransformations(headName string, list core.List, ctx *Context) core.List {
 	result := list
 
 	// Apply Flat attribute (associativity)
@@ -239,18 +239,19 @@ func (e *Evaluator) applyAttributeTransformations(headName string, list List, ct
 }
 
 // applyFlat implements the Flat attribute (associativity)
-func (e *Evaluator) applyFlat(headName string, list List) List {
+func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
 	if len(list.Elements) <= 1 {
 		return list
 	}
 
-	head := list.Elements[0]
+	head := list.Head()
 	args := list.Elements[1:]
-	newArgs := []Expr{}
+
+	newArgs := []core.Expr{}
 
 	for _, arg := range args {
 		// If the argument is the same function, flatten it
-		if argList, ok := arg.(List); ok && len(argList.Elements) > 0 {
+		if argList, ok := arg.(core.List); ok && len(argList.Elements) > 0 {
 			if argHeadName, ok := core.ExtractSymbol(argList.Elements[0]); ok {
 				if argHeadName == headName {
 					// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
@@ -262,16 +263,16 @@ func (e *Evaluator) applyFlat(headName string, list List) List {
 		newArgs = append(newArgs, arg)
 	}
 
-	return core.NewListFromExprs(append([]Expr{head}, newArgs...)...)
+	return core.NewList(head, newArgs...)
 }
 
 // applyOrderless implements the Orderless attribute (commutativity)
-func (e *Evaluator) applyOrderless(list List) List {
+func (e *Evaluator) applyOrderless(list core.List) core.List {
 	if len(list.Elements) <= 2 {
 		return list
 	}
 
-	head := list.Elements[0]
+	head := list.Head()
 	args := list.Elements[1:]
 
 	// Sort arguments by their string representation for canonical ordering
@@ -279,18 +280,18 @@ func (e *Evaluator) applyOrderless(list List) List {
 		return args[i].String() < args[j].String()
 	})
 
-	return core.NewListFromExprs(append([]Expr{head}, args...)...)
+	return core.NewList(head, args...)
 }
 
 // applyOneIdentity implements the OneIdentity attribute
-func (e *Evaluator) applyOneIdentity(list List) List {
+func (e *Evaluator) applyOneIdentity(list core.List) core.List {
 	// OneIdentity is now handled specially in evaluateList
 	// This function is kept for consistency but doesn't transform anything
 	return list
 }
 
 // evaluateSpecialForm handles special forms that don't follow normal evaluation rules
-func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *Context) core.Expr {
 	switch headName {
 	case "If":
 		return e.evaluateIf(args, ctx)
@@ -334,7 +335,7 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []Expr, ctx *Conte
 }
 
 // getBuiltinConstant returns built-in constants
-func (e *Evaluator) getBuiltinConstant(name string) (Expr, bool) {
+func (e *Evaluator) getBuiltinConstant(name string) (core.Expr, bool) {
 	switch name {
 	case "Pi":
 		return core.NewReal(math.Pi), true
@@ -353,7 +354,7 @@ func (e *Evaluator) getBuiltinConstant(name string) (Expr, bool) {
 // Utility functions for numeric operations
 
 // isNumeric checks if an expression is numeric
-func isNumeric(expr Expr) bool {
+func isNumeric(expr core.Expr) bool {
 	// Check new atomic types first
 	switch expr.(type) {
 	case core.Integer, core.Real:
@@ -363,7 +364,7 @@ func isNumeric(expr Expr) bool {
 }
 
 // getNumericValue extracts numeric value from an expression
-func getNumericValue(expr Expr) (float64, bool) {
+func getNumericValue(expr core.Expr) (float64, bool) {
 	// Check new atomic types first
 	switch ex := expr.(type) {
 	case core.Integer:
@@ -375,7 +376,7 @@ func getNumericValue(expr Expr) (float64, bool) {
 }
 
 // createNumericResult creates appropriate numeric result (int if whole, float otherwise)
-func createNumericResult(value float64) Expr {
+func createNumericResult(value float64) core.Expr {
 	if value == float64(int64(value)) {
 		return core.NewInteger(int64(value))
 	}
@@ -384,19 +385,19 @@ func createNumericResult(value float64) Expr {
 
 // getBoolValue extracts boolean value from an expression
 // NOTE: This wraps core.ExtractBool for backward compatibility
-func getBoolValue(expr Expr) (bool, bool) {
+func getBoolValue(expr core.Expr) (bool, bool) {
 	return core.ExtractBool(expr)
 }
 
 // isSymbol checks if an expression is a symbol
 // NOTE: This wraps core.IsSymbol for backward compatibility
-func isSymbol(expr Expr) bool {
+func isSymbol(expr core.Expr) bool {
 	return core.IsSymbol(expr)
 }
 
 // patternsEqual compares two patterns for equivalence
 // This ignores variable names and only compares pattern structure and types
-func patternsEqual(pattern1, pattern2 Expr) bool {
+func patternsEqual(pattern1, pattern2 core.Expr) bool {
 	// Get pattern info for both patterns
 	info1 := core.GetSymbolicPatternInfo(pattern1)
 	info2 := core.GetSymbolicPatternInfo(pattern2)
@@ -423,8 +424,8 @@ func patternsEqual(pattern1, pattern2 Expr) bool {
 			return name1 == name2
 		}
 		return false
-	case List:
-		if p2, ok := pattern2.(List); ok {
+	case core.List:
+		if p2, ok := pattern2.(core.List); ok {
 			if len(p1.Elements) != len(p2.Elements) {
 				return false
 			}
@@ -447,12 +448,12 @@ func (e *Evaluator) GetContext() *Context {
 }
 
 // listsEqual checks if two lists are structurally equal
-func listsEqual(list1, list2 List) bool {
+func listsEqual(list1, list2 core.List) bool {
 	return list1.Equal(list2)
 }
 
 // formatArgs formats function arguments for stack traces
-func formatArgs(args []Expr) string {
+func formatArgs(args []core.Expr) string {
 	if len(args) == 0 {
 		return ""
 	}
@@ -474,7 +475,7 @@ func formatArgs(args []Expr) string {
 // Special form implementations
 
 // evaluateIf implements the If special form
-func (e *Evaluator) evaluateIf(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateIf(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) < 2 || len(args) > 3 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("If expects 2 or 3 arguments, got %d", len(args)), args)
 	}
@@ -501,11 +502,11 @@ func (e *Evaluator) evaluateIf(args []Expr, ctx *Context) Expr {
 	}
 
 	// Condition is not a boolean, return an error
-	return NewErrorExpr("TypeError", "If condition must be True or False", []Expr{condition})
+	return NewErrorExpr("TypeError", "If condition must be True or False", []core.Expr{condition})
 }
 
 // evaluateSet implements the Set special form (immediate assignment)
-func (e *Evaluator) evaluateSet(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("Set expects 2 arguments, got %d", len(args)), args)
 	}
@@ -528,7 +529,7 @@ func (e *Evaluator) evaluateSet(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateSetDelayed implements the SetDelayed special form (delayed assignment)
-func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("SetDelayed expects 2 arguments, got %d", len(args)), args)
 	}
@@ -537,13 +538,13 @@ func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
 	rhs := args[1] // Don't evaluate RHS for delayed assignment
 
 	// Handle function definitions: f(x_) := body
-	if list, ok := lhs.(List); ok && len(list.Elements) >= 1 {
+	if list, ok := lhs.(core.List); ok && len(list.Elements) >= 1 {
 		// This is a function definition
 		headExpr := list.Elements[0]
 		if functionName, ok := core.ExtractSymbol(headExpr); ok {
 
 			// Register the pattern with the function registry
-			err := ctx.functionRegistry.RegisterFunction(functionName, lhs, func(args []Expr, ctx *Context) Expr {
+			err := ctx.functionRegistry.RegisterFunction(functionName, lhs, func(args []core.Expr, ctx *Context) core.Expr {
 				// Create a new child context for function evaluation
 				funcCtx := NewChildContext(ctx)
 
@@ -571,7 +572,7 @@ func (e *Evaluator) evaluateSetDelayed(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateUnset implements the Unset special form
-func (e *Evaluator) evaluateUnset(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateUnset(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 1 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("Unset expects 1 argument, got %d", len(args)), args)
 	}
@@ -586,20 +587,20 @@ func (e *Evaluator) evaluateUnset(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateHold implements the Hold special form
-func (e *Evaluator) evaluateHold(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateHold(args []core.Expr, ctx *Context) core.Expr {
 	// Hold returns its arguments unevaluated wrapped in Hold
 	return NewList("Hold", args...)
 }
 
 // evaluatePattern implements the Pattern special form
-func (e *Evaluator) evaluatePattern(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluatePattern(args []core.Expr, ctx *Context) core.Expr {
 	// Pattern expressions should remain unevaluated during normal evaluation
 	// They are only processed during pattern matching operations
 	return NewList("Pattern", args...)
 }
 
 // evaluateEvaluate implements the Evaluate special form
-func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateEvaluate(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) == 0 {
 		return core.NewSymbolNull()
 	}
@@ -610,7 +611,7 @@ func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
 	}
 
 	// Multiple arguments - evaluate all and return the last result
-	var result Expr = core.NewSymbolNull()
+	var result core.Expr = core.NewSymbolNull()
 	for _, arg := range args {
 		result = e.evaluate(arg, ctx)
 		if IsError(result) {
@@ -621,12 +622,12 @@ func (e *Evaluator) evaluateEvaluate(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateCompoundExpression implements the CompoundExpression special form
-func (e *Evaluator) evaluateCompoundExpression(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateCompoundExpression(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) == 0 {
 		return core.NewSymbolNull()
 	}
 
-	var result Expr = core.NewSymbolNull()
+	var result core.Expr = core.NewSymbolNull()
 	for _, arg := range args {
 		result = e.evaluate(arg, ctx)
 		if IsError(result) {
@@ -637,12 +638,12 @@ func (e *Evaluator) evaluateCompoundExpression(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateAnd implements the And special form with short-circuit evaluation
-func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateAnd(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) == 0 {
 		return core.NewBool(true)
 	}
 
-	var nonBooleanArgs []Expr
+	var nonBooleanArgs []core.Expr
 
 	for _, arg := range args {
 		// Evaluate this argument
@@ -674,12 +675,12 @@ func (e *Evaluator) evaluateAnd(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateOr implements the Or special form with short-circuit evaluation
-func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateOr(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) == 0 {
 		return core.NewBool(false)
 	}
 
-	var nonBooleanArgs []Expr
+	var nonBooleanArgs []core.Expr
 
 	for _, arg := range args {
 		result := e.evaluate(arg, ctx)
@@ -710,7 +711,7 @@ func (e *Evaluator) evaluateOr(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateSliceRange implements slice range syntax: expr[start:end]
-func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 3 {
 		return NewErrorExpr("ArgumentError",
 			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)), args)
@@ -726,7 +727,7 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
 	}
 
 	// Evaluate start and end indices
@@ -744,13 +745,13 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
 	}
 
 	end, ok := core.ExtractInt64(endExpr)
 	if !ok {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Type()), []Expr{endExpr})
+			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()), []core.Expr{endExpr})
 	}
 
 	// Use the Sliceable interface to perform the slice operation
@@ -760,7 +761,7 @@ func (e *Evaluator) evaluateSliceRange(args []Expr, ctx *Context) Expr {
 // evaluateTakeFrom implements slice syntax: expr[start:]
 // If start is negative, uses Take for last n elements
 // If start is positive, uses Drop for first n elements
-func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError",
 			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)), args)
@@ -782,7 +783,7 @@ func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
 	}
 
 	if start < 0 {
@@ -798,7 +799,7 @@ func (e *Evaluator) evaluateTakeFrom(args []Expr, ctx *Context) Expr {
 }
 
 // evaluatePartSet implements slice assignment syntax: expr[index] = value
-func (e *Evaluator) evaluatePartSet(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 3 {
 		return NewErrorExpr("ArgumentError",
 			fmt.Sprintf("PartSet expects 3 arguments (expr, index, value), got %d", len(args)), args)
@@ -814,7 +815,7 @@ func (e *Evaluator) evaluatePartSet(args []Expr, ctx *Context) Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
 	}
 
 	// Evaluate index
@@ -827,7 +828,7 @@ func (e *Evaluator) evaluatePartSet(args []Expr, ctx *Context) Expr {
 	index, ok := core.ExtractInt64(indexExpr)
 	if !ok {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Type()), []Expr{indexExpr})
+			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Head()), []core.Expr{indexExpr})
 	}
 
 	// Evaluate value
@@ -841,7 +842,7 @@ func (e *Evaluator) evaluatePartSet(args []Expr, ctx *Context) Expr {
 }
 
 // evaluateSliceSet implements slice assignment syntax: expr[start:end] = value
-func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 4 {
 		return NewErrorExpr("ArgumentError",
 			fmt.Sprintf("SliceSet expects 4 arguments (expr, start, end, value), got %d", len(args)), args)
@@ -857,7 +858,7 @@ func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Type()), []Expr{expr})
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
 	}
 
 	// Evaluate start index
@@ -870,7 +871,7 @@ func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
 		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Type()), []Expr{startExpr})
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
 	}
 
 	// Evaluate end index
@@ -881,18 +882,14 @@ func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
 
 	// Extract integer value for end (handle special case of -1 for "to end")
 	var end int64
-
-	// TODO: UGLY
-	if endAtom, ok := endExpr.(core.Integer); ok && int(endAtom) == -1 {
+	if endValue, ok := core.ExtractInt64(endExpr); ok && endValue == -1 {
 		// Special case: -1 means "to end of sequence"
 		end = sliceable.(interface{ Length() int64 }).Length()
+	} else if endValue, ok := core.ExtractInt64(endExpr); ok {
+		end = endValue
 	} else {
-		var ok bool
-		end, ok = core.ExtractInt64(endExpr)
-		if !ok {
-			return NewErrorExpr("TypeError",
-				fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Type()), []Expr{endExpr})
-		}
+		return NewErrorExpr("TypeError",
+			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()), []core.Expr{endExpr})
 	}
 
 	// Evaluate value
@@ -907,7 +904,7 @@ func (e *Evaluator) evaluateSliceSet(args []Expr, ctx *Context) Expr {
 
 // evaluateBlock implements the Block special form for dynamic scoping
 // Block(List(vars...), body) temporarily changes variable values and evaluates body
-func (e *Evaluator) evaluateBlock(args []Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("Block expects 2 arguments, got %d", len(args)), args)
 	}
@@ -917,9 +914,9 @@ func (e *Evaluator) evaluateBlock(args []Expr, ctx *Context) Expr {
 	body := args[1] // Don't evaluate body yet - Block has HoldAll
 
 	// Parse variable specification
-	varList, ok := varSpec.(List)
+	varList, ok := varSpec.(core.List)
 	if !ok {
-		return NewErrorExpr("ArgumentError", "Block first argument must be a list of variables", []Expr{varSpec})
+		return NewErrorExpr("ArgumentError", "Block first argument must be a list of variables", []core.Expr{varSpec})
 	}
 
 	// Collect scoped variable names
@@ -933,20 +930,20 @@ func (e *Evaluator) evaluateBlock(args []Expr, ctx *Context) Expr {
 			// Simple variable: {x} - add to scoped variables
 			scopedVarNames = append(scopedVarNames, varSymbol)
 
-		} else if assignment, ok := varExpr.(List); ok && len(assignment.Elements) == 3 {
+		} else if assignment, ok := varExpr.(core.List); ok && len(assignment.Elements) == 3 {
 			// Assignment: {x = value} - add to scoped variables
 			head := assignment.Elements[0]
 			if headSymbol, ok := core.ExtractSymbol(head); ok && headSymbol == "Set" {
 				if varSymbol, ok := core.ExtractSymbol(assignment.Elements[1]); ok {
 					scopedVarNames = append(scopedVarNames, varSymbol)
 				} else {
-					return NewErrorExpr("ArgumentError", "Block variable assignment must use a symbol", []Expr{assignment.Elements[1]})
+					return NewErrorExpr("ArgumentError", "Block variable assignment must use a symbol", []core.Expr{assignment.Elements[1]})
 				}
 			} else {
-				return NewErrorExpr("ArgumentError", "Block variable specification must be Set expression", []Expr{varExpr})
+				return NewErrorExpr("ArgumentError", "Block variable specification must be Set expression", []core.Expr{varExpr})
 			}
 		} else {
-			return NewErrorExpr("ArgumentError", "Block variable specification must be symbol or Set expression", []Expr{varExpr})
+			return NewErrorExpr("ArgumentError", "Block variable specification must be symbol or Set expression", []core.Expr{varExpr})
 		}
 	}
 
@@ -961,7 +958,7 @@ func (e *Evaluator) evaluateBlock(args []Expr, ctx *Context) Expr {
 			// Simple variable: {x} - leave unset (will return undefined during lookup)
 			// Don't set anything - the variable is scoped but has no value
 
-		} else if assignment, ok := varExpr.(List); ok && len(assignment.Elements) == 3 {
+		} else if assignment, ok := varExpr.(core.List); ok && len(assignment.Elements) == 3 {
 			// Assignment: {x = value} - evaluate and set value
 			varSymbol, _ := core.ExtractSymbol(assignment.Elements[1]) // Already validated above
 			initialValue := e.evaluate(assignment.Elements[2], ctx)
@@ -980,8 +977,8 @@ func (e *Evaluator) evaluateBlock(args []Expr, ctx *Context) Expr {
 
 // evaluateDo implements the Do special form for iteration without collecting results
 // Do(expr, n) evaluates expr n times and returns Null
-// Do(expr, List(i, start, end, increment)) iterates with variable binding
-func (e *Evaluator) evaluateDo(args []Expr, ctx *Context) Expr {
+// Do(expr, core.List(i, start, end, increment)) iterates with variable binding
+func (e *Evaluator) evaluateDo(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("Do expects 2 arguments, got %d", len(args)), args)
 	}
@@ -994,18 +991,18 @@ func (e *Evaluator) evaluateDo(args []Expr, ctx *Context) Expr {
 		return e.evaluateDoSimple(expr, n, ctx)
 	}
 
-	// Check if second argument is a List (iterator form)
-	if iterList, ok := spec.(List); ok {
+	// Check if second argument is a core.List (iterator form)
+	if iterList, ok := spec.(core.List); ok {
 		return e.evaluateDoIterator(expr, iterList, ctx)
 	}
 
-	return NewErrorExpr("ArgumentError", "Do second argument must be integer or List", args)
+	return NewErrorExpr("ArgumentError", "Do second argument must be integer or core.List", args)
 }
 
 // evaluateDoSimple implements Do(expr, n) - evaluates expr n times and returns Null
-func (e *Evaluator) evaluateDoSimple(expr Expr, n int64, ctx *Context) Expr {
+func (e *Evaluator) evaluateDoSimple(expr core.Expr, n int64, ctx *Context) core.Expr {
 	if n < 0 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Do count must be non-negative, got %d", n), []Expr{core.NewInteger(n)})
+		return NewErrorExpr("ArgumentError", fmt.Sprintf("Do count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
 	}
 
 	// Evaluate expr n times (side effects only)
@@ -1020,8 +1017,8 @@ func (e *Evaluator) evaluateDoSimple(expr Expr, n int64, ctx *Context) Expr {
 	return core.NewSymbol("Null")
 }
 
-// evaluateDoIterator handles Do with iterator specification List(i, start, end, increment)
-func (e *Evaluator) evaluateDoIterator(expr Expr, iterSpec List, ctx *Context) Expr {
+// evaluateDoIterator handles Do with iterator specification core.List(i, start, end, increment)
+func (e *Evaluator) evaluateDoIterator(expr core.Expr, iterSpec core.List, ctx *Context) core.Expr {
 	// Parse iterator specification into normalized form
 	variable, start, end, increment, err := e.parseTableIteratorSpec(iterSpec, ctx)
 	if err != nil {
@@ -1057,8 +1054,8 @@ func (e *Evaluator) evaluateDoIterator(expr Expr, iterSpec List, ctx *Context) E
 
 // evaluateTable implements the Table special form for list generation
 // Table(expr, n) creates n copies of expr
-// Table(expr, List(i, max)) will be implemented later for iterator forms
-func (e *Evaluator) evaluateTable(args []Expr, ctx *Context) Expr {
+// Table(expr, core.List(i, max)) will be implemented later for iterator forms
+func (e *Evaluator) evaluateTable(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError", fmt.Sprintf("Table expects 2 arguments, got %d", len(args)), args)
 	}
@@ -1071,18 +1068,18 @@ func (e *Evaluator) evaluateTable(args []Expr, ctx *Context) Expr {
 		return e.evaluateTableSimple(expr, n, ctx)
 	}
 
-	// Check if second argument is a List (iterator form)
-	if iterList, ok := spec.(List); ok {
+	// Check if second argument is a core.List (iterator form)
+	if iterList, ok := spec.(core.List); ok {
 		return e.evaluateTableIterator(expr, iterList, ctx)
 	}
 
-	return NewErrorExpr("ArgumentError", "Table second argument must be integer or List", args)
+	return NewErrorExpr("ArgumentError", "Table second argument must be integer or core.List", args)
 }
 
 // evaluateTableSimple implements Table(expr, n) - creates n copies of expr
-func (e *Evaluator) evaluateTableSimple(expr Expr, n int64, ctx *Context) Expr {
+func (e *Evaluator) evaluateTableSimple(expr core.Expr, n int64, ctx *Context) core.Expr {
 	if n < 0 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Table count must be non-negative, got %d", n), []Expr{core.NewInteger(n)})
+		return NewErrorExpr("ArgumentError", fmt.Sprintf("Table count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
 	}
 
 	if n == 0 {
@@ -1090,11 +1087,10 @@ func (e *Evaluator) evaluateTableSimple(expr Expr, n int64, ctx *Context) Expr {
 	}
 
 	// Create result list with proper capacity
-	elements := make([]Expr, n+1) // +1 for head
-	elements[0] = core.NewSymbol("List")
+	elements := make([]core.Expr, n)
 
 	// Evaluate expr once for each position
-	for i := int64(1); i <= n; i++ {
+	for i := 0; i < int(n); i++ {
 		// Evaluate expr in current context for each iteration
 		// This allows expressions with side effects to work correctly
 		evaluated := e.evaluate(expr, ctx)
@@ -1104,20 +1100,19 @@ func (e *Evaluator) evaluateTableSimple(expr Expr, n int64, ctx *Context) Expr {
 		elements[i] = evaluated
 	}
 
-	return core.NewListFromExprs(elements...)
+	return core.NewList("List", elements...)
 }
 
-// evaluateTableIterator implements Table(expr, List(i, start, end, increment))
+// evaluateTableIterator implements Table(expr, core.List(i, start, end, increment))
 // Handles all iterator forms using the general case with expression-based arithmetic
-func (e *Evaluator) evaluateTableIterator(expr Expr, iterSpec List, ctx *Context) Expr {
+func (e *Evaluator) evaluateTableIterator(expr core.Expr, iterSpec core.List, ctx *Context) core.Expr {
 	// Parse iterator specification into normalized form
 	variable, start, end, increment, err := e.parseTableIteratorSpec(iterSpec, ctx)
 	if err != nil {
 		return err
 	}
 
-	var results []Expr
-	results = append(results, core.NewSymbol("List")) // Head
+	var results []core.Expr
 
 	current := start
 	const maxIterations = 10000 // Prevent infinite loops
@@ -1143,30 +1138,30 @@ func (e *Evaluator) evaluateTableIterator(expr Expr, iterSpec List, ctx *Context
 		}
 	}
 
-	return core.NewListFromExprs(results...)
+	return core.NewList("List", results...)
 }
 
 // parseTableIteratorSpec parses iterator specifications and normalizes them
-// List(i, max) → List(i, 1, max, 1)
-// List(i, start, end) → List(i, start, end, 1)
-// List(i, start, end, increment) → List(i, start, end, increment)
+// core.List(i, max) → core.List(i, 1, max, 1)
+// core.List(i, start, end) → core.List(i, start, end, 1)
+// core.List(i, start, end, increment) → core.List(i, start, end, increment)
 // IMPORTANT: Evaluates start, end, and increment expressions and validates they are numeric
-func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variable string, start, end, increment Expr, err Expr) {
+func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (variable string, start, end, increment core.Expr, err core.Expr) {
 	if len(iterSpec.Elements) < 3 || len(iterSpec.Elements) > 5 {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
-			"Table iterator must be List(var, max), List(var, start, end), or List(var, start, end, step)", []Expr{iterSpec})
+			"Table iterator must be core.List(var, max), core.List(var, start, end), or core.List(var, start, end, step)", []core.Expr{iterSpec})
 	}
 
 	// Extract variable name
 	if varSymbol, ok := core.ExtractSymbol(iterSpec.Elements[1]); ok {
 		variable = varSymbol
 	} else {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError", "Table iterator variable must be a symbol", []Expr{iterSpec.Elements[1]})
+		return "", nil, nil, nil, NewErrorExpr("ArgumentError", "Table iterator variable must be a symbol", []core.Expr{iterSpec.Elements[1]})
 	}
 
 	// Parse and evaluate based on number of arguments
 	switch len(iterSpec.Elements) {
-	case 3: // List(i, max) → List(i, 1, max, 1)
+	case 3: // core.List(i, max) → core.List(i, 1, max, 1)
 		start = core.NewInteger(1)
 		end = e.evaluate(iterSpec.Elements[2], ctx)
 		if IsError(end) {
@@ -1174,7 +1169,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 		}
 		increment = core.NewInteger(1)
 
-	case 4: // List(i, start, end) → List(i, start, end, 1)
+	case 4: // core.List(i, start, end) → core.List(i, start, end, 1)
 		start = e.evaluate(iterSpec.Elements[2], ctx)
 		if IsError(start) {
 			return "", nil, nil, nil, start
@@ -1185,7 +1180,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 		}
 		increment = core.NewInteger(1)
 
-	case 5: // List(i, start, end, increment)
+	case 5: // core.List(i, start, end, increment)
 		start = e.evaluate(iterSpec.Elements[2], ctx)
 		if IsError(start) {
 			return "", nil, nil, nil, start
@@ -1200,7 +1195,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 		}
 
 	default:
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError", "Invalid Table iterator specification", []Expr{iterSpec})
+		return "", nil, nil, nil, NewErrorExpr("ArgumentError", "Invalid Table iterator specification", []core.Expr{iterSpec})
 	}
 
 	// Validate that arithmetic and comparison operations can be evaluated
@@ -1209,11 +1204,11 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 	plusResult := e.evaluate(testPlus, ctx)
 	if IsError(plusResult) {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult), []Expr{plusResult})
+			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult), []core.Expr{plusResult})
 	}
 	if plusResult.Equal(testPlus) && !plusResult.IsAtom() {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator arithmetic unevaluated: Plus(%s, %s) - missing arithmetic definition", start, increment), []Expr{start, increment})
+			fmt.Sprintf("Table iterator arithmetic unevaluated: Plus(%s, %s) - missing arithmetic definition", start, increment), []core.Expr{start, increment})
 	}
 
 	// Test if comparison operation evaluates
@@ -1221,11 +1216,11 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 	compareResult := e.evaluate(testLessEqual, ctx)
 	if IsError(compareResult) {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator comparison failed: %s", compareResult), []Expr{compareResult})
+			fmt.Sprintf("Table iterator comparison failed: %s", compareResult), []core.Expr{compareResult})
 	}
 	if compareResult.Equal(testLessEqual) && !compareResult.IsAtom() {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator comparison unevaluated: LessEqual(%s, %s) - missing comparison definition", start, end), []Expr{start, end})
+			fmt.Sprintf("Table iterator comparison unevaluated: LessEqual(%s, %s) - missing comparison definition", start, end), []core.Expr{start, end})
 	}
 
 	return variable, start, end, increment, nil
@@ -1233,7 +1228,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec List, ctx *Context) (variabl
 
 // evaluateIteratorCondition determines if iteration should continue
 // Uses expression-based comparison with proper handling of increment direction
-func (e *Evaluator) evaluateIteratorCondition(current, end, increment Expr, ctx *Context) bool {
+func (e *Evaluator) evaluateIteratorCondition(current, end, increment core.Expr, ctx *Context) bool {
 	// Determine comparison operator based on increment sign
 	var compSymbol string
 	isNegative := e.isNegativeIncrement(increment, ctx)
@@ -1265,13 +1260,13 @@ func (e *Evaluator) evaluateIteratorCondition(current, end, increment Expr, ctx 
 }
 
 // evaluateIteratorIncrement adds increment to current value using expression arithmetic
-func (e *Evaluator) evaluateIteratorIncrement(current, increment Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateIteratorIncrement(current, increment core.Expr, ctx *Context) core.Expr {
 	plusExpr := core.NewList("Plus", current, increment)
 	return e.evaluate(plusExpr, ctx)
 }
 
 // isNegativeIncrement determines if increment is negative using expression evaluation
-func (e *Evaluator) isNegativeIncrement(increment Expr, ctx *Context) bool {
+func (e *Evaluator) isNegativeIncrement(increment core.Expr, ctx *Context) bool {
 	// Create comparison: increment < 0
 	zeroExpr := core.NewInteger(0)
 	lessExpr := core.NewList("Less", increment, zeroExpr)
@@ -1286,11 +1281,11 @@ func (e *Evaluator) isNegativeIncrement(increment Expr, ctx *Context) bool {
 }
 
 // evaluateWithIteratorBinding uses Block to bind iterator variable and evaluate expression
-func (e *Evaluator) evaluateWithIteratorBinding(expr Expr, variable string, value Expr, ctx *Context) Expr {
+func (e *Evaluator) evaluateWithIteratorBinding(expr core.Expr, variable string, value core.Expr, ctx *Context) core.Expr {
 	// Create Block(List(Set(variable, value)), expr)
 	setExpr := core.NewList("Set", core.NewSymbol(variable), value)
 	blockVars := core.NewList("List", setExpr)
-	blockArgs := []Expr{blockVars, expr}
+	blockArgs := []core.Expr{blockVars, expr}
 
 	return e.evaluateBlock(blockArgs, ctx)
 }

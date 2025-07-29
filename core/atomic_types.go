@@ -16,7 +16,7 @@ func (s String) InputForm() string {
 	return s.String()
 }
 
-func (s String) Type() string {
+func (s String) Head() string {
 	return "String"
 }
 
@@ -44,7 +44,7 @@ func (i Integer) InputForm() string {
 	return i.String()
 }
 
-func (i Integer) Type() string {
+func (i Integer) Head() string {
 	return "Integer"
 }
 
@@ -76,7 +76,7 @@ func (r Real) InputForm() string {
 	return r.String()
 }
 
-func (r Real) Type() string {
+func (r Real) Head() string {
 	return "Real"
 }
 
@@ -104,7 +104,7 @@ func (s Symbol) InputForm() string {
 	return s.String()
 }
 
-func (s Symbol) Type() string {
+func (s Symbol) Head() string {
 	return "Symbol"
 }
 

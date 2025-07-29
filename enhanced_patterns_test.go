@@ -3,6 +3,8 @@ package sexpr
 import (
 	"strings"
 	"testing"
+
+	"github.com/client9/sexpr/core"
 )
 
 func TestEnhancedTypeSystem(t *testing.T) {
@@ -144,7 +146,7 @@ func TestComplexPatternScenarios(t *testing.T) {
 func evaluateStringHelper(t *testing.T, evaluator *Evaluator, input string) string {
 	// Split by semicolon and evaluate each part
 	parts := strings.Split(input, ";")
-	var result Expr
+	var result core.Expr
 
 	for _, part := range parts {
 		part = strings.TrimSpace(part)

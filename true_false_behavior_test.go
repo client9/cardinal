@@ -242,13 +242,13 @@ func TestTrueFalseLexerParserBehavior(t *testing.T) {
 			t.Fatalf("Parse error: %v", err)
 		}
 
-		symbol, ok := expr.(core.Symbol)
+		symbolName, ok := core.ExtractSymbol(expr)
 		if !ok {
 			t.Fatalf("Expected Symbol, got %T", expr)
 		}
 
-		if string(symbol) != "True" {
-			t.Errorf("Expected 'True', got %v", string(symbol))
+		if symbolName != "True" {
+			t.Errorf("Expected 'True', got %v", symbolName)
 		}
 	})
 
@@ -258,13 +258,13 @@ func TestTrueFalseLexerParserBehavior(t *testing.T) {
 			t.Fatalf("Parse error: %v", err)
 		}
 
-		symbol, ok := expr.(core.Symbol)
+		symbolName, ok := core.ExtractSymbol(expr)
 		if !ok {
 			t.Fatalf("Expected Symbol, got %T", expr)
 		}
 
-		if string(symbol) != "False" {
-			t.Errorf("Expected 'False', got %v", string(symbol))
+		if symbolName != "False" {
+			t.Errorf("Expected 'False', got %v", symbolName)
 		}
 	})
 }

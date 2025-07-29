@@ -469,8 +469,8 @@ func TestParser_ParseAtoms(t *testing.T) {
 				return
 			}
 
-			if expr.Type() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Type())
+			if expr.Head() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Head())
 			}
 
 			// Check value based on the expected type
@@ -484,9 +484,9 @@ func TestParser_ParseAtoms(t *testing.T) {
 					t.Errorf("expected Symbol, got %T", expr)
 				}
 			case "Integer":
-				if integer, ok := expr.(core.Integer); ok {
-					if int64(integer) != int64(tt.expectedVal.(int)) {
-						t.Errorf("expected value %v, got %v", tt.expectedVal, int64(integer))
+				if intValue, ok := core.ExtractInt64(expr); ok {
+					if intValue != int64(tt.expectedVal.(int)) {
+						t.Errorf("expected value %v, got %v", tt.expectedVal, intValue)
 					}
 				} else {
 					t.Errorf("expected Integer, got %T", expr)
@@ -561,7 +561,7 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 
-			list, ok := expr.(List)
+			list, ok := expr.(core.List)
 			if !ok {
 				t.Errorf("expected List, got %T", expr)
 				return

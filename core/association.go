@@ -178,7 +178,7 @@ func (a Association) InputForm() string {
 }
 
 // Type implements Expr interface
-func (a Association) Type() string {
+func (a Association) Head() string {
 	return "Association"
 }
 

@@ -22,7 +22,7 @@ func (o ObjectExpr) Length() int64 {
 	return o.Value.Length() // Delegate to wrapper Expr
 }
 
-func (o ObjectExpr) Type() string {
+func (o ObjectExpr) Head() string {
 	return o.TypeName // Return the registered type name
 }
 

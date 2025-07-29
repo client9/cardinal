@@ -107,8 +107,7 @@ func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
 		return false, nil, nil
 	}
 
-	head, ok := list.Elements[0].(Symbol)
-	if !ok || head.String() != "Pattern" {
+	if headName, ok := ExtractSymbol(list.Elements[0]); !ok || headName != "Pattern" {
 		return false, nil, nil
 	}
 
@@ -329,13 +328,13 @@ func MatchesType(expr Expr, typeName string) bool {
 			_, ok := GetNumericValue(expr)
 			return ok
 		}
-		return expr.Type() == typeName
+		return expr.Head() == typeName
 	} else {
-		log.Printf("Checking typename=%s with expr=%s", typeName, expr.Type())
+		log.Printf("Checking typename=%s with expr=%s", typeName, expr.Head())
 		switch typeName {
 		case "Association":
-			log.Printf("typeName = %s, expr = %s", typeName, expr.Type())
-			return expr.Type() == typeName
+			log.Printf("typeName = %s, expr = %s", typeName, expr.Head())
+			return expr.Head() == typeName
 		case "Integer":
 
 			_, ok := expr.(Integer)

@@ -7,7 +7,7 @@ import (
 )
 
 // AttributesExpr gets the attributes of a symbol
-func AttributesExpr(expr Expr, ctx *Context) Expr {
+func AttributesExpr(expr core.Expr, ctx *Context) core.Expr {
 	// The argument should be a symbol
 	if symbolName, ok := core.ExtractSymbol(expr); ok {
 
@@ -15,22 +15,22 @@ func AttributesExpr(expr Expr, ctx *Context) Expr {
 		attrs := ctx.symbolTable.Attributes(symbolName)
 
 		// Convert attributes to a list of symbols
-		attrElements := make([]Expr, len(attrs)+1)
+		attrElements := make([]core.Expr, len(attrs)+1)
 		attrElements[0] = core.NewSymbol("List")
 
 		for i, attr := range attrs {
 			attrElements[i+1] = core.NewSymbol(attr.String())
 		}
 
-		return List{Elements: attrElements}
+		return core.List{Elements: attrElements}
 	}
 
 	return NewErrorExpr("ArgumentError",
-		"Attributes expects a symbol as argument", []Expr{expr})
+		"Attributes expects a symbol as argument", []core.Expr{expr})
 }
 
 // WrapAttributesExpr is a clean wrapper for Attributes that uses the business logic function
-func WrapAttributesExpr(args []Expr, ctx *Context) Expr {
+func WrapAttributesExpr(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 1 {
 		return NewErrorExpr("ArgumentError",
@@ -47,7 +47,7 @@ func WrapAttributesExpr(args []Expr, ctx *Context) Expr {
 }
 
 // SetAttributesSingle sets a single attribute on a symbol
-func SetAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
+func SetAttributesSingle(symbol core.Expr, attr core.Expr, ctx *Context) core.Expr {
 	// The first argument should be a symbol
 	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
@@ -62,16 +62,16 @@ func SetAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
 			}
 
 			return NewErrorExpr("ArgumentError",
-				fmt.Sprintf("Unknown attribute: %s", attrName), []Expr{attr})
+				fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attr})
 		}
 	}
 
 	return NewErrorExpr("ArgumentError",
-		"SetAttributes expects (symbol, attribute)", []Expr{symbol, attr})
+		"SetAttributes expects (symbol, attribute)", []core.Expr{symbol, attr})
 }
 
 // SetAttributesList sets multiple attributes on a symbol
-func SetAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
+func SetAttributesList(symbol core.Expr, attrList core.List, ctx *Context) core.Expr {
 	// The first argument should be a symbol
 	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
@@ -87,11 +87,11 @@ func SetAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 					attributes = append(attributes, attribute)
 				} else {
 					return NewErrorExpr("ArgumentError",
-						fmt.Sprintf("Unknown attribute: %s", attrName), []Expr{attrExpr})
+						fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attrExpr})
 				}
 			} else {
 				return NewErrorExpr("ArgumentError",
-					"Attributes list must contain symbols", []Expr{attrExpr})
+					"Attributes list must contain symbols", []core.Expr{attrExpr})
 			}
 		}
 
@@ -101,11 +101,11 @@ func SetAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 	}
 
 	return NewErrorExpr("ArgumentError",
-		"SetAttributes expects (symbol, attribute list)", []Expr{symbol, attrList})
+		"SetAttributes expects (symbol, attribute list)", []core.Expr{symbol, attrList})
 }
 
 // ClearAttributesSingle clears a single attribute from a symbol
-func ClearAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
+func ClearAttributesSingle(symbol core.Expr, attr core.Expr, ctx *Context) core.Expr {
 	// The first argument should be a symbol
 	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
@@ -120,16 +120,16 @@ func ClearAttributesSingle(symbol Expr, attr Expr, ctx *Context) Expr {
 			}
 
 			return NewErrorExpr("ArgumentError",
-				fmt.Sprintf("Unknown attribute: %s", attrName), []Expr{attr})
+				fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attr})
 		}
 	}
 
 	return NewErrorExpr("ArgumentError",
-		"ClearAttributes expects (symbol, attribute)", []Expr{symbol, attr})
+		"ClearAttributes expects (symbol, attribute)", []core.Expr{symbol, attr})
 }
 
 // ClearAttributesList clears multiple attributes from a symbol
-func ClearAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
+func ClearAttributesList(symbol core.Expr, attrList core.List, ctx *Context) core.Expr {
 	// The first argument should be a symbol
 	if symbolName, ok := core.ExtractSymbol(symbol); ok {
 
@@ -145,11 +145,11 @@ func ClearAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 					ctx.symbolTable.ClearAttributes(symbolName, []Attribute{attribute})
 				} else {
 					return NewErrorExpr("ArgumentError",
-						fmt.Sprintf("Unknown attribute: %s", attrName), []Expr{attrExpr})
+						fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attrExpr})
 				}
 			} else {
 				return NewErrorExpr("ArgumentError",
-					"Attributes list must contain symbols", []Expr{attrExpr})
+					"Attributes list must contain symbols", []core.Expr{attrExpr})
 			}
 		}
 
@@ -157,13 +157,13 @@ func ClearAttributesList(symbol Expr, attrList List, ctx *Context) Expr {
 	}
 
 	return NewErrorExpr("ArgumentError",
-		"ClearAttributes expects (symbol, attribute list)", []Expr{symbol, attrList})
+		"ClearAttributes expects (symbol, attribute list)", []core.Expr{symbol, attrList})
 }
 
 // Clean wrappers for SetAttributes and ClearAttributes
 
 // WrapSetAttributesSingle is a clean wrapper for SetAttributes with single attribute
-func WrapSetAttributesSingle(args []Expr, ctx *Context) Expr {
+func WrapSetAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError",
@@ -182,7 +182,7 @@ func WrapSetAttributesSingle(args []Expr, ctx *Context) Expr {
 }
 
 // WrapSetAttributesList is a clean wrapper for SetAttributes with attribute list
-func WrapSetAttributesList(args []Expr, ctx *Context) Expr {
+func WrapSetAttributesList(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError",
@@ -197,7 +197,7 @@ func WrapSetAttributesList(args []Expr, ctx *Context) Expr {
 	}
 
 	// Extract list from second argument
-	attrList, ok := args[1].(List)
+	attrList, ok := args[1].(core.List)
 	if !ok {
 		return NewErrorExpr("ArgumentError",
 			"Second argument must be a list", args)
@@ -208,7 +208,7 @@ func WrapSetAttributesList(args []Expr, ctx *Context) Expr {
 }
 
 // WrapClearAttributesSingle is a clean wrapper for ClearAttributes with single attribute
-func WrapClearAttributesSingle(args []Expr, ctx *Context) Expr {
+func WrapClearAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError",
@@ -227,7 +227,7 @@ func WrapClearAttributesSingle(args []Expr, ctx *Context) Expr {
 }
 
 // WrapClearAttributesList is a clean wrapper for ClearAttributes with attribute list
-func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
+func WrapClearAttributesList(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
 		return NewErrorExpr("ArgumentError",
@@ -242,7 +242,7 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 	}
 
 	// Extract list from second argument
-	attrList, ok := args[1].(List)
+	attrList, ok := args[1].(core.List)
 	if !ok {
 		return NewErrorExpr("ArgumentError",
 			"Second argument must be a list", args)
@@ -253,25 +253,25 @@ func WrapClearAttributesList(args []Expr, ctx *Context) Expr {
 }
 
 // PatternSpecificityExpr calculates the specificity of a pattern expression for debugging
-func PatternSpecificityExpr(pattern Expr, ctx *Context) Expr {
+func PatternSpecificityExpr(pattern core.Expr, ctx *Context) core.Expr {
 	// Calculate specificity directly from the pattern expression
 	specificity := core.GetPatternSpecificity(pattern)
 	return core.NewInteger(int64(specificity))
 }
 
 // ShowPatternsExpr lists all registered patterns for a function name
-func ShowPatternsExpr(functionName Expr, ctx *Context) Expr {
+func ShowPatternsExpr(functionName core.Expr, ctx *Context) core.Expr {
 	if funcName, ok := core.ExtractSymbol(functionName); ok {
 
 		// Get function definitions from the registry
 		definitions := ctx.functionRegistry.GetFunctionDefinitions(funcName)
 		if definitions == nil {
 			return NewErrorExpr("ArgumentError",
-				fmt.Sprintf("No patterns found for function: %s", funcName), []Expr{functionName})
+				fmt.Sprintf("No patterns found for function: %s", funcName), []core.Expr{functionName})
 		}
 
 		// Create a list of pattern information
-		elements := make([]Expr, len(definitions)+1)
+		elements := make([]core.Expr, len(definitions)+1)
 		elements[0] = core.NewSymbol("List")
 
 		for i, def := range definitions {
@@ -279,24 +279,24 @@ func ShowPatternsExpr(functionName Expr, ctx *Context) Expr {
 			patternStr := def.Pattern.String()
 			specificityStr := fmt.Sprintf("%d", def.Specificity)
 
-			ruleElements := []Expr{
+			ruleElements := []core.Expr{
 				core.NewSymbol("Rule"),
 				core.NewString(patternStr),
 				core.NewString(specificityStr),
 			}
 
-			elements[i+1] = List{Elements: ruleElements}
+			elements[i+1] = core.List{Elements: ruleElements}
 		}
 
-		return List{Elements: elements}
+		return core.List{Elements: elements}
 	}
 
 	return NewErrorExpr("ArgumentError",
-		"ShowPatterns expects a symbol", []Expr{functionName})
+		"ShowPatterns expects a symbol", []core.Expr{functionName})
 }
 
 // WrapPatternSpecificity is a clean wrapper for PatternSpecificity
-func WrapPatternSpecificity(args []Expr, ctx *Context) Expr {
+func WrapPatternSpecificity(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 1 {
 		return NewErrorExpr("ArgumentError",
@@ -313,7 +313,7 @@ func WrapPatternSpecificity(args []Expr, ctx *Context) Expr {
 }
 
 // WrapShowPatterns is a clean wrapper for ShowPatterns
-func WrapShowPatterns(args []Expr, ctx *Context) Expr {
+func WrapShowPatterns(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 1 {
 		return NewErrorExpr("ArgumentError",

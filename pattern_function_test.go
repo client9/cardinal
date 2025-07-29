@@ -38,7 +38,7 @@ func TestPatternFunctionRegistry(t *testing.T) {
 	registry := NewFunctionRegistry()
 
 	// Register a simple pattern
-	err := registry.RegisterPatternBuiltin("test(x_)", func(args []Expr, ctx *Context) Expr {
+	err := registry.RegisterPatternBuiltin("test(x_)", func(args []core.Expr, ctx *Context) core.Expr {
 		if len(args) != 1 {
 			return core.NewSymbol("error")
 		}
@@ -50,7 +50,7 @@ func TestPatternFunctionRegistry(t *testing.T) {
 	}
 
 	// Test pattern matching
-	funcDef, bindings := registry.FindMatchingFunction("test", []Expr{core.NewInteger(42)})
+	funcDef, bindings := registry.FindMatchingFunction("test", []core.Expr{core.NewInteger(42)})
 
 	if funcDef == nil {
 		t.Fatalf("Expected to find matching function")
@@ -69,7 +69,7 @@ func evaluatePatternTestHelper(t *testing.T, evaluator *Evaluator, input string)
 	// Split by semicolon and evaluate each part
 	parts := strings.Split(input, ";")
 
-	var result Expr
+	var result core.Expr
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {

@@ -21,8 +21,8 @@ func TestObjectExprBasics(t *testing.T) {
 	}
 
 	// Test Type()
-	if objExpr.Type() != "Uint64" {
-		t.Errorf("Expected Type() Uint64, got %s", objExpr.Type())
+	if objExpr.Head() != "Uint64" {
+		t.Errorf("Expected Type() Uint64, got %s", objExpr.Head())
 	}
 
 	// Test Equal() - same values

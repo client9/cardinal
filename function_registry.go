@@ -8,12 +8,12 @@ import (
 )
 
 // PatternFunc represents a Go function that can be called with pattern-matched arguments
-type PatternFunc func(args []Expr, ctx *Context) Expr
+type PatternFunc func(args []core.Expr, ctx *Context) core.Expr
 
 // FunctionDef represents a single function definition with pattern and implementation
 type FunctionDef struct {
-	Pattern     Expr        // The pattern to match (e.g., Plus(x_Integer, y_Integer))
-	Body        Expr        // The body expression for user-defined functions (nil for Go implementations)
+	Pattern     core.Expr   // The pattern to match (e.g., Plus(x_Integer, y_Integer))
+	Body        core.Expr   // The body expression for user-defined functions (nil for Go implementations)
 	GoImpl      PatternFunc // Go implementation for built-in functions (nil for user-defined)
 	Specificity int         // Auto-calculated pattern specificity for ordering
 	IsBuiltin   bool        // Whether this definition came from system registration
@@ -32,9 +32,9 @@ func NewFunctionRegistry() *FunctionRegistry {
 }
 
 // calculatePatternSpecificity calculates specificity for compound patterns
-func calculatePatternSpecificity(pattern Expr) int {
+func calculatePatternSpecificity(pattern core.Expr) int {
 	// For compound patterns (List), use compound specificity calculation
-	if list, ok := pattern.(List); ok {
+	if list, ok := pattern.(core.List); ok {
 		cs := core.CalculateCompoundSpecificity(list)
 		return cs.TotalScore
 	}
@@ -93,7 +93,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltins(patterns map[string]PatternFu
 }
 
 // RegisterUserFunction registers a user-defined function with pattern and body
-func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
+func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Expr) error {
 	// Extract function name from pattern
 	functionName, err := extractFunctionName(pattern)
 	if err != nil {
@@ -117,7 +117,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern Expr, body Expr) error {
 }
 
 // FindMatchingFunction finds the best matching function definition for given arguments
-func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []Expr) (*FunctionDef, map[string]Expr) {
+func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []core.Expr) (*FunctionDef, map[string]core.Expr) {
 	definitions, exists := r.functions[functionName]
 	if !exists {
 		// fmt.Printf("DEBUG: No functions found for '%s'. Available functions: %v\n", functionName, r.GetAllFunctionNames())
@@ -157,9 +157,9 @@ func (r *FunctionRegistry) GetAllFunctionNames() []string {
 }
 
 // CallFunction attempts to call a function with the given expression and returns (result, found)
-func (r *FunctionRegistry) CallFunction(callExpr Expr, ctx *Context) (Expr, bool) {
+func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context) (core.Expr, bool) {
 	// Extract function name and arguments from the call expression
-	if list, ok := callExpr.(List); ok && len(list.Elements) > 0 {
+	if list, ok := callExpr.(core.List); ok && len(list.Elements) > 0 {
 		var functionName string
 		var found bool
 
@@ -201,7 +201,7 @@ func (r *FunctionRegistry) CallFunction(callExpr Expr, ctx *Context) (Expr, bool
 }
 
 // RegisterFunction is an alias for RegisterUserFunction for backward compatibility
-func (r *FunctionRegistry) RegisterFunction(functionName string, pattern Expr, implementation func([]Expr, *Context) Expr) error {
+func (r *FunctionRegistry) RegisterFunction(functionName string, pattern core.Expr, implementation func([]core.Expr, *Context) core.Expr) error {
 	// This is a simplified version that assumes the pattern contains the function name
 	// For the refactored code, we need to create a proper function definition
 	funcDef := FunctionDef{
@@ -267,7 +267,7 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 
 // couldPatternsConflict checks if two patterns could potentially match the same arguments
 // Returns true only if there's genuine ambiguity that could cause pattern matching issues
-func couldPatternsConflict(pattern1, pattern2 Expr) bool {
+func couldPatternsConflict(pattern1, pattern2 core.Expr) bool {
 	// Extract type constraints from both patterns
 	types1 := extractTypeConstraints(pattern1)
 	types2 := extractTypeConstraints(pattern2)
@@ -277,11 +277,11 @@ func couldPatternsConflict(pattern1, pattern2 Expr) bool {
 }
 
 // extractTypeConstraints extracts type names from a pattern
-func extractTypeConstraints(pattern Expr) []string {
+func extractTypeConstraints(pattern core.Expr) []string {
 	var types []string
 
 	switch p := pattern.(type) {
-	case List:
+	case core.List:
 		// Process each element in the pattern
 		for _, elem := range p.Elements {
 			types = append(types, extractTypeConstraints(elem)...)
@@ -342,7 +342,7 @@ func typesCouldOverlap(type1, type2 string) bool {
 }
 
 // extractFunctionName extracts the function name from a pattern
-func extractFunctionName(pattern Expr) (string, error) {
+func extractFunctionName(pattern core.Expr) (string, error) {
 	switch p := pattern.(type) {
 
 	// unclear how core.Symbol would be triggered.
@@ -350,22 +350,22 @@ func extractFunctionName(pattern Expr) (string, error) {
 		// This is questionable.  Indicates some other issue
 		panic("Why symbol?")
 		//return string(p), nil
-	case List:
-		return p.Type(), nil
+	case core.List:
+		return p.Head(), nil
 	default:
 		return "", fmt.Errorf("invalid pattern type")
 	}
 }
 
 // matchesPattern checks if a pattern matches the given arguments and returns variable bindings
-func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[string]Expr) {
+func matchesPattern(pattern core.Expr, functionName string, args []core.Expr) (bool, map[string]core.Expr) {
 
 	// TODO: for unknown reasons the original expression is chopped up into the
 	// function name and args.  But now it needs to restored to a complete express
 	// Since it's immutable unclear why we are copying it.
 
 	// Create a mock function call to match against the pattern
-	mockCall := List{Elements: make([]Expr, len(args)+1)}
+	mockCall := core.List{Elements: make([]core.Expr, len(args)+1)}
 	mockCall.Elements[0] = core.NewSymbol(functionName)
 	copy(mockCall.Elements[1:], args)
 
@@ -374,7 +374,7 @@ func matchesPattern(pattern Expr, functionName string, args []Expr) (bool, map[s
 
 	if matches {
 		// Convert core.PatternBindings to map[string]Expr for compatibility
-		result := make(map[string]Expr)
+		result := make(map[string]core.Expr)
 		for varName, value := range bindings {
 			result[varName] = value
 		}

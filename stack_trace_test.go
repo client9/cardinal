@@ -106,7 +106,7 @@ func TestRecursionPrevention_SimpleCase(t *testing.T) {
 	}
 
 	// Register the recursive function
-	err = eval.context.functionRegistry.RegisterFunction("f", pattern, func(args []Expr, ctx *Context) Expr {
+	err = eval.context.functionRegistry.RegisterFunction("f", pattern, func(args []core.Expr, ctx *Context) core.Expr {
 		// This will create infinite recursion: f(x) -> f(x+1) -> f(x+2) -> ...
 		return eval.evaluate(body, ctx)
 	})
@@ -143,7 +143,7 @@ func TestStackTrace_ErrorPropagation(t *testing.T) {
 
 	// Test that errors include stack traces
 	// Divide[1, 0] should give an error with stack trace
-	expr := NewList(
+	expr := core.NewList(
 		"Divide",
 		core.NewInteger(1),
 		core.NewInteger(0),
@@ -175,10 +175,10 @@ func TestStackTrace_NestedErrors(t *testing.T) {
 
 	// Test nested function calls with errors
 	// Plus[1, Divide[2, 0]] should show both Plus and Divide in stack trace
-	expr := NewList(
+	expr := core.NewList(
 		"Plus",
 		core.NewInteger(1),
-		NewList(
+		core.NewList(
 			"Divide",
 			core.NewInteger(2),
 			core.NewInteger(0),
@@ -209,7 +209,7 @@ func TestStackTrace_StringFunctions(t *testing.T) {
 
 	// Test basic functionality - no need for errors since pattern-based functions
 	// return unchanged expressions for non-matching patterns (which is correct behavior)
-	expr := NewList(
+	expr := core.NewList(
 		"StringLength",
 		core.NewString("test"),
 	)
@@ -229,7 +229,7 @@ func TestErrorExpr_DetailedMessage(t *testing.T) {
 		{Function: "Divide", Expression: "Divide[1, 0]", Location: ""},
 	}
 
-	errorExpr := NewErrorExprWithStack("DivisionByZero", "Cannot divide by zero", []Expr{core.NewInteger(1), core.NewInteger(0)}, frames)
+	errorExpr := core.NewErrorExprWithStack("DivisionByZero", "Cannot divide by zero", []core.Expr{core.NewInteger(1), core.NewInteger(0)}, frames)
 
 	detailed := errorExpr.GetDetailedMessage()
 

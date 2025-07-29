@@ -391,12 +391,12 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
-		checkFunc func(result Expr) bool
+		checkFunc func(result core.Expr) bool
 	}{
 		{
 			name:  "pi constant",
 			input: "Pi",
-			checkFunc: func(result Expr) bool {
+			checkFunc: func(result core.Expr) bool {
 				if real, ok := result.(core.Real); ok {
 					val := float64(real)
 					return val > 3.14 && val < 3.15 // Approximate check
@@ -407,7 +407,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 		{
 			name:  "e constant",
 			input: "E",
-			checkFunc: func(result Expr) bool {
+			checkFunc: func(result core.Expr) bool {
 				if real, ok := result.(core.Real); ok {
 					val := float64(real)
 					return val > 2.71 && val < 2.72 // Approximate check
@@ -418,7 +418,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 		{
 			name:  "true constant",
 			input: "True",
-			checkFunc: func(result Expr) bool {
+			checkFunc: func(result core.Expr) bool {
 				// True is now a symbol, not a BoolAtom (Mathematica compatibility)
 				if symbolName, ok := core.ExtractSymbol(result); ok {
 					return symbolName == "True"
@@ -429,7 +429,7 @@ func TestEvaluator_BuiltinConstants(t *testing.T) {
 		{
 			name:  "false constant",
 			input: "False",
-			checkFunc: func(result Expr) bool {
+			checkFunc: func(result core.Expr) bool {
 				// False is now a symbol, not a BoolAtom (Mathematica compatibility)
 				if symbolName, ok := core.ExtractSymbol(result); ok {
 					return symbolName == "False"

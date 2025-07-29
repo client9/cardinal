@@ -17,14 +17,14 @@ func NewPatternExecutor() *PatternExecutor {
 }
 
 // MatchWithBinding performs pattern matching with variable binding in the provided Context
-func (pe *PatternExecutor) MatchWithBinding(pattern, expr Expr, ctx *Context) bool {
+func (pe *PatternExecutor) MatchWithBinding(pattern, expr core.Expr, ctx *Context) bool {
 	// Convert pattern to symbolic if needed
 	symbolicPattern := core.ConvertToSymbolicPattern(pattern)
 	return pe.matchWithBindingInternal(symbolicPattern, expr, ctx, false)
 }
 
 // matchWithBindingInternal implements the core matching logic with binding
-func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr Expr, ctx *Context, isParameter bool) bool {
+func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr core.Expr, ctx *Context, isParameter bool) bool {
 	// Handle symbolic patterns first
 	if isPattern, nameExpr, blankExpr := core.IsSymbolicPattern(pattern); isPattern {
 		var varName string
@@ -83,8 +83,8 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr Expr, ctx *Con
 				return false
 			}
 		}
-	case List:
-		exprList, ok := expr.(List)
+	case core.List:
+		exprList, ok := expr.(core.List)
 		if !ok {
 			return false
 		}
@@ -98,7 +98,7 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr Expr, ctx *Con
 }
 
 // matchBlankWithBinding matches a blank expression with binding
-func (pe *PatternExecutor) matchBlankWithBinding(blankExpr, expr Expr, ctx *Context) bool {
+func (pe *PatternExecutor) matchBlankWithBinding(blankExpr, expr core.Expr, ctx *Context) bool {
 	isBlank, blankType, typeExpr := core.IsSymbolicBlank(blankExpr)
 	if !isBlank {
 		return false
@@ -126,7 +126,7 @@ func (pe *PatternExecutor) matchBlankWithBinding(blankExpr, expr Expr, ctx *Cont
 }
 
 // matchListWithBinding matches two lists with binding
-func (pe *PatternExecutor) matchListWithBinding(patternList, exprList List, ctx *Context) bool {
+func (pe *PatternExecutor) matchListWithBinding(patternList, exprList core.List, ctx *Context) bool {
 	// Simple case: same length, no sequence patterns
 	if !pe.hasSequencePatterns(patternList) {
 		if len(patternList.Elements) != len(exprList.Elements) {
@@ -150,7 +150,7 @@ func (pe *PatternExecutor) matchListWithBinding(patternList, exprList List, ctx 
 }
 
 // hasSequencePatterns checks if a pattern list contains sequence patterns
-func (pe *PatternExecutor) hasSequencePatterns(patternList List) bool {
+func (pe *PatternExecutor) hasSequencePatterns(patternList core.List) bool {
 	for _, elem := range patternList.Elements {
 		// Check for symbolic sequence patterns
 		if isBlank, blankType, _ := core.IsSymbolicBlank(elem); isBlank {
@@ -183,7 +183,7 @@ func (pe *PatternExecutor) hasSequencePatterns(patternList List) bool {
 }
 
 // matchSequencePatternsWithBinding handles complex sequence pattern matching
-func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Expr, ctx *Context) bool {
+func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []core.Expr, ctx *Context) bool {
 	patternIndex := 0
 	exprIndex := 0
 
@@ -233,7 +233,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 
 			// Bind variable if named
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, NewList("List", sequenceExprs...))
+				ctx.Set(patternInfo.VarName, core.NewList("List", sequenceExprs...))
 			}
 
 			exprIndex += len(sequenceExprs)
@@ -245,7 +245,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 
 			// Bind variable if named (can be empty list)
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, NewList("List", sequenceExprs...))
+				ctx.Set(patternInfo.VarName, core.NewList("List", sequenceExprs...))
 			}
 
 			exprIndex += len(sequenceExprs)
@@ -271,7 +271,7 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []Ex
 }
 
 // getPatternTypeInfo extracts pattern type information from any pattern format
-func (pe *PatternExecutor) getPatternTypeInfo(pattern Expr) core.PatternInfo {
+func (pe *PatternExecutor) getPatternTypeInfo(pattern core.Expr) core.PatternInfo {
 	// Check symbolic Pattern[name, blank]
 	if isPattern, _, _ := core.IsSymbolicPattern(pattern); isPattern {
 		return core.GetSymbolicPatternInfo(pattern)
@@ -293,11 +293,11 @@ func (pe *PatternExecutor) getPatternTypeInfo(pattern Expr) core.PatternInfo {
 }
 
 // collectSequenceExprs collects expressions for sequence patterns
-func (pe *PatternExecutor) collectSequenceExprs(patterns []Expr, patternIndex int, exprs []Expr, startExpr, endExpr int, typeName string) []Expr {
+func (pe *PatternExecutor) collectSequenceExprs(patterns []core.Expr, patternIndex int, exprs []core.Expr, startExpr, endExpr int, typeName string) []core.Expr {
 	// Simple greedy collection for now
 	// More sophisticated matching would consider remaining patterns
 
-	var collected []Expr
+	var collected []core.Expr
 	for i := startExpr; i < endExpr; i++ {
 		// Check type constraint if present
 		if typeName != "" && !core.MatchesType(exprs[i], typeName) {
