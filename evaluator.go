@@ -275,8 +275,17 @@ func (e *Evaluator) applyOrderless(list core.List) core.List {
 	head := list.Head()
 	args := list.Elements[1:]
 
-	// Sort arguments by their string representation for canonical ordering
+	// Sort arguments by length, and then their string representation for canonical ordering
 	sort.Slice(args, func(i, j int) bool {
+		cmp := args[i].Length() - args[j].Length()
+		if cmp < 0 {
+			return true
+		}
+		if cmp > 0 {
+			return false
+		}
+
+		// TODO: now do string comparison
 		return args[i].String() < args[j].String()
 	})
 

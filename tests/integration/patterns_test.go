@@ -35,7 +35,7 @@ func TestReplaceAllFunction(t *testing.T) {
 		{
 			name:     "ReplaceAll with single Rule - multiple levels",
 			input:    `ReplaceAll(Plus(a, Plus(a, Times(a, b))), Rule(a, z))`,
-			expected: `Plus(Times(b, z), z, z)`, // Plus flattens: Plus(z, Plus(z, Times(z, b))) -> Plus(z, z, Times(z, b)) -> Plus(Times(b, z), z, z) (sorted)
+			expected: `Plus(z, z, Times(b, z))`, // Plus flattens: Plus(z, Plus(z, Times(z, b))) -> Plus(z, z, Times(z, b)) -> Plus(Times(b, z), z, z) (sorted)
 		},
 		{
 			name:     "ReplaceAll with power expressions",
@@ -147,7 +147,7 @@ func TestReplaceAllVsReplace(t *testing.T) {
 			name:               "Nested expression - different results",
 			expression:         "Plus(x, Times(x, 2))",
 			rule:               "Rule(x, 3)",
-			replaceExpected:    "Plus(Times(2, x), x)", // Replace only checks top level, Plus is Orderless
+			replaceExpected:    "Plus(x, Times(2, x))", // Replace only checks top level, Plus is Orderless
 			replaceAllExpected: "9",                    // ReplaceAll recurses: Plus(Times(2, 3), 3) = Plus(6, 3) = 9
 		},
 		{
