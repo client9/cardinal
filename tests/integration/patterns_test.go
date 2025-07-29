@@ -40,7 +40,7 @@ func TestReplaceAllFunction(t *testing.T) {
 		{
 			name:     "ReplaceAll with power expressions",
 			input:    `ReplaceAll(Power(x, Plus(x, 1)), Rule(x, 2))`,
-			expected: `8.0`, // Power(2, Plus(2, 1)) = Power(2, 3) = 8.0
+			expected: `8`, // Power(2, Plus(2, 1)) = Power(2, 3) = 8.0
 		},
 		{
 			name:     "ReplaceAll with colon syntax",
@@ -111,7 +111,7 @@ func TestReplaceAllWithRules(t *testing.T) {
 		{
 			name:     "ReplaceAll with power and arithmetic expressions",
 			input:    `ReplaceAll(Plus(Power(x, 2), Times(2, x)), List(x : 3))`,
-			expected: `15.0`, // Plus(Power(3, 2), Times(2, 3)) = Plus(9.0, 6) = 15.0
+			expected: `15`, // Plus(Power(3, 2), Times(2, 3)) = Plus(9.0, 6) = 15.0
 		},
 		{
 			name:     "ReplaceAll with recursive function application",

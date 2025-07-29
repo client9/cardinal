@@ -62,21 +62,6 @@ func TimesReals(args ...float64) float64 {
 	return product
 }
 
-// PowerReal computes real base to integer exponent
-func PowerReal(base float64, exp int64) float64 {
-	if exp == 0 {
-		return 1.0
-	}
-	if exp < 0 {
-		return 1.0 / PowerReal(base, -exp)
-	}
-
-	result := 1.0
-	for i := int64(0); i < exp; i++ {
-		result *= base
-	}
-	return result
-}
 
 // MinusInteger returns the negation of an integer
 func MinusInteger(x int64) int64 {
@@ -106,6 +91,26 @@ func DivideIntegers(x, y int64) (int64, error) {
 	}
 
 	return x / y, nil
+}
+
+
+// PowerInteger - if exp >= 0, then it returns an integer, if exp < 0 returns the float value or error
+func PowerInteger(base, exp int64) (core.Expr, error) {
+	if exp == 0 {
+		return core.NewInteger(1), nil
+	}
+	if exp < 0 {
+		val, err := PowerNumbers(float64(base), float64(exp))
+		if err != nil {
+			return core.NewSymbolNull(), err
+		}
+		return core.NewReal(val), nil
+	}
+	val, err := PowerNumbers(float64(base), float64(exp))
+	if err != nil {
+		return core.NewSymbolNull(), err
+	}
+	return core.NewInteger(int64(val)), nil
 }
 
 // PowerNumbers performs power operation on numeric arguments

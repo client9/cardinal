@@ -82,6 +82,16 @@ func TestBasicArithmetic(t *testing.T) {
 		{
 			name:     "Simple power",
 			input:    "Power(2, 3)",
+			expected: "8",
+		},
+		{
+			name:     "Simple power",
+			input:    "Power(2.0, 3.0)",
+			expected: "8.0",
+		},
+		{
+			name:     "Simple power",
+			input:    "Power(2, 3.0)",
 			expected: "8.0",
 		},
 		{
@@ -90,14 +100,19 @@ func TestBasicArithmetic(t *testing.T) {
 			expected: "6.25",
 		},
 		{
-			name:     "Power of zero",
+			name:     "Power of integer zero",
 			input:    "Power(5, 0)",
+			expected: "1",
+		},
+		{
+			name:     "Power of real zero",
+			input:    "Power(5, 0.0)",
 			expected: "1.0",
 		},
 		{
 			name:     "Power of one",
 			input:    "Power(7, 1)",
-			expected: "7.0",
+			expected: "7",
 		},
 	}
 
@@ -188,7 +203,7 @@ func TestComplexArithmetic(t *testing.T) {
 		{
 			name:     "Power in arithmetic",
 			input:    "Plus(Power(2, 3), Times(3, 4))",
-			expected: "20.0",
+			expected: "20",
 		},
 		{
 			name:     "Deeply nested",

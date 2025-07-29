@@ -65,7 +65,7 @@ func TestCaretOperatorBasic(t *testing.T) {
 		{
 			name:     "Integer power",
 			input:    "2 ^ 3",
-			expected: "8.0",
+			expected: "8",
 		},
 		{
 			name:     "Real base, integer exponent",
@@ -75,27 +75,27 @@ func TestCaretOperatorBasic(t *testing.T) {
 		{
 			name:     "Zero exponent",
 			input:    "5 ^ 0",
-			expected: "1.0",
+			expected: "1",
 		},
 		{
 			name:     "One exponent",
 			input:    "7 ^ 1",
-			expected: "7.0",
+			expected: "7",
 		},
 		{
 			name:     "Base one",
 			input:    "1 ^ 100",
-			expected: "1.0",
+			expected: "1",
 		},
 		{
 			name:     "Base zero",
 			input:    "0 ^ 5",
-			expected: "0.0",
+			expected: "0",
 		},
 		{
 			name:     "Negative base positive exponent",
 			input:    "(-2) ^ 3",
-			expected: "-8.0",
+			expected: "-8",
 		},
 	}
 
@@ -111,27 +111,27 @@ func TestCaretOperatorPrecedence(t *testing.T) {
 		{
 			name:     "Right associative",
 			input:    "2 ^ 3 ^ 2",
-			expected: "512.0", // 2^(3^2) = 2^9 = 512
+			expected: "512", // 2^(3^2) = 2^9 = 512
 		},
 		{
 			name:     "Higher than multiplication",
 			input:    "2 * 3 ^ 2",
-			expected: "18.0", // 2 * (3^2) = 2 * 9 = 18
+			expected: "18", // 2 * (3^2) = 2 * 9 = 18
 		},
 		{
 			name:     "Higher than addition",
 			input:    "1 + 2 ^ 3",
-			expected: "9.0", // 1 + (2^3) = 1 + 8 = 9
+			expected: "9", // 1 + (2^3) = 1 + 8 = 9
 		},
 		{
 			name:     "With parentheses override",
 			input:    "(2 + 3) ^ 2",
-			expected: "25.0", // (5)^2 = 25
+			expected: "25", // (5)^2 = 25
 		},
 		{
 			name:     "Complex expression",
 			input:    "2 + 3 * 4 ^ 2 - 1",
-			expected: "49.0", // 2 + 3 * 16 - 1 = 2 + 48 - 1 = 49
+			expected: "49", // 2 + 3 * 16 - 1 = 2 + 48 - 1 = 49
 		},
 	}
 
