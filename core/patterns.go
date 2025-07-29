@@ -986,10 +986,10 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 		// Recursively substitute in list elements with sequence splicing
 		newElements := make([]Expr, 0, len(e.Elements))
 		changed := false
-		
+
 		for i, elem := range e.Elements {
 			newElem := SubstituteBindings(elem, bindings)
-			
+
 			// Check if this is a sequence variable substitution that needs splicing
 			if i > 0 && needsSequenceSplicing(elem, newElem, bindings) {
 				// This is a sequence variable - splice its elements
@@ -1012,14 +1012,14 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 					}
 				}
 			}
-			
+
 			// Regular substitution (not a sequence)
 			newElements = append(newElements, newElem)
 			if !newElem.Equal(elem) {
 				changed = true
 			}
 		}
-		
+
 		if changed {
 			return List{Elements: newElements}
 		}
