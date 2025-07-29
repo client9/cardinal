@@ -25,7 +25,7 @@ func AttributesExpr(expr core.Expr, ctx *Context) core.Expr {
 		return core.List{Elements: attrElements}
 	}
 
-	return NewErrorExpr("ArgumentError",
+	return core.NewErrorExpr("ArgumentError",
 		"Attributes expects a symbol as argument", []core.Expr{expr})
 }
 
@@ -33,7 +33,7 @@ func AttributesExpr(expr core.Expr, ctx *Context) core.Expr {
 func WrapAttributesExpr(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 1 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"Attributes expects 1 argument", args)
 	}
 
@@ -61,12 +61,12 @@ func SetAttributesSingle(symbol core.Expr, attr core.Expr, ctx *Context) core.Ex
 				return core.NewSymbolNull()
 			}
 
-			return NewErrorExpr("ArgumentError",
+			return core.NewErrorExpr("ArgumentError",
 				fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attr})
 		}
 	}
 
-	return NewErrorExpr("ArgumentError",
+	return core.NewErrorExpr("ArgumentError",
 		"SetAttributes expects (symbol, attribute)", []core.Expr{symbol, attr})
 }
 
@@ -86,11 +86,11 @@ func SetAttributesList(symbol core.Expr, attrList core.List, ctx *Context) core.
 				if attribute, ok := StringToAttribute(attrName); ok {
 					attributes = append(attributes, attribute)
 				} else {
-					return NewErrorExpr("ArgumentError",
+					return core.NewErrorExpr("ArgumentError",
 						fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attrExpr})
 				}
 			} else {
-				return NewErrorExpr("ArgumentError",
+				return core.NewErrorExpr("ArgumentError",
 					"Attributes list must contain symbols", []core.Expr{attrExpr})
 			}
 		}
@@ -100,7 +100,7 @@ func SetAttributesList(symbol core.Expr, attrList core.List, ctx *Context) core.
 		return core.NewSymbolNull()
 	}
 
-	return NewErrorExpr("ArgumentError",
+	return core.NewErrorExpr("ArgumentError",
 		"SetAttributes expects (symbol, attribute list)", []core.Expr{symbol, attrList})
 }
 
@@ -119,12 +119,12 @@ func ClearAttributesSingle(symbol core.Expr, attr core.Expr, ctx *Context) core.
 				return core.NewSymbolNull()
 			}
 
-			return NewErrorExpr("ArgumentError",
+			return core.NewErrorExpr("ArgumentError",
 				fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attr})
 		}
 	}
 
-	return NewErrorExpr("ArgumentError",
+	return core.NewErrorExpr("ArgumentError",
 		"ClearAttributes expects (symbol, attribute)", []core.Expr{symbol, attr})
 }
 
@@ -144,11 +144,11 @@ func ClearAttributesList(symbol core.Expr, attrList core.List, ctx *Context) cor
 					// Clear this attribute from the symbol
 					ctx.symbolTable.ClearAttributes(symbolName, []Attribute{attribute})
 				} else {
-					return NewErrorExpr("ArgumentError",
+					return core.NewErrorExpr("ArgumentError",
 						fmt.Sprintf("Unknown attribute: %s", attrName), []core.Expr{attrExpr})
 				}
 			} else {
-				return NewErrorExpr("ArgumentError",
+				return core.NewErrorExpr("ArgumentError",
 					"Attributes list must contain symbols", []core.Expr{attrExpr})
 			}
 		}
@@ -156,7 +156,7 @@ func ClearAttributesList(symbol core.Expr, attrList core.List, ctx *Context) cor
 		return core.NewSymbolNull()
 	}
 
-	return NewErrorExpr("ArgumentError",
+	return core.NewErrorExpr("ArgumentError",
 		"ClearAttributes expects (symbol, attribute list)", []core.Expr{symbol, attrList})
 }
 
@@ -166,7 +166,7 @@ func ClearAttributesList(symbol core.Expr, attrList core.List, ctx *Context) cor
 func WrapSetAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"SetAttributes expects 2 arguments", args)
 	}
 
@@ -185,7 +185,7 @@ func WrapSetAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 func WrapSetAttributesList(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"SetAttributes expects 2 arguments", args)
 	}
 
@@ -199,7 +199,7 @@ func WrapSetAttributesList(args []core.Expr, ctx *Context) core.Expr {
 	// Extract list from second argument
 	attrList, ok := args[1].(core.List)
 	if !ok {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"Second argument must be a list", args)
 	}
 
@@ -211,7 +211,7 @@ func WrapSetAttributesList(args []core.Expr, ctx *Context) core.Expr {
 func WrapClearAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"ClearAttributes expects 2 arguments", args)
 	}
 
@@ -230,7 +230,7 @@ func WrapClearAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 func WrapClearAttributesList(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"ClearAttributes expects 2 arguments", args)
 	}
 
@@ -244,7 +244,7 @@ func WrapClearAttributesList(args []core.Expr, ctx *Context) core.Expr {
 	// Extract list from second argument
 	attrList, ok := args[1].(core.List)
 	if !ok {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"Second argument must be a list", args)
 	}
 
@@ -266,7 +266,7 @@ func ShowPatternsExpr(functionName core.Expr, ctx *Context) core.Expr {
 		// Get function definitions from the registry
 		definitions := ctx.functionRegistry.GetFunctionDefinitions(funcName)
 		if definitions == nil {
-			return NewErrorExpr("ArgumentError",
+			return core.NewErrorExpr("ArgumentError",
 				fmt.Sprintf("No patterns found for function: %s", funcName), []core.Expr{functionName})
 		}
 
@@ -291,7 +291,7 @@ func ShowPatternsExpr(functionName core.Expr, ctx *Context) core.Expr {
 		return core.List{Elements: elements}
 	}
 
-	return NewErrorExpr("ArgumentError",
+	return core.NewErrorExpr("ArgumentError",
 		"ShowPatterns expects a symbol", []core.Expr{functionName})
 }
 
@@ -299,7 +299,7 @@ func ShowPatternsExpr(functionName core.Expr, ctx *Context) core.Expr {
 func WrapPatternSpecificity(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 1 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"PatternSpecificity expects 1 argument", args)
 	}
 
@@ -316,7 +316,7 @@ func WrapPatternSpecificity(args []core.Expr, ctx *Context) core.Expr {
 func WrapShowPatterns(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
 	if len(args) != 1 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			"ShowPatterns expects 1 argument", args)
 	}
 

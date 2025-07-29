@@ -33,7 +33,7 @@ func TestFunctionRegistry_CustomFunction(t *testing.T) {
 	// Define a custom function using the new pattern system
 	customDouble := func(args []core.Expr, ctx *Context) core.Expr {
 		if len(args) != 1 {
-			return NewErrorExpr("ArgumentError", "Double expects 1 argument", args)
+			return core.NewErrorExpr("ArgumentError", "Double expects 1 argument", args)
 		}
 
 		if isNumeric(args[0]) {
@@ -79,7 +79,7 @@ func TestFunctionRegistry_Evaluator(t *testing.T) {
 	// Define a custom Max function
 	customMax := func(args []core.Expr) core.Expr {
 		if len(args) == 0 {
-			return NewErrorExpr("ArgumentError", "Max expects at least 1 argument", args)
+			return core.NewErrorExpr("ArgumentError", "Max expects at least 1 argument", args)
 		}
 
 		// Check if all arguments are numeric
@@ -136,7 +136,7 @@ func TestFunctionRegistry_ChildContextInheritance(t *testing.T) {
 	// Add a custom function to the parent
 	customSquare := func(args []core.Expr) core.Expr {
 		if len(args) != 1 {
-			return NewErrorExpr("ArgumentError", "Square expects 1 argument", args)
+			return core.NewErrorExpr("ArgumentError", "Square expects 1 argument", args)
 		}
 
 		if isNumeric(args[0]) {
@@ -189,7 +189,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 	// Define a function that uses other builtins through the evaluator
 	customAverage := func(args []core.Expr, ctx *Context) core.Expr {
 		if len(args) == 0 {
-			return NewErrorExpr("ArgumentError", "Average expects at least 1 argument", args)
+			return core.NewErrorExpr("ArgumentError", "Average expects at least 1 argument", args)
 		}
 
 		// Check for errors in arguments first

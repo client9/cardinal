@@ -477,7 +477,7 @@ func formatArgs(args []core.Expr) string {
 // evaluateIf implements the If special form
 func (e *Evaluator) evaluateIf(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) < 2 || len(args) > 3 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("If expects 2 or 3 arguments, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("If expects 2 or 3 arguments, got %d", len(args)), args)
 	}
 
 	// Evaluate the condition
@@ -502,13 +502,13 @@ func (e *Evaluator) evaluateIf(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Condition is not a boolean, return an error
-	return NewErrorExpr("TypeError", "If condition must be True or False", []core.Expr{condition})
+	return core.NewErrorExpr("TypeError", "If condition must be True or False", []core.Expr{condition})
 }
 
 // evaluateSet implements the Set special form (immediate assignment)
 func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Set expects 2 arguments, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Set expects 2 arguments, got %d", len(args)), args)
 	}
 
 	// First argument should be a symbol (don't evaluate it)
@@ -525,13 +525,13 @@ func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 		return value
 	}
 
-	return NewErrorExpr("ArgumentError", "First argument to Set must be a symbol", args)
+	return core.NewErrorExpr("ArgumentError", "First argument to Set must be a symbol", args)
 }
 
 // evaluateSetDelayed implements the SetDelayed special form (delayed assignment)
 func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("SetDelayed expects 2 arguments, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("SetDelayed expects 2 arguments, got %d", len(args)), args)
 	}
 
 	lhs := args[0]
@@ -554,7 +554,7 @@ func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr
 			})
 
 			if err != nil {
-				return NewErrorExpr("DefinitionError", err.Error(), args)
+				return core.NewErrorExpr("DefinitionError", err.Error(), args)
 			}
 
 			return core.NewSymbolNull()
@@ -568,13 +568,13 @@ func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr
 		return core.NewSymbolNull()
 	}
 
-	return NewErrorExpr("ArgumentError", "Invalid left-hand side for SetDelayed", args)
+	return core.NewErrorExpr("ArgumentError", "Invalid left-hand side for SetDelayed", args)
 }
 
 // evaluateUnset implements the Unset special form
 func (e *Evaluator) evaluateUnset(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 1 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Unset expects 1 argument, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Unset expects 1 argument, got %d", len(args)), args)
 	}
 
 	if symbolName, ok := core.ExtractSymbol(args[0]); ok {
@@ -583,7 +583,7 @@ func (e *Evaluator) evaluateUnset(args []core.Expr, ctx *Context) core.Expr {
 		return core.NewSymbolNull()
 	}
 
-	return NewErrorExpr("ArgumentError", "Argument to Unset must be a symbol", args)
+	return core.NewErrorExpr("ArgumentError", "Argument to Unset must be a symbol", args)
 }
 
 // evaluateHold implements the Hold special form
@@ -713,7 +713,7 @@ func (e *Evaluator) evaluateOr(args []core.Expr, ctx *Context) core.Expr {
 // evaluateSliceRange implements slice range syntax: expr[start:end]
 func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 3 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)), args)
 	}
 
@@ -726,7 +726,7 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
 	}
 
@@ -744,13 +744,13 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 	// Extract integer values for start and end
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
 	}
 
 	end, ok := core.ExtractInt64(endExpr)
 	if !ok {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()), []core.Expr{endExpr})
 	}
 
@@ -763,7 +763,7 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 // If start is positive, uses Drop for first n elements
 func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)), args)
 	}
 
@@ -782,7 +782,7 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	// Extract integer value for start
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
 	}
 
@@ -801,7 +801,7 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 // evaluatePartSet implements slice assignment syntax: expr[index] = value
 func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 3 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("PartSet expects 3 arguments (expr, index, value), got %d", len(args)), args)
 	}
 
@@ -814,7 +814,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
 	}
 
@@ -827,7 +827,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	// Extract integer value for index
 	index, ok := core.ExtractInt64(indexExpr)
 	if !ok {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Head()), []core.Expr{indexExpr})
 	}
 
@@ -844,7 +844,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 // evaluateSliceSet implements slice assignment syntax: expr[start:end] = value
 func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 4 {
-		return NewErrorExpr("ArgumentError",
+		return core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("SliceSet expects 4 arguments (expr, start, end, value), got %d", len(args)), args)
 	}
 
@@ -857,7 +857,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
 	}
 
@@ -870,7 +870,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	// Extract integer value for start
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
 	}
 
@@ -888,7 +888,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	} else if endValue, ok := core.ExtractInt64(endExpr); ok {
 		end = endValue
 	} else {
-		return NewErrorExpr("TypeError",
+		return core.NewErrorExpr("TypeError",
 			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()), []core.Expr{endExpr})
 	}
 
@@ -906,7 +906,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 // Block(List(vars...), body) temporarily changes variable values and evaluates body
 func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Block expects 2 arguments, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Block expects 2 arguments, got %d", len(args)), args)
 	}
 
 	// First argument should be a list of variable specifications
@@ -916,7 +916,7 @@ func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 	// Parse variable specification
 	varList, ok := varSpec.(core.List)
 	if !ok {
-		return NewErrorExpr("ArgumentError", "Block first argument must be a list of variables", []core.Expr{varSpec})
+		return core.NewErrorExpr("ArgumentError", "Block first argument must be a list of variables", []core.Expr{varSpec})
 	}
 
 	// Collect scoped variable names
@@ -937,13 +937,13 @@ func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 				if varSymbol, ok := core.ExtractSymbol(assignment.Elements[1]); ok {
 					scopedVarNames = append(scopedVarNames, varSymbol)
 				} else {
-					return NewErrorExpr("ArgumentError", "Block variable assignment must use a symbol", []core.Expr{assignment.Elements[1]})
+					return core.NewErrorExpr("ArgumentError", "Block variable assignment must use a symbol", []core.Expr{assignment.Elements[1]})
 				}
 			} else {
-				return NewErrorExpr("ArgumentError", "Block variable specification must be Set expression", []core.Expr{varExpr})
+				return core.NewErrorExpr("ArgumentError", "Block variable specification must be Set expression", []core.Expr{varExpr})
 			}
 		} else {
-			return NewErrorExpr("ArgumentError", "Block variable specification must be symbol or Set expression", []core.Expr{varExpr})
+			return core.NewErrorExpr("ArgumentError", "Block variable specification must be symbol or Set expression", []core.Expr{varExpr})
 		}
 	}
 
@@ -980,7 +980,7 @@ func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 // Do(expr, core.List(i, start, end, increment)) iterates with variable binding
 func (e *Evaluator) evaluateDo(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Do expects 2 arguments, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Do expects 2 arguments, got %d", len(args)), args)
 	}
 
 	expr := args[0] // Don't evaluate expr yet - Do has HoldAll
@@ -996,13 +996,13 @@ func (e *Evaluator) evaluateDo(args []core.Expr, ctx *Context) core.Expr {
 		return e.evaluateDoIterator(expr, iterList, ctx)
 	}
 
-	return NewErrorExpr("ArgumentError", "Do second argument must be integer or core.List", args)
+	return core.NewErrorExpr("ArgumentError", "Do second argument must be integer or core.List", args)
 }
 
 // evaluateDoSimple implements Do(expr, n) - evaluates expr n times and returns Null
 func (e *Evaluator) evaluateDoSimple(expr core.Expr, n int64, ctx *Context) core.Expr {
 	if n < 0 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Do count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Do count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
 	}
 
 	// Evaluate expr n times (side effects only)
@@ -1057,7 +1057,7 @@ func (e *Evaluator) evaluateDoIterator(expr core.Expr, iterSpec core.List, ctx *
 // Table(expr, core.List(i, max)) will be implemented later for iterator forms
 func (e *Evaluator) evaluateTable(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Table expects 2 arguments, got %d", len(args)), args)
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Table expects 2 arguments, got %d", len(args)), args)
 	}
 
 	expr := args[0] // Don't evaluate expr yet - Table has HoldAll
@@ -1073,13 +1073,13 @@ func (e *Evaluator) evaluateTable(args []core.Expr, ctx *Context) core.Expr {
 		return e.evaluateTableIterator(expr, iterList, ctx)
 	}
 
-	return NewErrorExpr("ArgumentError", "Table second argument must be integer or core.List", args)
+	return core.NewErrorExpr("ArgumentError", "Table second argument must be integer or core.List", args)
 }
 
 // evaluateTableSimple implements Table(expr, n) - creates n copies of expr
 func (e *Evaluator) evaluateTableSimple(expr core.Expr, n int64, ctx *Context) core.Expr {
 	if n < 0 {
-		return NewErrorExpr("ArgumentError", fmt.Sprintf("Table count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
+		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Table count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
 	}
 
 	if n == 0 {
@@ -1148,7 +1148,7 @@ func (e *Evaluator) evaluateTableIterator(expr core.Expr, iterSpec core.List, ct
 // IMPORTANT: Evaluates start, end, and increment expressions and validates they are numeric
 func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (variable string, start, end, increment core.Expr, err core.Expr) {
 	if len(iterSpec.Elements) < 3 || len(iterSpec.Elements) > 5 {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			"Table iterator must be core.List(var, max), core.List(var, start, end), or core.List(var, start, end, step)", []core.Expr{iterSpec})
 	}
 
@@ -1156,7 +1156,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 	if varSymbol, ok := core.ExtractSymbol(iterSpec.Elements[1]); ok {
 		variable = varSymbol
 	} else {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError", "Table iterator variable must be a symbol", []core.Expr{iterSpec.Elements[1]})
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError", "Table iterator variable must be a symbol", []core.Expr{iterSpec.Elements[1]})
 	}
 
 	// Parse and evaluate based on number of arguments
@@ -1195,7 +1195,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 		}
 
 	default:
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError", "Invalid Table iterator specification", []core.Expr{iterSpec})
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError", "Invalid Table iterator specification", []core.Expr{iterSpec})
 	}
 
 	// Validate that arithmetic and comparison operations can be evaluated
@@ -1203,11 +1203,11 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 	testPlus := core.NewList("Plus", start, increment)
 	plusResult := e.evaluate(testPlus, ctx)
 	if core.IsError(plusResult) {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult), []core.Expr{plusResult})
 	}
 	if plusResult.Equal(testPlus) && !plusResult.IsAtom() {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator arithmetic unevaluated: Plus(%s, %s) - missing arithmetic definition", start, increment), []core.Expr{start, increment})
 	}
 
@@ -1215,11 +1215,11 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 	testLessEqual := core.NewList("LessEqual", start, end)
 	compareResult := e.evaluate(testLessEqual, ctx)
 	if core.IsError(compareResult) {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator comparison failed: %s", compareResult), []core.Expr{compareResult})
 	}
 	if compareResult.Equal(testLessEqual) && !compareResult.IsAtom() {
-		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
+		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator comparison unevaluated: LessEqual(%s, %s) - missing comparison definition", start, end), []core.Expr{start, end})
 	}
 
