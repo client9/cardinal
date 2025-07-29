@@ -320,3 +320,135 @@ func TestRotateFunctions(t *testing.T) {
 		}
 	})
 }
+
+func TestFlattenExpr(t *testing.T) {
+	// Helper function to create test lists with mixed elements
+	createMixedList := func(head string, elements ...core.Expr) core.List {
+		exprs := make([]core.Expr, len(elements)+1)
+		exprs[0] = core.NewSymbol(head)
+		copy(exprs[1:], elements)
+		return core.List{Elements: exprs}
+	}
+
+	// Helper function to create simple integer lists
+	createIntList := func(head string, nums ...int64) core.List {
+		exprs := make([]core.Expr, len(nums)+1)
+		exprs[0] = core.NewSymbol(head)
+		for i, num := range nums {
+			exprs[i+1] = core.NewInteger(num)
+		}
+		return core.List{Elements: exprs}
+	}
+
+	tests := []struct {
+		name     string
+		input    core.Expr
+		expected string
+	}{
+		// Basic flattening tests
+		{
+			name:     "Simple nested list",
+			input:    createMixedList("List", core.NewInteger(1), core.NewInteger(2), createIntList("List", 3, 4)),
+			expected: "List(1, 2, 3, 4)",
+		},
+		{
+			name:     "Deeply nested list",
+			input:    createMixedList("List", core.NewInteger(1), createMixedList("List", core.NewInteger(2), createIntList("List", 3, 4), core.NewInteger(5)), core.NewInteger(6)),
+			expected: "List(1, 2, 3, 4, 5, 6)",
+		},
+		{
+			name:     "Empty nested lists",
+			input:    createMixedList("List", core.NewInteger(1), createIntList("List"), core.NewInteger(2)),
+			expected: "List(1, 2)",
+		},
+		{
+			name:     "Multiple nested lists",
+			input:    createMixedList("List", createIntList("List", 1, 2), createIntList("List", 3, 4), createIntList("List", 5, 6)),
+			expected: "List(1, 2, 3, 4, 5, 6)",
+		},
+
+		// Different head types
+		{
+			name:     "Zoo with nested Zoo",
+			input:    createMixedList("Zoo", core.NewInteger(1), core.NewInteger(2), createIntList("Zoo", 3, 4)),
+			expected: "Zoo(1, 2, 3, 4)",
+		},
+		{
+			name:     "Mixed heads - Zoo with List inside",
+			input:    createMixedList("Zoo", core.NewInteger(1), createIntList("List", 2, 3), core.NewInteger(4)),
+			expected: "Zoo(1, List(2, 3), 4)",
+		},
+		{
+			name:     "Mixed heads - List with Zoo inside", 
+			input:    createMixedList("List", core.NewInteger(1), createIntList("Zoo", 2, 3), core.NewInteger(4)),
+			expected: "List(1, Zoo(2, 3), 4)",
+		},
+
+		// Edge cases
+		{
+			name:     "Empty list",
+			input:    createIntList("List"),
+			expected: "List()",
+		},
+		{
+			name:     "Single element list",
+			input:    createIntList("List", 42),
+			expected: "List(42)",
+		},
+		{
+			name:     "Already flat list",
+			input:    createIntList("List", 1, 2, 3, 4),
+			expected: "List(1, 2, 3, 4)",
+		},
+		{
+			name:     "Nested with symbols and numbers",
+			input:    createMixedList("List", core.NewSymbol("a"), createMixedList("List", core.NewInteger(1), core.NewSymbol("b")), core.NewInteger(2)),
+			expected: "List(a, 1, b, 2)",
+		},
+
+		// Non-list inputs
+		{
+			name:     "Integer input",
+			input:    core.NewInteger(42),
+			expected: "42",
+		},
+		{
+			name:     "Symbol input",
+			input:    core.NewSymbol("x"),
+			expected: "x",
+		},
+		{
+			name:     "String input",
+			input:    core.NewString("hello"),
+			expected: "\"hello\"",
+		},
+
+		// Complex nesting
+		{
+			name: "Triple nesting",
+			input: createMixedList("List", 
+				core.NewInteger(1),
+				createMixedList("List",
+					core.NewInteger(2),
+					createMixedList("List", 
+						core.NewInteger(3),
+						createIntList("List", 4, 5),
+					),
+					core.NewInteger(6),
+				),
+				core.NewInteger(7),
+			),
+			expected: "List(1, 2, 3, 4, 5, 6, 7)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FlattenExpr(tt.input)
+			if result.String() != tt.expected {
+				t.Errorf("FlattenExpr(%s) = %s, expected %s", 
+					tt.input.String(), result.String(), tt.expected)
+			}
+		})
+	}
+}

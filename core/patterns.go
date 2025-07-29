@@ -638,21 +638,10 @@ func (pm *PatternMatcher) testMatchBlank(blankExpr, expr Expr) bool {
 
 // testMatchList tests if two lists match
 func (pm *PatternMatcher) testMatchList(patternList, exprList List) bool {
-	// For pure matching, we do simple element-by-element matching
-	// (sequence patterns are more complex and typically need context)
-
-	if len(patternList.Elements) != len(exprList.Elements) {
-		return false
-	}
-
-	// Match each element
-	for i, patternElem := range patternList.Elements {
-		if !pm.testMatchInternal(patternElem, exprList.Elements[i]) {
-			return false
-		}
-	}
-
-	return true
+	// Use the full pattern matching logic but discard bindings
+	// This properly handles sequence patterns like z___
+	bindings := make(PatternBindings)
+	return matchListWithBindings(patternList, exprList, bindings)
 }
 
 // PatternBindings represents variable bindings from pattern matching
@@ -965,6 +954,24 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings Patte
 	return false
 }
 
+// needsSequenceSplicing determines if a substitution should be spliced (for sequence patterns)
+func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings) bool {
+	// Check if original element is a symbol that was bound to a List
+	if elemSym, ok := originalElem.(Symbol); ok {
+		varName := string(elemSym)
+		if boundValue, exists := bindings[varName]; exists {
+			// Check if the bound value is a List (indicating sequence pattern)
+			if boundList, ok := boundValue.(List); ok && len(boundList.Elements) > 0 {
+				// Check if the List head is "List" (our sequence marker)
+				if headSym, ok := boundList.Elements[0].(Symbol); ok {
+					return headSym.String() == "List"
+				}
+			}
+		}
+	}
+	return false
+}
+
 // SubstituteBindings replaces pattern variables in an expression with their bound values
 func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 	switch e := expr.(type) {
@@ -976,16 +983,43 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 		return e
 
 	case List:
-		// Recursively substitute in list elements
-		newElements := make([]Expr, len(e.Elements))
+		// Recursively substitute in list elements with sequence splicing
+		newElements := make([]Expr, 0, len(e.Elements))
 		changed := false
+		
 		for i, elem := range e.Elements {
 			newElem := SubstituteBindings(elem, bindings)
-			newElements[i] = newElem
+			
+			// Check if this is a sequence variable substitution that needs splicing
+			if i > 0 && needsSequenceSplicing(elem, newElem, bindings) {
+				// This is a sequence variable - splice its elements
+				if elemSym, ok := elem.(Symbol); ok {
+					varName := string(elemSym)
+					if boundValue, exists := bindings[varName]; exists {
+						if boundList, ok := boundValue.(List); ok {
+							// Check if it's an empty sequence (just "List" head)
+							if len(boundList.Elements) == 1 {
+								// Empty sequence - skip adding anything
+								changed = true
+								continue
+							} else if len(boundList.Elements) > 1 {
+								// Non-empty sequence - skip the "List" head and add the actual elements
+								newElements = append(newElements, boundList.Elements[1:]...)
+								changed = true
+								continue
+							}
+						}
+					}
+				}
+			}
+			
+			// Regular substitution (not a sequence)
+			newElements = append(newElements, newElem)
 			if !newElem.Equal(elem) {
 				changed = true
 			}
 		}
+		
 		if changed {
 			return List{Elements: newElements}
 		}

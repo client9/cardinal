@@ -272,6 +272,13 @@ var symbolSpecs = map[string]SymbolSpec{
 			"(x_String, y_String)": stdlib.StringAppend,
 		},
 	},
+	"Flatten": {
+		Name:       "Flatten",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(x_)": stdlib.FlattenExpr,
+		},
+	},
 
 	// Sequence Operations
 	"Take": {
