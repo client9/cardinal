@@ -182,7 +182,10 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context) (core.
 			funcCtx := NewChildContext(ctx)
 			for varName, value := range bindings {
 				funcCtx.AddScopedVar(varName) // Keep pattern variables local to this context
-				funcCtx.Set(varName, value)
+				if err := funcCtx.Set(varName, value); err != nil {
+					// Pattern variable binding failed - this shouldn't happen in scoped context
+					return core.NewErrorExpr("ProtectionError", err.Error(), args), true
+				}
 			}
 
 			// Call the function

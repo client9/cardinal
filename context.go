@@ -103,21 +103,27 @@ func NewChildContext(parent *Context) *Context {
 
 // Set sets a variable in the context
 // If this is a child context and the variable is not in scopedVars, set it in the parent
-func (c *Context) Set(name string, value core.Expr) {
+// Returns an error if the symbol is Protected
+func (c *Context) Set(name string, value core.Expr) error {
+	// Check if symbol is protected
+	if c.symbolTable.HasAttribute(name, Protected) {
+		return fmt.Errorf("symbol %s is Protected", name)
+	}
+
 	// If this variable is explicitly scoped to this context, set it here
 	if c.scopedVars[name] {
 		c.variables[name] = value
-		return
+		return nil
 	}
 
 	// If this is a child context and variable is not scoped here, set in parent
 	if c.parent != nil {
-		c.parent.Set(name, value)
-		return
+		return c.parent.Set(name, value)
 	}
 
 	// Otherwise set in current context (root context or explicitly local)
 	c.variables[name] = value
+	return nil
 }
 
 // Get retrieves a variable from the context (searches up the parent chain)

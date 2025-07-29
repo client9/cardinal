@@ -71,6 +71,19 @@ func TestLexer_NextToken(t *testing.T) {
 			},
 		},
 		{
+			name:  "dollar symbols",
+			input: "$ $1 $2 $9 $name $foo123",
+			expected: []Token{
+				{Type: SYMBOL, Value: "$"},
+				{Type: SYMBOL, Value: "$1"},
+				{Type: SYMBOL, Value: "$2"},
+				{Type: SYMBOL, Value: "$9"},
+				{Type: SYMBOL, Value: "$name"},
+				{Type: SYMBOL, Value: "$foo123"},
+				{Type: EOF, Value: ""},
+			},
+		},
+		{
 			name:  "brackets and braces",
 			input: "[]{}",
 			expected: []Token{

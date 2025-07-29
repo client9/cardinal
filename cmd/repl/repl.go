@@ -110,7 +110,7 @@ func (r *REPL) Run() error {
 			// Single empty line in multi-line - continue building
 		} else {
 			emptyLineCount = 0 // Reset empty line counter
-			
+
 			// Check for special reset command even when building expression
 			if line == ":reset" || line == ":clear" {
 				if currentExpr.Len() > 0 {
@@ -121,7 +121,7 @@ func (r *REPL) Run() error {
 				}
 				continue
 			}
-			
+
 			// Handle special commands only if we're not building an expression
 			if currentExpr.Len() == 0 && r.handleSpecialCommands(line) {
 				continue
@@ -172,7 +172,7 @@ func (r *REPL) tryProcessExpression(expr string) bool {
 		if r.isIncompleteExpression(errStr) {
 			return false
 		}
-		
+
 		// This looks like a real error, not just incomplete
 		_, _ = fmt.Fprintf(r.output, "Parse error: %v\n", err)
 		_, _ = fmt.Fprintf(r.output, "(Type an empty line to reset if stuck)\n")
@@ -193,18 +193,18 @@ func (r *REPL) isIncompleteExpression(errStr string) bool {
 	// Common patterns that indicate incomplete expressions
 	incompletePatterns := []string{
 		"unexpected EOF, expected ')'",
-		"unexpected EOF, expected ']'", 
+		"unexpected EOF, expected ']'",
 		"unexpected EOF, expected '}'",
 		"unexpected EOF, expected ','",
 		"unexpected EOF",
 	}
-	
+
 	for _, pattern := range incompletePatterns {
 		if strings.Contains(errStr, pattern) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 

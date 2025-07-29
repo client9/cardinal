@@ -62,7 +62,6 @@ func TimesReals(args ...float64) float64 {
 	return product
 }
 
-
 // MinusInteger returns the negation of an integer
 func MinusInteger(x int64) int64 {
 	return -x
@@ -92,7 +91,6 @@ func DivideIntegers(x, y int64) (int64, error) {
 
 	return x / y, nil
 }
-
 
 // PowerInteger - if exp >= 0, then it returns an integer, if exp < 0 returns the float value or error
 func PowerInteger(base, exp int64) (core.Expr, error) {
@@ -139,4 +137,140 @@ func DivideNumbers(x, y float64) (float64, error) {
 // SubtractNumbers performs mixed numeric subtraction (returns float64)
 func SubtractNumbers(x, y float64) float64 {
 	return x - y
+}
+
+// PlusExpr performs addition with light simplification
+// Combines all numeric values and leaves symbolic terms unchanged
+// Returns integers when all args are integers, float64 when mixed
+func PlusExpr(args ...core.Expr) core.Expr {
+	if len(args) == 0 {
+		return core.NewInteger(0) // Plus() = 0
+	}
+
+	var intSum int64 = 0
+	var realSum float64 = 0.0
+	var hasIntegers bool = false
+	var hasReals bool = false
+	var nonNumeric []core.Expr
+
+	// Separate numeric and non-numeric arguments
+	for _, arg := range args {
+		if intVal, ok := core.ExtractInt64(arg); ok {
+			intSum += intVal
+			hasIntegers = true
+		} else if realVal, ok := core.ExtractFloat64(arg); ok {
+			realSum += realVal
+			hasReals = true
+		} else {
+			nonNumeric = append(nonNumeric, arg)
+		}
+	}
+
+	// Build result elements
+	var resultElements []core.Expr
+	resultElements = append(resultElements, core.NewSymbol("Plus"))
+
+	// Add combined numeric value
+	if hasIntegers && hasReals {
+		// Mixed: convert to float64
+		totalSum := float64(intSum) + realSum
+		if totalSum != 0.0 || len(nonNumeric) == 0 {
+			resultElements = append(resultElements, core.NewReal(totalSum))
+		}
+	} else if hasIntegers {
+		// All integers: keep as integer
+		if intSum != 0 || len(nonNumeric) == 0 {
+			resultElements = append(resultElements, core.NewInteger(intSum))
+		}
+	} else if hasReals {
+		// All reals: keep as float64
+		if realSum != 0.0 || len(nonNumeric) == 0 {
+			resultElements = append(resultElements, core.NewReal(realSum))
+		}
+	}
+
+	// Add non-numeric terms
+	resultElements = append(resultElements, nonNumeric...)
+
+	// Apply OneIdentity-like behavior: if only one element (plus head), return it
+	if len(resultElements) == 2 {
+		return resultElements[1]
+	}
+
+	// If no elements besides head, return 0
+	if len(resultElements) == 1 {
+		return core.NewInteger(0)
+	}
+
+	return core.List{Elements: resultElements}
+}
+
+// TimesExpr performs multiplication with light simplification
+// Combines all numeric values and leaves symbolic terms unchanged
+func TimesExpr(args ...core.Expr) core.Expr {
+	if len(args) == 0 {
+		return core.NewInteger(1) // Times() = 1
+	}
+
+	var intProduct int64 = 1
+	var realProduct float64 = 1.0
+	var hasIntegers bool = false
+	var hasReals bool = false
+	var nonNumeric []core.Expr
+
+	// Separate numeric and non-numeric arguments
+	for _, arg := range args {
+		if intVal, ok := core.ExtractInt64(arg); ok {
+			intProduct *= intVal
+			hasIntegers = true
+		} else if realVal, ok := core.ExtractFloat64(arg); ok {
+			realProduct *= realVal
+			hasReals = true
+		} else {
+			nonNumeric = append(nonNumeric, arg)
+		}
+	}
+
+	// Check for zero (short-circuit)
+	if (hasIntegers && intProduct == 0) || (hasReals && realProduct == 0.0) {
+		return core.NewInteger(0)
+	}
+
+	// Build result elements
+	var resultElements []core.Expr
+	resultElements = append(resultElements, core.NewSymbol("Times"))
+
+	// Add combined numeric value
+	if hasIntegers && hasReals {
+		// Mixed: convert to float64
+		totalProduct := float64(intProduct) * realProduct
+		if totalProduct != 1.0 || len(nonNumeric) == 0 {
+			resultElements = append(resultElements, core.NewReal(totalProduct))
+		}
+	} else if hasIntegers {
+		// All integers: keep as integer
+		if intProduct != 1 || len(nonNumeric) == 0 {
+			resultElements = append(resultElements, core.NewInteger(intProduct))
+		}
+	} else if hasReals {
+		// All reals: keep as float64
+		if realProduct != 1.0 || len(nonNumeric) == 0 {
+			resultElements = append(resultElements, core.NewReal(realProduct))
+		}
+	}
+
+	// Add non-numeric terms
+	resultElements = append(resultElements, nonNumeric...)
+
+	// Apply OneIdentity-like behavior: if only one element (plus head), return it
+	if len(resultElements) == 2 {
+		return resultElements[1]
+	}
+
+	// If no elements besides head, return 1
+	if len(resultElements) == 1 {
+		return core.NewInteger(1)
+	}
+
+	return core.List{Elements: resultElements}
 }

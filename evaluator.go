@@ -3,10 +3,10 @@ package sexpr
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/stdlib"
 )
 
 // Evaluator represents the expression evaluator
@@ -268,28 +268,12 @@ func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
 
 // applyOrderless implements the Orderless attribute (commutativity)
 func (e *Evaluator) applyOrderless(list core.List) core.List {
-	if len(list.Elements) <= 2 {
-		return list
+	// Use the stdlib Sort function for consistent ordering
+	sorted := stdlib.Sort(list)
+	if sortedList, ok := sorted.(core.List); ok {
+		return sortedList
 	}
-
-	head := list.Head()
-	args := list.Elements[1:]
-
-	// Sort arguments by length, and then their string representation for canonical ordering
-	sort.Slice(args, func(i, j int) bool {
-		cmp := args[i].Length() - args[j].Length()
-		if cmp < 0 {
-			return true
-		}
-		if cmp > 0 {
-			return false
-		}
-
-		// TODO: now do string comparison
-		return args[i].String() < args[j].String()
-	})
-
-	return core.NewList(head, args...)
+	return list
 }
 
 // applyOneIdentity implements the OneIdentity attribute
@@ -522,6 +506,10 @@ func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// First argument should be a symbol (don't evaluate it)
 	if symbolName, ok := core.ExtractSymbol(args[0]); ok {
+		// Prevent direct assignment to $ variables
+		if len(symbolName) > 0 && symbolName[0] == '$' {
+			return core.NewErrorExpr("ProtectionError", "$ variables cannot be assigned directly", args)
+		}
 
 		// Evaluate the value
 		value := e.evaluate(args[1], ctx)
@@ -530,7 +518,10 @@ func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 		}
 
 		// Set the variable
-		ctx.Set(symbolName, value)
+		if err := ctx.Set(symbolName, value); err != nil {
+			return core.NewErrorExpr("ProtectionError", err.Error(), args)
+		}
+
 		return value
 	}
 
@@ -572,8 +563,16 @@ func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr
 
 	// Handle simple variable assignment: x := value
 	if symbolName, ok := core.ExtractSymbol(lhs); ok {
+		// Prevent direct assignment to $ variables
+		if len(symbolName) > 0 && symbolName[0] == '$' {
+			return core.NewErrorExpr("ProtectionError", "$ variables cannot be assigned directly", args)
+		}
+
 		// For SetDelayed, store the unevaluated RHS
-		ctx.Set(symbolName, rhs)
+		if err := ctx.Set(symbolName, rhs); err != nil {
+			return core.NewErrorExpr("ProtectionError", err.Error(), args)
+		}
+
 		return core.NewSymbolNull()
 	}
 
@@ -974,7 +973,9 @@ func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 			if core.IsError(initialValue) {
 				return initialValue
 			}
-			blockCtx.Set(varSymbol, initialValue) // Will set in blockCtx due to scoping
+			if err := blockCtx.Set(varSymbol, initialValue); err != nil {
+				return core.NewErrorExpr("ProtectionError", err.Error(), []core.Expr{varExpr})
+			}
 		}
 	}
 

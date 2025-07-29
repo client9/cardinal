@@ -20,28 +20,22 @@ var symbolSpecs = map[string]SymbolSpec{
 		Name:       "Plus",
 		Attributes: []string{"Flat", "Listable", "NumericFunction", "OneIdentity", "Orderless", "Protected"},
 		Functions: map[string]any{
-			"()":           stdlib.PlusIdentity,
-			"(x__Integer)": stdlib.PlusIntegers,
-			"(x__Real)":    stdlib.PlusReals,
-			"(x__Number)":  stdlib.PlusNumbers,
+			"(x___)": stdlib.PlusExpr,
 		},
 	},
 	"Times": {
 		Name:       "Times",
 		Attributes: []string{"Flat", "Orderless", "OneIdentity"},
 		Functions: map[string]any{
-			"()":           stdlib.TimesIdentity,
-			"(x__Integer)": stdlib.TimesIntegers,
-			"(x__Real)":    stdlib.TimesReals,
-			"(x__Number)":  stdlib.TimesNumbers,
+			"(x___)": stdlib.TimesExpr,
 		},
 	},
 	"Power": {
 		Name:       "Power",
 		Attributes: []string{"OneIdentity"},
 		Functions: map[string]any{
-			"(x_Integer, y_Integer)"  : stdlib.PowerInteger,
-			"(x_Number, y_Number)":     stdlib.PowerExprs,
+			"(x_Integer, y_Integer)": stdlib.PowerInteger,
+			"(x_Number, y_Number)":   stdlib.PowerExprs,
 		},
 	},
 	"Subtract": {
@@ -277,6 +271,13 @@ var symbolSpecs = map[string]SymbolSpec{
 		Attributes: []string{},
 		Functions: map[string]any{
 			"(x_)": stdlib.FlattenExpr,
+		},
+	},
+	"Sort": {
+		Name:       "Sort",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(x_)": stdlib.Sort,
 		},
 	},
 

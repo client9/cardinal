@@ -30,7 +30,7 @@ func TestReplaceAllFunction(t *testing.T) {
 		{
 			name:     "ReplaceAll with single Rule - deeply nested",
 			input:    `ReplaceAll(Plus(x, Times(x, y)), Rule(x, 1))`,
-			expected: `Plus(1, Times(1, y))`, // Plus is Orderless: Plus(Times(1, y), 1) -> Plus(1, Times(1, y))
+			expected: `Plus(1, y)`, // Times(1, y) simplifies to y, then Plus(1, y)
 		},
 		{
 			name:     "ReplaceAll with single Rule - multiple levels",

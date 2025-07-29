@@ -43,8 +43,8 @@ func TestCommentsParsing(t *testing.T) {
 // Test that comments work the same as if they weren't there
 func TestCommentsEquivalence(t *testing.T) {
 	testPairs := []struct {
-		name         string
-		withComments string
+		name            string
+		withComments    string
 		withoutComments string
 	}{
 		{
@@ -73,9 +73,9 @@ func TestCommentsEquivalence(t *testing.T) {
 		t.Run(pair.name, func(t *testing.T) {
 			result1 := evaluateString(pair.withComments)
 			result2 := evaluateString(pair.withoutComments)
-			
+
 			if result1 != result2 {
-				t.Errorf("Results should be identical:\nWith comments: %s\nWithout comments: %s", 
+				t.Errorf("Results should be identical:\nWith comments: %s\nWithout comments: %s",
 					result1, result2)
 			}
 		})

@@ -219,6 +219,32 @@ func (l *Lexer) readUnderscores() string {
 	return l.input[position : l.position-1]
 }
 
+func (l *Lexer) readDollarSymbol() string {
+	position := l.position - 1
+	l.readChar() // consume '$'
+
+	// Handle bare '$'
+	if !isDigit(l.ch) && !isLetter(l.ch) {
+		return l.input[position : l.position-1]
+	}
+
+	// Handle $1-$9 (single digit)
+	if isDigit(l.ch) {
+		l.readChar() // consume the digit
+		return l.input[position : l.position-1]
+	}
+
+	// Handle $name (alphabetical name)
+	if isLetter(l.ch) {
+		for isLetter(l.ch) || isDigit(l.ch) {
+			l.readChar()
+		}
+		return l.input[position : l.position-1]
+	}
+
+	return l.input[position : l.position-1]
+}
+
 func (l *Lexer) readNumber() (string, TokenType) {
 	position := l.position - 1
 	tokenType := INTEGER
@@ -379,6 +405,11 @@ func (l *Lexer) NextToken() Token {
 		} else {
 			tok = Token{Type: UNDERSCORE, Value: underscoreValue, Position: tok.Position}
 		}
+		return tok
+	case '$':
+		tok.Position = l.position - 1
+		tok.Value = l.readDollarSymbol()
+		tok.Type = SYMBOL
 		return tok
 	case 0:
 		tok.Type = EOF

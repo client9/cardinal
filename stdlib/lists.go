@@ -2,6 +2,7 @@ package stdlib
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/client9/sexpr/core"
 )
@@ -352,4 +353,96 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 		}
 		return core.NewErrorExpr("InternalError", "Failed to join slices", []core.Expr{before, after})
 	}
+}
+
+// FlattenExpr flattens nested lists into a single one-dimensional list
+// Flatten(List(1, 2, List(3, 4))) -> List(1, 2, 3, 4)
+// For now, flattens all levels (no level specification)
+func FlattenExpr(expr core.Expr) core.Expr {
+	list, ok := expr.(core.List)
+	if !ok {
+		// If it's not a list, return it unchanged
+		return expr
+	}
+
+	if len(list.Elements) == 0 {
+		// Empty list, return unchanged
+		return expr
+	}
+
+	// Extract the head (List, Zoo, etc.)
+	head := list.Elements[0]
+
+	// Get the head name to determine if we should flatten sublists with the same head
+	headName, isSymbol := core.ExtractSymbol(head)
+	if !isSymbol {
+		// If head is not a symbol, return unchanged
+		return expr
+	}
+
+	// Flatten the elements recursively
+	var flattenedElements []core.Expr
+	flattenedElements = append(flattenedElements, head) // Keep the original head
+
+	for i := 1; i < len(list.Elements); i++ {
+		element := list.Elements[i]
+
+		// Check if this element is a list with the same head
+		if elementList, ok := element.(core.List); ok && len(elementList.Elements) > 0 {
+			if elementHeadName, ok := core.ExtractSymbol(elementList.Elements[0]); ok && elementHeadName == headName {
+				// Same head - flatten this sublist's elements
+				// First recursively flatten the sublist
+				flattened := FlattenExpr(element)
+				if flattenedList, ok := flattened.(core.List); ok && len(flattenedList.Elements) > 1 {
+					// Add all elements except the head
+					flattenedElements = append(flattenedElements, flattenedList.Elements[1:]...)
+				}
+			} else {
+				// Different head - recursively flatten but keep as single element
+				flattenedElements = append(flattenedElements, FlattenExpr(element))
+			}
+		} else {
+			// Not a list - add as-is
+			flattenedElements = append(flattenedElements, element)
+		}
+	}
+
+	return core.List{Elements: flattenedElements}
+}
+
+// Sort sorts the elements of a list using canonical ordering
+// Elements are sorted first by length, then by string representation
+// This implements the same ordering used by the Orderless attribute
+func Sort(expr core.Expr) core.Expr {
+	list, ok := expr.(core.List)
+	if !ok || len(list.Elements) <= 2 {
+		// Not a list or too few elements to sort
+		return expr
+	}
+
+	head := list.Elements[0]
+	args := make([]core.Expr, len(list.Elements)-1)
+	copy(args, list.Elements[1:])
+
+	// Sort arguments by length, then by string representation for canonical ordering
+	sort.Slice(args, func(i, j int) bool {
+		// First compare by length
+		cmp := args[i].Length() - args[j].Length()
+		if cmp < 0 {
+			return true
+		}
+		if cmp > 0 {
+			return false
+		}
+
+		// If lengths are equal, compare by string representation
+		return args[i].String() < args[j].String()
+	})
+
+	// Reconstruct the list with sorted arguments
+	resultElements := make([]core.Expr, len(list.Elements))
+	resultElements[0] = head
+	copy(resultElements[1:], args)
+
+	return core.List{Elements: resultElements}
 }

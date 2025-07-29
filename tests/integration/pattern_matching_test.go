@@ -31,7 +31,7 @@ func TestMatchQSequencePatterns(t *testing.T) {
 			input:    "MatchQ(Zoo(1,2,a,b,c,d), Zoo(x_Integer, y_Integer, z___))",
 			expected: "True",
 		},
-		
+
 		// Type constraints on sequence patterns
 		{
 			name:     "BlankNullSequence with type constraint - success",
@@ -48,7 +48,7 @@ func TestMatchQSequencePatterns(t *testing.T) {
 			input:    "MatchQ(Zoo(1,2,3,a), Zoo(x_Integer, y_Integer, z___Integer))",
 			expected: "False",
 		},
-		
+
 		// BlankSequence patterns (z__) - must match at least one element
 		{
 			name:     "BlankSequence with zero elements - should fail",
@@ -65,7 +65,7 @@ func TestMatchQSequencePatterns(t *testing.T) {
 			input:    "MatchQ(Zoo(1,2,a,b), Zoo(x_Integer, y_Integer, z__))",
 			expected: "True",
 		},
-		
+
 		// Multiple sequence patterns
 		{
 			name:     "Multiple BlankNullSequence patterns",
@@ -77,7 +77,7 @@ func TestMatchQSequencePatterns(t *testing.T) {
 			input:    "MatchQ(Zoo(1,a,b,c,2,d,e), Zoo(x_Integer, y___, z_Integer, w___))",
 			expected: "True",
 		},
-		
+
 		// Edge cases
 		{
 			name:     "Pattern longer than expression",
@@ -116,7 +116,7 @@ func TestMatchQBasicPatterns(t *testing.T) {
 			input:    "MatchQ(Zoo(1,a), Zoo(x_Integer, y_Integer))",
 			expected: "False",
 		},
-		
+
 		// Literal matches
 		{
 			name:     "Exact literal match",
@@ -128,7 +128,7 @@ func TestMatchQBasicPatterns(t *testing.T) {
 			input:    "MatchQ(Zoo(1,2), Zoo(1,3))",
 			expected: "False",
 		},
-		
+
 		// Mixed patterns
 		{
 			name:     "Mixed literal and wildcard",
@@ -162,7 +162,7 @@ func TestMatchQRegressionCases(t *testing.T) {
 			input:    "MatchQ(Zoo(1,2,a,b), Zoo(x_Integer, y_Integer, z___))",
 			expected: "True",
 		},
-		
+
 		// Plus pattern (should work with Hold)
 		{
 			name:     "Plus pattern with Hold",

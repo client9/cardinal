@@ -379,7 +379,7 @@ func TestFlattenExpr(t *testing.T) {
 			expected: "Zoo(1, List(2, 3), 4)",
 		},
 		{
-			name:     "Mixed heads - List with Zoo inside", 
+			name:     "Mixed heads - List with Zoo inside",
 			input:    createMixedList("List", core.NewInteger(1), createIntList("Zoo", 2, 3), core.NewInteger(4)),
 			expected: "List(1, Zoo(2, 3), 4)",
 		},
@@ -426,11 +426,11 @@ func TestFlattenExpr(t *testing.T) {
 		// Complex nesting
 		{
 			name: "Triple nesting",
-			input: createMixedList("List", 
+			input: createMixedList("List",
 				core.NewInteger(1),
 				createMixedList("List",
 					core.NewInteger(2),
-					createMixedList("List", 
+					createMixedList("List",
 						core.NewInteger(3),
 						createIntList("List", 4, 5),
 					),
@@ -446,7 +446,7 @@ func TestFlattenExpr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := FlattenExpr(tt.input)
 			if result.String() != tt.expected {
-				t.Errorf("FlattenExpr(%s) = %s, expected %s", 
+				t.Errorf("FlattenExpr(%s) = %s, expected %s",
 					tt.input.String(), result.String(), tt.expected)
 			}
 		})

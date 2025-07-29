@@ -59,18 +59,18 @@ Plus(3, 4))`,
 		t.Run(test.name, func(t *testing.T) {
 			input := strings.NewReader(test.input)
 			output := &bytes.Buffer{}
-			
+
 			repl := NewREPLWithIO(input, output)
 			err := repl.Run()
 			if err != nil {
 				t.Fatalf("REPL error: %v", err)
 			}
-			
+
 			result := strings.TrimSpace(output.String())
 			// Get the last line which should be the result
 			lines := strings.Split(result, "\n")
 			lastLine := strings.TrimSpace(lines[len(lines)-1])
-			
+
 			if lastLine != test.expected {
 				t.Errorf("Expected %q, got %q", test.expected, lastLine)
 				t.Errorf("Full output:\n%s", result)
@@ -118,7 +118,7 @@ func TestREPLIncompleteExpressionDetection(t *testing.T) {
 	}
 
 	repl := NewREPL()
-	
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result := repl.isIncompleteExpression(test.errorString)
@@ -136,8 +136,8 @@ func TestREPLExecuteString(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "Simple expression",
-			input: "Plus(1, 2)",
+			name:     "Simple expression",
+			input:    "Plus(1, 2)",
 			expected: "3",
 		},
 		{
@@ -166,12 +166,12 @@ y`,
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			repl := NewREPLWithIO(nil, output)
-			
+
 			err := repl.ExecuteString(test.input)
 			if err != nil {
 				t.Fatalf("ExecuteString error: %v", err)
 			}
-			
+
 			result := strings.TrimSpace(output.String())
 			if result != test.expected {
 				t.Errorf("Expected %q, got %q", test.expected, result)

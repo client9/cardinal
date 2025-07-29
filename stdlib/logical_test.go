@@ -18,7 +18,7 @@ func TestNotExpr(t *testing.T) {
 			expected: core.NewBool(false),
 		},
 		{
-			name:     "Not False", 
+			name:     "Not False",
 			input:    core.NewBool(false),
 			expected: core.NewBool(true),
 		},
@@ -38,7 +38,7 @@ func TestNotExpr(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			result := NotExpr(test.input)
 			if !result.Equal(test.expected) {
-				t.Errorf("NotExpr(%s) = %s, expected %s", 
+				t.Errorf("NotExpr(%s) = %s, expected %s",
 					test.input.String(), result.String(), test.expected.String())
 			}
 		})
@@ -169,7 +169,7 @@ func TestMatchQExprs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			result := MatchQExprs(test.expr, test.pattern)
 			if result != test.expected {
-				t.Errorf("MatchQExprs(%s, %s) = %v, expected %v", 
+				t.Errorf("MatchQExprs(%s, %s) = %v, expected %v",
 					test.expr.String(), test.pattern.String(), result, test.expected)
 			}
 		})

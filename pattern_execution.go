@@ -36,7 +36,11 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr core.Expr, ctx
 		if pe.matchBlankWithBinding(blankExpr, expr, ctx) {
 			// Bind the variable if it has a name
 			if varName != "" {
-				ctx.Set(varName, expr)
+				if err := ctx.Set(varName, expr); err != nil {
+					// Pattern matching should not fail due to protection - log but continue
+					// This is a temporary binding during pattern matching
+					return false
+				}
 			}
 			return true
 		}
@@ -63,7 +67,9 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr core.Expr, ctx
 
 				// Bind the variable if named
 				if info.VarName != "" {
-					ctx.Set(info.VarName, expr)
+					if err := ctx.Set(info.VarName, expr); err != nil {
+						return false
+					}
 				}
 				return true
 			}
@@ -73,7 +79,9 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr core.Expr, ctx
 			// Regular symbol behavior depends on context
 			if isParameter {
 				// In parameter lists, regular symbols bind to values
-				ctx.Set(varName, expr)
+				if err := ctx.Set(varName, expr); err != nil {
+					return false
+				}
 				return true
 			} else {
 				// In head patterns, regular symbols require exact matches
@@ -218,7 +226,9 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []co
 
 			// Bind variable if named
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, exprs[exprIndex])
+				if err := ctx.Set(patternInfo.VarName, exprs[exprIndex]); err != nil {
+					return false
+				}
 			}
 
 			exprIndex++
@@ -233,7 +243,9 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []co
 
 			// Bind variable if named
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, core.NewList("List", sequenceExprs...))
+				if err := ctx.Set(patternInfo.VarName, core.NewList("List", sequenceExprs...)); err != nil {
+					return false
+				}
 			}
 
 			exprIndex += len(sequenceExprs)
@@ -245,7 +257,9 @@ func (pe *PatternExecutor) matchSequencePatternsWithBinding(patterns, exprs []co
 
 			// Bind variable if named (can be empty list)
 			if patternInfo.VarName != "" {
-				ctx.Set(patternInfo.VarName, core.NewList("List", sequenceExprs...))
+				if err := ctx.Set(patternInfo.VarName, core.NewList("List", sequenceExprs...)); err != nil {
+					return false
+				}
 			}
 
 			exprIndex += len(sequenceExprs)

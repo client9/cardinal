@@ -68,10 +68,10 @@ func TestRuleShorthandWithAssignment(t *testing.T) {
 
 func TestRuleShorthandVsExplicit(t *testing.T) {
 	tests := []struct {
-		name          string
-		shorthand     string
-		explicit      string
-		expectedSame  bool
+		name         string
+		shorthand    string
+		explicit     string
+		expectedSame bool
 	}{
 		{
 			name:         "Simple rule comparison",

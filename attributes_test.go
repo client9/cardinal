@@ -612,3 +612,95 @@ func TestAttributeFunctionsIntegration(t *testing.T) {
 		t.Errorf("After clearing all: expected %s, got %s", expected6, result6.String())
 	}
 }
+
+// TestProtectedAttributeEnforcement tests that Protected symbols cannot be reassigned
+func TestProtectedAttributeEnforcement(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       []string
+		input       string
+		expectError bool
+	}{
+		{
+			name: "Protected symbol cannot be assigned with Set",
+			setup: []string{
+				"x = 5",
+				"SetAttributes(x, Protected)",
+			},
+			input:       "x = 10",
+			expectError: true,
+		},
+		{
+			name: "Protected symbol cannot be assigned with SetDelayed",
+			setup: []string{
+				"y = 3",
+				"SetAttributes(y, Protected)",
+			},
+			input:       "y := 42",
+			expectError: true,
+		},
+		{
+			name:        "Built-in Protected symbol cannot be reassigned",
+			input:       "Plus = 42",
+			expectError: true,
+		},
+		{
+			name:        "Unprotected symbol can be reassigned",
+			input:       "z = 5; z = 10; z",
+			expectError: false,
+		},
+		{
+			name: "Symbol can be reassigned after clearing Protected",
+			setup: []string{
+				"w = 1",
+				"SetAttributes(w, Protected)",
+				"ClearAttributes(w, Protected)",
+			},
+			input:       "w = 2",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewEvaluator()
+
+			// Run setup commands
+			for _, setupCmd := range tt.setup {
+				expr, err := ParseString(setupCmd)
+				if err != nil {
+					t.Fatalf("Parse error in setup: %v", err)
+				}
+				result := evaluator.Evaluate(expr)
+				if core.IsError(result) {
+					t.Fatalf("Setup error: %s", result.String())
+				}
+			}
+
+			// Parse and evaluate the test input
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+
+			result := evaluator.Evaluate(expr)
+
+			if tt.expectError {
+				if !core.IsError(result) {
+					t.Errorf("Expected error, but got: %s", result.String())
+				} else {
+					// Check that it's specifically a ProtectionError
+					if errorExpr, ok := result.(*core.ErrorExpr); ok {
+						if errorExpr.ErrorType != "ProtectionError" {
+							t.Errorf("Expected ProtectionError, got %s: %s", errorExpr.ErrorType, result.String())
+						}
+					}
+				}
+			} else {
+				if core.IsError(result) {
+					t.Errorf("Unexpected error: %s", result.String())
+				}
+			}
+		})
+	}
+}
