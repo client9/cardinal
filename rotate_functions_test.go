@@ -467,13 +467,13 @@ func TestRotateIntegration(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.isError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error but got: %v", result)
 				}
 				return
 			}
 
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 

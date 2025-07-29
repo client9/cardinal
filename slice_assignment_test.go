@@ -190,13 +190,13 @@ func TestSliceAssignment(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error but got result: %v", result)
 				}
 				return
 			}
 
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Errorf("Unexpected evaluation error: %v", result)
 				return
 			}
@@ -214,7 +214,7 @@ func TestSliceAssignmentImmutability(t *testing.T) {
 	evaluator := NewEvaluator()
 
 	// Set up original list
-	evaluator.GetContext().Set("original", NewList("List", core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)))
+	evaluator.GetContext().Set("original", core.NewList("List", core.NewInteger(1), core.NewInteger(2), core.NewInteger(3)))
 
 	// Perform assignment
 	expr, err := ParseString("original[1] = 99")
@@ -223,7 +223,7 @@ func TestSliceAssignmentImmutability(t *testing.T) {
 	}
 
 	result := evaluator.Evaluate(expr)
-	if IsError(result) {
+	if core.IsError(result) {
 		t.Fatalf("Evaluation error: %v", result)
 	}
 
@@ -288,7 +288,7 @@ func TestByteArrayAssignment(t *testing.T) {
 					t.Fatalf("Setup parse error: %v", err)
 				}
 				setupResult := evaluator.Evaluate(setupExpr)
-				if IsError(setupResult) {
+				if core.IsError(setupResult) {
 					t.Fatalf("Setup evaluation error: %v", setupResult)
 				}
 			}
@@ -305,13 +305,13 @@ func TestByteArrayAssignment(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error but got result: %v", result)
 				}
 				return
 			}
 
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Errorf("Unexpected evaluation error: %v", result)
 				return
 			}
@@ -391,13 +391,13 @@ func TestSliceAssignmentEdgeCases(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error but got result: %v", result)
 				}
 				return
 			}
 
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Errorf("Unexpected evaluation error: %v", result)
 				return
 			}

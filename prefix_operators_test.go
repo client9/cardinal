@@ -2,6 +2,8 @@ package sexpr
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/core"
 )
 
 func TestPrefixNotOperator(t *testing.T) {
@@ -129,11 +131,11 @@ func TestPrefixNotOperator(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())
@@ -282,11 +284,11 @@ func TestPrefixNotOperatorWithExistingOperators(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())
@@ -346,7 +348,7 @@ func TestNotOperatorPrecedence(t *testing.T) {
 
 			result := evaluator.Evaluate(expr)
 
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Errorf("Unexpected error: %s", result.String())
 			} else if result.String() != tt.expected {
 				t.Errorf("Expected %s, got %s (%s)", tt.expected, result.String(), tt.desc)

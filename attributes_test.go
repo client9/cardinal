@@ -4,6 +4,8 @@ import (
 	"sort"
 	"sync"
 	"testing"
+
+	"github.com/client9/sexpr/core"
 )
 
 func TestAttribute_String(t *testing.T) {
@@ -401,11 +403,11 @@ func TestSetAttributesBuiltin(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.shouldError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())
@@ -465,11 +467,11 @@ func TestClearAttributesBuiltin(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.shouldError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())
@@ -547,11 +549,11 @@ func TestAttributesBuiltin(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.shouldError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())

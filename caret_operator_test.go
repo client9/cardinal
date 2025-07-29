@@ -2,6 +2,8 @@ package sexpr
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/core"
 )
 
 func TestCaretOperatorBasic(t *testing.T) {
@@ -89,11 +91,11 @@ func TestCaretOperatorBasic(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())
@@ -210,7 +212,7 @@ func TestCaretOperatorRightAssociativity(t *testing.T) {
 			} else {
 				// Test evaluation result
 				result := evaluator.Evaluate(expr)
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s (%s)", tt.expected, result.String(), tt.desc)
@@ -282,7 +284,7 @@ func TestCaretOperatorPrecedence(t *testing.T) {
 
 			result := evaluator.Evaluate(expr)
 
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Errorf("Unexpected error: %s", result.String())
 			} else if result.String() != tt.expected {
 				t.Errorf("Expected %s, got %s (%s)", tt.expected, result.String(), tt.desc)
@@ -352,11 +354,11 @@ func TestCaretOperatorWithExistingOperators(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.hasError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error, but got: %s", result.String())
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %s", result.String())
 				} else if result.String() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, result.String())

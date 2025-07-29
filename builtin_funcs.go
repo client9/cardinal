@@ -38,7 +38,7 @@ func WrapAttributesExpr(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Check for errors in arguments first
-	if IsError(args[0]) {
+	if core.IsError(args[0]) {
 		return args[0]
 	}
 
@@ -172,7 +172,7 @@ func WrapSetAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 
 	// Check for errors in arguments first
 	for _, arg := range args {
-		if IsError(arg) {
+		if core.IsError(arg) {
 			return arg
 		}
 	}
@@ -191,7 +191,7 @@ func WrapSetAttributesList(args []core.Expr, ctx *Context) core.Expr {
 
 	// Check for errors in arguments first
 	for _, arg := range args {
-		if IsError(arg) {
+		if core.IsError(arg) {
 			return arg
 		}
 	}
@@ -217,7 +217,7 @@ func WrapClearAttributesSingle(args []core.Expr, ctx *Context) core.Expr {
 
 	// Check for errors in arguments first
 	for _, arg := range args {
-		if IsError(arg) {
+		if core.IsError(arg) {
 			return arg
 		}
 	}
@@ -236,7 +236,7 @@ func WrapClearAttributesList(args []core.Expr, ctx *Context) core.Expr {
 
 	// Check for errors in arguments first
 	for _, arg := range args {
-		if IsError(arg) {
+		if core.IsError(arg) {
 			return arg
 		}
 	}
@@ -304,7 +304,7 @@ func WrapPatternSpecificity(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Check for errors in arguments first
-	if IsError(args[0]) {
+	if core.IsError(args[0]) {
 		return args[0]
 	}
 
@@ -321,7 +321,7 @@ func WrapShowPatterns(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Check for errors in arguments first
-	if IsError(args[0]) {
+	if core.IsError(args[0]) {
 		return args[0]
 	}
 

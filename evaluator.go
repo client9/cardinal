@@ -92,7 +92,7 @@ func (e *Evaluator) evaluateList(list core.List, ctx *Context) core.Expr {
 	evaluatedHead := e.evaluate(head, ctx)
 
 	// Check if head is an error - propagate it
-	if IsError(evaluatedHead) {
+	if core.IsError(evaluatedHead) {
 		return evaluatedHead
 	}
 
@@ -132,18 +132,18 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 
 	// Check for errors in evaluated arguments
 	for _, arg := range evaluatedArgs {
-		if IsError(arg) {
+		if core.IsError(arg) {
 			return arg
 		}
 	}
 
 	// Create the function call expression for pattern matching
-	callExpr := NewList(headName, evaluatedArgs...)
+	callExpr := core.NewList(headName, evaluatedArgs...)
 
 	// Try to find a matching pattern in the function registry
 	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx); found {
 		// Check if result is an error and needs stack trace
-		if IsError(result) {
+		if core.IsError(result) {
 			if errorExpr, ok := result.(*ErrorExpr); ok {
 				// Add stack frame for this function call
 				funcCallStr := headName + "(" + formatArgs(evaluatedArgs) + ")"
@@ -180,7 +180,7 @@ func (e *Evaluator) evaluateToFixedPoint(expr core.Expr, ctx *Context) core.Expr
 		}
 
 		// Check for errors
-		if IsError(next) {
+		if core.IsError(next) {
 			return next
 		}
 
@@ -482,7 +482,7 @@ func (e *Evaluator) evaluateIf(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate the condition
 	condition := e.evaluate(args[0], ctx)
-	if IsError(condition) {
+	if core.IsError(condition) {
 		return condition
 	}
 
@@ -516,7 +516,7 @@ func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 
 		// Evaluate the value
 		value := e.evaluate(args[1], ctx)
-		if IsError(value) {
+		if core.IsError(value) {
 			return value
 		}
 
@@ -589,14 +589,14 @@ func (e *Evaluator) evaluateUnset(args []core.Expr, ctx *Context) core.Expr {
 // evaluateHold implements the Hold special form
 func (e *Evaluator) evaluateHold(args []core.Expr, ctx *Context) core.Expr {
 	// Hold returns its arguments unevaluated wrapped in Hold
-	return NewList("Hold", args...)
+	return core.NewList("Hold", args...)
 }
 
 // evaluatePattern implements the Pattern special form
 func (e *Evaluator) evaluatePattern(args []core.Expr, ctx *Context) core.Expr {
 	// Pattern expressions should remain unevaluated during normal evaluation
 	// They are only processed during pattern matching operations
-	return NewList("Pattern", args...)
+	return core.NewList("Pattern", args...)
 }
 
 // evaluateEvaluate implements the Evaluate special form
@@ -614,7 +614,7 @@ func (e *Evaluator) evaluateEvaluate(args []core.Expr, ctx *Context) core.Expr {
 	var result core.Expr = core.NewSymbolNull()
 	for _, arg := range args {
 		result = e.evaluate(arg, ctx)
-		if IsError(result) {
+		if core.IsError(result) {
 			return result
 		}
 	}
@@ -630,7 +630,7 @@ func (e *Evaluator) evaluateCompoundExpression(args []core.Expr, ctx *Context) c
 	var result core.Expr = core.NewSymbolNull()
 	for _, arg := range args {
 		result = e.evaluate(arg, ctx)
-		if IsError(result) {
+		if core.IsError(result) {
 			return result
 		}
 	}
@@ -648,7 +648,7 @@ func (e *Evaluator) evaluateAnd(args []core.Expr, ctx *Context) core.Expr {
 	for _, arg := range args {
 		// Evaluate this argument
 		result := e.evaluate(arg, ctx)
-		if IsError(result) {
+		if core.IsError(result) {
 			return result
 		}
 
@@ -670,7 +670,7 @@ func (e *Evaluator) evaluateAnd(args []core.Expr, ctx *Context) core.Expr {
 		return nonBooleanArgs[0] // Single non-boolean argument
 	} else {
 		// Multiple non-boolean arguments, return simplified And expression
-		return NewList("And", nonBooleanArgs...)
+		return core.NewList("And", nonBooleanArgs...)
 	}
 }
 
@@ -684,7 +684,7 @@ func (e *Evaluator) evaluateOr(args []core.Expr, ctx *Context) core.Expr {
 
 	for _, arg := range args {
 		result := e.evaluate(arg, ctx)
-		if IsError(result) {
+		if core.IsError(result) {
 			return result
 		}
 
@@ -706,7 +706,7 @@ func (e *Evaluator) evaluateOr(args []core.Expr, ctx *Context) core.Expr {
 		return nonBooleanArgs[0] // Single non-boolean argument
 	} else {
 		// Multiple non-boolean arguments, return simplified Or expression
-		return NewList("Or", nonBooleanArgs...)
+		return core.NewList("Or", nonBooleanArgs...)
 	}
 }
 
@@ -719,7 +719,7 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 
 	// Evaluate the expression being sliced
 	expr := e.evaluate(args[0], ctx)
-	if IsError(expr) {
+	if core.IsError(expr) {
 		return expr
 	}
 
@@ -732,12 +732,12 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 
 	// Evaluate start and end indices
 	startExpr := e.evaluate(args[1], ctx)
-	if IsError(startExpr) {
+	if core.IsError(startExpr) {
 		return startExpr
 	}
 
 	endExpr := e.evaluate(args[2], ctx)
-	if IsError(endExpr) {
+	if core.IsError(endExpr) {
 		return endExpr
 	}
 
@@ -769,13 +769,13 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate the expression being sliced
 	expr := e.evaluate(args[0], ctx)
-	if IsError(expr) {
+	if core.IsError(expr) {
 		return expr
 	}
 
 	// Evaluate start index
 	startExpr := e.evaluate(args[1], ctx)
-	if IsError(startExpr) {
+	if core.IsError(startExpr) {
 		return startExpr
 	}
 
@@ -789,12 +789,12 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	if start < 0 {
 		// Negative start: use Take to get last |start| elements
 		// Take([1,2,3,4,5], -2) gives [4,5]
-		return e.evaluate(NewList("Take", expr, core.NewInteger(start)), ctx)
+		return e.evaluate(core.NewList("Take", expr, core.NewInteger(start)), ctx)
 	} else {
 		// Positive start: use Drop to remove first (start-1) elements
 		// Drop([1,2,3,4,5], 2) gives [3,4,5] (for start=3, 1-indexed)
 		dropCount := start - 1
-		return e.evaluate(NewList("Drop", expr, core.NewInteger(dropCount)), ctx)
+		return e.evaluate(core.NewList("Drop", expr, core.NewInteger(dropCount)), ctx)
 	}
 }
 
@@ -807,7 +807,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate the expression being modified
 	expr := e.evaluate(args[0], ctx)
-	if IsError(expr) {
+	if core.IsError(expr) {
 		return expr
 	}
 
@@ -820,7 +820,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate index
 	indexExpr := e.evaluate(args[1], ctx)
-	if IsError(indexExpr) {
+	if core.IsError(indexExpr) {
 		return indexExpr
 	}
 
@@ -833,7 +833,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate value
 	value := e.evaluate(args[2], ctx)
-	if IsError(value) {
+	if core.IsError(value) {
 		return value
 	}
 
@@ -850,7 +850,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate the expression being modified
 	expr := e.evaluate(args[0], ctx)
-	if IsError(expr) {
+	if core.IsError(expr) {
 		return expr
 	}
 
@@ -863,7 +863,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate start index
 	startExpr := e.evaluate(args[1], ctx)
-	if IsError(startExpr) {
+	if core.IsError(startExpr) {
 		return startExpr
 	}
 
@@ -876,7 +876,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate end index
 	endExpr := e.evaluate(args[2], ctx)
-	if IsError(endExpr) {
+	if core.IsError(endExpr) {
 		return endExpr
 	}
 
@@ -894,7 +894,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate value
 	value := e.evaluate(args[3], ctx)
-	if IsError(value) {
+	if core.IsError(value) {
 		return value
 	}
 
@@ -962,7 +962,7 @@ func (e *Evaluator) evaluateBlock(args []core.Expr, ctx *Context) core.Expr {
 			// Assignment: {x = value} - evaluate and set value
 			varSymbol, _ := core.ExtractSymbol(assignment.Elements[1]) // Already validated above
 			initialValue := e.evaluate(assignment.Elements[2], ctx)
-			if IsError(initialValue) {
+			if core.IsError(initialValue) {
 				return initialValue
 			}
 			blockCtx.Set(varSymbol, initialValue) // Will set in blockCtx due to scoping
@@ -1008,7 +1008,7 @@ func (e *Evaluator) evaluateDoSimple(expr core.Expr, n int64, ctx *Context) core
 	// Evaluate expr n times (side effects only)
 	for i := int64(0); i < n; i++ {
 		result := e.evaluate(expr, ctx)
-		if IsError(result) {
+		if core.IsError(result) {
 			return result // Return error immediately
 		}
 		// Discard result - Do is for side effects only
@@ -1037,14 +1037,14 @@ func (e *Evaluator) evaluateDoIterator(expr core.Expr, iterSpec core.List, ctx *
 
 		// Evaluate expression with current iterator value (for side effects only)
 		blockResult := e.evaluateWithIteratorBinding(expr, variable, current, ctx)
-		if IsError(blockResult) {
+		if core.IsError(blockResult) {
 			return blockResult // Return error immediately
 		}
 		// Discard result - Do is for side effects only
 
 		// Increment for next iteration
 		current = e.evaluateIteratorIncrement(current, increment, ctx)
-		if IsError(current) {
+		if core.IsError(current) {
 			return current
 		}
 	}
@@ -1094,7 +1094,7 @@ func (e *Evaluator) evaluateTableSimple(expr core.Expr, n int64, ctx *Context) c
 		// Evaluate expr in current context for each iteration
 		// This allows expressions with side effects to work correctly
 		evaluated := e.evaluate(expr, ctx)
-		if IsError(evaluated) {
+		if core.IsError(evaluated) {
 			return evaluated
 		}
 		elements[i] = evaluated
@@ -1126,14 +1126,14 @@ func (e *Evaluator) evaluateTableIterator(expr core.Expr, iterSpec core.List, ct
 
 		// Use Block to bind iterator variable and evaluate expression
 		blockResult := e.evaluateWithIteratorBinding(expr, variable, current, ctx)
-		if IsError(blockResult) {
+		if core.IsError(blockResult) {
 			return blockResult
 		}
 		results = append(results, blockResult)
 
 		// Increment current value using expression arithmetic
 		current = e.evaluateIteratorIncrement(current, increment, ctx)
-		if IsError(current) {
+		if core.IsError(current) {
 			return current
 		}
 	}
@@ -1164,33 +1164,33 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 	case 3: // core.List(i, max) → core.List(i, 1, max, 1)
 		start = core.NewInteger(1)
 		end = e.evaluate(iterSpec.Elements[2], ctx)
-		if IsError(end) {
+		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = core.NewInteger(1)
 
 	case 4: // core.List(i, start, end) → core.List(i, start, end, 1)
 		start = e.evaluate(iterSpec.Elements[2], ctx)
-		if IsError(start) {
+		if core.IsError(start) {
 			return "", nil, nil, nil, start
 		}
 		end = e.evaluate(iterSpec.Elements[3], ctx)
-		if IsError(end) {
+		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = core.NewInteger(1)
 
 	case 5: // core.List(i, start, end, increment)
 		start = e.evaluate(iterSpec.Elements[2], ctx)
-		if IsError(start) {
+		if core.IsError(start) {
 			return "", nil, nil, nil, start
 		}
 		end = e.evaluate(iterSpec.Elements[3], ctx)
-		if IsError(end) {
+		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = e.evaluate(iterSpec.Elements[4], ctx)
-		if IsError(increment) {
+		if core.IsError(increment) {
 			return "", nil, nil, nil, increment
 		}
 
@@ -1202,7 +1202,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 	// Test if Plus(start, increment) evaluates to something different (not unevaluated)
 	testPlus := core.NewList("Plus", start, increment)
 	plusResult := e.evaluate(testPlus, ctx)
-	if IsError(plusResult) {
+	if core.IsError(plusResult) {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult), []core.Expr{plusResult})
 	}
@@ -1214,7 +1214,7 @@ func (e *Evaluator) parseTableIteratorSpec(iterSpec core.List, ctx *Context) (va
 	// Test if comparison operation evaluates
 	testLessEqual := core.NewList("LessEqual", start, end)
 	compareResult := e.evaluate(testLessEqual, ctx)
-	if IsError(compareResult) {
+	if core.IsError(compareResult) {
 		return "", nil, nil, nil, NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator comparison failed: %s", compareResult), []core.Expr{compareResult})
 	}

@@ -194,23 +194,23 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 
 		// Check for errors in arguments first
 		for _, arg := range args {
-			if IsError(arg) {
+			if core.IsError(arg) {
 				return arg
 			}
 		}
 
 		// Sum all arguments using Plus through evaluator
-		plusList := NewList("Plus", args...)
+		plusList := core.NewList("Plus", args...)
 		sumResult := eval.evaluate(plusList, ctx)
 
 		// If sum failed, propagate the error
-		if IsError(sumResult) {
+		if core.IsError(sumResult) {
 			return sumResult
 		}
 
 		// Divide by count (use float to ensure real division)
 		count := core.NewReal(float64(len(args)))
-		divideList := NewList("Divide", sumResult, count)
+		divideList := core.NewList("Divide", sumResult, count)
 		avgResult := eval.evaluate(divideList, ctx)
 
 		return avgResult
@@ -243,7 +243,7 @@ func TestFunctionRegistry_ErrorPropagation(t *testing.T) {
 	}
 
 	result2 := eval.Evaluate(expr2)
-	if !IsError(result2) {
+	if !core.IsError(result2) {
 		t.Errorf("expected error propagation, got %s", result2.String())
 	} else {
 		errorExpr := result2.(*ErrorExpr)

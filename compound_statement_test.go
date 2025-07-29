@@ -2,6 +2,8 @@ package sexpr
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/core"
 )
 
 func TestCompoundStatements(t *testing.T) {
@@ -121,7 +123,7 @@ func TestCompoundStatements(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -186,7 +188,7 @@ func TestCompoundStatementParsing(t *testing.T) {
 					// Maybe parsing succeeded but evaluation should fail
 					evaluator := NewEvaluator()
 					result := evaluator.Evaluate(expr)
-					if !IsError(result) {
+					if !core.IsError(result) {
 						t.Errorf("Expected error but got none")
 					}
 				} else if tt.errorMsg != "" && !containsSubstring(err.Error(), tt.errorMsg) {
@@ -199,7 +201,7 @@ func TestCompoundStatementParsing(t *testing.T) {
 					// Also check that evaluation works
 					evaluator := NewEvaluator()
 					result := evaluator.Evaluate(expr)
-					if IsError(result) {
+					if core.IsError(result) {
 						t.Errorf("Unexpected evaluation error: %v", result)
 					}
 				}
@@ -250,7 +252,7 @@ func TestCompoundStatementPrecedence(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -299,7 +301,7 @@ func TestCompoundStatementSideEffects(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 

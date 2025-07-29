@@ -2,6 +2,8 @@ package sexpr
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/core"
 )
 
 func TestSliceSyntaxBasicIndexing(t *testing.T) {
@@ -51,7 +53,7 @@ func TestSliceSyntaxBasicIndexing(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -120,7 +122,7 @@ func TestSliceSyntaxRanges(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -179,7 +181,7 @@ func TestSliceSyntaxNegativeIndexing(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -223,7 +225,7 @@ func TestSliceSyntaxSliceableTypes(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -282,11 +284,11 @@ func TestSliceSyntaxErrorCases(t *testing.T) {
 			result := evaluator.Evaluate(expr)
 
 			if tt.expectError {
-				if !IsError(result) {
+				if !core.IsError(result) {
 					t.Errorf("Expected error but got: %v", result)
 				}
 			} else {
-				if IsError(result) {
+				if core.IsError(result) {
 					t.Errorf("Unexpected error: %v", result)
 				}
 			}
@@ -336,7 +338,7 @@ func TestSliceSyntaxPrecedence(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			result := evaluator.Evaluate(expr)
-			if IsError(result) {
+			if core.IsError(result) {
 				t.Fatalf("Evaluation error: %v", result)
 			}
 
@@ -385,7 +387,7 @@ func TestSliceSyntaxCompatibilityWithExistingFunctions(t *testing.T) {
 
 			evaluator := NewEvaluator()
 			sliceResult := evaluator.Evaluate(sliceExpr)
-			if IsError(sliceResult) {
+			if core.IsError(sliceResult) {
 				t.Fatalf("Evaluation error for slice syntax: %v", sliceResult)
 			}
 
@@ -396,7 +398,7 @@ func TestSliceSyntaxCompatibilityWithExistingFunctions(t *testing.T) {
 			}
 
 			funcResult := evaluator.Evaluate(funcExpr)
-			if IsError(funcResult) {
+			if core.IsError(funcResult) {
 				t.Fatalf("Evaluation error for function call: %v", funcResult)
 			}
 

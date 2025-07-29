@@ -28,21 +28,21 @@ func TestErrorExpr_Basic(t *testing.T) {
 }
 
 func TestIsError(t *testing.T) {
-	// Test IsError function
+	// Test core.IsError function
 	errorExpr := core.NewErrorExpr("TestError", "test", nil)
 	intExpr := core.NewInteger(42)
 	listExpr := core.NewList("Plus", core.NewInteger(1), core.NewInteger(2))
 
-	if !IsError(errorExpr) {
-		t.Error("IsError should return true for ErrorExpr")
+	if !core.IsError(errorExpr) {
+		t.Error("core.IsError should return true for ErrorExpr")
 	}
 
-	if IsError(intExpr) {
-		t.Error("IsError should return false for IntAtom")
+	if core.IsError(intExpr) {
+		t.Error("core.IsError should return false for IntAtom")
 	}
 
-	if IsError(listExpr) {
-		t.Error("IsError should return false for List")
+	if core.IsError(listExpr) {
+		t.Error("core.IsError should return false for List")
 	}
 }
 
@@ -58,7 +58,7 @@ func TestErrorPropagation(t *testing.T) {
 	result := eval.Evaluate(expr)
 
 	// The error should propagate up through the And expression
-	if !IsError(result) {
+	if !core.IsError(result) {
 		t.Errorf("expected error to propagate, got: %s", result.String())
 		return
 	}

@@ -123,7 +123,7 @@ func TestRecursionPrevention_SimpleCase(t *testing.T) {
 	result := eval.Evaluate(callExpr)
 
 	// Should get a recursion error
-	if !IsError(result) {
+	if !core.IsError(result) {
 		t.Error("expected recursion error, got successful result")
 		return
 	}
@@ -151,7 +151,7 @@ func TestStackTrace_ErrorPropagation(t *testing.T) {
 
 	result := eval.Evaluate(expr)
 
-	if !IsError(result) {
+	if !core.IsError(result) {
 		t.Error("expected error for division by zero")
 		return
 	}
@@ -187,7 +187,7 @@ func TestStackTrace_NestedErrors(t *testing.T) {
 
 	result := eval.Evaluate(expr)
 
-	if !IsError(result) {
+	if !core.IsError(result) {
 		t.Error("expected error for nested division by zero")
 		return
 	}
