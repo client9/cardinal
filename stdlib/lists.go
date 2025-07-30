@@ -411,8 +411,7 @@ func FlattenExpr(expr core.Expr) core.Expr {
 }
 
 // Sort sorts the elements of a list using canonical ordering
-// Elements are sorted first by length, then by string representation
-// This implements the same ordering used by the Orderless attribute
+// Uses the same ordering as the Orderless attribute and mathematical functions
 func Sort(expr core.Expr) core.Expr {
 	list, ok := expr.(core.List)
 	if !ok || len(list.Elements) <= 2 {
@@ -424,19 +423,9 @@ func Sort(expr core.Expr) core.Expr {
 	args := make([]core.Expr, len(list.Elements)-1)
 	copy(args, list.Elements[1:])
 
-	// Sort arguments by length, then by string representation for canonical ordering
+	// Sort arguments using canonical ordering
 	sort.Slice(args, func(i, j int) bool {
-		// First compare by length
-		cmp := args[i].Length() - args[j].Length()
-		if cmp < 0 {
-			return true
-		}
-		if cmp > 0 {
-			return false
-		}
-
-		// If lengths are equal, compare by string representation
-		return args[i].String() < args[j].String()
+		return core.CanonicalCompare(args[i], args[j])
 	})
 
 	// Reconstruct the list with sorted arguments

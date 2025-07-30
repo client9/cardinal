@@ -29,6 +29,7 @@ const (
 
 var precedences = map[TokenType]Precedence{
 	LBRACKET:     PrecedencePostfix, // High precedence for postfix indexing
+	LPAREN:       PrecedencePostfix, // High precedence for postfix function application
 	SEMICOLON:    PrecedenceCompound,
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
@@ -102,6 +103,8 @@ func (p *Parser) parseInfixExpression(precedence Precedence) core.Expr {
 	for p.currentToken.Type != EOF && precedence < p.currentPrecedence() {
 		if p.currentToken.Type == LBRACKET {
 			left = p.parseIndexOrSlice(left)
+		} else if p.currentToken.Type == LPAREN {
+			left = p.parseFunctionApplication(left)
 		} else if p.IsInfixOperator(p.currentToken.Type) {
 			left = p.parseInfixOperation(left)
 		} else {
@@ -583,6 +586,43 @@ func (p *Parser) parseIndexOrSlice(expr core.Expr) core.Expr {
 		p.addError("expected ':' or ']' after slice expression")
 		return expr
 	}
+}
+
+// parseFunctionApplication handles postfix function application like Function(x, x+1)(5)
+func (p *Parser) parseFunctionApplication(expr core.Expr) core.Expr {
+	p.nextToken() // consume '('
+
+	var args []core.Expr
+
+	// Handle empty argument list: f()
+	if p.currentToken.Type == RPAREN {
+		p.nextToken()                                 // consume ')'
+		return core.List{Elements: []core.Expr{expr}} // Just the function with no arguments
+	}
+
+	// Parse arguments
+	for {
+		arg := p.parseExpression()
+		args = append(args, arg)
+
+		if p.currentToken.Type == COMMA {
+			p.nextToken() // consume ','
+			continue
+		} else if p.currentToken.Type == RPAREN {
+			p.nextToken() // consume ')'
+			break
+		} else {
+			p.addError("expected ',' or ')' in function application")
+			return expr
+		}
+	}
+
+	// Create function application: put the function expression as head, followed by arguments
+	elements := make([]core.Expr, len(args)+1)
+	elements[0] = expr
+	copy(elements[1:], args)
+
+	return core.List{Elements: elements}
 }
 
 // parseSliceExpression parses expressions inside slice brackets, treating colons as separators

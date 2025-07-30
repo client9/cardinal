@@ -228,9 +228,11 @@ func (l *Lexer) readDollarSymbol() string {
 		return l.input[position : l.position-1]
 	}
 
-	// Handle $1-$9 (single digit)
+	// Handle $1, $2, $10, $11, etc. (multi-digit numbers)
 	if isDigit(l.ch) {
-		l.readChar() // consume the digit
+		for isDigit(l.ch) {
+			l.readChar() // consume all digits
+		}
 		return l.input[position : l.position-1]
 	}
 

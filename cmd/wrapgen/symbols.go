@@ -366,6 +366,11 @@ var symbolSpecs = map[string]SymbolSpec{
 		Attributes: []string{"HoldAll"},
 		Functions:  map[string]any{}, // Block is handled as special form in evaluator
 	},
+	"Function": {
+		Name:       "Function",
+		Attributes: []string{"HoldAll"},
+		Functions:  map[string]any{}, // Function is handled as special form in evaluator
+	},
 	"Table": {
 		Name:       "Table",
 		Attributes: []string{"HoldAll"},

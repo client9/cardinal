@@ -3,10 +3,10 @@ package sexpr
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/stdlib"
 )
 
 // Evaluator represents the expression evaluator
@@ -80,6 +80,7 @@ func (e *Evaluator) evaluateExpr(expr core.Expr, ctx *Context) core.Expr {
 
 // evaluateList evaluates a list expression
 func (e *Evaluator) evaluateList(list core.List, ctx *Context) core.Expr {
+
 	if len(list.Elements) == 0 {
 		return list
 	}
@@ -96,37 +97,44 @@ func (e *Evaluator) evaluateList(list core.List, ctx *Context) core.Expr {
 		return evaluatedHead
 	}
 
+	// Check if head is a function expression (function application)
+	if funcExpr, ok := evaluatedHead.(core.FunctionExpr); ok {
+		return e.applyFunction(funcExpr, args, ctx)
+	}
+
 	// Extract function name from evaluated head
 	headName, ok := core.ExtractSymbol(evaluatedHead)
 	if !ok {
+
 		// Head is not a symbol, return unevaluated
 		return list
 	}
 
 	// Apply attribute transformations before evaluation
 	transformedList := e.applyAttributeTransformations(headName, list, ctx)
+
 	if !listsEqual(transformedList, list) {
 		// The list was transformed, re-evaluate it
 		return e.evaluateList(transformedList, ctx)
 	}
-
 	// Handle OneIdentity attribute specially - it can return a non-List
 	if ctx.symbolTable.HasAttribute(headName, OneIdentity) && len(list.Elements) == 2 {
 		// OneIdentity: f(x) = x
-		return e.evaluate(list.Elements[1], ctx)
+		result := e.evaluate(list.Elements[1], ctx)
+		return result
 	}
 
 	// Check for special forms first (these don't follow normal evaluation rules)
 	if specialResult := e.evaluateSpecialForm(headName, args, ctx); specialResult != nil {
 		return specialResult
 	}
-
 	// Try pattern-based function resolution
 	return e.evaluatePatternFunction(headName, args, ctx)
 }
 
 // evaluatePatternFunction evaluates a function using pattern-based dispatch
 func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, ctx *Context) core.Expr {
+
 	// Evaluate arguments based on hold attributes
 	evaluatedArgs := e.evaluateArguments(headName, args, ctx)
 
@@ -268,12 +276,26 @@ func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
 
 // applyOrderless implements the Orderless attribute (commutativity)
 func (e *Evaluator) applyOrderless(list core.List) core.List {
-	// Use the stdlib Sort function for consistent ordering
-	sorted := stdlib.Sort(list)
-	if sortedList, ok := sorted.(core.List); ok {
-		return sortedList
+	if len(list.Elements) <= 2 {
+		// Not enough elements to sort (need at least head + 2 args)
+		return list
 	}
-	return list
+
+	head := list.Elements[0]
+	args := make([]core.Expr, len(list.Elements)-1)
+	copy(args, list.Elements[1:])
+
+	// Sort arguments using canonical ordering
+	sort.Slice(args, func(i, j int) bool {
+		return core.CanonicalCompare(args[i], args[j])
+	})
+
+	// Reconstruct the list with sorted arguments
+	resultElements := make([]core.Expr, len(list.Elements))
+	resultElements[0] = head
+	copy(resultElements[1:], args)
+
+	return core.List{Elements: resultElements}
 }
 
 // applyOneIdentity implements the OneIdentity attribute
@@ -322,6 +344,8 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *
 		return e.evaluateDo(args, ctx)
 	case "Pattern":
 		return e.evaluatePattern(args, ctx)
+	case "Function":
+		return e.evaluateFunction(args, ctx)
 	default:
 		return nil // Not a special form
 	}
@@ -605,6 +629,261 @@ func (e *Evaluator) evaluatePattern(args []core.Expr, ctx *Context) core.Expr {
 	// Pattern expressions should remain unevaluated during normal evaluation
 	// They are only processed during pattern matching operations
 	return core.NewList("Pattern", args...)
+}
+
+// extractImmediateSlotNumbers extracts only immediate slot numbers (not nested in Function calls)
+func (e *Evaluator) extractImmediateSlotNumbers(expr core.Expr) []int {
+	var slots []int
+	slotSet := make(map[int]bool)
+
+	e.extractImmediateSlotsRecursive(expr, slotSet)
+
+	// Convert set to sorted slice
+	for slot := range slotSet {
+		slots = append(slots, slot)
+	}
+
+	// Sort slots for consistent ordering
+	for i := 0; i < len(slots); i++ {
+		for j := i + 1; j < len(slots); j++ {
+			if slots[i] > slots[j] {
+				slots[i], slots[j] = slots[j], slots[i]
+			}
+		}
+	}
+
+	return slots
+}
+
+// extractImmediateSlotsRecursive extracts only immediate slots, stops at nested Functions
+func (e *Evaluator) extractImmediateSlotsRecursive(expr core.Expr, slotSet map[int]bool) {
+	switch exprTyped := expr.(type) {
+	case core.Symbol:
+		symbolName := string(exprTyped)
+		if len(symbolName) >= 1 && symbolName[0] == '$' {
+			// Parse slot number
+			slotStr := symbolName[1:]
+			if slotStr == "" {
+				// Bare $ is slot 1
+				slotSet[1] = true
+			} else {
+				// Parse number
+				slotNum := 0
+				for _, ch := range slotStr {
+					if ch >= '0' && ch <= '9' {
+						slotNum = slotNum*10 + int(ch-'0')
+					} else {
+						// Not a pure number, ignore (e.g., $name)
+						return
+					}
+				}
+				if slotNum > 0 {
+					slotSet[slotNum] = true
+				}
+			}
+		}
+	case core.List:
+		// Check if this is a Function call - if so, don't recurse into it
+		if len(exprTyped.Elements) > 0 {
+			if head, isSymbol := exprTyped.Elements[0].(core.Symbol); isSymbol && string(head) == "Function" {
+				// This is a nested Function call - don't extract slots from it
+				return
+			}
+		}
+
+		// For non-Function lists, recurse into all elements
+		for _, elem := range exprTyped.Elements {
+			e.extractImmediateSlotsRecursive(elem, slotSet)
+		}
+	case core.FunctionExpr:
+		// Don't recurse into nested FunctionExpr bodies - they have their own slots
+	}
+}
+
+// partiallyEvaluateForFunction evaluates nested Function calls but preserves slot variables
+func (e *Evaluator) partiallyEvaluateForFunction(expr core.Expr, ctx *Context) core.Expr {
+	switch exprTyped := expr.(type) {
+	case core.Symbol:
+		symbolName := string(exprTyped)
+		// Preserve slot variables ($, $1, $2, etc.)
+		if len(symbolName) >= 1 && symbolName[0] == '$' {
+			return expr // Don't evaluate slot variables
+		}
+		// Evaluate other symbols normally
+		return e.evaluate(expr, ctx)
+	case core.List:
+		// Check if this is a Function call - if so, evaluate it
+		if len(exprTyped.Elements) > 0 {
+			if head, isSymbol := exprTyped.Elements[0].(core.Symbol); isSymbol && string(head) == "Function" {
+				// This is a nested Function call - evaluate it
+				return e.evaluate(expr, ctx)
+			}
+		}
+
+		// For other lists, recursively partially evaluate elements
+		newElements := make([]core.Expr, len(exprTyped.Elements))
+		for i, elem := range exprTyped.Elements {
+			newElements[i] = e.partiallyEvaluateForFunction(elem, ctx)
+		}
+		return core.List{Elements: newElements}
+	default:
+		// For other expression types, evaluate normally
+		return e.evaluate(expr, ctx)
+	}
+}
+
+// evaluateFunction implements the Function special form
+// Function(x, body) or Function([x, y], body)
+// Also handles slot-based functions: Function($1 + $2)
+func (e *Evaluator) evaluateFunction(args []core.Expr, ctx *Context) core.Expr {
+	if len(args) == 1 {
+		// Single argument: could be slot-based function like Function($1 + $2) or constant function like Function(42)
+		body := args[0]
+
+		// Partially evaluate the body to handle nested Function calls while preserving slots
+		body = e.partiallyEvaluateForFunction(body, ctx)
+
+		slots := e.extractImmediateSlotNumbers(body)
+
+		if len(slots) == 0 {
+			// No slot variables: this is a constant function like Function(42)
+			return core.NewFunction([]string{}, body)
+		}
+
+		// Generate regular parameter names for all slots up to highest number
+		maxSlot := slots[len(slots)-1] // slots are sorted
+		var parameters []string
+		for i := 1; i <= maxSlot; i++ {
+			parameters = append(parameters, fmt.Sprintf("slot%d", i))
+		}
+
+		return core.NewFunction(parameters, body)
+	}
+
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError", "Function requires 1 or 2 arguments", args)
+	}
+
+	// First argument: parameters (held unevaluated)
+	paramArg := args[0]
+	body := args[1] // Body is held unevaluated
+
+	var parameters []string
+
+	// Parse parameters: either Symbol or List of Symbols
+	if paramList, ok := paramArg.(core.List); ok {
+		// Multiple parameters: Function([x, y], body) or zero parameters: Function([], body)
+
+		// Skip the "List" head, process actual parameters
+		for i := 1; i < len(paramList.Elements); i++ {
+			if paramName, ok := core.ExtractSymbol(paramList.Elements[i]); ok {
+				parameters = append(parameters, paramName)
+			} else {
+				return core.NewErrorExpr("ArgumentError", "Function parameters must be symbols", args)
+			}
+		}
+	} else if paramName, ok := core.ExtractSymbol(paramArg); ok {
+		// Single parameter: Function(x, body)
+		parameters = []string{paramName}
+	} else {
+		return core.NewErrorExpr("ArgumentError", "Function parameters must be symbols or list of symbols", args)
+	}
+
+	// Create and return the FunctionExpr
+	return core.NewFunction(parameters, body)
+}
+
+// applyFunction applies a FunctionExpr to arguments
+func (e *Evaluator) applyFunction(funcExpr core.FunctionExpr, args []core.Expr, ctx *Context) core.Expr {
+	// Evaluate all arguments first
+	evaluatedArgs := make([]core.Expr, len(args))
+	for i, arg := range args {
+		evaluatedArgs[i] = e.evaluate(arg, ctx)
+		// Check for errors in arguments
+		if core.IsError(evaluatedArgs[i]) {
+			return evaluatedArgs[i]
+		}
+	}
+
+	// Check argument count
+	if len(args) != len(funcExpr.Parameters) {
+		return core.NewErrorExpr("ArgumentError",
+			fmt.Sprintf("Function expects %d arguments, got %d", len(funcExpr.Parameters), len(args)),
+			args)
+	}
+
+	// Check if this is a slot-based function (parameters named like "slot1", "slot2")
+	isSlotBased := len(funcExpr.Parameters) > 0 && len(funcExpr.Parameters[0]) > 4 && funcExpr.Parameters[0][:4] == "slot"
+
+	if isSlotBased {
+		// For slot-based functions, substitute $1, $2, etc. directly in the body
+		substitutedBody := e.substituteSlots(funcExpr.Body, evaluatedArgs)
+		// Evaluate the substituted body in the original context (no new bindings needed)
+		return e.evaluate(substitutedBody, ctx)
+	} else {
+		// Create a new child context for regular function evaluation
+		funcCtx := NewChildContext(ctx)
+
+		// Bind parameters to arguments in the function context
+		for i, param := range funcExpr.Parameters {
+			funcCtx.AddScopedVar(param) // Keep parameter local to function
+			if err := funcCtx.Set(param, evaluatedArgs[i]); err != nil {
+				return core.NewErrorExpr("BindingError", err.Error(), args)
+			}
+		}
+
+		// Evaluate the function body in the new context
+		return e.evaluate(funcExpr.Body, funcCtx)
+	}
+}
+
+// substituteSlots replaces slot variables ($1, $2, etc.) with corresponding argument values
+func (e *Evaluator) substituteSlots(expr core.Expr, args []core.Expr) core.Expr {
+	switch exprTyped := expr.(type) {
+	case core.Symbol:
+		symbolName := string(exprTyped)
+		if len(symbolName) >= 1 && symbolName[0] == '$' {
+			// Parse slot number
+			slotStr := symbolName[1:]
+			var slotNum int
+			if slotStr == "" {
+				// Bare $ is slot 1
+				slotNum = 1
+			} else {
+				// Parse number
+				for _, ch := range slotStr {
+					if ch >= '0' && ch <= '9' {
+						slotNum = slotNum*10 + int(ch-'0')
+					} else {
+						// Not a pure number, return as-is (e.g., $name)
+						return expr
+					}
+				}
+			}
+			// Replace with corresponding argument (1-indexed)
+			if slotNum >= 1 && slotNum <= len(args) {
+				return args[slotNum-1]
+			}
+		}
+		return expr
+	case core.List:
+		// Recursively substitute in all elements
+		newElements := make([]core.Expr, len(exprTyped.Elements))
+		for i, elem := range exprTyped.Elements {
+			newElements[i] = e.substituteSlots(elem, args)
+		}
+		return core.List{Elements: newElements}
+	case core.FunctionExpr:
+		// Recursively substitute in function body
+		newBody := e.substituteSlots(exprTyped.Body, args)
+		return core.FunctionExpr{
+			Parameters: exprTyped.Parameters,
+			Body:       newBody,
+		}
+	default:
+		// For other types (numbers, strings, etc.), return as-is
+		return expr
+	}
 }
 
 // evaluateEvaluate implements the Evaluate special form
