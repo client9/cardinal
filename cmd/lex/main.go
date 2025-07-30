@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/client9/sexpr"
+	"github.com/client9/sexpr/engine"
 )
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 }
 
 func processInput(input string) {
-	lexer := sexpr.NewLexer(input)
+	lexer := engine.NewLexer(input)
 	
 	fmt.Printf("Input: %s\n", input)
 	fmt.Println("Tokens:")
@@ -74,7 +74,7 @@ func processInput(input string) {
 			fmt.Sprintf("\"%s\"", token.Value), 
 			displayValue)
 		
-		if token.Type == sexpr.EOF {
+		if token.Type == engine.EOF {
 			break
 		}
 		
@@ -83,81 +83,81 @@ func processInput(input string) {
 }
 
 // getTokenTypeName returns a human-readable name for the token type
-func getTokenTypeName(tokenType sexpr.TokenType) string {
+func getTokenTypeName(tokenType engine.TokenType) string {
 	switch tokenType {
-	case sexpr.EOF:
+	case engine.EOF:
 		return "EOF"
-	case sexpr.SYMBOL:
+	case engine.SYMBOL:
 		return "SYMBOL"
-	case sexpr.INTEGER:
+	case engine.INTEGER:
 		return "INTEGER"
-	case sexpr.FLOAT:
+	case engine.FLOAT:
 		return "FLOAT"
-	case sexpr.STRING:
+	case engine.STRING:
 		return "STRING"
-	case sexpr.BOOLEAN:
+	case engine.BOOLEAN:
 		return "BOOLEAN"
-	case sexpr.LBRACKET:
+	case engine.LBRACKET:
 		return "LBRACKET"
-	case sexpr.RBRACKET:
+	case engine.RBRACKET:
 		return "RBRACKET"
-	case sexpr.LBRACE:
+	case engine.LBRACE:
 		return "LBRACE"
-	case sexpr.RBRACE:
+	case engine.RBRACE:
 		return "RBRACE"
-	case sexpr.COMMA:
+	case engine.COMMA:
 		return "COMMA"
-	case sexpr.COLON:
+	case engine.COLON:
 		return "COLON"
-	case sexpr.PLUS:
+	case engine.PLUS:
 		return "PLUS"
-	case sexpr.MINUS:
+	case engine.MINUS:
 		return "MINUS"
-	case sexpr.MULTIPLY:
+	case engine.MULTIPLY:
 		return "MULTIPLY"
-	case sexpr.DIVIDE:
+	case engine.DIVIDE:
 		return "DIVIDE"
-	case sexpr.LPAREN:
+	case engine.LPAREN:
 		return "LPAREN"
-	case sexpr.RPAREN:
+	case engine.RPAREN:
 		return "RPAREN"
-	case sexpr.SET:
+	case engine.SET:
 		return "SET"
-	case sexpr.SETDELAYED:
+	case engine.SETDELAYED:
 		return "SETDELAYED"
-	case sexpr.UNSET:
+	case engine.UNSET:
 		return "UNSET"
-	case sexpr.EQUAL:
+	case engine.EQUAL:
 		return "EQUAL"
-	case sexpr.UNEQUAL:
+	case engine.UNEQUAL:
 		return "UNEQUAL"
-	case sexpr.LESS:
+	case engine.LESS:
 		return "LESS"
-	case sexpr.GREATER:
+	case engine.GREATER:
 		return "GREATER"
-	case sexpr.LESSEQUAL:
+	case engine.LESSEQUAL:
 		return "LESSEQUAL"
-	case sexpr.GREATEREQUAL:
+	case engine.GREATEREQUAL:
 		return "GREATEREQUAL"
-	case sexpr.AND:
+	case engine.AND:
 		return "AND"
-	case sexpr.OR:
+	case engine.OR:
 		return "OR"
-	case sexpr.NOT:
+	case engine.NOT:
 		return "NOT"
-	case sexpr.SAMEQ:
+	case engine.SAMEQ:
 		return "SAMEQ"
-	case sexpr.UNSAMEQ:
+	case engine.UNSAMEQ:
 		return "UNSAMEQ"
-	case sexpr.CARET:
+	case engine.CARET:
 		return "CARET"
-	case sexpr.SEMICOLON:
+	case engine.SEMICOLON:
 		return "SEMICOLON"
-	case sexpr.UNDERSCORE:
+	case engine.UNDERSCORE:
 		return "UNDERSCORE"
-	case sexpr.WHITESPACE:
+	case engine.WHITESPACE:
 		return "WHITESPACE"
-	case sexpr.ILLEGAL:
+	case engine.ILLEGAL:
 		return "ILLEGAL"
 	default:
 		return fmt.Sprintf("UNKNOWN(%d)", int(tokenType))
@@ -165,81 +165,81 @@ func getTokenTypeName(tokenType sexpr.TokenType) string {
 }
 
 // formatTokenValue formats the token value for display
-func formatTokenValue(token sexpr.Token) string {
+func formatTokenValue(token engine.Token) string {
 	switch token.Type {
-	case sexpr.EOF:
+	case engine.EOF:
 		return "end of input"
-	case sexpr.SYMBOL:
+	case engine.SYMBOL:
 		return fmt.Sprintf("symbol: %s", token.Value)
-	case sexpr.INTEGER:
+	case engine.INTEGER:
 		return fmt.Sprintf("integer: %s", token.Value)
-	case sexpr.FLOAT:
+	case engine.FLOAT:
 		return fmt.Sprintf("float: %s", token.Value)
-	case sexpr.STRING:
+	case engine.STRING:
 		return fmt.Sprintf("string: %s", token.Value)
-	case sexpr.BOOLEAN:
+	case engine.BOOLEAN:
 		return fmt.Sprintf("boolean: %s", token.Value)
-	case sexpr.LBRACKET:
+	case engine.LBRACKET:
 		return "["
-	case sexpr.RBRACKET:
+	case engine.RBRACKET:
 		return "]"
-	case sexpr.LBRACE:
+	case engine.LBRACE:
 		return "{"
-	case sexpr.RBRACE:
+	case engine.RBRACE:
 		return "}"
-	case sexpr.COMMA:
+	case engine.COMMA:
 		return ","
-	case sexpr.COLON:
+	case engine.COLON:
 		return ":"
-	case sexpr.PLUS:
+	case engine.PLUS:
 		return "+"
-	case sexpr.MINUS:
+	case engine.MINUS:
 		return "-"
-	case sexpr.MULTIPLY:
+	case engine.MULTIPLY:
 		return "*"
-	case sexpr.DIVIDE:
+	case engine.DIVIDE:
 		return "/"
-	case sexpr.LPAREN:
+	case engine.LPAREN:
 		return "("
-	case sexpr.RPAREN:
+	case engine.RPAREN:
 		return ")"
-	case sexpr.SET:
+	case engine.SET:
 		return "= (assignment)"
-	case sexpr.SETDELAYED:
+	case engine.SETDELAYED:
 		return ":= (delayed assignment)"
-	case sexpr.UNSET:
+	case engine.UNSET:
 		return "=. (unset)"
-	case sexpr.EQUAL:
+	case engine.EQUAL:
 		return "== (equal)"
-	case sexpr.UNEQUAL:
+	case engine.UNEQUAL:
 		return "!= (not equal)"
-	case sexpr.LESS:
+	case engine.LESS:
 		return "< (less than)"
-	case sexpr.GREATER:
+	case engine.GREATER:
 		return "> (greater than)"
-	case sexpr.LESSEQUAL:
+	case engine.LESSEQUAL:
 		return "<= (less equal)"
-	case sexpr.GREATEREQUAL:
+	case engine.GREATEREQUAL:
 		return ">= (greater equal)"
-	case sexpr.AND:
+	case engine.AND:
 		return "&& (and)"
-	case sexpr.OR:
+	case engine.OR:
 		return "|| (or)"
-	case sexpr.NOT:
+	case engine.NOT:
 		return "! (not)"
-	case sexpr.SAMEQ:
+	case engine.SAMEQ:
 		return "=== (same)"
-	case sexpr.UNSAMEQ:
+	case engine.UNSAMEQ:
 		return "=!= (not same)"
-	case sexpr.CARET:
+	case engine.CARET:
 		return "^ (power)"
-	case sexpr.SEMICOLON:
+	case engine.SEMICOLON:
 		return "; (semicolon)"
-	case sexpr.UNDERSCORE:
+	case engine.UNDERSCORE:
 		return "_ (pattern)"
-	case sexpr.WHITESPACE:
+	case engine.WHITESPACE:
 		return "whitespace"
-	case sexpr.ILLEGAL:
+	case engine.ILLEGAL:
 		return fmt.Sprintf("ILLEGAL: %s", token.Value)
 	default:
 		return token.Value

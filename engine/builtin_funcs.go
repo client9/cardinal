@@ -1,4 +1,4 @@
-package sexpr
+package engine
 
 import (
 	"github.com/client9/sexpr/core"

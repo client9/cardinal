@@ -51,15 +51,17 @@ import (
 
 // FunctionInfo contains expanded information about a symbol's function
 type FunctionInfo struct {
-	SymbolName   string // "Plus"
-	Pattern      string // "Plus(x__Integer)"
-	FunctionName string // "PlusIntegers"
-	WrapperName  string // "WrapPlusIntegers"
-	IsVariadic   bool
-	ParamType    string   // For variadic functions
-	ParamTypes   []string // For fixed-arity functions
-	ReturnType   string
-	ReturnsError bool
+	SymbolName     string // "Plus"
+	Pattern        string // "Plus(x__Integer)"
+	FunctionName   string // "PlusIntegers"
+	WrapperName    string // "WrapPlusIntegers"
+	IsVariadic     bool
+	ParamType      string   // For variadic functions
+	ParamTypes     []string // For fixed-arity functions
+	ReturnType     string
+	ReturnsError   bool
+	NeedsEvaluator bool   // true if function requires *Evaluator (EngineFunc)
+	PackageName    string // "stdlib" or "builtins"
 }
 
 func main() {
@@ -108,8 +110,9 @@ func main() {
 		totalFunctions += len(symbolFunctions)
 	}
 
-	// Always generate builtin_setup.go file
-	err = generateBuiltinSetupFile(*setupFile, symbolSpecs, allFunctions)
+	// Generate builtin_setup.go file in root directory for runtime registration
+	setupPath := *setupFile
+	err = generateBuiltinSetupFile(setupPath, symbolSpecs, allFunctions)
 	if err != nil {
 		log.Fatalf("Error generating setup file: %v", err)
 	}
@@ -140,17 +143,25 @@ func processSymbolSpecs(specs map[string]SymbolSpec) ([]FunctionInfo, error) {
 				return nil, fmt.Errorf("error analyzing %s: %v", fullPattern, err)
 			}
 
+			// Determine package name based on function
+			packageName := "stdlib" // default
+			if funcSpec.NeedsEvaluator {
+				packageName = "builtins"
+			}
+
 			// Convert to FunctionInfo
 			funcInfo := FunctionInfo{
-				SymbolName:   symbolName,
-				Pattern:      fullPattern,
-				FunctionName: funcSpec.FunctionName,
-				WrapperName:  funcSpec.WrapperName,
-				IsVariadic:   funcSpec.IsVariadic,
-				ParamType:    funcSpec.ParamType,
-				ParamTypes:   funcSpec.ParamTypes,
-				ReturnType:   funcSpec.ReturnType,
-				ReturnsError: funcSpec.ReturnsError,
+				SymbolName:     symbolName,
+				Pattern:        fullPattern,
+				FunctionName:   funcSpec.FunctionName,
+				WrapperName:    funcSpec.WrapperName,
+				IsVariadic:     funcSpec.IsVariadic,
+				ParamType:      funcSpec.ParamType,
+				ParamTypes:     funcSpec.ParamTypes,
+				ReturnType:     funcSpec.ReturnType,
+				ReturnsError:   funcSpec.ReturnsError,
+				NeedsEvaluator: funcSpec.NeedsEvaluator,
+				PackageName:    packageName,
 			}
 
 			allFunctions = append(allFunctions, funcInfo)
@@ -170,7 +181,12 @@ package wrapped
 
 import (
 	"github.com/client9/sexpr/core"
+{{- if .HasStdlibFunc}}
 	"github.com/client9/sexpr/stdlib"
+{{- end}}
+{{- if .HasEngineFunc}}
+	"github.com/client9/sexpr/builtins"
+{{- end}}
 {{- if eq .ValidationMode "debug"}}
 	"fmt"
 {{- end}}
@@ -179,7 +195,15 @@ import (
 {{range .Functions}}
 // {{.WrapperName}} wraps {{.FunctionName}} for the pattern system
 // Generated from pattern: {{.Pattern}}
+{{- if .NeedsEvaluator}}
+func {{.WrapperName}}(evaluator interface{}, args []core.Expr) core.Expr {
+	// Type B wrapper: EngineFunc signature - requires evaluator
+	// Cast to the interface type expected by builtins package
+	e := evaluator.(builtins.Evaluator)
+{{- else}}
 func {{.WrapperName}}(args []core.Expr) core.Expr {
+	// Type A wrapper: Pure function signature
+{{- end}}
 {{- if .IsVariadic}}
 	{{- if eq .ParamType "Expr"}}
 	// No conversion needed - pass args directly
@@ -197,19 +221,35 @@ func {{.WrapperName}}(args []core.Expr) core.Expr {
 	
 	// Call business logic function
 	{{- if .ReturnsError}}
+	{{- if .NeedsEvaluator}}
 	{{- if eq .ParamType "Expr"}}
-	result, err := stdlib.{{.FunctionName}}(args...)
+	result, err := {{.PackageName}}.{{.FunctionName}}(e, args...)
 	{{- else}}
-	result, err := stdlib.{{.FunctionName}}(convertedArgs...)
+	result, err := {{.PackageName}}.{{.FunctionName}}(e, convertedArgs...)
+	{{- end}}
+	{{- else}}
+	{{- if eq .ParamType "Expr"}}
+	result, err := {{.PackageName}}.{{.FunctionName}}(args...)
+	{{- else}}
+	result, err := {{.PackageName}}.{{.FunctionName}}(convertedArgs...)
+	{{- end}}
 	{{- end}}
 	if err != nil {
 		return core.NewErrorExpr(err.Error(), err.Error(), args)
 	}
 	{{- else}}
+	{{- if .NeedsEvaluator}}
 	{{- if eq .ParamType "Expr"}}
-	result := stdlib.{{.FunctionName}}(args...)
+	result := {{.PackageName}}.{{.FunctionName}}(e, args...)
 	{{- else}}
-	result := stdlib.{{.FunctionName}}(convertedArgs...)
+	result := {{.PackageName}}.{{.FunctionName}}(e, convertedArgs...)
+	{{- end}}
+	{{- else}}
+	{{- if eq .ParamType "Expr"}}
+	result := {{.PackageName}}.{{.FunctionName}}(args...)
+	{{- else}}
+	result := {{.PackageName}}.{{.FunctionName}}(convertedArgs...)
+	{{- end}}
 	{{- end}}
 	{{- end}}
 	
@@ -234,12 +274,20 @@ func {{.WrapperName}}(args []core.Expr) core.Expr {
 	
 	// Call business logic function
 	{{- if .ReturnsError}}
-	result, err := stdlib.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
+	{{- if .NeedsEvaluator}}
+	result, err := {{.PackageName}}.{{.FunctionName}}(e, {{.ParamTypes | getCallArgs}})
+	{{- else}}
+	result, err := {{.PackageName}}.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
+	{{- end}}
 	if err != nil {
 		return core.NewErrorExpr(err.Error(), err.Error(), args)
 	}
 	{{- else}}
-	result := stdlib.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
+	{{- if .NeedsEvaluator}}
+	result := {{.PackageName}}.{{.FunctionName}}(e, {{.ParamTypes | getCallArgs}})
+	{{- else}}
+	result := {{.PackageName}}.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
+	{{- end}}
 	{{- end}}
 	
 	// Convert result back to Expr
@@ -249,15 +297,30 @@ func {{.WrapperName}}(args []core.Expr) core.Expr {
 
 {{end}}`
 
+	// Check if any function needs evaluator and what packages are needed
+	hasEngineFunc := false
+	hasStdlibFunc := false
+	for _, fn := range functions {
+		if fn.NeedsEvaluator {
+			hasEngineFunc = true
+		} else {
+			hasStdlibFunc = true
+		}
+	}
+
 	// Template data
 	data := struct {
 		SymbolName     string
 		Functions      []FunctionInfo
 		ValidationMode string
+		HasEngineFunc  bool
+		HasStdlibFunc  bool
 	}{
 		SymbolName:     symbolName,
 		Functions:      functions,
 		ValidationMode: validationMode,
+		HasEngineFunc:  hasEngineFunc,
+		HasStdlibFunc:  hasStdlibFunc,
 	}
 
 	// Use same template functions as before
@@ -296,48 +359,63 @@ package sexpr
 import (
 	"fmt"
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/engine"
 	"github.com/client9/sexpr/wrapped"
 )
 
-// setupBuiltinAttributes sets up standard attributes for built-in functions
-func SetupBuiltinAttributes(symbolTable *SymbolTable) {
+// SetupBuiltinAttributes sets up standard attributes for built-in functions
+func SetupBuiltinAttributes(symbolTable *engine.SymbolTable) {
 	// Reset attributes
 	symbolTable.Reset()
 
 {{range $name, $symbol := .Symbols}}{{if $symbol.Attributes}}	// {{$name}} attributes
-	symbolTable.SetAttributes("{{$name}}", []Attribute{ {{range $i, $attr := $symbol.Attributes}}{{if $i}}, {{end}}{{$attr}}{{end}} })
+	symbolTable.SetAttributes("{{$name}}", []engine.Attribute{ {{range $i, $attr := $symbol.Attributes}}{{if $i}}, {{end}}engine.{{$attr}}{{end}} })
 {{end}}{{end}}
 	// Pattern symbols  
-	symbolTable.SetAttributes("Blank", []Attribute{Protected})
-	symbolTable.SetAttributes("BlankSequence", []Attribute{Protected})
-	symbolTable.SetAttributes("BlankNullSequence", []Attribute{Protected})
-	symbolTable.SetAttributes("Pattern", []Attribute{Protected})
+	symbolTable.SetAttributes("Blank", []engine.Attribute{engine.Protected})
+	symbolTable.SetAttributes("BlankSequence", []engine.Attribute{engine.Protected})
+	symbolTable.SetAttributes("BlankNullSequence", []engine.Attribute{engine.Protected})
+	symbolTable.SetAttributes("Pattern", []engine.Attribute{engine.Protected})
 }
 
-// registerDefaultBuiltins registers all built-in functions with their patterns
-func registerDefaultBuiltins(registry *FunctionRegistry) {
+// RegisterDefaultBuiltins registers all built-in functions with their patterns
+func RegisterDefaultBuiltins(registry *engine.FunctionRegistry) {
 	// Register built-in functions with pattern-based dispatch
-	builtinPatterns := map[string]PatternFunc{
+	builtinPatterns := map[string]engine.PatternFunc{
 		// Generated pattern registrations
-{{range .Functions}}		"{{.Pattern}}": func(args []core.Expr, ctx *Context) core.Expr {
+{{range .Functions}}{{- if .NeedsEvaluator}}		"{{.Pattern}}": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return wrapped.{{.WrapperName}}(evaluator, args)
+		}, // {{.FunctionName}} (EngineFunc)
+{{- else}}		"{{.Pattern}}": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
 			return wrapped.{{.WrapperName}}(args)
-		}, // {{.FunctionName}}
+		}, // {{.FunctionName}} (Pure func)
+{{- end}}
 {{end}}
 
 		// Special attribute manipulation functions (require context)
-		"Attributes(x_)":              WrapAttributesExpr,
-		"SetAttributes(x_, y_List)":   WrapSetAttributesList,
-		"SetAttributes(x_, y_)":       WrapSetAttributesSingle,
-		"ClearAttributes(x_, y_List)": WrapClearAttributesList,
-		"ClearAttributes(x_, y_)":     WrapClearAttributesSingle,
-		
-		// Functional programming functions (require context and evaluation)
-		"Map(f_, list_)": WrapMapExpr,
-		"Apply(f_, list_)": WrapApplyExpr,
+		"Attributes(x_)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapAttributesExpr(args, ctx)
+		},
+		"SetAttributes(x_, y_List)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapSetAttributesList(args, ctx)
+		},
+		"SetAttributes(x_, y_)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapSetAttributesSingle(args, ctx)
+		},
+		"ClearAttributes(x_, y_List)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapClearAttributesList(args, ctx)
+		},
+		"ClearAttributes(x_, y_)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapClearAttributesSingle(args, ctx)
+		},
 		
 		// Special debugging functions (require context and main package access)
-		"PatternSpecificity(pattern_)":      WrapPatternSpecificity,
-		"ShowPatterns(functionName_Symbol)": WrapShowPatterns,
+		"PatternSpecificity(pattern_)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapPatternSpecificity(args, ctx)
+		},
+		"ShowPatterns(functionName_Symbol)": func(args []core.Expr, ctx *engine.Context, evaluator *engine.Evaluator) core.Expr {
+			return engine.WrapShowPatterns(args, ctx)
+		},
 	}
 
 	// Register patterns with the function registry
@@ -486,6 +564,12 @@ func getFixedConversionWithMode(paramTypes []string, validationMode, symbolName 
 				conversions = append(conversions, fmt.Sprintf("\t%s := args[%d].(core.List)", varName, i))
 			case "ObjectExpr":
 				conversions = append(conversions, fmt.Sprintf("\t%s := args[%d].(core.ObjectExpr)", varName, i))
+			case "*engine.Evaluator":
+				// This should not happen in wrappers - evaluator is passed separately
+				log.Fatalf("*engine.Evaluator should not be a conversion parameter - use EngineFunc template instead")
+			case "Evaluator":
+				// This should not happen in wrappers - evaluator is passed separately
+				log.Fatalf("Evaluator interface should not be a conversion parameter - use EngineFunc template instead")
 			default:
 				log.Fatalf("Unknown Parameter Type: %s", paramType)
 			}
@@ -544,6 +628,12 @@ func getFixedConversionWithMode(paramTypes []string, validationMode, symbolName 
 				conversions = append(conversions, "\tif !ok {")
 				conversions = append(conversions, fallbackAction)
 				conversions = append(conversions, "\t}")
+			case "*engine.Evaluator":
+				// This should not happen in wrappers - evaluator is passed separately
+				log.Fatalf("*engine.Evaluator should not be a conversion parameter - use EngineFunc template instead")
+			case "Evaluator":
+				// This should not happen in wrappers - evaluator is passed separately
+				log.Fatalf("Evaluator interface should not be a conversion parameter - use EngineFunc template instead")
 			default:
 				log.Fatalf("Unknown Parameter Type: %s", paramType)
 			}

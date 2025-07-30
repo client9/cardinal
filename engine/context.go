@@ -1,4 +1,4 @@
-package sexpr
+package engine
 
 import (
 	"fmt"
@@ -80,11 +80,8 @@ func NewContext() *Context {
 		scopedVars:       make(map[string]bool),
 	}
 
-	// Set up built-in attributes
-	SetupBuiltinAttributes(ctx.symbolTable)
-
-	// Register default built-in functions with patterns
-	registerDefaultBuiltins(ctx.functionRegistry)
+	// Note: Builtin attributes and functions are now registered by the top-level API
+	// This allows breaking the circular import between engine and wrapped packages
 
 	return ctx
 }

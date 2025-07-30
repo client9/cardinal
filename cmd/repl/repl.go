@@ -9,11 +9,12 @@ import (
 	"strings"
 
 	"github.com/client9/sexpr"
+	"github.com/client9/sexpr/engine"
 )
 
 // REPL represents a Read-Eval-Print Loop for s-expressions
 type REPL struct {
-	evaluator *sexpr.Evaluator
+	evaluator *engine.Evaluator
 	input     io.Reader
 	output    io.Writer
 	prompt    string
@@ -393,7 +394,7 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 }
 
 // GetEvaluator returns the underlying evaluator (for testing purposes)
-func (r *REPL) GetEvaluator() *sexpr.Evaluator {
+func (r *REPL) GetEvaluator() *engine.Evaluator {
 	return r.evaluator
 }
 

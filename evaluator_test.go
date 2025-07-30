@@ -2,11 +2,12 @@ package sexpr
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/engine"
 	"testing"
 )
 
 // setupTestEvaluator creates an evaluator with built-in attributes for testing
-func setupTestEvaluator() *Evaluator {
+func setupTestEvaluator() *engine.Evaluator {
 	eval := NewEvaluator()
 	// Built-in attributes are already set up in NewEvaluator()
 	return eval

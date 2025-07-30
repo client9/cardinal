@@ -7,26 +7,32 @@ import (
 	"strings"
 )
 
+// EngineFunc is the universal signature for all registered functions
+// All functions in the system will eventually use this signature
+type EngineFunc func(e interface{}, args []interface{}) interface{}
+
 // ReflectionInfo contains analyzed information about a function signature
 type ReflectionInfo struct {
-	Name         string   // Full function name from runtime
-	IsVariadic   bool     // true if function takes variadic args
-	ParamTypes   []string // Parameter types as strings
-	ReturnType   string   // Primary return type as string
-	ReturnsError bool     // true if second return type is error
+	Name           string   // Full function name from runtime
+	IsVariadic     bool     // true if function takes variadic args
+	ParamTypes     []string // Parameter types as strings
+	ReturnType     string   // Primary return type as string
+	ReturnsError   bool     // true if second return type is error
+	NeedsEvaluator bool     // true if first parameter is *Evaluator
 }
 
 // FunctionSpec is used for reflection analysis (legacy compatibility)
 type FunctionSpec struct {
-	Pattern      string   // "Plus(x__Integer)" - the full pattern
-	Function     any      // Function reference for reflection
-	FunctionName string   // "PlusIntegers" - derived from Function name
-	WrapperName  string   // "WrapPlusIntegers" - derived from FunctionName
-	IsVariadic   bool     // derived from Function signature
-	ParamType    string   // For variadic: derived from Function signature
-	ParamTypes   []string // For fixed arity: derived from Function signature
-	ReturnType   string   // derived from Function signature
-	ReturnsError bool     // derived from Function signature (has error return)
+	Pattern        string   // "Plus(x__Integer)" - the full pattern
+	Function       any      // Function reference for reflection
+	FunctionName   string   // "PlusIntegers" - derived from Function name
+	WrapperName    string   // "WrapPlusIntegers" - derived from FunctionName
+	IsVariadic     bool     // derived from Function signature
+	ParamType      string   // For variadic: derived from Function signature
+	ParamTypes     []string // For fixed arity: derived from Function signature
+	ReturnType     string   // derived from Function signature
+	ReturnsError   bool     // derived from Function signature (has error return)
+	NeedsEvaluator bool     // derived from Function signature (first param is *Evaluator)
 }
 
 // analyzeFunctionSignature uses reflection to analyze a function's signature
@@ -43,11 +49,19 @@ func analyzeFunctionSignature(fn any) (ReflectionInfo, error) {
 	// Get function name from runtime
 	fullName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 
-	// Extract parameter types
+	// Extract parameter types and check for evaluator dependency
 	paramTypes := make([]string, 0, t.NumIn())
+	needsEvaluator := false
+
 	for i := 0; i < t.NumIn(); i++ {
 		paramType := t.In(i)
-		paramTypes = append(paramTypes, typeToString(paramType))
+		paramTypeStr := typeToString(paramType)
+		paramTypes = append(paramTypes, paramTypeStr)
+
+		// Check if first parameter is *Evaluator (indicates EngineFunc)
+		if i == 0 && isEvaluatorType(paramType) {
+			needsEvaluator = true
+		}
 	}
 
 	// Extract return type
@@ -67,11 +81,12 @@ func analyzeFunctionSignature(fn any) (ReflectionInfo, error) {
 	}
 
 	return ReflectionInfo{
-		Name:         fullName,
-		IsVariadic:   t.IsVariadic(),
-		ParamTypes:   paramTypes,
-		ReturnType:   returnType,
-		ReturnsError: returnsError,
+		Name:           fullName,
+		IsVariadic:     t.IsVariadic(),
+		ParamTypes:     paramTypes,
+		ReturnType:     returnType,
+		ReturnsError:   returnsError,
+		NeedsEvaluator: needsEvaluator,
 	}, nil
 }
 
@@ -128,16 +143,43 @@ func (spec *FunctionSpec) fillFromReflection() error {
 	spec.IsVariadic = info.IsVariadic
 	spec.ReturnType = info.ReturnType
 	spec.ReturnsError = info.ReturnsError
+	spec.NeedsEvaluator = info.NeedsEvaluator
 
-	if info.IsVariadic && len(info.ParamTypes) > 0 {
+	// If function needs evaluator, skip the first parameter in conversion
+	paramTypes := info.ParamTypes
+	if info.NeedsEvaluator && len(paramTypes) > 0 {
+		paramTypes = paramTypes[1:] // Skip first parameter (*Evaluator)
+	}
+
+	if info.IsVariadic && len(paramTypes) > 0 {
 		// For variadic functions, ParamType is the variadic parameter type
-		spec.ParamType = info.ParamTypes[0]
+		spec.ParamType = paramTypes[0]
 		spec.ParamTypes = nil // Clear fixed param types
 	} else {
-		// For fixed-arity functions, use ParamTypes
-		spec.ParamTypes = info.ParamTypes
+		// For fixed-arity functions, use ParamTypes (excluding evaluator)
+		spec.ParamTypes = paramTypes
 		spec.ParamType = "" // Clear variadic param type
 	}
 
 	return nil
+}
+
+// isEvaluatorType checks if a reflect.Type represents *Evaluator or Evaluator interface
+func isEvaluatorType(t reflect.Type) bool {
+	// Check for *Evaluator (pointer to struct)
+	if t.Kind() == reflect.Ptr {
+		elem := t.Elem()
+		if elem.Kind() == reflect.Struct {
+			typeName := elem.Name()
+			return typeName == "Evaluator"
+		}
+	}
+
+	// Check for Evaluator interface
+	if t.Kind() == reflect.Interface {
+		typeName := t.Name()
+		return typeName == "Evaluator"
+	}
+
+	return false
 }

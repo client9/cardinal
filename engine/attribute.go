@@ -1,4 +1,4 @@
-package sexpr
+package engine
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=Attribute
 

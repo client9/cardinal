@@ -1,4 +1,4 @@
-package sexpr
+package engine
 
 import (
 	"fmt"
@@ -26,6 +26,11 @@ func NewEvaluatorWithContext(ctx *Context) *Evaluator {
 	return &Evaluator{
 		context: ctx,
 	}
+}
+
+// GetContext returns the evaluator's current context
+func (e *Evaluator) GetContext() *Context {
+	return e.context
 }
 
 // Evaluate evaluates an expression in the current context
@@ -149,7 +154,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 	callExpr := core.NewList(headName, evaluatedArgs...)
 
 	// Try to find a matching pattern in the function registry
-	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx); found {
+	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx, e); found {
 		// Check if result is an error and needs stack trace
 		if core.IsError(result) {
 			if errorExpr, ok := result.(*core.ErrorExpr); ok {
@@ -308,26 +313,9 @@ func (e *Evaluator) applyOneIdentity(list core.List) core.List {
 // evaluateSpecialForm handles special forms that don't follow normal evaluation rules
 func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *Context) core.Expr {
 	switch headName {
-	case "If":
-		return e.evaluateIf(args, ctx)
-	case "Set":
-		return e.evaluateSet(args, ctx)
-	case "SetDelayed":
-		return e.evaluateSetDelayed(args, ctx)
+	// Special forms that are not yet moved to builtins (complex implementation)
 	case "Unset":
 		return e.evaluateUnset(args, ctx)
-	case "Hold":
-		return e.evaluateHold(args, ctx)
-	case "Evaluate":
-		return e.evaluateEvaluate(args, ctx)
-	case "CompoundExpression":
-		return e.evaluateCompoundExpression(args, ctx)
-	case "CompoundStatement":
-		return e.evaluateCompoundExpression(args, ctx)
-	case "And":
-		return e.evaluateAnd(args, ctx)
-	case "Or":
-		return e.evaluateOr(args, ctx)
 	case "SliceRange":
 		return e.evaluateSliceRange(args, ctx)
 	case "TakeFrom":
@@ -336,24 +324,12 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *
 		return e.evaluatePartSet(args, ctx)
 	case "SliceSet":
 		return e.evaluateSliceSet(args, ctx)
-	case "Block":
-		return e.evaluateBlock(args, ctx)
-	case "Table":
-		return e.evaluateTable(args, ctx)
-	case "Do":
-		return e.evaluateDo(args, ctx)
 	case "Pattern":
 		return e.evaluatePattern(args, ctx)
-	case "Function":
-		return e.evaluateFunction(args, ctx)
-	case "RuleDelayed":
-		return e.evaluateRuleDelayed(args, ctx)
-	case "Replace":
-		return e.evaluateReplace(args, ctx)
-	case "ReplaceAll":
-		return e.evaluateReplaceAll(args, ctx)
+	case "CompoundStatement":
+		return e.evaluateCompoundExpression(args, ctx)
 	default:
-		return nil // Not a special form
+		return nil // Not a special form, or handled by pattern-based system
 	}
 }
 
@@ -465,11 +441,6 @@ func patternsEqual(pattern1, pattern2 core.Expr) bool {
 	}
 }
 
-// GetContext returns the evaluator's context
-func (e *Evaluator) GetContext() *Context {
-	return e.context
-}
-
 // listsEqual checks if two lists are structurally equal
 func listsEqual(list1, list2 core.List) bool {
 	return list1.Equal(list2)
@@ -569,13 +540,13 @@ func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr
 		if functionName, ok := core.ExtractSymbol(headExpr); ok {
 
 			// Register the pattern with the function registry
-			err := ctx.functionRegistry.RegisterFunction(functionName, lhs, func(args []core.Expr, ctx *Context) core.Expr {
+			err := ctx.functionRegistry.RegisterFunction(functionName, lhs, func(args []core.Expr, ctx *Context, evaluator *Evaluator) core.Expr {
 				// Create a new child context for function evaluation
 				funcCtx := NewChildContext(ctx)
 
 				// Pattern matching and variable binding happen in CallFunction
 				// Just evaluate the RHS in the function context
-				return e.evaluate(rhs, funcCtx)
+				return evaluator.evaluate(rhs, funcCtx)
 			})
 
 			if err != nil {

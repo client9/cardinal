@@ -3,6 +3,8 @@ package main
 import (
 	// Import stdlib functions for reflection
 	"github.com/client9/sexpr/stdlib"
+	// Import builtins functions for engine-dependent functionality
+	"github.com/client9/sexpr/builtins"
 )
 
 // SymbolSpec defines a complete symbol with its attributes and functions
@@ -344,31 +346,111 @@ var symbolSpecs = map[string]SymbolSpec{
 		},
 	},
 
-	// Control Structures
+	// Control Structures and Special Forms
+	"If": {
+		Name:       "If",
+		Attributes: []string{"HoldRest"},
+		Functions: map[string]any{
+			"(args___)": builtins.IfExpr,
+		},
+	},
+	"Set": {
+		Name:       "Set",
+		Attributes: []string{"HoldFirst"},
+		Functions: map[string]any{
+			"(lhs_, rhs_)": builtins.SetExpr,
+		},
+	},
+	"SetDelayed": {
+		Name:       "SetDelayed",
+		Attributes: []string{"HoldFirst"},
+		Functions: map[string]any{
+			"(lhs_, rhs_)": builtins.SetDelayedExpr,
+		},
+	},
+	"Hold": {
+		Name:       "Hold",
+		Attributes: []string{"HoldAll"},
+		Functions: map[string]any{
+			"(args___)": builtins.HoldExpr,
+		},
+	},
+	"Evaluate": {
+		Name:       "Evaluate",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(expr_)": builtins.EvaluateExpr,
+		},
+	},
+	"CompoundExpression": {
+		Name:       "CompoundExpression",
+		Attributes: []string{"HoldAll"},
+		Functions: map[string]any{
+			"(args___)": builtins.CompoundExpressionExpr,
+		},
+	},
+	"And": {
+		Name:       "And",
+		Attributes: []string{"HoldAll"},
+		Functions: map[string]any{
+			"(args___)": builtins.AndExpr,
+		},
+	},
+	"Or": {
+		Name:       "Or",
+		Attributes: []string{"HoldAll"},
+		Functions: map[string]any{
+			"(args___)": builtins.OrExpr,
+		},
+	},
 	"Block": {
 		Name:       "Block",
 		Attributes: []string{"HoldAll"},
-		Functions:  map[string]any{}, // Block is handled as special form in evaluator
+		Functions: map[string]any{
+			"(vars_, body_)": builtins.BlockExpr,
+		},
 	},
 	"Function": {
 		Name:       "Function",
 		Attributes: []string{"HoldAll"},
-		Functions:  map[string]any{}, // Function is handled as special form in evaluator
+		Functions: map[string]any{
+			"(args___)": builtins.FunctionExpr,
+		},
 	},
 	"RuleDelayed": {
 		Name:       "RuleDelayed",
 		Attributes: []string{"HoldRest"},
-		Functions:  map[string]any{}, // RuleDelayed is handled as special form in evaluator
+		Functions: map[string]any{
+			"(lhs_, rhs_)": builtins.RuleDelayedExpr,
+		},
+	},
+	"Replace": {
+		Name:       "Replace",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(expr_, rule_)": builtins.ReplaceExpr,
+		},
+	},
+	"ReplaceAll": {
+		Name:       "ReplaceAll",
+		Attributes: []string{},
+		Functions: map[string]any{
+			"(expr_, rule_)": builtins.ReplaceAllExpr,
+		},
 	},
 	"Table": {
 		Name:       "Table",
 		Attributes: []string{"HoldAll"},
-		Functions:  map[string]any{}, // Table is handled as special form in evaluator
+		Functions: map[string]any{
+			"(expr_, iterator_)": builtins.TableExpr,
+		},
 	},
 	"Do": {
 		Name:       "Do",
 		Attributes: []string{"HoldAll"},
-		Functions:  map[string]any{}, // Do is handled as special form in evaluator
+		Functions: map[string]any{
+			"(expr_, iterator_)": builtins.DoExpr,
+		},
 	},
 
 	// String Operations
@@ -452,28 +534,38 @@ var symbolSpecs = map[string]SymbolSpec{
 	"SetAttributes": {
 		Name:       "SetAttributes",
 		Attributes: []string{"HoldFirst"},
-		Functions:  map[string]any{}, // SetAttributes is handled as special function in builtin_setup
+		Functions: map[string]any{
+			"(symbol_, attrs_)": builtins.SetAttributesExpr,
+		},
 	},
 	"ClearAttributes": {
 		Name:       "ClearAttributes",
 		Attributes: []string{"HoldFirst"},
-		Functions:  map[string]any{}, // ClearAttributes is handled as special function in builtin_setup
+		Functions: map[string]any{
+			"(symbol_, attrs_)": builtins.ClearAttributesExpr,
+		},
 	},
 	"Attributes": {
 		Name:       "Attributes",
 		Attributes: []string{"HoldFirst"},
-		Functions:  map[string]any{}, // Attributes is handled as special function in builtin_setup
+		Functions: map[string]any{
+			"(symbol_)": builtins.AttributesExpr,
+		},
 	},
 
 	// Functional Programming Functions
 	"Map": {
 		Name:       "Map",
 		Attributes: []string{},
-		Functions:  map[string]any{}, // Map is handled as special function in builtin_setup
+		Functions: map[string]any{
+			"(f_, list_)": builtins.MapExpr,
+		},
 	},
 	"Apply": {
 		Name:       "Apply",
 		Attributes: []string{},
-		Functions:  map[string]any{}, // Apply is handled as special function in builtin_setup
+		Functions: map[string]any{
+			"(f_, list_)": builtins.ApplyExpr,
+		},
 	},
 }

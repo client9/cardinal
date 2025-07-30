@@ -121,7 +121,7 @@ func TestSetDelayed(t *testing.T) {
 		{
 			name:     "SetDelayed simple variable",
 			input:    `SetDelayed(x, Plus(1, 2)); x`,
-			expected: `Plus(1, 2)`,
+			expected: `3`,
 		},
 		{
 			name:     "SetDelayed returns Null",

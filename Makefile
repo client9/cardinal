@@ -8,10 +8,11 @@ build: generate
 generate:
 	go get golang.org/x/tools/cmd/stringer
 	go generate ./...
+	(cd engine; go generate ./...)
 
 lint:
 	go mod tidy
-	gofmt -w -s *.go core/*.go stdlib/*.go cmd/wrapgen/*.go cmd/repl/*.go tests/integration/*.go
+	gofmt -w -s *.go core/*.go engine/*.go stdlib/*.go cmd/wrapgen/*.go cmd/repl/*.go tests/integration/*.go
 	golangci-lint run .
 
 # Run all tests
@@ -43,8 +44,8 @@ clean:
 	rm -f main wrapgen
 	find . -name '*.bak*' | xargs rm -f
 	rm -rf wrapped
-	rm -f builtin_setup.go
-	rm -f attribute_string.go
+	rm -f engine/builtin_setup.go
+	rm -f engine/attribute_string.go
 
 setup:
 	go get golang.org/x/tools/cmd/stringer

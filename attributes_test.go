@@ -6,18 +6,19 @@ import (
 	"testing"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/engine"
 )
 
 func TestAttribute_String(t *testing.T) {
 	tests := []struct {
 		name      string
-		attribute Attribute
+		attribute engine.Attribute
 		expected  string
 	}{
-		{"HoldAll", HoldAll, "HoldAll"},
-		{"HoldFirst", HoldFirst, "HoldFirst"},
-		{"HoldRest", HoldRest, "HoldRest"},
-		{"Flat", Flat, "Flat"},
+		{"HoldAll", engine.HoldAll, "HoldAll"},
+		{"HoldFirst", engine.HoldFirst, "HoldFirst"},
+		{"HoldRest", engine.HoldRest, "HoldRest"},
+		{"Flat", engine.Flat, "Flat"},
 		{"Orderless", Orderless, "Orderless"},
 		{"OneIdentity", OneIdentity, "OneIdentity"},
 		{"Listable", Listable, "Listable"},

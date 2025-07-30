@@ -1,4 +1,4 @@
-package sexpr
+package engine
 
 import (
 	"fmt"
@@ -8,7 +8,8 @@ import (
 )
 
 // PatternFunc represents a Go function that can be called with pattern-matched arguments
-type PatternFunc func(args []core.Expr, ctx *Context) core.Expr
+// The evaluator parameter allows access to the calling evaluator for recursive evaluation
+type PatternFunc func(args []core.Expr, ctx *Context, evaluator *Evaluator) core.Expr
 
 // FunctionDef represents a single function definition with pattern and implementation
 type FunctionDef struct {
@@ -157,7 +158,7 @@ func (r *FunctionRegistry) GetAllFunctionNames() []string {
 }
 
 // CallFunction attempts to call a function with the given expression and returns (result, found)
-func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context) (core.Expr, bool) {
+func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, evaluator *Evaluator) (core.Expr, bool) {
 	// Extract function name and arguments from the call expression
 	if list, ok := callExpr.(core.List); ok && len(list.Elements) > 0 {
 		var functionName string
@@ -191,7 +192,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context) (core.
 			// Call the function
 			if funcDef.GoImpl != nil {
 				// Built-in function - call Go implementation
-				return funcDef.GoImpl(args, funcCtx), true
+				return funcDef.GoImpl(args, funcCtx, evaluator), true
 			} else {
 				// User-defined function - evaluate body
 				// Create an evaluator to evaluate the body
@@ -204,7 +205,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context) (core.
 }
 
 // RegisterFunction is an alias for RegisterUserFunction for backward compatibility
-func (r *FunctionRegistry) RegisterFunction(functionName string, pattern core.Expr, implementation func([]core.Expr, *Context) core.Expr) error {
+func (r *FunctionRegistry) RegisterFunction(functionName string, pattern core.Expr, implementation func([]core.Expr, *Context, *Evaluator) core.Expr) error {
 	// This is a simplified version that assumes the pattern contains the function name
 	// For the refactored code, we need to create a proper function definition
 	funcDef := FunctionDef{
