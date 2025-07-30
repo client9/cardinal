@@ -30,11 +30,13 @@ const (
 var precedences = map[TokenType]Precedence{
 	LBRACKET:     PrecedencePostfix, // High precedence for postfix indexing
 	LPAREN:       PrecedencePostfix, // High precedence for postfix function application
+	AMPERSAND:    PrecedenceRule,    // Low precedence for Function syntax (&) to bind to larger expressions
 	SEMICOLON:    PrecedenceCompound,
 	SET:          PrecedenceAssign,
 	SETDELAYED:   PrecedenceAssign,
 	UNSET:        PrecedenceAssign,
 	COLON:        PrecedenceRule,
+	RULEDELAYED:  PrecedenceRule,
 	OR:           PrecedenceLogicalOr,
 	AND:          PrecedenceLogicalAnd,
 	EQUAL:        PrecedenceEquality,
@@ -105,6 +107,8 @@ func (p *Parser) parseInfixExpression(precedence Precedence) core.Expr {
 			left = p.parseIndexOrSlice(left)
 		} else if p.currentToken.Type == LPAREN {
 			left = p.parseFunctionApplication(left)
+		} else if p.currentToken.Type == AMPERSAND {
+			left = p.parseFunctionShorthand(left)
 		} else if p.IsInfixOperator(p.currentToken.Type) {
 			left = p.parseInfixOperation(left)
 		} else {
@@ -384,7 +388,7 @@ func (p *Parser) currentPrecedence() Precedence {
 
 func (p *Parser) IsInfixOperator(tokenType TokenType) bool {
 	switch tokenType {
-	case SEMICOLON, SET, SETDELAYED, UNSET, COLON, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE, CARET:
+	case SEMICOLON, SET, SETDELAYED, UNSET, COLON, RULEDELAYED, OR, AND, EQUAL, UNEQUAL, SAMEQ, UNSAMEQ, LESS, GREATER, LESSEQUAL, GREATEREQUAL, PLUS, MINUS, MULTIPLY, DIVIDE, CARET:
 		return true
 	default:
 		return false
@@ -440,6 +444,8 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core
 		return core.NewList("Unset", left)
 	case COLON:
 		return core.NewList("Rule", left, right)
+	case RULEDELAYED:
+		return core.NewList("RuleDelayed", left, right)
 	case OR:
 		return core.NewList("Or", left, right)
 	case AND:
@@ -773,6 +779,12 @@ func (p *Parser) parsePatternFromSymbol(varName string) core.Expr {
 
 	// Named pattern - wrap in Pattern(varName, blankExpr)
 	return core.NewList("Pattern", core.NewSymbol(varName), blankExpr)
+}
+
+// parseFunctionShorthand handles the & postfix operator: expr & -> Function(expr)
+func (p *Parser) parseFunctionShorthand(expr core.Expr) core.Expr {
+	p.nextToken() // consume '&'
+	return core.NewList("Function", expr)
 }
 
 func ParseString(input string) (core.Expr, error) {

@@ -346,6 +346,12 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *
 		return e.evaluatePattern(args, ctx)
 	case "Function":
 		return e.evaluateFunction(args, ctx)
+	case "RuleDelayed":
+		return e.evaluateRuleDelayed(args, ctx)
+	case "Replace":
+		return e.evaluateReplace(args, ctx)
+	case "ReplaceAll":
+		return e.evaluateReplaceAll(args, ctx)
 	default:
 		return nil // Not a special form
 	}
@@ -530,11 +536,6 @@ func (e *Evaluator) evaluateSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// First argument should be a symbol (don't evaluate it)
 	if symbolName, ok := core.ExtractSymbol(args[0]); ok {
-		// Prevent direct assignment to $ variables
-		if len(symbolName) > 0 && symbolName[0] == '$' {
-			return core.NewErrorExpr("ProtectionError", "$ variables cannot be assigned directly", args)
-		}
-
 		// Evaluate the value
 		value := e.evaluate(args[1], ctx)
 		if core.IsError(value) {
@@ -587,11 +588,6 @@ func (e *Evaluator) evaluateSetDelayed(args []core.Expr, ctx *Context) core.Expr
 
 	// Handle simple variable assignment: x := value
 	if symbolName, ok := core.ExtractSymbol(lhs); ok {
-		// Prevent direct assignment to $ variables
-		if len(symbolName) > 0 && symbolName[0] == '$' {
-			return core.NewErrorExpr("ProtectionError", "$ variables cannot be assigned directly", args)
-		}
-
 		// For SetDelayed, store the unevaluated RHS
 		if err := ctx.Set(symbolName, rhs); err != nil {
 			return core.NewErrorExpr("ProtectionError", err.Error(), args)
@@ -884,6 +880,268 @@ func (e *Evaluator) substituteSlots(expr core.Expr, args []core.Expr) core.Expr 
 		// For other types (numbers, strings, etc.), return as-is
 		return expr
 	}
+}
+
+// evaluateRuleDelayed implements the RuleDelayed special form
+// RuleDelayed(pattern, rhs) creates a delayed rule with lexical scoping
+func (e *Evaluator) evaluateRuleDelayed(args []core.Expr, ctx *Context) core.Expr {
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError", "RuleDelayed requires exactly 2 arguments", args)
+	}
+
+	// With HoldRest attribute:
+	// - First argument (pattern) is evaluated normally
+	// - Second argument (rhs) is held unevaluated
+	pattern := e.evaluate(args[0], ctx)
+	if core.IsError(pattern) {
+		return pattern
+	}
+
+	rhs := args[1] // Keep RHS unevaluated
+
+	return core.NewRuleDelayed(pattern, rhs)
+}
+
+// applyRuleDelayedAware applies a rule (Rule or RuleDelayed) with proper handling for both types
+func (e *Evaluator) applyRuleDelayedAware(expr core.Expr, rule core.Expr, ctx *Context) core.Expr {
+	// Handle both Rule and RuleDelayed
+	if ruleList, ok := rule.(core.List); ok && len(ruleList.Elements) == 3 {
+		head := ruleList.Elements[0]
+		if symbolName, ok := core.ExtractSymbol(head); ok {
+			if symbolName == "Rule" || symbolName == "RuleDelayed" {
+				pattern := ruleList.Elements[1]
+				replacement := ruleList.Elements[2]
+
+				// Use pattern matching with variable binding
+				matches, bindings := core.MatchWithBindings(pattern, expr)
+				if matches {
+					if symbolName == "Rule" {
+						// For Rule, substitute directly (current behavior)
+						return core.SubstituteBindings(replacement, bindings)
+					} else {
+						// For RuleDelayed, evaluate RHS in a context with bindings
+						ruleCtx := NewChildContext(ctx)
+
+						// Add pattern variable bindings to the rule context
+						for varName, value := range bindings {
+							ruleCtx.AddScopedVar(varName) // Keep bindings local
+							if err := ruleCtx.Set(varName, value); err != nil {
+								return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+							}
+						}
+
+						// Evaluate replacement in the rule context
+						return e.evaluate(replacement, ruleCtx)
+					}
+				}
+			}
+		}
+	} else if ruleDelayed, ok := rule.(core.RuleDelayedExpr); ok {
+		// Handle direct RuleDelayedExpr
+		matches, bindings := core.MatchWithBindings(ruleDelayed.Pattern, expr)
+		if matches {
+			// Create a new context with pattern variable bindings
+			ruleCtx := NewChildContext(ctx)
+
+			// Add pattern variable bindings to the rule context
+			for varName, value := range bindings {
+				ruleCtx.AddScopedVar(varName) // Keep bindings local
+				if err := ruleCtx.Set(varName, value); err != nil {
+					return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+				}
+			}
+
+			// Evaluate RHS in the rule context
+			return e.evaluate(ruleDelayed.RHS, ruleCtx)
+		}
+	}
+
+	// If no match or invalid rule, return original expression
+	return expr
+}
+
+// evaluateReplace implements enhanced Replace that supports both Rule and RuleDelayed
+func (e *Evaluator) evaluateReplace(args []core.Expr, ctx *Context) core.Expr {
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError", "Replace requires exactly 2 arguments", args)
+	}
+
+	// Evaluate the expression to be replaced
+	expr := e.evaluate(args[0], ctx)
+	if core.IsError(expr) {
+		return expr
+	}
+
+	// Evaluate the rule (but RuleDelayed RHS will remain unevaluated due to HoldRest)
+	rule := e.evaluate(args[1], ctx)
+	if core.IsError(rule) {
+		return rule
+	}
+
+	// Handle single rule
+	if e.isRuleOrRuleDelayed(rule) {
+		result := e.applyRuleDelayedAware(expr, rule, ctx)
+		// Re-evaluate the result to handle expressions like Plus(2, 2) -> 4
+		return e.evaluate(result, ctx)
+	}
+
+	// Handle List of rules
+	if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
+		head := rulesList.Elements[0]
+		if symbolName, ok := core.ExtractSymbol(head); ok && symbolName == "List" {
+			// First, check if ALL elements (except head) are Rules or RuleDelayed
+			allAreRules := true
+			for i := 1; i < len(rulesList.Elements); i++ {
+				if !e.isRuleOrRuleDelayed(rulesList.Elements[i]) {
+					allAreRules = false
+					break
+				}
+			}
+
+			// Only process as rule list if ALL elements are rules
+			if allAreRules {
+				// Try each rule in order
+				for i := 1; i < len(rulesList.Elements); i++ {
+					ruleItem := rulesList.Elements[i]
+					result := e.applyRuleDelayedAware(expr, ruleItem, ctx)
+					if !result.Equal(expr) {
+						// Rule matched and produced a different result
+						// Re-evaluate the result to handle expressions like Plus(2, 2) -> 4
+						return e.evaluate(result, ctx)
+					}
+				}
+			}
+		}
+	}
+
+	// No rule matched or invalid rule format
+	return expr
+}
+
+// evaluateReplaceAll implements enhanced ReplaceAll that supports both Rule and RuleDelayed
+func (e *Evaluator) evaluateReplaceAll(args []core.Expr, ctx *Context) core.Expr {
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError", "ReplaceAll requires exactly 2 arguments", args)
+	}
+
+	// Evaluate the expression to be replaced
+	expr := e.evaluate(args[0], ctx)
+	if core.IsError(expr) {
+		return expr
+	}
+
+	// Evaluate the rule (but RuleDelayed RHS will remain unevaluated due to HoldRest)
+	rule := e.evaluate(args[1], ctx)
+	if core.IsError(rule) {
+		return rule
+	}
+
+	result := e.replaceAllRecursive(expr, rule, ctx)
+	// If no changes were made and rule is a list with non-rules, return unevaluated ReplaceAll
+	if result.Equal(expr) {
+		if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
+			head := rulesList.Elements[0]
+			if symbolName, ok := core.ExtractSymbol(head); ok && symbolName == "List" {
+				// Check if this list contains non-rules
+				hasNonRules := false
+				for i := 1; i < len(rulesList.Elements); i++ {
+					if !e.isRuleOrRuleDelayed(rulesList.Elements[i]) {
+						hasNonRules = true
+						break
+					}
+				}
+				if hasNonRules {
+					// Return unevaluated ReplaceAll expression
+					return core.List{Elements: []core.Expr{
+						core.NewSymbol("ReplaceAll"),
+						expr,
+						rule,
+					}}
+				}
+			}
+		}
+	}
+	// Re-evaluate the final result to handle expressions like Plus(2, 2) -> 4
+	return e.evaluate(result, ctx)
+}
+
+// replaceAllRecursive recursively applies rules to all subexpressions
+func (e *Evaluator) replaceAllRecursive(expr core.Expr, rule core.Expr, ctx *Context) core.Expr {
+	// First try to apply the rule at this level
+	var result core.Expr
+
+	// Handle single rule
+	if e.isRuleOrRuleDelayed(rule) {
+		result = e.applyRuleDelayedAware(expr, rule, ctx)
+		if !result.Equal(expr) {
+			// Rule matched at this level, return the result (don't recurse into replacement)
+			return result
+		}
+	} else if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
+		// Handle List of rules
+		head := rulesList.Elements[0]
+		if symbolName, ok := core.ExtractSymbol(head); ok && symbolName == "List" {
+			// First, check if ALL elements (except head) are Rules or RuleDelayed
+			allAreRules := true
+			for i := 1; i < len(rulesList.Elements); i++ {
+				if !e.isRuleOrRuleDelayed(rulesList.Elements[i]) {
+					allAreRules = false
+					break
+				}
+			}
+
+			// Only process as rule list if ALL elements are rules
+			if allAreRules {
+				// Try each rule in order
+				for i := 1; i < len(rulesList.Elements); i++ {
+					ruleItem := rulesList.Elements[i]
+					result = e.applyRuleDelayedAware(expr, ruleItem, ctx)
+					if !result.Equal(expr) {
+						// Rule matched at this level
+						return result
+					}
+				}
+			}
+		}
+	}
+
+	// No match at this level, recursively apply to subexpressions
+	if list, ok := expr.(core.List); ok && len(list.Elements) > 0 {
+		// Create new list with transformed elements
+		newElements := make([]core.Expr, len(list.Elements))
+		changed := false
+
+		for i, element := range list.Elements {
+			newElement := e.replaceAllRecursive(element, rule, ctx)
+			newElements[i] = newElement
+			if !newElement.Equal(element) {
+				changed = true
+			}
+		}
+
+		if changed {
+			return core.List{Elements: newElements}
+		}
+	}
+
+	// Return original expression if no changes
+	return expr
+}
+
+// isRuleOrRuleDelayed checks if an expression is a Rule or RuleDelayed
+func (e *Evaluator) isRuleOrRuleDelayed(expr core.Expr) bool {
+	if _, ok := expr.(core.RuleDelayedExpr); ok {
+		return true
+	}
+
+	if ruleList, ok := expr.(core.List); ok && len(ruleList.Elements) == 3 {
+		head := ruleList.Elements[0]
+		if symbolName, ok := core.ExtractSymbol(head); ok {
+			return symbolName == "Rule" || symbolName == "RuleDelayed"
+		}
+	}
+
+	return false
 }
 
 // evaluateEvaluate implements the Evaluate special form

@@ -67,6 +67,12 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 				return fmt.Sprintf("%s: %s", l.Elements[1].InputForm(), l.Elements[2].InputForm())
 			}
 
+		case "RuleDelayed":
+			// RuleDelayed(a, b) -> a => b
+			if len(l.Elements) == 3 {
+				return fmt.Sprintf("%s => %s", l.Elements[1].InputForm(), l.Elements[2].InputForm())
+			}
+
 		case "Set":
 			// Set(a, b) -> a = b
 			if len(l.Elements) == 3 {

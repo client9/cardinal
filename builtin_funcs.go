@@ -29,6 +29,64 @@ func AttributesExpr(expr core.Expr, ctx *Context) core.Expr {
 		"Attributes expects a symbol as argument", []core.Expr{expr})
 }
 
+// ReplaceWithRuleDelayed applies a single rule (Rule or RuleDelayed) to an expression with evaluator access
+func ReplaceWithRuleDelayed(expr core.Expr, rule core.Expr, evaluator *Evaluator, ctx *Context) core.Expr {
+	// Handle both Rule and RuleDelayed
+	if ruleList, ok := rule.(core.List); ok && len(ruleList.Elements) == 3 {
+		head := ruleList.Elements[0]
+		if symbolName, ok := core.ExtractSymbol(head); ok {
+			if symbolName == "Rule" || symbolName == "RuleDelayed" {
+				pattern := ruleList.Elements[1]
+				replacement := ruleList.Elements[2]
+
+				// Use pattern matching with variable binding
+				matches, bindings := core.MatchWithBindings(pattern, expr)
+				if matches {
+					if symbolName == "Rule" {
+						// For Rule, substitute directly (current behavior)
+						return core.SubstituteBindings(replacement, bindings)
+					} else {
+						// For RuleDelayed, evaluate RHS in a context with bindings
+						ruleCtx := NewChildContext(ctx)
+
+						// Add pattern variable bindings to the rule context
+						for varName, value := range bindings {
+							ruleCtx.AddScopedVar(varName) // Keep bindings local
+							if err := ruleCtx.Set(varName, value); err != nil {
+								return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+							}
+						}
+
+						// Evaluate replacement in the rule context
+						return evaluator.evaluate(replacement, ruleCtx)
+					}
+				}
+			}
+		}
+	} else if ruleDelayed, ok := rule.(core.RuleDelayedExpr); ok {
+		// Handle direct RuleDelayedExpr
+		matches, bindings := core.MatchWithBindings(ruleDelayed.Pattern, expr)
+		if matches {
+			// Create a new context with pattern variable bindings
+			ruleCtx := NewChildContext(ctx)
+
+			// Add pattern variable bindings to the rule context
+			for varName, value := range bindings {
+				ruleCtx.AddScopedVar(varName) // Keep bindings local
+				if err := ruleCtx.Set(varName, value); err != nil {
+					return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+				}
+			}
+
+			// Evaluate RHS in the rule context
+			return evaluator.evaluate(ruleDelayed.RHS, ruleCtx)
+		}
+	}
+
+	// If no match or invalid rule, return original expression
+	return expr
+}
+
 // WrapAttributesExpr is a clean wrapper for Attributes that uses the business logic function
 func WrapAttributesExpr(args []core.Expr, ctx *Context) core.Expr {
 	// Validate argument count
@@ -327,4 +385,126 @@ func WrapShowPatterns(args []core.Expr, ctx *Context) core.Expr {
 
 	// Call business logic function
 	return ShowPatternsExpr(args[0], ctx)
+}
+
+// MapExpr applies a function to each element of a list
+// Map(f, {a, b, c}) -> {f(a), f(b), f(c)}
+func MapExpr(function core.Expr, list core.Expr, evaluator *Evaluator, ctx *Context) core.Expr {
+	// Check if the second argument is a list
+	listExpr, ok := list.(core.List)
+	if !ok {
+		return core.NewErrorExpr("ArgumentError",
+			"Map expects a list as the second argument", []core.Expr{list})
+	}
+
+	// If the list is empty or only has a head, return it unchanged
+	if len(listExpr.Elements) <= 1 {
+		return listExpr
+	}
+
+	// Extract head and elements
+	head := listExpr.Elements[0]
+	elements := listExpr.Elements[1:]
+
+	// Apply the function to each element
+	resultElements := make([]core.Expr, len(elements)+1)
+	resultElements[0] = head // Keep the same head
+
+	for i, element := range elements {
+		// Create function application: function(element)
+		applicationElements := []core.Expr{function, element}
+		application := core.List{Elements: applicationElements}
+
+		// Evaluate the function application
+		result := evaluator.evaluate(application, ctx)
+		resultElements[i+1] = result
+	}
+
+	return core.List{Elements: resultElements}
+}
+
+// WrapMapExpr is a clean wrapper for Map
+func WrapMapExpr(args []core.Expr, ctx *Context) core.Expr {
+	// Validate argument count
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError",
+			"Map expects 2 arguments", args)
+	}
+
+	// Check for errors in arguments first
+	for _, arg := range args {
+		if core.IsError(arg) {
+			return arg
+		}
+	}
+
+	// Get evaluator from context - we need this for function application
+	// For now, we'll create a new evaluator instance
+	// TODO: This is not ideal, but we need access to evaluation
+	evaluator := NewEvaluator()
+
+	// Copy the current context state to the new evaluator
+	evaluator.context = ctx
+
+	// Call business logic function
+	return MapExpr(args[0], args[1], evaluator, ctx)
+}
+
+// ApplyExpr applies a function to a list of arguments as separate parameters
+// Apply(f, {a, b, c}) -> f(a, b, c)
+func ApplyExpr(function core.Expr, list core.Expr, evaluator *Evaluator, ctx *Context) core.Expr {
+	// Check if the second argument is a list
+	listExpr, ok := list.(core.List)
+	if !ok {
+		return core.NewErrorExpr("ArgumentError",
+			"Apply expects a list as the second argument", []core.Expr{list})
+	}
+
+	// If the list is empty or only has a head, apply function with no arguments
+	if len(listExpr.Elements) <= 1 {
+		// Create function application with no arguments: function()
+		applicationElements := []core.Expr{function}
+		application := core.List{Elements: applicationElements}
+
+		// Evaluate the function application
+		return evaluator.evaluate(application, ctx)
+	}
+
+	// Extract elements (skip the head)
+	elements := listExpr.Elements[1:]
+
+	// Create function application: function(arg1, arg2, arg3, ...)
+	applicationElements := make([]core.Expr, len(elements)+1)
+	applicationElements[0] = function
+	copy(applicationElements[1:], elements)
+
+	application := core.List{Elements: applicationElements}
+
+	// Evaluate the function application
+	return evaluator.evaluate(application, ctx)
+}
+
+// WrapApplyExpr is a clean wrapper for Apply
+func WrapApplyExpr(args []core.Expr, ctx *Context) core.Expr {
+	// Validate argument count
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError",
+			"Apply expects 2 arguments", args)
+	}
+
+	// Check for errors in arguments first
+	for _, arg := range args {
+		if core.IsError(arg) {
+			return arg
+		}
+	}
+
+	// Get evaluator from context - we need this for function application
+	evaluator := NewEvaluator()
+
+	// Copy the current context state to the new evaluator
+	evaluator.context = ctx
+
+	// Call business logic function
+	return ApplyExpr(args[0], args[1], evaluator, ctx)
 }

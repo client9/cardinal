@@ -976,20 +976,7 @@ func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings)
 func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 	switch e := expr.(type) {
 	case Symbol:
-		symbolName := string(e)
-
-		// Handle $ variables for pattern binding lookup
-		if len(symbolName) > 1 && symbolName[0] == '$' {
-			// Look up the variable without the $ prefix in bindings
-			varName := symbolName[1:] // Remove the $ prefix
-			if value, exists := bindings[varName]; exists {
-				return value
-			}
-			// If no binding found, return the $ symbol as-is (it's just a regular symbol)
-			return e
-		}
-
-		// Check if this symbol is a bound variable (legacy behavior)
+		// Check if this symbol is a bound variable
 		if value, exists := bindings[string(e)]; exists {
 			return value
 		}

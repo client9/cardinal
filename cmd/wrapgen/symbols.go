@@ -343,22 +343,6 @@ var symbolSpecs = map[string]SymbolSpec{
 			"(x_, y_)": stdlib.MatchQExprs,
 		},
 	},
-	"Replace": {
-		Name:       "Replace",
-		Attributes: []string{},
-		Functions: map[string]any{
-			"(x_, r_Rule)":            stdlib.ReplaceExpr,
-			"(x_, List(rule___Rule))": stdlib.ReplaceWithRules,
-		},
-	},
-	"ReplaceAll": {
-		Name:       "ReplaceAll",
-		Attributes: []string{},
-		Functions: map[string]any{
-			"(x_, r_Rule)":            stdlib.ReplaceAllExpr,
-			"(x_, List(rule___Rule))": stdlib.ReplaceAllWithRules,
-		},
-	},
 
 	// Control Structures
 	"Block": {
@@ -370,6 +354,11 @@ var symbolSpecs = map[string]SymbolSpec{
 		Name:       "Function",
 		Attributes: []string{"HoldAll"},
 		Functions:  map[string]any{}, // Function is handled as special form in evaluator
+	},
+	"RuleDelayed": {
+		Name:       "RuleDelayed",
+		Attributes: []string{"HoldRest"},
+		Functions:  map[string]any{}, // RuleDelayed is handled as special form in evaluator
 	},
 	"Table": {
 		Name:       "Table",
@@ -474,5 +463,17 @@ var symbolSpecs = map[string]SymbolSpec{
 		Name:       "Attributes",
 		Attributes: []string{"HoldFirst"},
 		Functions:  map[string]any{}, // Attributes is handled as special function in builtin_setup
+	},
+
+	// Functional Programming Functions
+	"Map": {
+		Name:       "Map",
+		Attributes: []string{},
+		Functions:  map[string]any{}, // Map is handled as special function in builtin_setup
+	},
+	"Apply": {
+		Name:       "Apply",
+		Attributes: []string{},
+		Functions:  map[string]any{}, // Apply is handled as special function in builtin_setup
 	},
 }

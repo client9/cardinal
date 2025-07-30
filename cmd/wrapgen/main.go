@@ -331,6 +331,10 @@ func registerDefaultBuiltins(registry *FunctionRegistry) {
 		"ClearAttributes(x_, y_List)": WrapClearAttributesList,
 		"ClearAttributes(x_, y_)":     WrapClearAttributesSingle,
 		
+		// Functional programming functions (require context and evaluation)
+		"Map(f_, list_)": WrapMapExpr,
+		"Apply(f_, list_)": WrapApplyExpr,
+		
 		// Special debugging functions (require context and main package access)
 		"PatternSpecificity(pattern_)":      WrapPatternSpecificity,
 		"ShowPatterns(functionName_Symbol)": WrapShowPatterns,

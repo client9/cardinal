@@ -19,6 +19,7 @@ const (
 	RBRACE
 	COMMA
 	COLON
+	RULEDELAYED // =>
 	PLUS
 	MINUS
 	MULTIPLY
@@ -40,6 +41,7 @@ const (
 	SAMEQ
 	UNSAMEQ
 	CARET
+	AMPERSAND // &
 	SEMICOLON
 	UNDERSCORE // _
 	WHITESPACE
@@ -78,6 +80,8 @@ func (t Token) String() string {
 		return "COMMA"
 	case COLON:
 		return "COLON"
+	case RULEDELAYED:
+		return "RULEDELAYED"
 	case PLUS:
 		return "PLUS"
 	case MINUS:
@@ -120,6 +124,8 @@ func (t Token) String() string {
 		return "UNSAMEQ"
 	case CARET:
 		return "CARET"
+	case AMPERSAND:
+		return "AMPERSAND"
 	case UNDERSCORE:
 		return "UNDERSCORE"
 	case WHITESPACE:
@@ -337,6 +343,11 @@ func (l *Lexer) NextToken() Token {
 			l.readChar() // move past '.'
 			tok = Token{Type: UNSET, Value: "=.", Position: position}
 			return tok
+		} else if l.peekChar() == '>' {
+			l.readChar() // move to '>'
+			l.readChar() // move past '>'
+			tok = Token{Type: RULEDELAYED, Value: "=>", Position: position}
+			return tok
 		} else {
 			tok = Token{Type: SET, Value: "=", Position: position}
 		}
@@ -383,7 +394,7 @@ func (l *Lexer) NextToken() Token {
 			l.readChar() // consume second '&'
 			return tok
 		} else {
-			tok = Token{Type: ILLEGAL, Value: string(l.ch), Position: l.position - 1}
+			tok = Token{Type: AMPERSAND, Value: string(l.ch), Position: l.position - 1}
 		}
 	case '|':
 		if l.peekChar() == '|' {

@@ -318,3 +318,190 @@ func TestFunction_NestedFunctions(t *testing.T) {
 		})
 	}
 }
+
+func TestFunction_AmpersandSyntax(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		// Basic & syntax tests
+		{
+			name:     "Simple single slot with &",
+			input:    "$1 &",
+			expected: "Function(slot1, $1)",
+		},
+		{
+			name:     "Two slots with &",
+			input:    "$1 + $2 &",
+			expected: "Function([slot1, slot2], Plus($1, $2))",
+		},
+		{
+			name:     "Multiple slots with complex expression",
+			input:    "$1 * $2 + $3 &",
+			expected: "Function([slot1, slot2, slot3], Plus(Times($1, $2), $3))",
+		},
+		{
+			name:     "Parenthesized expression with &",
+			input:    "($1 + $2) * $3 &",
+			expected: "Function([slot1, slot2, slot3], Times(Plus($1, $2), $3))",
+		},
+		{
+			name:     "Mixed slot and constant with &",
+			input:    "$1 + 10 &",
+			expected: "Function(slot1, Plus($1, 10))",
+		},
+		{
+			name:     "Complex arithmetic with &",
+			input:    "$1 * 2 + $2 / 3 &",
+			expected: "Function([slot1, slot2], Plus(Times($1, 2), Divide($2, 3)))",
+		},
+
+		// Function application tests
+		{
+			name:     "Simple & function application",
+			input:    "($1 * 2 &)(5)",
+			expected: "10",
+		},
+		{
+			name:     "Two parameter & function application",
+			input:    "($1 + $2 &)(10, 20)",
+			expected: "30",
+		},
+		{
+			name:     "Complex & function application",
+			input:    "($1 * $2 + $3 &)(2, 3, 4)",
+			expected: "10",
+		},
+		{
+			name:     "& function with mixed types",
+			input:    "(Append($1, \" world\") &)(\"hello\")",
+			expected: "\"hello world\"",
+		},
+
+		// Precedence tests
+		{
+			name:     "& has lower precedence than arithmetic",
+			input:    "$1 + $2 * $3 &",
+			expected: "Function([slot1, slot2, slot3], Plus($1, Times($2, $3)))",
+		},
+		{
+			name:     "& binds to entire arithmetic expression",
+			input:    "$1 + $2 - $3 &",
+			expected: "Function([slot1, slot2, slot3], Subtract(Plus($1, $2), $3))",
+		},
+		{
+			name:     "& with power operator precedence",
+			input:    "$1 ^ $2 + $3 &",
+			expected: "Function([slot1, slot2, slot3], Plus(Power($1, $2), $3))",
+		},
+
+		// Nested and edge cases
+		{
+			name:     "Constant expression with &",
+			input:    "42 &",
+			expected: "Function([], 42)",
+		},
+		{
+			name:     "String expression with &",
+			input:    "\"hello\" &",
+			expected: "Function([], \"hello\")",
+		},
+		{
+			name:     "& with function calls",
+			input:    "Plus($1, $2) &",
+			expected: "Function([slot1, slot2], Plus($1, $2))",
+		},
+		{
+			name:     "& with nested expressions",
+			input:    "Times($1, Plus($2, $3)) &",
+			expected: "Function([slot1, slot2, slot3], Times($1, Plus($2, $3)))",
+		},
+
+		// High numbered slots
+		{
+			name:     "& with high numbered slots",
+			input:    "$10 + $5 &",
+			expected: "Function([slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9, slot10], Plus($10, $5))",
+		},
+
+		// Bare $ (first slot)
+		{
+			name:     "Bare $ with &",
+			input:    "$ * 2 &",
+			expected: "Function(slot1, Times($, 2))",
+		},
+		{
+			name:     "$ and $1 mixed with &",
+			input:    "$ + $1 &",
+			expected: "Function(slot1, Plus($, $1))",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewEvaluator()
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+			result := evaluator.Evaluate(expr)
+			if result.String() != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result.String())
+			}
+		})
+	}
+}
+
+func TestFunction_AmpersandSyntaxParsing(t *testing.T) {
+	// Test that & parses correctly with different precedence contexts
+	tests := []struct {
+		name  string
+		input string
+		// We'll test the parsed AST structure to ensure precedence is correct
+		shouldParse bool
+	}{
+		{
+			name:        "& with addition",
+			input:       "$1 + $2 &",
+			shouldParse: true,
+		},
+		{
+			name:        "& with multiplication",
+			input:       "$1 * $2 &",
+			shouldParse: true,
+		},
+		{
+			name:        "& with power",
+			input:       "$1 ^ $2 &",
+			shouldParse: true,
+		},
+		{
+			name:        "& with parentheses",
+			input:       "($1 + $2) &",
+			shouldParse: true,
+		},
+		{
+			name:        "& with comparison",
+			input:       "$1 < $2 &",
+			shouldParse: true,
+		},
+		{
+			name:        "& with logical operations",
+			input:       "$1 && $2 &",
+			shouldParse: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseString(tt.input)
+			if tt.shouldParse && err != nil {
+				t.Errorf("Expected %s to parse successfully, but got error: %v", tt.input, err)
+			}
+			if !tt.shouldParse && err == nil {
+				t.Errorf("Expected %s to fail parsing, but it succeeded", tt.input)
+			}
+		})
+	}
+}
