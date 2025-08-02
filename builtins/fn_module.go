@@ -1,8 +1,8 @@
 package builtins
 
 import (
-        "github.com/client9/sexpr/core"
-        "github.com/client9/sexpr/engine"
+	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/engine"
 )
 
 // evaluateBlock implements the Block special form for dynamic scoping
@@ -79,4 +79,3 @@ func Module(e *engine.Evaluator, ctx *engine.Context, args []core.Expr) core.Exp
 
 	return result
 }
-

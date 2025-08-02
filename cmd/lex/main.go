@@ -26,16 +26,16 @@ func main() {
 			if !scanner.Scan() {
 				break
 			}
-			
+
 			input := strings.TrimSpace(scanner.Text())
 			if input == "" {
 				continue
 			}
-			
+
 			if input == "exit" || input == "quit" {
 				break
 			}
-			
+
 			processInput(input)
 			fmt.Println()
 		}
@@ -44,40 +44,40 @@ func main() {
 
 func processInput(input string) {
 	lexer := engine.NewLexer(input)
-	
+
 	fmt.Printf("Input: %s\n", input)
 	fmt.Println("Tokens:")
 	fmt.Println("-------")
 	fmt.Printf("%-4s %-15s %-20s %s\n", "Pos", "Type", "Value", "Display")
 	fmt.Println(strings.Repeat("-", 60))
-	
+
 	position := 0
 	for {
 		token := lexer.NextToken()
-		
+
 		// Calculate actual position in input
 		actualPos := token.Position - 1
 		if actualPos < 0 {
 			actualPos = position
 		}
-		
+
 		// Format token type name
 		typeName := getTokenTypeName(token.Type)
-		
+
 		// Format value for display
 		displayValue := formatTokenValue(token)
-		
+
 		// Print token information
-		fmt.Printf("%-4d %-15s %-20s %s\n", 
-			actualPos, 
-			typeName, 
-			fmt.Sprintf("\"%s\"", token.Value), 
+		fmt.Printf("%-4d %-15s %-20s %s\n",
+			actualPos,
+			typeName,
+			fmt.Sprintf("\"%s\"", token.Value),
 			displayValue)
-		
+
 		if token.Type == engine.EOF {
 			break
 		}
-		
+
 		position = actualPos + len(token.Value)
 	}
 }

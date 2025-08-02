@@ -1,13 +1,13 @@
 package builtins
 
 import (
+	"fmt"
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
-	"fmt"
 )
 
 // SetAttributesExpr sets attributes for a symbol: SetAttributes(symbol, attr) or SetAttributes(symbol, {attr1, attr2})
-func SetAttributesExpr(e *engine.Evaluator, c *engine.Context,  symbol, attrs core.Expr) core.Expr {
+func SetAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs core.Expr) core.Expr {
 	symbolTable := c.GetSymbolTable()
 
 	// The first argument should be a symbol
@@ -30,7 +30,7 @@ func SetAttributesExpr(e *engine.Evaluator, c *engine.Context,  symbol, attrs co
 						if attr, ok := engine.StringToAttribute(attrName); ok {
 							attributes = append(attributes, attr)
 						} else {
-							return core.NewErrorExpr("Attribute",  fmt.Sprintf("unknown attribute %q", attrName), nil)
+							return core.NewErrorExpr("Attribute", fmt.Sprintf("unknown attribute %q", attrName), nil)
 						}
 					}
 				}
@@ -44,4 +44,3 @@ func SetAttributesExpr(e *engine.Evaluator, c *engine.Context,  symbol, attrs co
 
 	return core.NewErrorExpr("ArgumentError", "Invalid arguments to SetAttributes", []core.Expr{symbol, attrs})
 }
-

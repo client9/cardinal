@@ -1,16 +1,16 @@
 package builtins
 
 import (
+	"fmt"
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
-	"fmt"	
 	"log"
 )
 
 func BlockExpr(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr) core.Expr {
 
 	// Store original variable values to restore later
-	savedVars, err := saveBlockVars(e,c,vars)
+	savedVars, err := saveBlockVars(e, c, vars)
 	if err != nil {
 		log.Printf("SAVE BLOCK VARS: %s", err)
 	}
@@ -18,7 +18,7 @@ func BlockExpr(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core
 	// Evaluate the body in the modified context
 	result := e.Evaluate(c, body)
 
-	restoreBlockVars(e,c, savedVars)
+	restoreBlockVars(e, c, savedVars)
 
 	return result
 }

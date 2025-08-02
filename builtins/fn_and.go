@@ -43,4 +43,3 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 	copy(elements[1:], unevaluatedArgs)
 	return core.List{Elements: elements}
 }
-

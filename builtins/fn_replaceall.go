@@ -32,7 +32,7 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 				// Check if this list contains non-rules
 				for i := 1; i < len(rulesList.Elements); i++ {
 					if !isRuleOrRuleDelayed(rulesList.Elements[i]) {
-					return core.NewErrorExpr("ArgumentError", "Input was not a list of rules", args)
+						return core.NewErrorExpr("ArgumentError", "Input was not a list of rules", args)
 					}
 				}
 			}
@@ -49,7 +49,7 @@ func replaceAllRecursive(e *engine.Evaluator, c *engine.Context, expr core.Expr,
 
 	// Handle single rule
 	if isRuleOrRuleDelayed(rule) {
-		result = applyRuleDelayedAware(e,c,expr, rule)
+		result = applyRuleDelayedAware(e, c, expr, rule)
 		if !result.Equal(expr) {
 			// Rule matched at this level, return the result (don't recurse into replacement)
 			return result

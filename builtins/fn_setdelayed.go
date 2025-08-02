@@ -38,4 +38,3 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) 
 
 	return core.NewErrorExpr("SetDelayedError", "Invalid assignment target", []core.Expr{lhs})
 }
-

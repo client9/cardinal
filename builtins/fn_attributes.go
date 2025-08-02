@@ -6,7 +6,7 @@ import (
 )
 
 // AttributesExpr gets the attributes of a symbol
-func AttributesExpr(e *engine.Evaluator, c *engine.Context,  symbol core.Expr) core.Expr {
+func AttributesExpr(e *engine.Evaluator, c *engine.Context, symbol core.Expr) core.Expr {
 	symbolTable := c.GetSymbolTable()
 
 	// The argument should be a symbol
@@ -28,4 +28,3 @@ func AttributesExpr(e *engine.Evaluator, c *engine.Context,  symbol core.Expr) c
 	return core.NewErrorExpr("ArgumentError",
 		"Attributes expects a symbol as argument", []core.Expr{symbol})
 }
-

@@ -8,7 +8,7 @@ import (
 // isRuleOrRuleDelayed checks if an expression is a Rule or RuleDelayed
 func isRuleOrRuleDelayed(expr core.Expr) bool {
 	if symbolName, ok := core.ExtractSymbol(expr); ok {
-			return symbolName == "Rule" || symbolName == "RuleDelayed"
+		return symbolName == "Rule" || symbolName == "RuleDelayed"
 	}
 	if ruleList, ok := expr.(core.List); ok && len(ruleList.Elements) == 3 {
 		head := ruleList.Elements[0]
@@ -314,4 +314,3 @@ func replaceAllRecursive(e *engine.Evaluator, c *engine.Context, expr, rule core
 }
 
 */
-

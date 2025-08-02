@@ -6,7 +6,7 @@ import (
 )
 
 // SetExpr evaluates immediate assignment: Set(lhs, rhs)
-func SetExpr(e *engine.Evaluator, c *engine.Context,  lhs, rhs core.Expr) core.Expr {
+func SetExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) core.Expr {
 	// Evaluate the right-hand side immediately
 	evalRhs := e.Evaluate(c, rhs)
 
@@ -20,4 +20,3 @@ func SetExpr(e *engine.Evaluator, c *engine.Context,  lhs, rhs core.Expr) core.E
 
 	return core.NewErrorExpr("SetError", "Invalid assignment target", []core.Expr{lhs})
 }
-

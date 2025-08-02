@@ -20,7 +20,7 @@ func Do(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 
 	// Check if second argument is an integer (simple replication form)
 	if n, ok := core.ExtractInt64(spec); ok {
-		return doSimple(e,c,expr, n)
+		return doSimple(e, c, expr, n)
 	}
 
 	// Check if second argument is a core.List (iterator form)
@@ -50,9 +50,9 @@ func doSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64) c
 }
 
 // evaluateDoIterator handles Do with iterator specification core.List(i, start, end, increment)
-func  doIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterSpec core.List) core.Expr {
+func doIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterSpec core.List) core.Expr {
 	// Parse iterator specification into normalized form
-	variable, start, end, increment, err := parseTableIteratorSpec(e,c,iterSpec)
+	variable, start, end, increment, err := parseTableIteratorSpec(e, c, iterSpec)
 	if err != nil {
 		return err
 	}
@@ -62,20 +62,20 @@ func  doIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterSpe
 
 	for iteration := 0; iteration < maxIterations; iteration++ {
 		// Check if we should continue iterating
-		shouldContinue := evaluateIteratorCondition(e,c,current, end, increment)
+		shouldContinue := evaluateIteratorCondition(e, c, current, end, increment)
 		if !shouldContinue {
 			break
 		}
 
 		// Evaluate expression with current iterator value (for side effects only)
-		blockResult := evaluateWithIteratorBinding(e,c,expr, variable, current)
+		blockResult := evaluateWithIteratorBinding(e, c, expr, variable, current)
 		if core.IsError(blockResult) {
 			return blockResult // Return error immediately
 		}
 		// Discard result - Do is for side effects only
 
 		// Increment for next iteration
-		current = evaluateIteratorIncrement(e,c,current, increment)
+		current = evaluateIteratorIncrement(e, c, current, increment)
 		if core.IsError(current) {
 			return current
 		}
@@ -83,6 +83,7 @@ func  doIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterSpe
 
 	return core.NewSymbol("Null")
 }
+
 /*
 // DoExpr executes an expression multiple times: Do(expr, {i, n})
 func DoExpr(e *engine.Evaluator, ctx *engine.Context, expr core.Expr, iterator core.Expr) core.Expr {

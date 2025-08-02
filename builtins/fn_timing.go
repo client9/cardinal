@@ -1,9 +1,9 @@
 package builtins
 
 import (
-	"time"
-	"github.com/client9/sexpr/engine"
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/engine"
+	"time"
 )
 
 func Timing(e *engine.Evaluator, c *engine.Context, arg core.Expr) core.Expr {

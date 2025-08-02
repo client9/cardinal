@@ -11,7 +11,7 @@ generate:
 
 lint:
 	go mod tidy
-	gofmt -w -s *.go core/*.go engine/*.go stdlib/*.go cmd/wrapgen/*.go cmd/repl/*.go tests/integration/*.go
+	find . -name '*.go' | xargs gofmt -w -s
 	golangci-lint run .
 
 # Run all tests

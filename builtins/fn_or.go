@@ -43,4 +43,3 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	copy(elements[1:], nonFalseArgs)
 	return core.List{Elements: elements}
 }
-

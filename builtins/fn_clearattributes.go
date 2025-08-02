@@ -40,6 +40,7 @@ func ClearAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs c
 
 	return core.NewErrorExpr("ArgumentError", "Invalid arguments to ClearAttributes", []core.Expr{symbol, attrs})
 }
+
 /*
 // Helper function to parse attribute names to engine.Attribute objects
 func parseAttribute(name string) (engine.Attribute, bool) {

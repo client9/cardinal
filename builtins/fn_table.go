@@ -17,12 +17,12 @@ func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 
 	// Check if second argument is an integer (simple replication form)
 	if n, ok := core.ExtractInt64(spec); ok {
-		return tableSimple(e,c,expr, n)
+		return tableSimple(e, c, expr, n)
 	}
 
 	// Check if second argument is a core.List (iterator form)
 	if iterList, ok := spec.(core.List); ok {
-		return tableIterator(e,c, expr, iterList)
+		return tableIterator(e, c, expr, iterList)
 	}
 
 	return core.NewErrorExpr("ArgumentError", "Table second argument must be integer or core.List", args)
@@ -77,14 +77,14 @@ func tableIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterS
 		}
 
 		// Use Block to bind iterator variable and evaluate expression
-		blockResult := evaluateWithIteratorBinding(e,c, expr, variable, current)
+		blockResult := evaluateWithIteratorBinding(e, c, expr, variable, current)
 		if core.IsError(blockResult) {
 			return blockResult
 		}
 		results = append(results, blockResult)
 
 		// Increment current value using expression arithmetic
-		current = evaluateIteratorIncrement(e,c, current, increment)
+		current = evaluateIteratorIncrement(e, c, current, increment)
 		if core.IsError(current) {
 			return current
 		}

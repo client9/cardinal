@@ -1,8 +1,8 @@
 package builtins
 
 import (
-        "github.com/client9/sexpr/core"
-        "github.com/client9/sexpr/engine"
+	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/engine"
 )
 
 // CompoundExpression implements the CompoundExpression special form
