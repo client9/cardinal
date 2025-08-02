@@ -100,6 +100,12 @@ func (p *Parser) parseExpression() core.Expr {
 }
 
 func (p *Parser) parseInfixExpression(precedence Precedence) core.Expr {
+	// Special case: if we hit RPAREN, RBRACKET, RBRACE, or EOF when expecting an expression,
+	// return nil to signal that no expression is available
+	if p.currentToken.Type == RPAREN || p.currentToken.Type == RBRACKET || p.currentToken.Type == RBRACE || p.currentToken.Type == EOF {
+		return nil
+	}
+
 	left := p.ParseAtom()
 
 	for p.currentToken.Type != EOF && precedence < p.currentPrecedence() {
