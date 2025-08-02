@@ -92,6 +92,10 @@ func (p *Parser) Parse() (core.Expr, error) {
 	if len(p.errors) > 0 {
 		return nil, fmt.Errorf("parse errors: %s", strings.Join(p.errors, "; "))
 	}
+	if expr == nil {
+		// triggered when input is nothing
+		return core.NewSymbolNull(), nil
+	}
 	return expr, nil
 }
 

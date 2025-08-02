@@ -364,25 +364,25 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "semicolon, expression, semicolon",
 			input:    ";1;",
-			expected: "CompoundExpression(CompoundExpression(Null, 1), Null)",
+			expected: "CompoundExpression(Null, 1, Null)",
 			hasError: false,
 		},
 		{
 			name:     "multiple empty semicolons",
 			input:    ";;",
-			expected: "CompoundExpression(CompoundExpression(Null, Null), Null)",
+			expected: "CompoundExpression(Null, Null, Null)",
 			hasError: false,
 		},
 		{
 			name:     "empty statements with expressions",
 			input:    ";2+3;",
-			expected: "CompoundExpression(CompoundExpression(Null, Plus(2, 3)), Null)",
+			expected: "CompoundExpression(Null, Plus(2, 3), Null)",
 			hasError: false,
 		},
 		{
 			name:     "multiple expressions with empty statements",
 			input:    "1;;2",
-			expected: "CompoundExpression(CompoundExpression(1, Null), 2)",
+			expected: "CompoundExpression(1, Null, 2)",
 			hasError: false,
 		},
 	}

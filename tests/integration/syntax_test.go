@@ -46,6 +46,16 @@ func TestCompoundExpression(t *testing.T) {
 			input:    ";42",
 			expected: "42",
 		},
+		{
+			name:     "Inside parenthesis",
+			input:    "(1;)",
+			expected: "Null",
+		},
+		{
+			name:     "Not nested",
+			input:    "Hold(1;2;3)",
+			expected: "Hold(CompoundExpression(1, 2, 3))",
+		},
 	}
 
 	runTestCases(t, tests)
