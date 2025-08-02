@@ -33,7 +33,6 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) 
 		if err := c.Set(symbolName, rhs); err != nil {
 			return core.NewErrorExpr("Protected", err.Error(), []core.Expr{lhs})
 		}
-		c.Set(symbolName, rhs)
 		return core.NewSymbol("Null")
 	}
 

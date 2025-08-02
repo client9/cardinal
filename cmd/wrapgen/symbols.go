@@ -407,7 +407,7 @@ var symbolSpecs = []SymbolSpec{
 	},
 	{
 		Name:       "SetDelayed",
-		Attributes: []string{"HoldFirst"},
+		Attributes: []string{"HoldAll"},
 		Functions: []rule{
 			{"(lhs_, rhs_)", builtins.SetDelayedExpr},
 		},

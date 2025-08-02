@@ -197,7 +197,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, evalua
 				// User-defined function - evaluate body
 				// Create an evaluator to evaluate the body
 				evaluator := NewEvaluatorWithContext(funcCtx)
-				return evaluator.evaluate(funcDef.Body, funcCtx), true
+				return evaluator.Evaluate(funcCtx, funcDef.Body), true
 			}
 		}
 	}

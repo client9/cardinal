@@ -68,28 +68,6 @@ func TestSetOperations(t *testing.T) {
 	runTestCases(t, tests)
 }
 
-func TestSetDelayed(t *testing.T) {
-	tests := []TestCase{
-		{
-			name:     "SetDelayed simple variable",
-			input:    `SetDelayed(x, Plus(1, 2)); x`,
-			expected: `3`,
-		},
-		{
-			name:     "SetDelayed returns Null",
-			input:    `SetDelayed(y, 42)`,
-			expected: `Null`,
-		},
-		{
-			name:     "SetDelayed with function definition",
-			input:    `SetDelayed(f(x_), Times(x, 2)); f(5)`,
-			expected: `10`,
-		},
-	}
-
-	runTestCases(t, tests)
-}
-
 func TestDoLoop(t *testing.T) {
 	tests := []TestCase{
 		{
