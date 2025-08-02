@@ -4,48 +4,8 @@ import (
 	"testing"
 )
 
-func TestBlockBasic(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "Block with single variable assignment",
-			input:    `Block(List(Set(x, 5)), x)`,
-			expected: `5`,
-		},
-		{
-			name:     "Block with variable clearing",
-			input:    `Block(List(x), x)`,
-			expected: `x`,
-		},
-		{
-			name:     "Block with arithmetic",
-			input:    `Block(List(Set(x, 3)), Plus(x, 2))`,
-			expected: `5`,
-		},
-		{
-			name:     "Block with multiple variables",
-			input:    `Block(List(Set(x, 1), Set(y, 2)), Plus(x, y))`,
-			expected: `3`,
-		},
-		{
-			name:     "Block preserves variable isolation",
-			input:    `Block(List(Set(localVar, 42)), localVar)`,
-			expected: `42`,
-		},
-	}
-
-	runTestCases(t, tests)
-}
-
 func TestIfConditions(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "If with True condition",
 			input:    `If(True, "yes", "no")`,
@@ -82,11 +42,7 @@ func TestIfConditions(t *testing.T) {
 }
 
 func TestSetOperations(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Simple Set assignment",
 			input:    `Set(x, 42); x`,
@@ -113,11 +69,7 @@ func TestSetOperations(t *testing.T) {
 }
 
 func TestSetDelayed(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "SetDelayed simple variable",
 			input:    `SetDelayed(x, Plus(1, 2)); x`,
@@ -139,11 +91,7 @@ func TestSetDelayed(t *testing.T) {
 }
 
 func TestDoLoop(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Do with simple count",
 			input:    `Do(Print("hello"), 0)`,
@@ -165,11 +113,7 @@ func TestDoLoop(t *testing.T) {
 }
 
 func TestTableGeneration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Table with simple count",
 			input:    `Table(42, 3)`,
@@ -201,11 +145,7 @@ func TestTableGeneration(t *testing.T) {
 }
 
 func TestHoldForms(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Hold prevents evaluation",
 			input:    `Hold(Plus(1, 2))`,

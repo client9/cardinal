@@ -5,11 +5,7 @@ import (
 )
 
 func TestArithmeticSimplification(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	runTestCases(t, []TestCase{
 		// Basic Plus simplification
 		{
 			name:     "Plus with all integers",
@@ -139,17 +135,11 @@ func TestArithmeticSimplification(t *testing.T) {
 			input:    "Plus(1, 2.5, 3)",
 			expected: "6.5",
 		},
-	}
-
-	runTestCases(t, tests)
+	})
 }
 
 func TestArithmeticSimplificationWithReplace(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	runTestCases(t, []TestCase{
 		// Test that replacement rules work correctly with the new arithmetic
 		{
 			name:     "Replace on simplified Plus",
@@ -171,7 +161,6 @@ func TestArithmeticSimplificationWithReplace(t *testing.T) {
 			input:    "MatchQ(Plus(1, 2.0, x), Plus(n_Real, x_))",
 			expected: "True", // 1+2.0 becomes 3.0 (Real), so pattern matches
 		},
-	}
+	})
 
-	runTestCases(t, tests)
 }

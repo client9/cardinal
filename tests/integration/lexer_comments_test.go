@@ -5,11 +5,7 @@ import (
 )
 
 func TestCommentsParsing(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Comment should not affect parsing result",
 			input:    "Plus(1, 2) # this is a comment",

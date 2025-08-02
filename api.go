@@ -37,8 +37,9 @@ func EvaluateString(input string) (core.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	evaluator := NewEvaluator()
-	return evaluator.Evaluate(expr), nil
+	e := NewEvaluator()
+	c := e.GetContext()
+	return e.Evaluate(c, expr), nil
 }
 
 // NewContext creates a new evaluation context

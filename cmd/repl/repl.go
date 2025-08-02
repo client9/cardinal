@@ -15,6 +15,7 @@ import (
 // REPL represents a Read-Eval-Print Loop for s-expressions
 type REPL struct {
 	evaluator *engine.Evaluator
+	ctx       *engine.Context
 	input     io.Reader
 	output    io.Writer
 	prompt    string
@@ -22,12 +23,14 @@ type REPL struct {
 
 // NewREPL creates a new REPL instance
 func NewREPL() *REPL {
-	evaluator := sexpr.NewEvaluator()
+	e := sexpr.NewEvaluator()
+	c := e.GetContext()
 	// Set up built-in attributes for the evaluator
-	sexpr.SetupBuiltinAttributes(evaluator.GetContext().GetSymbolTable())
+	sexpr.SetupBuiltinAttributes(c.GetSymbolTable())
 
 	return &REPL{
-		evaluator: evaluator,
+		evaluator: e,
+		ctx: c,
 		input:     os.Stdin,
 		output:    os.Stdout,
 		prompt:    "sexpr> ",
@@ -36,12 +39,14 @@ func NewREPL() *REPL {
 
 // NewREPLWithIO creates a new REPL instance with custom input/output
 func NewREPLWithIO(input io.Reader, output io.Writer) *REPL {
-	evaluator := sexpr.NewEvaluator()
+	e := sexpr.NewEvaluator()
+	c := e.GetContext()
 	// Set up built-in attributes for the evaluator
-	sexpr.SetupBuiltinAttributes(evaluator.GetContext().GetSymbolTable())
+	sexpr.SetupBuiltinAttributes(c.GetSymbolTable())
 
 	return &REPL{
-		evaluator: evaluator,
+		evaluator: e,	
+		ctx: c,
 		input:     input,
 		output:    output,
 		prompt:    "sexpr> ",
@@ -241,7 +246,7 @@ func (r *REPL) processLine(line string) error {
 	}
 
 	// Evaluate the expression
-	result := r.evaluator.Evaluate(expr)
+	result := r.evaluator.Evaluate(r.ctx, expr)
 
 	// Print the result
 	_, _ = fmt.Fprintf(r.output, "%s\n", result.String())
@@ -293,7 +298,8 @@ Operators:
 // clearContext clears all variable assignments
 func (r *REPL) clearContext() {
 	r.evaluator = sexpr.NewEvaluator()
-	sexpr.SetupBuiltinAttributes(r.evaluator.GetContext().GetSymbolTable())
+	r.ctx = r.evaluator.GetContext()
+	sexpr.SetupBuiltinAttributes(r.ctx.GetSymbolTable())
 }
 
 // printAttributes prints all symbols with their attributes
@@ -389,7 +395,7 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 		return "", fmt.Errorf("parse error: %v", err)
 	}
 
-	result := r.evaluator.Evaluate(expr)
+	result := r.evaluator.Evaluate(r.ctx, expr)
 	return result.String(), nil
 }
 

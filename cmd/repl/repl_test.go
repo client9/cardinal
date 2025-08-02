@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/client9/sexpr"
 )
 
 func TestREPL_Basic(t *testing.T) {
@@ -178,21 +177,6 @@ func TestREPL_SpecialCommands(t *testing.T) {
 	}
 }
 
-func TestREPL_GetEvaluator(t *testing.T) {
-	repl := NewREPL()
-	evaluator := repl.GetEvaluator()
-
-	if evaluator == nil {
-		t.Error("GetEvaluator should return a valid evaluator")
-	}
-
-	// Test that the evaluator works
-	expr, _ := sexpr.ParseString("1 + 2")
-	result := evaluator.Evaluate(expr)
-	if result.String() != "3" {
-		t.Errorf("Expected '3', got '%s'", result.String())
-	}
-}
 
 func TestREPL_ClearContext(t *testing.T) {
 	repl := NewREPL()

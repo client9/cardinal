@@ -6,10 +6,6 @@ import (
 	"github.com/client9/sexpr/core"
 )
 
-func AssociationLength(x core.Association) int64 {
-	return x.Length()
-}
-
 // Association functions - all work with ObjectExpr of type "Association"
 
 // AssociationQExpr checks if an expression is an Association

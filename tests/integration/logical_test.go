@@ -7,11 +7,7 @@ import (
 )
 
 func TestAndOrMixedBooleanValues(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// And with mixed boolean/non-boolean values
 		{
 			name:     "And with True and non-boolean",
@@ -91,11 +87,7 @@ func TestAndOrMixedBooleanValues(t *testing.T) {
 }
 
 func TestAndOrShortCircuitWithMixed(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// Short-circuit behavior with mixed values
 		{
 			name:     "And short-circuit with False first",
@@ -108,14 +100,16 @@ func TestAndOrShortCircuitWithMixed(t *testing.T) {
 			expected: "True",
 		},
 		{
-			name:     "And with error in second position",
-			input:    "And(True, Divide(1, 0))", // Should evaluate and propagate error
-			expected: "$Failed(DivisionByZero)",
+			name:      "And with error in second position",
+			input:     "And(True, Divide(1, 0))", // Should evaluate and propagate error
+			expected:  "",
+			errorType: "DivisionByZero",
 		},
 		{
-			name:     "Or with error in second position",
-			input:    "Or(False, Divide(1, 0))", // Should evaluate and propagate error
-			expected: "$Failed(DivisionByZero)",
+			name:      "Or with error in second position",
+			input:     "Or(False, Divide(1, 0))", // Should evaluate and propagate error
+			expected:  "",
+			errorType: "DivisionByZero",
 		},
 
 		// Multiple arguments with mixed types
@@ -145,11 +139,7 @@ func TestAndOrShortCircuitWithMixed(t *testing.T) {
 }
 
 func TestAndOrNestedMixed(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// Nested And/Or with mixed values
 		{
 			name:     "Nested And with mixed",
@@ -178,14 +168,14 @@ func TestAndOrNestedMixed(t *testing.T) {
 
 func TestAndOrWithVariableAssignments(t *testing.T) {
 	evaluator := sexpr.NewEvaluator()
-
+	ctx := evaluator.GetContext()
 	// Set up some variables
 	expr, _ := sexpr.ParseString("Set(a, True)")
-	evaluator.Evaluate(expr)
+	evaluator.Evaluate(ctx,expr)
 	expr, _ = sexpr.ParseString("Set(b, False)")
-	evaluator.Evaluate(expr)
+	evaluator.Evaluate(ctx, expr)
 	expr, _ = sexpr.ParseString("Set(c, 42)")
-	evaluator.Evaluate(expr)
+	evaluator.Evaluate(ctx, expr)
 
 	tests := []struct {
 		name     string
@@ -225,7 +215,7 @@ func TestAndOrWithVariableAssignments(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			result := evaluator.Evaluate(expr)
+			result := evaluator.Evaluate(ctx, expr)
 			if result.String() != tt.expected {
 				t.Errorf("Expected %s, got %s", tt.expected, result.String())
 			}

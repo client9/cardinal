@@ -1,0 +1,90 @@
+
+
+func TestAssociationPartErrors(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		expectsError bool
+	}{
+		{
+			name:         "Access missing key",
+			input:        "Part({name: \"Bob\"}, missing)",
+			expectsError: true,
+		},
+		{
+			name:         "Access missing string key",
+			input:        "Part({\"key\": \"value\"}, \"missing\")",
+			expectsError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+
+			evaluator := NewEvaluator()
+			result := evaluator.Evaluate(expr)
+
+			isError := strings.HasPrefix(result.String(), "$Failed")
+			if tt.expectsError && !isError {
+				t.Errorf("Expected error, got %s", result.String())
+			}
+			if !tt.expectsError && isError {
+				t.Errorf("Expected success, got error %s", result.String())
+			}
+		})
+	}
+}
+
+func TestAssociationPatternBehavior(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Keys with non-association",
+			input:    "Keys(42)",
+			expected: "Keys(42)", // Pattern doesn't match, returns unchanged
+		},
+		{
+			name:     "Values with non-association",
+			input:    "Values(\"test\")",
+			expected: "Values(\"test\")", // Pattern doesn't match, returns unchanged
+		},
+		{
+			name:     "Keys with multiple arguments",
+			input:    "Keys({}, {})",
+			expected: "Keys(Association(), Association())", // Pattern doesn't match, returns unchanged
+		},
+		{
+			name:     "Values with multiple arguments",
+			input:    "Values({}, {})",
+			expected: "Values(Association(), Association())", // Pattern doesn't match, returns unchanged
+		},
+		{
+			name:     "AssociationQ with multiple arguments",
+			input:    "AssociationQ({}, {})",
+			expected: "AssociationQ(Association(), Association())", // Pattern doesn't match, returns unchanged
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, err := ParseString(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error: %v", err)
+			}
+
+			evaluator := NewEvaluator()
+			result := evaluator.Evaluate(expr)
+
+			if result.String() != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result.String())
+			}
+		})
+	}
+}

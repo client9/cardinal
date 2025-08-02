@@ -5,11 +5,7 @@ import (
 )
 
 func TestRuleShorthandSyntax(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Simple Rule shorthand",
 			input:    "a:b",
@@ -36,11 +32,7 @@ func TestRuleShorthandSyntax(t *testing.T) {
 }
 
 func TestRuleShorthandWithAssignment(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Simple Rule assignment",
 			input:    "r1 = a:b; FullForm(r1)",
@@ -67,40 +59,23 @@ func TestRuleShorthandWithAssignment(t *testing.T) {
 }
 
 func TestRuleShorthandVsExplicit(t *testing.T) {
-	tests := []struct {
-		name         string
-		shorthand    string
-		explicit     string
-		expectedSame bool
-	}{
+	tests := []TestCase{
 		{
-			name:         "Simple rule comparison",
-			shorthand:    "a:b",
-			explicit:     "Rule(a, b)",
-			expectedSame: true,
+			name:     "Simple rule comparison",
+			input:    "SameQ( a:b, Rule(a, b))",
+			expected: "True",
 		},
 		{
-			name:         "Complex pattern rule comparison",
-			shorthand:    "(x_^a_ * x_^b_) : x^(a+b)",
-			explicit:     "Rule(x_^a_ * x_^b_, x^(a+b))",
-			expectedSame: true,
+			name:     "Complex pattern rule comparison",
+			input:    "SameQ( (x_^a_ * x_^b_) : x^(a+b), Rule(x_^a_ * x_^b_, x^(a+b)))",
+			expected: "True",
 		},
 		{
-			name:         "Assignment comparison - BUG CASE",
-			shorthand:    "z1 = (x_^a_ * x_^b_) : x^(a+b); FullForm(z1)",
-			explicit:     "z2 = Rule(x_^a_ * x_^b_, x^(a+b)); FullForm(z2)",
-			expectedSame: true,
+			name:     "Assignment comparison - BUG CASE",
+			input:    "SameQ((x_^a_ * x_^b_) : x^(a+b), Rule(x_^a_ * x_^b_, x^(a+b)))",
+			expected: "True",
 		},
 	}
 
-	// Test each pair separately since we're comparing outputs
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			// We can't easily compare these directly, so we'll just document the expected behavior
-			// The bug will be revealed when shorthand doesn't match explicit
-			t.Logf("Shorthand: %s", test.shorthand)
-			t.Logf("Explicit: %s", test.explicit)
-			t.Logf("Should be same: %v", test.expectedSame)
-		})
-	}
+	runTestCases(t, tests)
 }

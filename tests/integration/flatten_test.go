@@ -4,12 +4,9 @@ import (
 	"testing"
 )
 
-func TestFlattenIntegration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+func TestFlatten(t *testing.T) {
+
+	runTestCases(t, []TestCase{
 		// Basic flattening functionality
 		{
 			name:     "Simple nested list",
@@ -135,18 +132,6 @@ func TestFlattenIntegration(t *testing.T) {
 			input:    "Flatten(List(1, List(2, List(3, List(4, List(5))))))",
 			expected: "List(1, 2, 3, 4, 5)",
 		},
-	}
-
-	runTestCases(t, tests)
-}
-
-func TestFlattenErrorCases(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		// These should not cause errors but return input unchanged
 		{
 			name:     "Flatten with no arguments",
 			input:    "Flatten()",
@@ -157,17 +142,6 @@ func TestFlattenErrorCases(t *testing.T) {
 			input:    "Flatten(List(1, 2), List(3, 4))",
 			expected: "Flatten(List(1, 2), List(3, 4))",
 		},
-	}
-
-	runTestCases(t, tests)
-}
-
-func TestFlattenWithMathematicalExpressions(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
 		// Test flattening preserves mathematical structure correctly (using Hold to prevent evaluation)
 		{
 			name:     "Flatten Plus expression with Hold",
@@ -189,7 +163,6 @@ func TestFlattenWithMathematicalExpressions(t *testing.T) {
 			input:    "Flatten(Hold(Plus(Plus(1, 2), Plus(3, 4))))",
 			expected: "Hold(Plus(1, 2, 3, 4))",
 		},
-	}
+	})
 
-	runTestCases(t, tests)
 }

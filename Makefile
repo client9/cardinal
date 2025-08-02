@@ -1,12 +1,11 @@
 
 
-build: generate
-	go run cmd/wrapgen/main.go cmd/wrapgen/reflect_helper.go cmd/wrapgen/symbols.go
+build: 
+	go run cmd/wrapgen/main.go cmd/wrapgen/reflect.go cmd/wrapgen/symbols.go
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
 
 generate:
-	go get golang.org/x/tools/cmd/stringer
 	go generate ./...
 	(cd engine; go generate ./...)
 
@@ -16,28 +15,18 @@ lint:
 	golangci-lint run .
 
 # Run all tests
-test: build test-unit test-integration
+test: build
+	go test ./...
 
-# Unit tests (fast) - pure Go function tests
-test-unit:
-	go test ./stdlib/... ./core/...
-
-# Integration tests (slower) - end-to-end evaluation tests  
-test-integration:
-	go test ./tests/integration/...
-
-# Core infrastructure tests (parser, evaluator, etc.)
-test-core:
-	go test -run="TestParser|TestLexer|TestEvaluator|TestFunctionRegistry|TestError" .
-
-# Quick smoke test
-test-quick:
-	go test -short ./...
 
 # Coverage report
-test-coverage:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
+# Go default is crap
+# cov0 is red (not covered)
+# cov8 is the green (covered)
+cover:
+	go test -coverpkg=./... -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html-tmp
+	cat coverage.html-tmp | sed 's/background: black/background: whitesmoke/g' | sed 's/80, 80, 80/0,0,0/g' | sed 's/Menlo/ui-monospace/g' | sed 's/bold/normal/g' | sed 's/rgb(192, 0, 0)/rgb(255,0,0);font-weight:bold;/g' > coverage.html
 
 clean:
 	rm -f repl cmd/repl/repl

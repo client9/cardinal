@@ -4,12 +4,8 @@ import (
 	"testing"
 )
 
-func TestCompoundStatements(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+func TestCompoundExpression(t *testing.T) {
+	tests := []TestCase{
 		{
 			name:     "Simple two expressions",
 			input:    "1 + 2; 3 + 4",
@@ -56,11 +52,7 @@ func TestCompoundStatements(t *testing.T) {
 }
 
 func TestCaretOperatorBasic(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// Basic power operations
 		{
 			name:     "Integer power",
@@ -103,11 +95,7 @@ func TestCaretOperatorBasic(t *testing.T) {
 }
 
 func TestCaretOperatorPrecedence(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Right associative",
 			input:    "2 ^ 3 ^ 2",
@@ -139,11 +127,7 @@ func TestCaretOperatorPrecedence(t *testing.T) {
 }
 
 func TestUnaryOperators(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Unary minus integer",
 			input:    "-5",
@@ -175,11 +159,7 @@ func TestUnaryOperators(t *testing.T) {
 }
 
 func TestSlicingSyntax(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "List indexing",
 			input:    "[1, 2, 3, 4][2]",

@@ -5,11 +5,7 @@ import (
 )
 
 func TestBasicArithmetic(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// Addition
 		{
 			name:     "Simple addition",
@@ -114,17 +110,33 @@ func TestBasicArithmetic(t *testing.T) {
 			input:    "Power(7, 1)",
 			expected: "7",
 		},
+		{
+			name:     "Nested arithmetic",
+			input:    "Plus(Times(2, 3), Divide(8, 2))",
+			expected: "10",
+		},
+		{
+			name:     "Complex expression",
+			input:    "Times(Plus(1, 2), Subtract(5, 2))",
+			expected: "9",
+		},
+		{
+			name:     "Power in arithmetic",
+			input:    "Plus(Power(2, 3), Times(3, 4))",
+			expected: "20",
+		},
+		{
+			name:     "Deeply nested",
+			input:    "Plus(1, Times(2, Plus(3, Times(4, 5))))",
+			expected: "47",
+		},
 	}
 
 	runTestCases(t, tests)
 }
 
 func TestArithmeticIdentities(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Plus identity (empty)",
 			input:    "Plus()",
@@ -151,11 +163,7 @@ func TestArithmeticIdentities(t *testing.T) {
 }
 
 func TestArithmeticAttributes(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// Test Orderless attribute (commutativity)
 		{
 			name:     "Plus orderless",
@@ -184,37 +192,6 @@ func TestArithmeticAttributes(t *testing.T) {
 	runTestCases(t, tests)
 }
 
-func TestComplexArithmetic(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "Nested arithmetic",
-			input:    "Plus(Times(2, 3), Divide(8, 2))",
-			expected: "10",
-		},
-		{
-			name:     "Complex expression",
-			input:    "Times(Plus(1, 2), Subtract(5, 2))",
-			expected: "9",
-		},
-		{
-			name:     "Power in arithmetic",
-			input:    "Plus(Power(2, 3), Times(3, 4))",
-			expected: "20",
-		},
-		{
-			name:     "Deeply nested",
-			input:    "Plus(1, Times(2, Plus(3, Times(4, 5))))",
-			expected: "47",
-		},
-	}
-
-	runTestCases(t, tests)
-}
-
 func TestArithmeticErrors(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -232,11 +209,7 @@ func TestArithmeticErrors(t *testing.T) {
 }
 
 func TestUnaryMinus(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Minus integer",
 			input:    "Minus(5)",

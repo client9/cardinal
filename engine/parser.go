@@ -421,6 +421,12 @@ func (p *Parser) parseInfixOperation(left core.Expr) core.Expr {
 	}
 
 	right := p.parseInfixExpression(precedence)
+
+	// Special case for semicolon: if no right operand, use Null
+	if operator.Type == SEMICOLON && right == nil {
+		right = core.NewSymbol("Null")
+	}
+
 	return p.createInfixExpr(operator.Type, left, right)
 }
 
@@ -435,7 +441,17 @@ func (p *Parser) parsePrefixExpression() core.Expr {
 func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core.Expr {
 	switch operator {
 	case SEMICOLON:
-		return core.NewList("CompoundStatement", left, right)
+		// Flatten nested CompoundExpressions into a single flat list
+		if leftList, ok := left.(core.List); ok && len(leftList.Elements) > 0 {
+			if headSymbol, ok := core.ExtractSymbol(leftList.Elements[0]); ok && headSymbol == "CompoundExpression" {
+				// Left is already a CompoundExpression, append right to it
+				elements := make([]core.Expr, len(leftList.Elements)+1)
+				copy(elements, leftList.Elements)
+				elements[len(elements)-1] = right
+				return core.List{Elements: elements}
+			}
+		}
+		return core.NewList("CompoundExpression", left, right)
 	case SET:
 		return core.NewList("Set", left, right)
 	case SETDELAYED:

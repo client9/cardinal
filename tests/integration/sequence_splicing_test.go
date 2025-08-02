@@ -5,11 +5,7 @@ import (
 )
 
 func TestSequenceSplicingBasic(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		// The core issue that was reported - sequence splicing in Replace/ReplaceAll
 		{
 			name:     "Single sequence element",

@@ -7,6 +7,13 @@ import (
 
 // Type extraction helper functions for builtin function wrappers
 
+func AsError(expr Expr) (*ErrorExpr, bool) {
+	if err, ok := expr.(*ErrorExpr); ok {
+		return err, ok
+	}
+	return &ErrorExpr{}, false
+}
+
 // ExtractInt64 safely extracts an int64 value from an Expr
 func ExtractInt64(expr Expr) (int64, bool) {
 	// Check new Integer type first

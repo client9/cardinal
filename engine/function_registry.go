@@ -9,7 +9,7 @@ import (
 
 // PatternFunc represents a Go function that can be called with pattern-matched arguments
 // The evaluator parameter allows access to the calling evaluator for recursive evaluation
-type PatternFunc func(args []core.Expr, ctx *Context, evaluator *Evaluator) core.Expr
+type PatternFunc func(e *Evaluator, c *Context, args []core.Expr) core.Expr
 
 // FunctionDef represents a single function definition with pattern and implementation
 type FunctionDef struct {
@@ -192,7 +192,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, evalua
 			// Call the function
 			if funcDef.GoImpl != nil {
 				// Built-in function - call Go implementation
-				return funcDef.GoImpl(args, funcCtx, evaluator), true
+				return funcDef.GoImpl(evaluator, funcCtx, args), true
 			} else {
 				// User-defined function - evaluate body
 				// Create an evaluator to evaluate the body
@@ -205,7 +205,8 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, evalua
 }
 
 // RegisterFunction is an alias for RegisterUserFunction for backward compatibility
-func (r *FunctionRegistry) RegisterFunction(functionName string, pattern core.Expr, implementation func([]core.Expr, *Context, *Evaluator) core.Expr) error {
+func (r *FunctionRegistry) RegisterFunction(functionName string,
+		 pattern core.Expr, implementation func(*Evaluator, *Context, []core.Expr) core.Expr) error {
 	// This is a simplified version that assumes the pattern contains the function name
 	// For the refactored code, we need to create a proper function definition
 	funcDef := FunctionDef{

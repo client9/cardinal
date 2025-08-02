@@ -17,8 +17,7 @@ type ErrorExpr struct {
 	StackTrace []StackFrame // Stack trace of evaluation frames
 }
 
-// Possible we expose the arguments above differently and use ObjectExpr
-// for now return 0
+// Length of an Error is 0 (zero).
 func (e *ErrorExpr) Length() int64 {
 	return 0
 }
@@ -33,7 +32,7 @@ func (e *ErrorExpr) InputForm() string {
 }
 
 func (e *ErrorExpr) Head() string {
-	return "error"
+	return "Error"
 }
 
 func (e *ErrorExpr) IsAtom() bool {

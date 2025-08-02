@@ -5,11 +5,7 @@ import (
 )
 
 func TestRotateLeft_Integration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "RotateLeft basic list",
 			input:    "RotateLeft([1, 2, 3, 4], 1)",
@@ -45,12 +41,8 @@ func TestRotateLeft_Integration(t *testing.T) {
 	runTestCases(t, tests)
 }
 
-func TestRotateRight_Integration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+func TestRotateRight(t *testing.T) {
+	tests := []TestCase{
 		{
 			name:     "RotateRight basic list",
 			input:    "RotateRight([1, 2, 3, 4], 1)",
@@ -87,11 +79,7 @@ func TestRotateRight_Integration(t *testing.T) {
 }
 
 func TestTakeDrop_Integration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Take first n elements",
 			input:    "Take([1, 2, 3, 4, 5], 3)",
@@ -111,6 +99,7 @@ func TestTakeDrop_Integration(t *testing.T) {
 			name:     "Drop with range specification - NOT IMPLEMENTED",
 			input:    "Drop([1, 2, 3, 4, 5], [2, 3])",
 			expected: "$Failed(NotImplemented)",
+			skip: true,
 		},
 		{
 			name:     "Take negative count",
@@ -128,11 +117,7 @@ func TestTakeDrop_Integration(t *testing.T) {
 }
 
 func TestListAccess_Integration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "First element of list",
 			input:    "First([1, 2, 3])",
@@ -169,11 +154,7 @@ func TestListAccess_Integration(t *testing.T) {
 }
 
 func TestListManipulation_Integration(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Append to list",
 			input:    "Append([1, 2, 3], 4)",

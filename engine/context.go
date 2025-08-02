@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-
 	"github.com/client9/sexpr/core"
 )
 
@@ -98,6 +97,12 @@ func NewChildContext(parent *Context) *Context {
 	}
 }
 
+// GetFunctionDefinitions returns a list of patterns registered to the given symbol
+// exposed for debugging.
+func (c *Context) GetFunctionDefinitions(name string) []FunctionDef {
+	return c.functionRegistry.GetFunctionDefinitions(name)
+}
+
 // Set sets a variable in the context
 // If this is a child context and the variable is not in scopedVars, set it in the parent
 // Returns an error if the symbol is Protected
@@ -135,8 +140,15 @@ func (c *Context) Get(name string) (core.Expr, bool) {
 }
 
 // Delete removes a variable from the context
-func (c *Context) Delete(name string) {
+func (c *Context) Delete(name string) error {
+	if c.symbolTable.HasAttribute(name, Protected) {
+		return fmt.Errorf("symbol %s is Protected", name)
+	}
 	delete(c.variables, name)
+	if c.parent != nil {
+		return c.parent.Delete(name)
+	}
+	return nil
 }
 
 // AddScopedVar marks a variable as locally scoped to this context

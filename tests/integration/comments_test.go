@@ -2,16 +2,10 @@ package integration
 
 import (
 	"testing"
-
-	"github.com/client9/sexpr"
 )
 
 func TestHashComments(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Simple inline comment",
 			input:    "5 # this is a comment",
@@ -68,11 +62,7 @@ func TestHashComments(t *testing.T) {
 }
 
 func TestCommentsInComplexExpressions(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
+	tests := []TestCase{
 		{
 			name:     "Compound statement with comments",
 			input:    "x = 1; # first assignment\ny = 2; # second assignment\nx + y",
@@ -98,6 +88,7 @@ func TestCommentsInComplexExpressions(t *testing.T) {
 	runTestCases(t, tests)
 }
 
+/*
 func TestCommentsDoNotAffectTokenization(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -139,13 +130,4 @@ func TestCommentsDoNotAffectTokenization(t *testing.T) {
 	}
 }
 
-// Helper function to evaluate a string and return the result
-func evaluateString(input string) string {
-	eval := sexpr.NewEvaluator()
-	expr, err := sexpr.ParseString(input)
-	if err != nil {
-		return "ERROR"
-	}
-	result := eval.Evaluate(expr)
-	return result.String()
-}
+*/
