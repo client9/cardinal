@@ -22,7 +22,7 @@ func NewEvaluationStack(maxDepth int) *EvaluationStack {
 }
 
 // Push adds a new frame to the stack and checks for recursion limits
-func (s *EvaluationStack) Push(function, expression string) error {
+func (s *EvaluationStack) Push(function string, expression core.Expr) error {
 	if s.depth >= s.maxDepth {
 		return fmt.Errorf("maximum recursion depth exceeded: %d", s.maxDepth)
 	}

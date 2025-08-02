@@ -40,8 +40,7 @@ func (e *Evaluator) Evaluate(c *Context, expr core.Expr) core.Expr {
 // evaluate is the main evaluation function
 func (e *Evaluator) evaluateOnce(ctx *Context, expr core.Expr) core.Expr {
 	// Push current expression to stack for recursion tracking
-	exprStr := expr.String()
-	if err := ctx.stack.Push("evaluate", exprStr); err != nil {
+	if err := ctx.stack.Push("evaluate", expr); err != nil {
 		// Return recursion error with stack trace
 		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
 	}
@@ -55,9 +54,7 @@ func (e *Evaluator) evaluateOnce(ctx *Context, expr core.Expr) core.Expr {
 func (e *Evaluator) evaluate(ctx *Context, expr core.Expr) core.Expr {
 	// Push current expression to stack for recursion tracking
 
-	// TODO: Why are we doing a to String here?
-	exprStr := expr.String()
-	if err := ctx.stack.Push("evaluate", exprStr); err != nil {
+	if err := ctx.stack.Push("evaluate", expr); err != nil {
 		// Return recursion error with stack trace
 		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
 	}
@@ -166,8 +163,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 		if core.IsError(result) {
 			if errorExpr, ok := result.(*core.ErrorExpr); ok {
 				// Add stack frame for this function call
-				funcCallStr := headName + "(" + formatArgs(evaluatedArgs) + ")"
-				if err := ctx.stack.Push(headName, funcCallStr); err == nil {
+				if err := ctx.stack.Push(headName, callExpr); err == nil {
 					ctx.stack.Pop() // Immediately pop since we're just adding to trace
 					return core.NewErrorExprWithStack(errorExpr.ErrorType, errorExpr.Message, errorExpr.Args, ctx.stack.GetFrames())
 				}

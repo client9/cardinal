@@ -5,7 +5,7 @@ import "fmt"
 // StackFrame represents a single frame in the evaluation stack
 type StackFrame struct {
 	Function   string // Function name being evaluated
-	Expression string // String representation of the expression
+	Expression Expr   // String representation of the expression
 	Location   string // Optional location information
 }
 
