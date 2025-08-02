@@ -1030,3 +1030,49 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 		return e
 	}
 }
+
+// patternsEqual compares two patterns for equivalence
+// This ignores variable names and only compares pattern structure and types
+func PatternsEqual(pattern1, pattern2 Expr) bool {
+	info1 := GetSymbolicPatternInfo(pattern1)
+	info2 := GetSymbolicPatternInfo(pattern2)
+
+	// If both are patterns, compare their structure (ignoring variable names)
+	if (info1 != PatternInfo{} && info2 != PatternInfo{}) {
+		return info1.Type == info2.Type && info1.TypeName == info2.TypeName
+	}
+
+	// For non-patterns or when one is a pattern and one isn't, do exact comparison
+	switch p1 := pattern1.(type) {
+	case Integer, Real, String:
+		return pattern1.Equal(pattern2)
+	case Symbol:
+		if name2, ok := ExtractSymbol(pattern2); ok {
+			// For symbol atoms that are pattern variables, ignore the variable name
+			name1 := string(p1)
+			// name2 already extracted above
+			if IsPatternVariable(name1) && IsPatternVariable(name2) {
+				info1 := ParsePatternInfo(name1)
+				info2 := ParsePatternInfo(name2)
+				return info1.Type == info2.Type && info1.TypeName == info2.TypeName
+			}
+			return name1 == name2
+		}
+		return false
+	case List:
+		if p2, ok := pattern2.(List); ok {
+			if len(p1.Elements) != len(p2.Elements) {
+				return false
+			}
+			for i := range p1.Elements {
+				if !PatternsEqual(p1.Elements[i], p2.Elements[i]) {
+					return false
+				}
+			}
+			return true
+		}
+		return false
+	default:
+		return false
+	}
+}

@@ -227,7 +227,7 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 
 	// Check if we need to replace an existing equivalent pattern
 	for i, existingDef := range definitions {
-		if patternsEqual(existingDef.Pattern, newDef.Pattern) {
+		if core.PatternsEqual(existingDef.Pattern, newDef.Pattern) {
 			// Replace existing definition
 			definitions[i] = newDef
 			r.functions[functionName] = definitions

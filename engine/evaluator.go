@@ -38,19 +38,6 @@ func (e *Evaluator) Evaluate(c *Context, expr core.Expr) core.Expr {
 }
 
 // evaluate is the main evaluation function
-func (e *Evaluator) evaluateOnce(ctx *Context, expr core.Expr) core.Expr {
-	// Push current expression to stack for recursion tracking
-	if err := ctx.stack.Push("evaluate", expr); err != nil {
-		// Return recursion error with stack trace
-		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
-	}
-	defer ctx.stack.Pop()
-
-	return e.evaluateExpr(ctx, expr)
-}
-
-// evaluate is the main evaluation function
-// TODO BACKWARDS
 func (e *Evaluator) evaluate(ctx *Context, expr core.Expr) core.Expr {
 	// Push current expression to stack for recursion tracking
 
@@ -63,7 +50,16 @@ func (e *Evaluator) evaluate(ctx *Context, expr core.Expr) core.Expr {
 	//return e.evaluateExpr(ctx, expr)
 }
 
-// TODO BACKWARDS ARGS
+// evaluate is the main evaluation function
+func (e *Evaluator) evaluateOnce(ctx *Context, expr core.Expr) core.Expr {
+	if err := ctx.stack.Push("evaluate", expr); err != nil {
+		// Return recursion error with stack trace
+		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
+	}
+	defer ctx.stack.Pop()
+	return e.evaluateExpr(ctx, expr)
+}
+
 func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 	switch ex := expr.(type) {
 	case core.Symbol:
@@ -79,16 +75,15 @@ func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 		// New atomic types evaluate to themselves
 		return ex
 	case core.List:
-		return e.evaluateList(ex, ctx)
+		return e.evaluateList(ctx, ex)
 	default:
 		// All other types (ByteArray, Association, ErrorExpr, etc.) evaluate to themselves
 		return expr
 	}
 }
 
-// TODO BACKWARDS ARGS
 // evaluateList evaluates a list expression
-func (e *Evaluator) evaluateList(list core.List, ctx *Context) core.Expr {
+func (e *Evaluator) evaluateList(ctx *Context, list core.List) core.Expr {
 
 	if len(list.Elements) == 0 {
 		return list
@@ -122,9 +117,9 @@ func (e *Evaluator) evaluateList(list core.List, ctx *Context) core.Expr {
 	// Apply attribute transformations before evaluation
 	transformedList := e.applyAttributeTransformations(headName, list, ctx)
 
-	if !listsEqual(transformedList, list) {
+	if !transformedList.Equal(list) {
 		// The list was transformed, re-evaluate it
-		return e.evaluateList(transformedList, ctx)
+		return e.evaluateList(ctx, transformedList)
 	}
 	// Handle OneIdentity attribute specially - it can return a non-List
 	if ctx.symbolTable.HasAttribute(headName, OneIdentity) && len(list.Elements) == 2 {
@@ -220,6 +215,7 @@ func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr
 func (e *Evaluator) evaluateArguments(headName string, args []core.Expr, ctx *Context) []core.Expr {
 	evaluatedArgs := make([]core.Expr, len(args))
 
+	// Can otpimize
 	holdAll := ctx.symbolTable.HasAttribute(headName, HoldAll)
 	holdFirst := ctx.symbolTable.HasAttribute(headName, HoldFirst)
 	holdRest := ctx.symbolTable.HasAttribute(headName, HoldRest)
@@ -330,63 +326,9 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *
 		return e.evaluatePartSet(args, ctx)
 	case "SliceSet":
 		return e.evaluateSliceSet(args, ctx)
-	case "Pattern":
-		return e.evaluatePattern(args, ctx)
 	default:
 		return nil // Not a special form, or handled by pattern-based system
 	}
-}
-
-// patternsEqual compares two patterns for equivalence
-// This ignores variable names and only compares pattern structure and types
-func patternsEqual(pattern1, pattern2 core.Expr) bool {
-	// Get pattern info for both patterns
-	info1 := core.GetSymbolicPatternInfo(pattern1)
-	info2 := core.GetSymbolicPatternInfo(pattern2)
-
-	// If both are patterns, compare their structure (ignoring variable names)
-	if (info1 != core.PatternInfo{} && info2 != core.PatternInfo{}) {
-		return info1.Type == info2.Type && info1.TypeName == info2.TypeName
-	}
-
-	// For non-patterns or when one is a pattern and one isn't, do exact comparison
-	switch p1 := pattern1.(type) {
-	case core.Integer, core.Real, core.String:
-		return pattern1.Equal(pattern2)
-	case core.Symbol:
-		if name2, ok := core.ExtractSymbol(pattern2); ok {
-			// For symbol atoms that are pattern variables, ignore the variable name
-			name1 := string(p1)
-			// name2 already extracted above
-			if core.IsPatternVariable(name1) && core.IsPatternVariable(name2) {
-				info1 := core.ParsePatternInfo(name1)
-				info2 := core.ParsePatternInfo(name2)
-				return info1.Type == info2.Type && info1.TypeName == info2.TypeName
-			}
-			return name1 == name2
-		}
-		return false
-	case core.List:
-		if p2, ok := pattern2.(core.List); ok {
-			if len(p1.Elements) != len(p2.Elements) {
-				return false
-			}
-			for i := range p1.Elements {
-				if !patternsEqual(p1.Elements[i], p2.Elements[i]) {
-					return false
-				}
-			}
-			return true
-		}
-		return false
-	default:
-		return false
-	}
-}
-
-// listsEqual checks if two lists are structurally equal
-func listsEqual(list1, list2 core.List) bool {
-	return list1.Equal(list2)
 }
 
 // formatArgs formats function arguments for stack traces
@@ -407,15 +349,6 @@ func formatArgs(args []core.Expr) string {
 	}
 
 	return result
-}
-
-// Special form implementations
-
-// evaluatePattern implements the Pattern special form
-func (e *Evaluator) evaluatePattern(args []core.Expr, ctx *Context) core.Expr {
-	// Pattern expressions should remain unevaluated during normal evaluation
-	// They are only processed during pattern matching operations
-	return core.NewList("Pattern", args...)
 }
 
 // extractImmediateSlotNumbers extracts only immediate slot numbers (not nested in Function calls)
@@ -671,26 +604,6 @@ func (e *Evaluator) substituteSlots(expr core.Expr, args []core.Expr) core.Expr 
 		// For other types (numbers, strings, etc.), return as-is
 		return expr
 	}
-}
-
-// evaluateRuleDelayed implements the RuleDelayed special form
-// RuleDelayed(pattern, rhs) creates a delayed rule with lexical scoping
-func (e *Evaluator) evaluateRuleDelayed(args []core.Expr, ctx *Context) core.Expr {
-	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError", "RuleDelayed requires exactly 2 arguments", args)
-	}
-
-	// With HoldRest attribute:
-	// - First argument (pattern) is evaluated normally
-	// - Second argument (rhs) is held unevaluated
-	pattern := e.evaluate(ctx, args[0])
-	if core.IsError(pattern) {
-		return pattern
-	}
-
-	rhs := args[1] // Keep RHS unevaluated
-
-	return core.NewRuleDelayed(pattern, rhs)
 }
 
 // evaluateSliceRange implements slice range syntax: expr[start:end]
