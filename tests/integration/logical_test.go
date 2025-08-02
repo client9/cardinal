@@ -171,7 +171,7 @@ func TestAndOrWithVariableAssignments(t *testing.T) {
 	ctx := evaluator.GetContext()
 	// Set up some variables
 	expr, _ := sexpr.ParseString("Set(a, True)")
-	evaluator.Evaluate(ctx,expr)
+	evaluator.Evaluate(ctx, expr)
 	expr, _ = sexpr.ParseString("Set(b, False)")
 	evaluator.Evaluate(ctx, expr)
 	expr, _ = sexpr.ParseString("Set(c, 42)")

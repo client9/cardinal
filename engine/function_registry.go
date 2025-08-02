@@ -206,7 +206,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, evalua
 
 // RegisterFunction is an alias for RegisterUserFunction for backward compatibility
 func (r *FunctionRegistry) RegisterFunction(functionName string,
-		 pattern core.Expr, implementation func(*Evaluator, *Context, []core.Expr) core.Expr) error {
+	pattern core.Expr, implementation func(*Evaluator, *Context, []core.Expr) core.Expr) error {
 	// This is a simplified version that assumes the pattern contains the function name
 	// For the refactored code, we need to create a proper function definition
 	funcDef := FunctionDef{

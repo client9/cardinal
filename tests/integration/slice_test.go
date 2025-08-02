@@ -2,7 +2,6 @@ package integration
 
 import (
 	"testing"
-
 )
 
 func TestSliceSyntaxBasicIndexing(t *testing.T) {
@@ -147,6 +146,7 @@ func TestSliceSyntaxSliceableTypes(t *testing.T) {
 	}
 	runTestCases(t, tests)
 }
+
 /*
 func TestSliceSyntaxErrorCases(t *testing.T) {
 	tests := []struct {

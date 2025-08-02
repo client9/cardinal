@@ -32,7 +32,7 @@ func TestReplaceFunction(t *testing.T) {
 			expected: `Times(x, y)`,
 		},
 	}
-	
+
 	runTestCases(t, tests)
 }
 
@@ -79,9 +79,9 @@ func TestReplaceWithRules(t *testing.T) {
 			expected: `x`,
 		},
 		{
-			name:     "Replace with List containing non-Rules (pattern should not match)",
-			input:    `Replace(x, List(x : a, 42, y : b))`,
-			expected: "",
+			name:      "Replace with List containing non-Rules (pattern should not match)",
+			input:     `Replace(x, List(x : a, 42, y : b))`,
+			expected:  "",
 			errorType: "ArgumentError",
 		},
 		{

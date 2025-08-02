@@ -99,7 +99,7 @@ func TestTakeDrop_Integration(t *testing.T) {
 			name:     "Drop with range specification - NOT IMPLEMENTED",
 			input:    "Drop([1, 2, 3, 4, 5], [2, 3])",
 			expected: "$Failed(NotImplemented)",
-			skip: true,
+			skip:     true,
 		},
 		{
 			name:     "Take negative count",

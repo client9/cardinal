@@ -66,19 +66,19 @@ func TestRuleDelayed_Replace(t *testing.T) {
 func TestRuleDelayed_LexicalScoping(t *testing.T) {
 	tests := []TestCase{
 		{
-			name:        "Local bindings don't pollute global scope",
-			input:       "x = 100; Replace(5, RuleDelayed(y_, x + y))",
-			expected:    "105",
+			name:     "Local bindings don't pollute global scope",
+			input:    "x = 100; Replace(5, RuleDelayed(y_, x + y))",
+			expected: "105",
 		},
 		{
-			name:        "Pattern variables are locally scoped",
-			input:       "y = 999; Replace(42, RuleDelayed(y_, y * 2))",
-			expected:    "84",
+			name:     "Pattern variables are locally scoped",
+			input:    "y = 999; Replace(42, RuleDelayed(y_, y * 2))",
+			expected: "84",
 		},
 		{
-			name:        "Complex expression with local evaluation",
-			input:       "f(x_) := x^2; Replace(3, RuleDelayed(x_, f(x) + x))",
-			expected:    "12",
+			name:     "Complex expression with local evaluation",
+			input:    "f(x_) := x^2; Replace(3, RuleDelayed(x_, f(x) + x))",
+			expected: "12",
 		},
 	}
 
@@ -98,11 +98,10 @@ func TestRuleDelayed_ReplaceAll(t *testing.T) {
 			expected: "Plus(f(42), g(42))",
 		},
 		{
-			name:     "ReplaceAll with RuleDelayed - pattern variables",
+			name: "ReplaceAll with RuleDelayed - pattern variables",
 			//input:    "ReplaceAll(6, RuleDelayed(x_, x * 10))",
 			input:    "ReplaceAll(Plus(1, 2, 3), RuleDelayed(x_, x * 10))",
 			expected: "60",
-			
 		},
 	}
 

@@ -3,8 +3,8 @@
 package integration
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -63,10 +63,10 @@ func loc(value string, step int) string {
 	fbytes, err := os.ReadFile(file)
 	num := 0
 	for line := range bytes.SplitSeq(fbytes, []byte{'\n'}) {
-			num++
+		num++
 		if bytes.Contains(line, token) {
 			return fmt.Sprintf("%s:%d", file, num)
-		}	
+		}
 	}
 	return "(unknown)"
 }

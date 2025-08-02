@@ -2,7 +2,6 @@ package integration
 
 import (
 	"testing"
-
 )
 
 func TestFunction_RegularSyntax(t *testing.T) {
@@ -306,4 +305,3 @@ func TestFunction_AmpersandSyntax(t *testing.T) {
 	}
 	runTestCases(t, tests)
 }
-

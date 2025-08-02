@@ -30,7 +30,7 @@ func NewREPL() *REPL {
 
 	return &REPL{
 		evaluator: e,
-		ctx: c,
+		ctx:       c,
 		input:     os.Stdin,
 		output:    os.Stdout,
 		prompt:    "sexpr> ",
@@ -45,8 +45,8 @@ func NewREPLWithIO(input io.Reader, output io.Writer) *REPL {
 	sexpr.SetupBuiltinAttributes(c.GetSymbolTable())
 
 	return &REPL{
-		evaluator: e,	
-		ctx: c,
+		evaluator: e,
+		ctx:       c,
 		input:     input,
 		output:    output,
 		prompt:    "sexpr> ",

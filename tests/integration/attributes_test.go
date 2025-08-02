@@ -82,8 +82,8 @@ func TestSetAttributes(t *testing.T) {
 			expected: "ClearAttributes()",
 		},
 		{
-			name: 	"Clear all attributes with list",
-			input:   "SetAttributes(x, [Flat, Listable, NumericFunction, OneIdentity, Orderless]); ClearAttributes(x, Attributes(x)); Length(Attributes(x))",
+			name:     "Clear all attributes with list",
+			input:    "SetAttributes(x, [Flat, Listable, NumericFunction, OneIdentity, Orderless]); ClearAttributes(x, Attributes(x)); Length(Attributes(x))",
 			expected: "0",
 		},
 	}

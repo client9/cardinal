@@ -308,51 +308,51 @@ func TestLexer_NextToken(t *testing.T) {
 				{Type: EOF, Value: ""},
 			},
 		},
-                {
-                        name:     "Single NOT token",
-                        input:    "!",
-                        expected: []Token{
+		{
+			name:  "Single NOT token",
+			input: "!",
+			expected: []Token{
 				{Type: NOT, Value: "!"},
-				{Type: EOF, Value:""},
+				{Type: EOF, Value: ""},
 			},
-                },
-                {
-                        name:     "NOT followed by symbol",
-                        input:    "!True",
-                        expected: []Token{
+		},
+		{
+			name:  "NOT followed by symbol",
+			input: "!True",
+			expected: []Token{
 				{Type: NOT, Value: "!"},
-				{Type: SYMBOL,Value:"True"},
-				{Type:  EOF, Value: ""}},
-                },
-                {
-                        name:     "NOT vs UNEQUAL",
-                        input:    "! !=",
-                        expected: []Token{
-				{Type:NOT,Value:"!"},
-				{Type: UNEQUAL,Value:"!="},
-				{Type: EOF, Value:""},
+				{Type: SYMBOL, Value: "True"},
+				{Type: EOF, Value: ""}},
+		},
+		{
+			name:  "NOT vs UNEQUAL",
+			input: "! !=",
+			expected: []Token{
+				{Type: NOT, Value: "!"},
+				{Type: UNEQUAL, Value: "!="},
+				{Type: EOF, Value: ""},
 			},
-                },
-                {
-                        name:     "Multiple NOTs",
-                        input:    "!!!",
-                        expected: []Token{
-				{Type:NOT,Value:"!"},
-				{Type:NOT,Value:"!"},
-				{Type:NOT,Value:"!"},
-				{Type: EOF, Value:""},
+		},
+		{
+			name:  "Multiple NOTs",
+			input: "!!!",
+			expected: []Token{
+				{Type: NOT, Value: "!"},
+				{Type: NOT, Value: "!"},
+				{Type: NOT, Value: "!"},
+				{Type: EOF, Value: ""},
 			},
-                },
-                {
-                        name:     "NOT with parentheses",
-                        input:    "!()",
-                        expected: []Token{
-				{Type:NOT,Value:"!"},
-				{Type: LPAREN, Value:"("},
-				{Type: RPAREN, Value:")"},
-				{Type: EOF, Value:""},
+		},
+		{
+			name:  "NOT with parentheses",
+			input: "!()",
+			expected: []Token{
+				{Type: NOT, Value: "!"},
+				{Type: LPAREN, Value: "("},
+				{Type: RPAREN, Value: ")"},
+				{Type: EOF, Value: ""},
 			},
-                },
+		},
 	}
 
 	for _, tt := range tests {

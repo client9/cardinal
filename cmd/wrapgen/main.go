@@ -85,13 +85,13 @@ func main() {
 	})
 
 	for i, s := range symbolSpecs {
-		if ! slices.Contains(s.Attributes, "Protected") {
+		if !slices.Contains(s.Attributes, "Protected") {
 			s.Attributes = append(s.Attributes, "Protected")
 		}
-			slices.SortFunc(s.Attributes, func(a, b string) int {
-				return cmp.Compare(a, b)
-			})
-			symbolSpecs[i].Attributes = s.Attributes
+		slices.SortFunc(s.Attributes, func(a, b string) int {
+			return cmp.Compare(a, b)
+		})
+		symbolSpecs[i].Attributes = s.Attributes
 	}
 
 	// Process all symbols and generate function info

@@ -17,28 +17,27 @@ func TestUnset(t *testing.T) {
 			expected: "Null",
 		},
 		{
-			name:     "Unset non-symbol",
-			input:    "Unset(100)",
-			expected: "",
+			name:      "Unset non-symbol",
+			input:     "Unset(100)",
+			expected:  "",
 			errorType: "ArgumentError",
 		},
 
 		// TODO: need better error handling
 		{
-			name:     "Unset empty",
-			input:    "Unset()",
-			expected: "",
+			name:      "Unset empty",
+			input:     "Unset()",
+			expected:  "",
 			errorType: "???",
-			skip: true,
+			skip:      true,
 		},
 		{
-			name:     "Unset Protected",
-			input:    "Unset(Plus)",
-			expected: "",
+			name:      "Unset Protected",
+			input:     "Unset(Plus)",
+			expected:  "",
 			errorType: "Protected",
 		},
 	}
 
 	runTestCases(t, tests)
 }
-

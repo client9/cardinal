@@ -111,12 +111,12 @@ func TestSliceAssignment(t *testing.T) {
 			expected: "List(List(9, 9), List(3, 4))",
 		},
 		{
-			name: "Immutability",
-			input: "a := [1,2,3]; b = a; a[1]=9; b",
+			name:     "Immutability",
+			input:    "a := [1,2,3]; b = a; a[1]=9; b",
 			expected: "List(1, 2, 3)",
 		},
 
-/* TODO
+		/* TODO
 		// Error cases
 		{
 			name:     "Index out of bounds",
@@ -154,7 +154,7 @@ func TestSliceAssignment(t *testing.T) {
 			expected: "",
 			hasError: true,
 		},
-	*/	
+		*/
 	}
 
 	runTestCases(t, tests)

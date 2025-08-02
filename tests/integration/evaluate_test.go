@@ -55,14 +55,14 @@ func TestEvaluateSpecialForm(t *testing.T) {
 
 		// Error propagation
 		{
-			name:     "evaluate error propagation",
-			input:    "Evaluate(Divide(1, 0))",
-			expected: "",
+			name:      "evaluate error propagation",
+			input:     "Evaluate(Divide(1, 0))",
+			expected:  "",
 			errorType: "DivisionByZero",
 		},
 		{
-			name:     "evaluate multiple with error",
-			input:    "Evaluate(Plus(1, 2), Divide(1, 0), Times(2, 3))",
+			name:      "evaluate multiple with error",
+			input:     "Evaluate(Plus(1, 2), Divide(1, 0), Times(2, 3))",
 			expected:  "",
 			errorType: "DivisionByZero", // Should stop at first error
 		},

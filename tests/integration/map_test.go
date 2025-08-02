@@ -82,8 +82,8 @@ func TestMap_WithAmpersandSyntax(t *testing.T) {
 func TestMap_EdgeCases(t *testing.T) {
 	tests := []TestCase{
 		{
-			name:     "Map with non-list should error",
-			input:    `Map(Plus, 42)`,
+			name:      "Map with non-list should error",
+			input:     `Map(Plus, 42)`,
 			errorType: `ArgumentError`,
 		},
 		{

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
 )
 
 func TestREPL_Basic(t *testing.T) {
@@ -176,7 +175,6 @@ func TestREPL_SpecialCommands(t *testing.T) {
 		t.Error("regular expression should return false")
 	}
 }
-
 
 func TestREPL_ClearContext(t *testing.T) {
 	repl := NewREPL()

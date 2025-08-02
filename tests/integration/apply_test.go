@@ -102,8 +102,8 @@ func TestApply_EdgeCases(t *testing.T) {
 
 	tests := []TestCase{
 		{
-			name:     "Apply with non-list should error",
-			input:    `Apply(Plus, 42)`,
+			name:      "Apply with non-list should error",
+			input:     `Apply(Plus, 42)`,
 			expected:  "",
 			errorType: "ArgumentError",
 		},

@@ -105,7 +105,7 @@ func TestAssociation(t *testing.T) {
 			name:     "Add with Part syntax",
 			input:    "m = Association(Rule(a,1), Rule(b,2)); Part(m, c) = 3",
 			expected: "List(a, b, c)",
-			skip: true,
+			skip:     true,
 		},
 		{
 			name:     "Strings and Symbols are different keys",
@@ -116,13 +116,13 @@ func TestAssociation(t *testing.T) {
 			name:     "Add with Part syntax",
 			input:    "m = Association(Rule(a,1), Rule(b,2)); Part(m, c) = 3",
 			expected: "List(a, b, c)",
-			skip: true,
+			skip:     true,
 		},
 		{
 			name:     "Add with Part syntax",
 			input:    "m = {a:1,b:2}; Part(m, c) = 3",
 			expected: "List(a, b, c)",
-			skip: true,
+			skip:     true,
 		},
 		/*
 			{

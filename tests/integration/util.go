@@ -15,7 +15,7 @@ type TestCase struct {
 	// TODO use Enum
 	errorType string
 
-	skip      bool
+	skip bool
 }
 
 // evaluateAndExpect is a test helper that parses input, evaluates it, and checks the result
@@ -78,11 +78,11 @@ func runTestCases(t *testing.T, tests []TestCase) {
 	t.Helper()
 	for _, tt := range tests {
 		if tt.skip {
-			continue	
+			continue
 		}
 		//t.Run(tt.name, func(t *testing.T) {
-			//t.Helper()
-			evaluateAndExpect(t, tt)
+		//t.Helper()
+		evaluateAndExpect(t, tt)
 		//})
 	}
 }
@@ -95,7 +95,7 @@ func runErrorTestCases(t *testing.T, tests []struct {
 }) {
 	t.Helper()
 	for _, tt := range tests {
-				evaluateAndExpectError(t, tt.input, tt.errorType)
+		evaluateAndExpectError(t, tt.input, tt.errorType)
 	}
 }
 

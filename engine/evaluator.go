@@ -169,13 +169,13 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 				}
 			}
 		}
-/*
-		// Re-evaluate function results until fixed point for proper symbolic computation
-		// Only re-evaluate non-atomic expressions to avoid infinite recursion
-		if !result.IsAtom() && !result.Equal(callExpr) {
-			return e.evaluateToFixedPoint(ctx, result)
-		}
-*/
+		/*
+			// Re-evaluate function results until fixed point for proper symbolic computation
+			// Only re-evaluate non-atomic expressions to avoid infinite recursion
+			if !result.IsAtom() && !result.Equal(callExpr) {
+				return e.evaluateToFixedPoint(ctx, result)
+			}
+		*/
 		return result
 	}
 
@@ -497,7 +497,7 @@ func (e *Evaluator) partiallyEvaluateForFunction(expr core.Expr, ctx *Context) c
 			return expr // Don't evaluate slot variables
 		}
 		// Evaluate other symbols normally
-		return e.evaluate(ctx,expr)
+		return e.evaluate(ctx, expr)
 	case core.List:
 		// Check if this is a Function call - if so, evaluate it
 		if len(exprTyped.Elements) > 0 {
@@ -884,4 +884,3 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	// Use the Sliceable interface to perform the slice assignment
 	return sliceable.SetSlice(start, end, value)
 }
-

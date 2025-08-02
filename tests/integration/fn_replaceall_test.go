@@ -94,9 +94,9 @@ func TestReplaceAllWithRules(t *testing.T) {
 			expected: `Plus(x, y)`,
 		},
 		{
-			name:     "ReplaceAll with List containing non-Rules (pattern should not match)",
-			input:    `ReplaceAll(x, List(x : a, 42, y : b))`,
-			expected: "",
+			name:      "ReplaceAll with List containing non-Rules (pattern should not match)",
+			input:     `ReplaceAll(x, List(x : a, 42, y : b))`,
+			expected:  "",
 			errorType: "ArgumentError",
 		},
 		{
@@ -118,4 +118,3 @@ func TestReplaceAllWithRules(t *testing.T) {
 
 	runTestCases(t, tests)
 }
-

@@ -15,7 +15,7 @@ func TestFunctionRegistry(t *testing.T) {
 		if len(args) != 1 {
 			return core.NewErrorExpr("ArgumentError", "Square expects 1 argument", args)
 		}
-		
+
 		if val, ok := core.GetNumericValue(args[0]); ok {
 			return core.NewReal(val * val)
 		}

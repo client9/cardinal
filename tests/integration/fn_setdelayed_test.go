@@ -22,12 +22,11 @@ func TestSetDelayed(t *testing.T) {
 			expected: `10`,
 		},
 		{
-			name:  "SetDelayed invokes function",
-			input: "x := RandomReal(); x != x",
+			name:     "SetDelayed invokes function",
+			input:    "x := RandomReal(); x != x",
 			expected: "True",
 		},
 	}
 
 	runTestCases(t, tests)
 }
-
