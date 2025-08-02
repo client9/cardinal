@@ -215,7 +215,7 @@ func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr
 func (e *Evaluator) evaluateArguments(headName string, args []core.Expr, ctx *Context) []core.Expr {
 	evaluatedArgs := make([]core.Expr, len(args))
 
-	// Can otpimize
+	// TODO -- one lookup
 	holdAll := ctx.symbolTable.HasAttribute(headName, HoldAll)
 	holdFirst := ctx.symbolTable.HasAttribute(headName, HoldFirst)
 	holdRest := ctx.symbolTable.HasAttribute(headName, HoldRest)
@@ -423,6 +423,9 @@ func (e *Evaluator) extractImmediateSlotsRecursive(expr core.Expr, slotSet map[i
 // partiallyEvaluateForFunction evaluates nested Function calls but preserves slot variables
 func (e *Evaluator) partiallyEvaluateForFunction(expr core.Expr, ctx *Context) core.Expr {
 	switch exprTyped := expr.(type) {
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError", "Function requires 1 or 2 arguments", args)
+	}
 	case core.Symbol:
 		symbolName := string(exprTyped)
 		// Preserve slot variables ($, $1, $2, etc.)
@@ -456,6 +459,9 @@ func (e *Evaluator) partiallyEvaluateForFunction(expr core.Expr, ctx *Context) c
 // Function(x, body) or Function([x, y], body)
 // Also handles slot-based functions: Function($1 + $2)
 func (e *Evaluator) evaluateFunction(args []core.Expr, ctx *Context) core.Expr {
+	if len(args) != 2 {
+		return core.NewErrorExpr("ArgumentError", "Function requires 1 or 2 arguments", args)
+	}
 	if len(args) == 1 {
 		// Single argument: could be slot-based function like Function($1 + $2) or constant function like Function(42)
 		body := args[0]
@@ -480,9 +486,6 @@ func (e *Evaluator) evaluateFunction(args []core.Expr, ctx *Context) core.Expr {
 		return core.NewFunction(parameters, body)
 	}
 
-	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError", "Function requires 1 or 2 arguments", args)
-	}
 
 	// First argument: parameters (held unevaluated)
 	paramArg := args[0]
