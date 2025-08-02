@@ -21,6 +21,12 @@ type SymbolSpec struct {
 // Symbol specifications organized by symbol name
 var symbolSpecs = []SymbolSpec{
 	{
+		Name: "Boole",
+		Functions: []rule{
+			{"(x_)", stdlib.Boole},
+		},
+	},
+	{
 		Name: "RandomReal",
 		Functions: []rule{
 			{"()", builtins.RandomReal},
@@ -48,7 +54,8 @@ var symbolSpecs = []SymbolSpec{
 		Name: "BlankNullSequence",
 	},
 	{
-		Name: "Pattern",
+		Name:       "Pattern",
+		Attributes: []string{"HoldAll"},
 	},
 	{
 		Name:       "Assert",
