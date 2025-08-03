@@ -493,10 +493,30 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core
 	case GREATEREQUAL:
 		return core.NewList("GreaterEqual", left, right)
 	case PLUS:
+		// Flatten nested Plus expressions into a single flat list
+		if leftList, ok := left.(core.List); ok && len(leftList.Elements) > 0 {
+			if headSymbol, ok := core.ExtractSymbol(leftList.Elements[0]); ok && headSymbol == "Plus" {
+				// Left is already a Plus, append right to it
+				elements := make([]core.Expr, len(leftList.Elements)+1)
+				copy(elements, leftList.Elements)
+				elements[len(elements)-1] = right
+				return core.List{Elements: elements}
+			}
+		}
 		return core.NewList("Plus", left, right)
 	case MINUS:
 		return core.NewList("Subtract", left, right)
 	case MULTIPLY:
+		// Flatten nested Times expressions into a single flat list
+		if leftList, ok := left.(core.List); ok && len(leftList.Elements) > 0 {
+			if headSymbol, ok := core.ExtractSymbol(leftList.Elements[0]); ok && headSymbol == "Times" {
+				// Left is already a Times, append right to it
+				elements := make([]core.Expr, len(leftList.Elements)+1)
+				copy(elements, leftList.Elements)
+				elements[len(elements)-1] = right
+				return core.List{Elements: elements}
+			}
+		}
 		return core.NewList("Times", left, right)
 	case DIVIDE:
 		return core.NewList("Divide", left, right)

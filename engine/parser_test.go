@@ -62,6 +62,18 @@ func TestParser_Parse(t *testing.T) {
 			hasError: false,
 		},
 		{
+			name:     "left associativity of Plus",
+			input:    "Plus(1, 2, 3)",
+			expected: "Plus(1, 2, 3)",
+			hasError: false,
+		},
+		{
+			name:     "left associativity of Times",
+			input:    "Times(1, 2, 3)",
+			expected: "Times(1, 2, 3)",
+			hasError: false,
+		},
+		{
 			name:     "function with no args",
 			input:    "Random()",
 			expected: "Random()",
@@ -178,13 +190,13 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "left associativity same precedence",
 			input:    "1 + 2 + 3",
-			expected: "Plus(Plus(1, 2), 3)",
+			expected: "Plus(1, 2, 3)",
 			hasError: false,
 		},
 		{
 			name:     "left associativity multiplication",
 			input:    "2 * 3 * 4",
-			expected: "Times(Times(2, 3), 4)",
+			expected: "Times(2, 3, 4)",
 			hasError: false,
 		},
 		{
