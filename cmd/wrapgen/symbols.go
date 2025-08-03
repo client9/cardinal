@@ -469,6 +469,13 @@ var symbolSpecs = []SymbolSpec{
 		},
 	},
 	{
+		Name:       "With",
+		Attributes: []string{"HoldAll"},
+		Functions: []rule{
+			{"(vars_, body_)", builtins.With},
+		},
+	},
+	{
 		Name:       "Module",
 		Attributes: []string{"HoldAll"},
 		Functions: []rule{

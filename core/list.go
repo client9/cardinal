@@ -10,6 +10,14 @@ type List struct {
 	Elements []Expr
 }
 
+// Copy does a shallow clone of the List
+// TBD if this should return List or Expr
+func (l List) Copy() List {
+	newElements := make([]Expr, len(l.Elements))
+	copy(newElements, l.Elements)
+	return List{Elements: newElements}
+}
+
 func (l List) Length() int64 {
 	// really should panic
 	if len(l.Elements) == 0 {
