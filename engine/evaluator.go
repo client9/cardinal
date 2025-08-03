@@ -456,7 +456,7 @@ func (e *Evaluator) partiallyEvaluateForFunction(expr core.Expr, ctx *Context) c
 // Function(x, body) or Function([x, y], body)
 // Also handles slot-based functions: Function($1 + $2)
 func (e *Evaluator) evaluateFunction(args []core.Expr, ctx *Context) core.Expr {
-	if len(args) < 1 || len(args) >  2 {
+	if len(args) < 1 || len(args) > 2 {
 		return core.NewErrorExpr("ArgumentError", "Function requires 1 or 2 arguments", args)
 	}
 	if len(args) == 1 {
@@ -482,7 +482,6 @@ func (e *Evaluator) evaluateFunction(args []core.Expr, ctx *Context) core.Expr {
 
 		return core.NewFunction(parameters, body)
 	}
-
 
 	// First argument: parameters (held unevaluated)
 	paramArg := args[0]
