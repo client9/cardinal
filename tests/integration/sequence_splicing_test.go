@@ -6,7 +6,6 @@ import (
 
 func TestSequenceSplicingBasic(t *testing.T) {
 	tests := []TestCase{
-		// The core issue that was reported - sequence splicing in Replace/ReplaceAll
 		{
 			name:     "Single sequence element",
 			input:    `Replace(Zoo(1,3,x), Rule(Zoo(x_Integer, y_Integer, z__), Zoo(Plus(x,y), z)))`,
