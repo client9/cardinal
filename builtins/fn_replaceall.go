@@ -23,7 +23,7 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 		return rule
 	}
 
-	result := replaceAllRecursive(e, c, expr, rule)
+	result := replaceAllRecursive(expr, rule)
 	// If no changes were made and rule is a list with non-rules, return unevaluated ReplaceAll
 	if result.Equal(expr) {
 		if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
@@ -38,18 +38,19 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 			}
 		}
 	}
+	return result
 	// Re-evaluate the final result to handle expressions like Plus(2, 2) -> 4
-	return e.Evaluate(c, result)
+	//return e.Evaluate(c, result)
 }
 
 // replaceAllRecursive recursively applies rules to all subexpressions
-func replaceAllRecursive(e *engine.Evaluator, c *engine.Context, expr core.Expr, rule core.Expr) core.Expr {
+func replaceAllRecursive(expr core.Expr, rule core.Expr) core.Expr {
 	// First try to apply the rule at this level
 	var result core.Expr
 
 	// Handle single rule
 	if isRuleOrRuleDelayed(rule) {
-		result = applyRuleDelayedAware(e, c, expr, rule)
+		result = applyRuleDelayedAware(expr, rule)
 		if !result.Equal(expr) {
 			// Rule matched at this level, return the result (don't recurse into replacement)
 			return result
@@ -72,7 +73,7 @@ func replaceAllRecursive(e *engine.Evaluator, c *engine.Context, expr core.Expr,
 				// Try each rule in order
 				for i := 1; i < len(rulesList.Elements); i++ {
 					ruleItem := rulesList.Elements[i]
-					result = applyRuleDelayedAware(e, c, expr, ruleItem)
+					result = applyRuleDelayedAware(expr, ruleItem)
 					if !result.Equal(expr) {
 						// Rule matched at this level
 						return result
@@ -89,7 +90,7 @@ func replaceAllRecursive(e *engine.Evaluator, c *engine.Context, expr core.Expr,
 		changed := false
 
 		for i, element := range list.Elements {
-			newElement := replaceAllRecursive(e, c, element, rule)
+			newElement := replaceAllRecursive(element, rule)
 			newElements[i] = newElement
 			if !newElement.Equal(element) {
 				changed = true

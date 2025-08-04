@@ -5,75 +5,95 @@ import (
 	"github.com/client9/sexpr/engine"
 )
 
-// isRuleOrRuleDelayed checks if an expression is a Rule or RuleDelayed
-func isRuleOrRuleDelayed(expr core.Expr) bool {
-	if symbolName, ok := core.ExtractSymbol(expr); ok {
-		return symbolName == "Rule" || symbolName == "RuleDelayed"
+func asRule(expr core.Expr) (a, b core.Expr, ok bool) {
+	list, ok := expr.(core.List)
+	if !ok {
+		return nil, nil, false
 	}
-	if ruleList, ok := expr.(core.List); ok && len(ruleList.Elements) == 3 {
-		head := ruleList.Elements[0]
-		if symbolName, ok := core.ExtractSymbol(head); ok {
-			return symbolName == "Rule" || symbolName == "RuleDelayed"
-		}
+	head := list.Head()
+	if head != "Rule" && head != "RuleDelayed" {
+		return nil, nil, false
 	}
 
-	return false
+	return list.Elements[1], list.Elements[2], true
+}
+
+// isRuleOrRuleDelayed checks if an expression is a Rule or RuleDelayed
+func isRuleOrRuleDelayed(expr core.Expr) bool {
+
+	//if symbolName, ok := core.ExtractSymbol(expr); ok {
+	//	return symbolName == "Rule" || symbolName == "RuleDelayed"
+	//}
+	if expr.Length() != 2 {
+		return false
+	}
+	head := expr.Head()
+	return head == "Rule" || head == "RuleDelayed"
+}
+
+func isRuleList(expr core.Expr) bool {
+	list, ok := expr.(core.List)
+	if !ok {
+		return false
+	}
+	for i := int64(1); i <= list.Length(); i++ {
+		if !isRuleOrRuleDelayed(list.Elements[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // applyRuleDelayedAware applies a rule (Rule or RuleDelayed) with proper handling for both types
-func applyRuleDelayedAware(e *engine.Evaluator, c *engine.Context, expr core.Expr, rule core.Expr) core.Expr {
+func applyRuleDelayedAware(expr core.Expr, rule core.Expr) core.Expr {
 	// Handle both Rule and RuleDelayed
-	if ruleList, ok := rule.(core.List); ok && len(ruleList.Elements) == 3 {
-		head := ruleList.Elements[0]
-		if symbolName, ok := core.ExtractSymbol(head); ok {
-			if symbolName == "Rule" || symbolName == "RuleDelayed" {
-				pattern := ruleList.Elements[1]
-				replacement := ruleList.Elements[2]
 
-				// Use pattern matching with variable binding
-				matches, bindings := core.MatchWithBindings(pattern, expr)
-				if matches {
-					if symbolName == "Rule" {
-						// For Rule, substitute directly (current behavior)
-						return core.SubstituteBindings(replacement, bindings)
-					} else {
-						// For RuleDelayed, evaluate RHS in a context with bindings
-						ruleCtx := engine.NewChildContext(c)
+	if pattern, replacement, ok := asRule(rule); ok {
+		// Use pattern matching with variable binding
+		if matches, bindings := core.MatchWithBindings(pattern, expr); matches {
+			return core.SubstituteBindings(replacement, bindings)
+			/*
+				if rule.Head() == "Rule" {
+					// For Rule, substitute directly (current behavior)
+					return core.SubstituteBindings(replacement, bindings)
+				} else {
+					// For RuleDelayed, evaluate RHS in a context with bindings
+					ruleCtx := engine.NewChildContext(c)
 
-						// Add pattern variable bindings to the rule context
-						for varName, value := range bindings {
-							ruleCtx.AddScopedVar(varName) // Keep bindings local
-							if err := ruleCtx.Set(varName, value); err != nil {
-								return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
-							}
+					// Add pattern variable bindings to the rule context
+					for varName, value := range bindings {
+						ruleCtx.AddScopedVar(varName) // Keep bindings local
+						if err := ruleCtx.Set(varName, value); err != nil {
+							return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
 						}
-
-						// Evaluate replacement in the rule context
-						return e.Evaluate(ruleCtx, replacement)
 					}
+					// Evaluate replacement in the rule context
+					return e.Evaluate(ruleCtx, replacement)
 				}
-			}
-		}
-	} else if ruleDelayed, ok := rule.(core.RuleDelayedExpr); ok {
-		// Handle direct RuleDelayedExpr
-		matches, bindings := core.MatchWithBindings(ruleDelayed.Pattern, expr)
-		if matches {
-			// Create a new context with pattern variable bindings
-			ruleCtx := engine.NewChildContext(c)
-
-			// Add pattern variable bindings to the rule context
-			for varName, value := range bindings {
-				ruleCtx.AddScopedVar(varName) // Keep bindings local
-				if err := ruleCtx.Set(varName, value); err != nil {
-					return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
-				}
-			}
-
-			// Evaluate RHS in the rule context
-			return e.Evaluate(ruleCtx, ruleDelayed.RHS)
+			*/
 		}
 	}
+	/*
+		if ruleDelayed, ok := rule.(core.RuleDelayedExpr); ok {
+			// Handle direct RuleDelayedExpr
+			matches, bindings := core.MatchWithBindings(ruleDelayed.Pattern, expr)
+			if matches {
+				// Create a new context with pattern variable bindings
+				ruleCtx := engine.NewChildContext(c)
 
+				// Add pattern variable bindings to the rule context
+				for varName, value := range bindings {
+					ruleCtx.AddScopedVar(varName) // Keep bindings local
+					if err := ruleCtx.Set(varName, value); err != nil {
+						return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+					}
+				}
+
+				// Evaluate RHS in the rule context
+				return e.Evaluate(ruleCtx, ruleDelayed.RHS)
+			}
+		}
+	*/
 	// If no match or invalid rule, return original expression
 	return expr
 }
@@ -88,7 +108,7 @@ func Replace(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 	rule := args[1]
 	// Handle single rule
 	if isRuleOrRuleDelayed(rule) {
-		return applyRuleDelayedAware(e, c, expr, rule)
+		return applyRuleDelayedAware(expr, rule)
 	}
 
 	// Handle List of rules
@@ -106,7 +126,7 @@ func Replace(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 			// Try each rule in order
 			for i := 1; i < len(rulesList.Elements); i++ {
 				ruleItem := rulesList.Elements[i]
-				result := applyRuleDelayedAware(e, c, expr, ruleItem)
+				result := applyRuleDelayedAware(expr, ruleItem)
 				if !result.Equal(expr) {
 					return result
 				}
