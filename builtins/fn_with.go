@@ -3,7 +3,6 @@ package builtins
 import (
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
-	"github.com/client9/sexpr/stdlib"
 )
 
 func With(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr) core.Expr {
@@ -26,7 +25,7 @@ func With(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr
 		r.Elements[0] = core.NewSymbol("Rule")
 	}
 
-	modified := stdlib.ReplaceAllWithRules(body, rules)
+	modified := core.ReplaceAllWithRules(body, rules)
 
 	result := e.Evaluate(c, modified)
 

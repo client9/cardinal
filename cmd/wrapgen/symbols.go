@@ -462,6 +462,13 @@ var symbolSpecs = []SymbolSpec{
 		},
 	},
 	{
+		Name:       "Function",
+		Attributes: []string{"HoldAll"},
+		Functions: []rule{
+			{"(args__)", builtins.Function},
+		},
+	},
+	{
 		Name:       "Block",
 		Attributes: []string{"HoldAll"},
 		Functions: []rule{

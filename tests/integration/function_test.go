@@ -34,7 +34,7 @@ func TestFunction_RegularSyntax(t *testing.T) {
 		{
 			name:     "Zero parameter function creation",
 			input:    "Function([], x + 1)",
-			expected: "Function([], Plus(x, 1))",
+			expected: "Function(Plus(x, 1))",
 		},
 	}
 	runTestCases(t, tests)
@@ -75,7 +75,7 @@ func TestFunction_SlotBasedSyntax(t *testing.T) {
 		{
 			name:     "Slot function creation without application",
 			input:    "Function($1 + $2)",
-			expected: "Function([slot1, slot2], Plus($1, $2))",
+			expected: "Function(Plus($1, $2))",
 		},
 	}
 
@@ -102,7 +102,7 @@ func TestFunction_ConstantFunctions(t *testing.T) {
 		{
 			name:     "Constant function creation",
 			input:    "Function(42)",
-			expected: "Function([], 42)",
+			expected: "Function(42)",
 		},
 	}
 	runTestCases(t, tests)
@@ -167,22 +167,22 @@ func TestFunction_NestedFunctions(t *testing.T) {
 		{
 			name:     "Nested slot-based function creation",
 			input:    "Function($1 + Function($2 * $3))",
-			expected: "Function(slot1, Plus($1, Function([slot1, slot2, slot3], Times($2, $3))))",
+			expected: "Function(Plus($1, Function(Times($2, $3))))",
 		},
 		{
 			name:     "Nested slot-based function application",
 			input:    "Function($1 + Function($2 * $3))(1)",
-			expected: "Plus(1, Function([slot1, slot2, slot3], Times($2, $3)))",
+			expected: "Plus(1, Function(Times($2, $3)))",
 		},
 		{
 			name:     "Deeply nested slot function creation",
 			input:    "Function($1 + Function($2 + Function($3)))",
-			expected: "Function(slot1, Plus($1, Function([slot1, slot2], Plus($2, Function([slot1, slot2, slot3], $3)))))",
+			expected: "Function(Plus($1, Function(Plus($2, Function($3)))))",
 		},
 		{
 			name:     "Multiple nested slots in same level",
 			input:    "Function(Function($1 + $2) + Function($3 * $4))",
-			expected: "Function([], Plus(Function([slot1, slot2], Plus($1, $2)), Function([slot1, slot2, slot3, slot4], Times($3, $4))))",
+			expected: "Function(Plus(Function(Plus($1, $2)), Function(Times($3, $4))))",
 		},
 	}
 
@@ -195,32 +195,32 @@ func TestFunction_AmpersandSyntax(t *testing.T) {
 		{
 			name:     "Simple single slot with &",
 			input:    "$1 &",
-			expected: "Function(slot1, $1)",
+			expected: "Function($1)",
 		},
 		{
 			name:     "Two slots with &",
 			input:    "$1 + $2 &",
-			expected: "Function([slot1, slot2], Plus($1, $2))",
+			expected: "Function(Plus($1, $2))",
 		},
 		{
 			name:     "Multiple slots with complex expression",
 			input:    "$1 * $2 + $3 &",
-			expected: "Function([slot1, slot2, slot3], Plus(Times($1, $2), $3))",
+			expected: "Function(Plus(Times($1, $2), $3))",
 		},
 		{
 			name:     "Parenthesized expression with &",
 			input:    "($1 + $2) * $3 &",
-			expected: "Function([slot1, slot2, slot3], Times(Plus($1, $2), $3))",
+			expected: "Function(Times(Plus($1, $2), $3))",
 		},
 		{
 			name:     "Mixed slot and constant with &",
 			input:    "$1 + 10 &",
-			expected: "Function(slot1, Plus($1, 10))",
+			expected: "Function(Plus($1, 10))",
 		},
 		{
 			name:     "Complex arithmetic with &",
 			input:    "$1 * 2 + $2 / 3 &",
-			expected: "Function([slot1, slot2], Plus(Times($1, 2), Divide($2, 3)))",
+			expected: "Function(Plus(Times($1, 2), Divide($2, 3)))",
 		},
 
 		// Function application tests
@@ -249,58 +249,58 @@ func TestFunction_AmpersandSyntax(t *testing.T) {
 		{
 			name:     "& has lower precedence than arithmetic",
 			input:    "$1 + $2 * $3 &",
-			expected: "Function([slot1, slot2, slot3], Plus($1, Times($2, $3)))",
+			expected: "Function(Plus($1, Times($2, $3)))",
 		},
 		{
 			name:     "& binds to entire arithmetic expression",
 			input:    "$1 + $2 - $3 &",
-			expected: "Function([slot1, slot2, slot3], Subtract(Plus($1, $2), $3))",
+			expected: "Function(Subtract(Plus($1, $2), $3))",
 		},
 		{
 			name:     "& with power operator precedence",
 			input:    "$1 ^ $2 + $3 &",
-			expected: "Function([slot1, slot2, slot3], Plus(Power($1, $2), $3))",
+			expected: "Function(Plus(Power($1, $2), $3))",
 		},
 
 		// Nested and edge cases
 		{
 			name:     "Constant expression with &",
 			input:    "42 &",
-			expected: "Function([], 42)",
+			expected: "Function(42)",
 		},
 		{
 			name:     "String expression with &",
 			input:    "\"hello\" &",
-			expected: "Function([], \"hello\")",
+			expected: "Function(\"hello\")",
 		},
 		{
 			name:     "& with function calls",
 			input:    "Plus($1, $2) &",
-			expected: "Function([slot1, slot2], Plus($1, $2))",
+			expected: "Function(Plus($1, $2))",
 		},
 		{
 			name:     "& with nested expressions",
 			input:    "Times($1, Plus($2, $3)) &",
-			expected: "Function([slot1, slot2, slot3], Times($1, Plus($2, $3)))",
+			expected: "Function(Times($1, Plus($2, $3)))",
 		},
 
 		// High numbered slots
 		{
 			name:     "& with high numbered slots",
 			input:    "$10 + $5 &",
-			expected: "Function([slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9, slot10], Plus($10, $5))",
+			expected: "Function(Plus($10, $5))",
 		},
 
 		// Bare $ (first slot)
 		{
 			name:     "Bare $ with &",
 			input:    "$ * 2 &",
-			expected: "Function(slot1, Times($, 2))",
+			expected: "Function(Times($, 2))",
 		},
 		{
 			name:     "$ and $1 mixed with &",
 			input:    "$ + $1 &",
-			expected: "Function(slot1, Plus($, $1))",
+			expected: "Function(Plus($, $1))",
 		},
 	}
 	runTestCases(t, tests)
