@@ -24,6 +24,7 @@ test: build
 # cov0 is red (not covered)
 # cov8 is the green (covered)
 cover:
+	rm -f coverage*
 	go test -coverpkg=./... -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html-tmp
 	cat coverage.html-tmp | sed 's/background: black/background: whitesmoke/g' | sed 's/80, 80, 80/0,0,0/g' | sed 's/Menlo/ui-monospace/g' | sed 's/bold/normal/g' | sed 's/rgb(192, 0, 0)/rgb(255,0,0);font-weight:bold;/g' > coverage.html
