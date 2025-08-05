@@ -19,6 +19,9 @@ test: build
 	go test ./...
 
 
+prof:
+	go test -cpuprofile cpu.prof -memprofile mem.prof -bench=DoLoop ./tests/performance/...
+
 # Coverage report
 # Go default is crap
 # cov0 is red (not covered)
@@ -39,3 +42,4 @@ clean:
 
 setup:
 	go get golang.org/x/tools/cmd/stringer
+	go get -u github.com/google/pprof
