@@ -16,11 +16,6 @@ func NewEvaluator() *engine.Evaluator {
 	return evaluator
 }
 
-// NewEvaluatorWithContext creates an evaluator with a specific context
-func NewEvaluatorWithContext(ctx *engine.Context) *engine.Evaluator {
-	return engine.NewEvaluatorWithContext(ctx)
-}
-
 // ParseString parses a string into an expression
 func ParseString(input string) (core.Expr, error) {
 	return engine.ParseString(input)
@@ -41,13 +36,6 @@ func EvaluateString(input string) (core.Expr, error) {
 	c := e.GetContext()
 	return e.Evaluate(c, expr), nil
 }
-
-// NewContext creates a new evaluation context
-func NewContext() *engine.Context {
-	return engine.NewContext()
-}
-
-// SetupBuiltinAttributes and RegisterDefaultBuiltins are now provided by generated builtin_setup.go
 
 // AttributesToString converts attributes to a string representation
 func AttributesToString(attrs []engine.Attribute) string {
