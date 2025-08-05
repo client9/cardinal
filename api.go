@@ -47,11 +47,6 @@ func NewContext() *engine.Context {
 	return engine.NewContext()
 }
 
-// NewChildContext creates a child context
-func NewChildContext(parent *engine.Context) *engine.Context {
-	return engine.NewChildContext(parent)
-}
-
 // SetupBuiltinAttributes and RegisterDefaultBuiltins are now provided by generated builtin_setup.go
 
 // AttributesToString converts attributes to a string representation

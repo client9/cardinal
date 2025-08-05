@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+
 	"github.com/client9/sexpr/core"
 )
 
@@ -60,41 +61,27 @@ func (s *EvaluationStack) Depth() int {
 
 // Context represents the evaluation context with variable bindings and symbol attributes
 type Context struct {
-	variables        map[string]core.Expr
-	parent           *Context
+	variables map[string]core.Expr
+	//parent           *Context
 	symbolTable      *SymbolTable
 	functionRegistry *FunctionRegistry // Unified pattern-based function system
 	stack            *EvaluationStack
-	scopedVars       map[string]bool // Variables that are locally scoped (for Block)
 }
 
 // NewContext creates a new evaluation context
 func NewContext() *Context {
 	ctx := &Context{
-		variables:        make(map[string]core.Expr),
-		parent:           nil,
+		variables: make(map[string]core.Expr),
+		//parent:           nil,
 		symbolTable:      NewSymbolTable(),
 		functionRegistry: NewFunctionRegistry(),
 		stack:            NewEvaluationStack(1000), // Default max depth of 1000
-		scopedVars:       make(map[string]bool),
 	}
 
 	// Note: Builtin attributes and functions are now registered by the top-level API
 	// This allows breaking the circular import between engine and wrapped packages
 
 	return ctx
-}
-
-// NewChildContext creates a child context with a parent
-func NewChildContext(parent *Context) *Context {
-	return &Context{
-		variables:        make(map[string]core.Expr),
-		parent:           parent,
-		symbolTable:      parent.symbolTable,      // Share symbol table with parent
-		functionRegistry: parent.functionRegistry, // Share function registry with parent
-		stack:            parent.stack,            // Share evaluation stack with parent
-		scopedVars:       make(map[string]bool),
-	}
 }
 
 // GetFunctionDefinitions returns a list of patterns registered to the given symbol
@@ -111,18 +98,6 @@ func (c *Context) Set(name string, value core.Expr) error {
 	if c.symbolTable.HasAttribute(name, Protected) {
 		return fmt.Errorf("symbol %s is Protected", name)
 	}
-
-	// If this variable is explicitly scoped to this context, set it here
-	if c.scopedVars[name] {
-		c.variables[name] = value
-		return nil
-	}
-
-	// If this is a child context and variable is not scoped here, set in parent
-	if c.parent != nil {
-		return c.parent.Set(name, value)
-	}
-
 	// Otherwise set in current context (root context or explicitly local)
 	c.variables[name] = value
 	return nil
@@ -133,9 +108,6 @@ func (c *Context) Get(name string) (core.Expr, bool) {
 	if value, ok := c.variables[name]; ok {
 		return value, true
 	}
-	if c.parent != nil {
-		return c.parent.Get(name)
-	}
 	return nil, false
 }
 
@@ -145,24 +117,7 @@ func (c *Context) Delete(name string) error {
 		return fmt.Errorf("symbol %s is Protected", name)
 	}
 	delete(c.variables, name)
-	if c.parent != nil {
-		return c.parent.Delete(name)
-	}
 	return nil
-}
-
-// AddScopedVar marks a variable as locally scoped to this context
-func (c *Context) AddScopedVar(name string) {
-	c.scopedVars[name] = true
-}
-
-// NewBlockContext creates a child context for Block evaluation with specified scoped variables
-func NewBlockContext(parent *Context, scopedVarNames []string) *Context {
-	ctx := NewChildContext(parent)
-	for _, varName := range scopedVarNames {
-		ctx.AddScopedVar(varName)
-	}
-	return ctx
 }
 
 // SetStack sets the evaluation stack for the context

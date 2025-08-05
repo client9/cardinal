@@ -158,50 +158,68 @@ func (r *FunctionRegistry) GetAllFunctionNames() []string {
 }
 
 // CallFunction attempts to call a function with the given expression and returns (result, found)
-func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, evaluator *Evaluator) (core.Expr, bool) {
+func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Evaluator) (core.Expr, bool) {
 	// Extract function name and arguments from the call expression
-	if list, ok := callExpr.(core.List); ok && len(list.Elements) > 0 {
-		var functionName string
-		var found bool
-
-		// Check for new Symbol type first
-		if name, ok := core.ExtractSymbol(list.Elements[0]); ok {
-			functionName = name
-			found = true
-		}
-
-		if found {
-			args := list.Elements[1:]
-
-			// Find matching function definition
-			funcDef, bindings := r.FindMatchingFunction(functionName, args)
-			if funcDef == nil {
-				return nil, false
-			}
-
-			// Create child context with pattern variable bindings
-			funcCtx := NewChildContext(ctx)
-			for varName, value := range bindings {
-				funcCtx.AddScopedVar(varName) // Keep pattern variables local to this context
-				if err := funcCtx.Set(varName, value); err != nil {
-					// Pattern variable binding failed - this shouldn't happen in scoped context
-					return core.NewErrorExpr("ProtectionError", err.Error(), args), true
-				}
-			}
-
-			// Call the function
-			if funcDef.GoImpl != nil {
-				// Built-in function - call Go implementation
-				return funcDef.GoImpl(evaluator, funcCtx, args), true
-			} else {
-				// User-defined function - evaluate body
-				// Create an evaluator to evaluate the body
-				evaluator := NewEvaluatorWithContext(funcCtx)
-				return evaluator.Evaluate(funcCtx, funcDef.Body), true
-			}
-		}
+	list, ok := callExpr.(core.List)
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+	// Check for new Symbol type first
+	functionName, ok := core.ExtractSymbol(list.Elements[0])
+
+	if !ok {
+		return nil, false
+	}
+	args := list.Elements[1:]
+
+	// Find matching function definition
+	funcDef, bindings := r.FindMatchingFunction(functionName, args)
+	if funcDef == nil {
+		return nil, false
+	}
+
+	//log.Printf("BINDINGS: %v, args: %v", bindings, args)
+	// If pattern matches, substitute variables in replacement and return it
+	//return core.SubstituteBindings(replacement, bindings), true
+
+	/*
+		// Create child context with pattern variable bindings
+		funcCtx := NewChildContext(ctx)
+		for varName, value := range bindings {
+			funcCtx.AddScopedVar(varName) // Keep pattern variables local to this context
+			if err := funcCtx.Set(varName, value); err != nil {
+				// Pattern variable binding failed - this shouldn't happen in scoped context
+				return core.NewErrorExpr("ProtectionError", err.Error(), args), true
+			}
+		}
+	*/
+	// Call the function
+	if funcDef.GoImpl != nil {
+		// Built-in function - call Go implementation
+		//return funcDef.GoImpl(e, funcCtx, args), true
+		return funcDef.GoImpl(e, ctx, args), true
+	}
+
+	return core.SubstituteBindings(funcDef.Body, bindings), true
+	/*
+		rules := make([]core.Expr, 0, len(bindings)+1)
+		for varName, value := range bindings {
+			rules = append(rules, core.NewList("Rule", core.NewSymbol(varName), value))
+		}
+		rlist := core.NewList("List", rules...)
+		mbody := core.ReplaceAllWithRules(funcDef.Body, rlist)
+
+		return mbody, true
+	*/
+	//return e.Evaluate(ctx, mbody), true
+	//return e.Evaluate(funcCtx, funcDef.Body), true
+	/*
+		// User-defined function - evaluate body
+		// Create an evaluator to evaluate the body
+		evaluator := NewEvaluatorWithContext(funcCtx)
+		return evaluator.Evaluate(funcCtx, funcDef.Body), true
+	*/
+
 }
 
 // RegisterFunction is an alias for RegisterUserFunction for backward compatibility
