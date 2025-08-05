@@ -71,15 +71,11 @@ type Context struct {
 // NewContext creates a new evaluation context
 func NewContext() *Context {
 	ctx := &Context{
-		variables: make(map[string]core.Expr),
-		//parent:           nil,
+		variables:        make(map[string]core.Expr),
 		symbolTable:      NewSymbolTable(),
 		functionRegistry: NewFunctionRegistry(),
 		stack:            NewEvaluationStack(1000), // Default max depth of 1000
 	}
-
-	// Note: Builtin attributes and functions are now registered by the top-level API
-	// This allows breaking the circular import between engine and wrapped packages
 
 	return ctx
 }
