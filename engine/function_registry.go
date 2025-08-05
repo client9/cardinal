@@ -200,6 +200,8 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 		return funcDef.GoImpl(e, ctx, args), true
 	}
 
+	// TODO: substitute bindings seems to do the same thing as the code below
+	// using ReplaceAllWithRules
 	return core.SubstituteBindings(funcDef.Body, bindings), true
 	/*
 		rules := make([]core.Expr, 0, len(bindings)+1)
@@ -211,15 +213,6 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 
 		return mbody, true
 	*/
-	//return e.Evaluate(ctx, mbody), true
-	//return e.Evaluate(funcCtx, funcDef.Body), true
-	/*
-		// User-defined function - evaluate body
-		// Create an evaluator to evaluate the body
-		evaluator := NewEvaluatorWithContext(funcCtx)
-		return evaluator.Evaluate(funcCtx, funcDef.Body), true
-	*/
-
 }
 
 // RegisterFunction is an alias for RegisterUserFunction for backward compatibility

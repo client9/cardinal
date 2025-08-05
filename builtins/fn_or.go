@@ -11,7 +11,7 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 
 	// Evaluate arguments and collect non-False values
 	for _, arg := range args {
-		result := e.Evaluate(c, arg)
+		result := e.Evaluate(arg)
 
 		// Check if it's explicitly True - short-circuit
 		if symbolName, ok := core.ExtractSymbol(result); ok && symbolName == "True" {

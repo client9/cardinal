@@ -14,7 +14,7 @@ func IfExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	}
 
 	// Evaluate the condition
-	condition := e.Evaluate(c, args[0])
+	condition := e.Evaluate(args[0])
 	if core.IsError(condition) {
 		return condition
 	}
@@ -23,11 +23,11 @@ func IfExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	if boolVal, ok := core.ExtractBool(condition); ok {
 		if boolVal {
 			// Condition is true, evaluate and return the "then" branch
-			return e.Evaluate(c, args[1])
+			return e.Evaluate(args[1])
 		}
 		// Condition is false, evaluate and return the "else" branch if present
 		if len(args) == 3 {
-			return e.Evaluate(c, args[2])
+			return e.Evaluate(args[2])
 		}
 		return core.NewSymbolNull()
 	}

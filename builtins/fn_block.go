@@ -16,7 +16,7 @@ func BlockExpr(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core
 	}
 
 	// Evaluate the body in the modified context
-	result := e.Evaluate(c, body)
+	result := e.Evaluate(body)
 
 	restoreBlockVars(e, c, savedVars)
 
@@ -80,7 +80,7 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 			savedVars[varName] = nil
 		}
 		// Set new value (evaluate the RHS) -- TODO ERROR CHECK
-		newValue := e.Evaluate(c, setvar.Elements[2])
+		newValue := e.Evaluate(setvar.Elements[2])
 		c.Set(varName, newValue)
 	}
 	return savedVars, nil

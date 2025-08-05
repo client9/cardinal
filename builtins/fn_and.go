@@ -11,7 +11,7 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 
 	// Short-circuit evaluation: stop at first false, collect non-boolean true values
 	for _, arg := range args {
-		result := e.Evaluate(c, arg)
+		result := e.Evaluate(arg)
 
 		// Check if it's explicitly False
 		if symbolName, ok := core.ExtractSymbol(result); ok && symbolName == "False" {

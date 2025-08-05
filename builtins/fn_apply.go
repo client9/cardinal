@@ -26,5 +26,5 @@ func ApplyExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list 
 	application := core.List{Elements: applicationElements}
 
 	// Evaluate the function application using the evaluator
-	return e.Evaluate(c, application)
+	return e.Evaluate(application)
 }

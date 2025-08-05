@@ -3,7 +3,6 @@ package engine
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/client9/sexpr/core"
 )
@@ -20,25 +19,19 @@ func NewEvaluator() *Evaluator {
 	}
 }
 
-// NewEvaluatorWithContext creates an evaluator with a specific context
-func NewEvaluatorWithContext(ctx *Context) *Evaluator {
-	return &Evaluator{
-		context: ctx,
-	}
-}
-
 // GetContext returns the evaluator's current context
 func (e *Evaluator) GetContext() *Context {
 	return e.context
 }
 
 // Evaluate evaluates an expression in the current context
-func (e *Evaluator) Evaluate(c *Context, expr core.Expr) core.Expr {
-	return e.evaluate(c, expr)
+func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
+	return e.evaluate(e.context, expr)
 }
 
 // evaluate is the main evaluation function
-func (e *Evaluator) evaluate(ctx *Context, expr core.Expr) core.Expr {
+func (e *Evaluator) evaluate(_ *Context, expr core.Expr) core.Expr {
+	ctx := e.context
 	// Push current expression to stack for recursion tracking
 
 	if err := ctx.stack.Push("evaluate", expr); err != nil {
@@ -46,7 +39,7 @@ func (e *Evaluator) evaluate(ctx *Context, expr core.Expr) core.Expr {
 		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
 	}
 	defer ctx.stack.Pop()
-	return e.evaluateToFixedPoint(ctx, expr)
+	return e.evaluateToFixedPoint(e.context, expr)
 	//return e.evaluateExpr(ctx, expr)
 }
 
@@ -346,26 +339,6 @@ func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *
 	}
 }
 
-// formatArgs formats function arguments for stack traces
-func formatArgs(args []core.Expr) string {
-	if len(args) == 0 {
-		return ""
-	}
-
-	argStrs := make([]string, len(args))
-	for i, arg := range args {
-		argStrs[i] = arg.String()
-	}
-
-	// Limit length for readability
-	result := strings.Join(argStrs, ", ")
-	if len(result) > 100 {
-		result = result[:97] + "..."
-	}
-
-	return result
-}
-
 // applyFunction applies a FunctionExpr to arguments
 func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args []core.Expr) core.Expr {
 	// Evaluate all arguments first
@@ -407,7 +380,7 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 
 	modified := functionReplaceAll(e, c, funcExpr.Body, rlist)
 
-	result := e.Evaluate(c, modified)
+	result := e.Evaluate(modified)
 	return result
 }
 

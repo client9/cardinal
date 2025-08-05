@@ -12,13 +12,13 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 	}
 
 	// Evaluate the expression to be replaced
-	expr := e.Evaluate(c, args[0])
+	expr := e.Evaluate(args[0])
 	if core.IsError(expr) {
 		return expr
 	}
 
 	// Evaluate the rule (but RuleDelayed RHS will remain unevaluated due to HoldRest)
-	rule := e.Evaluate(c, args[1])
+	rule := e.Evaluate(args[1])
 	if core.IsError(rule) {
 		return rule
 	}

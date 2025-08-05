@@ -246,7 +246,7 @@ func (r *REPL) processLine(line string) error {
 	}
 
 	// Evaluate the expression
-	result := r.evaluator.Evaluate(r.ctx, expr)
+	result := r.evaluator.Evaluate( expr)
 
 	// Print the result
 	_, _ = fmt.Fprintf(r.output, "%s\n", result.String())
@@ -395,7 +395,7 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 		return "", fmt.Errorf("parse error: %v", err)
 	}
 
-	result := r.evaluator.Evaluate(r.ctx, expr)
+	result := r.evaluator.Evaluate(expr)
 	return result.String(), nil
 }
 

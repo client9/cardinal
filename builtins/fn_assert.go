@@ -7,7 +7,7 @@ import (
 )
 
 func Assert(e *engine.Evaluator, c *engine.Context, arg core.Expr) core.Expr {
-	result := e.Evaluate(c, arg)
+	result := e.Evaluate(arg)
 	istrue := stdlib.TrueQExpr(result)
 	if istrue {
 		return result

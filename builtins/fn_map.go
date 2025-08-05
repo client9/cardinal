@@ -36,7 +36,7 @@ func MapExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list co
 		application := core.List{Elements: applicationElements}
 
 		// Evaluate the function application using the evaluator
-		result := e.Evaluate(c, application)
+		result := e.Evaluate(application)
 		resultElements[i+1] = result
 	}
 

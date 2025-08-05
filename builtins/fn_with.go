@@ -27,7 +27,7 @@ func With(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr
 
 	modified := core.ReplaceAllWithRules(body, rules)
 
-	result := e.Evaluate(c, modified)
+	result := e.Evaluate(modified)
 
 	return result
 }

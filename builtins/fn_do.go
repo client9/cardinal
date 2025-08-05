@@ -39,7 +39,7 @@ func doSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64) c
 
 	// Evaluate expr n times (side effects only)
 	for i := int64(0); i < n; i++ {
-		result := e.Evaluate(c, expr)
+		result := e.Evaluate(expr)
 		if core.IsError(result) {
 			return result // Return error immediately
 		}

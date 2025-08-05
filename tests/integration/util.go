@@ -57,12 +57,11 @@ func evaluateAndExpect(t *testing.T, tt TestCase) {
 func evaluateAndExpectError(t *testing.T, input, errorType string) {
 	t.Helper()
 	eval := sexpr.NewEvaluator()
-	ctx := eval.GetContext()
 	expr, err := sexpr.ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error for %q: %v", input, err)
 	}
-	result := eval.Evaluate(ctx, expr)
+	result := eval.Evaluate(expr)
 	if !core.IsError(result) {
 		t.Errorf("Expected error for %q, got: %q", input, result.String())
 		return

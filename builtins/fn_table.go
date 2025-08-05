@@ -45,7 +45,7 @@ func tableSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64
 	for i := 0; i < int(n); i++ {
 		// Evaluate expr in current context for each iteration
 		// This allows expressions with side effects to work correctly
-		evaluated := e.Evaluate(c, expr)
+		evaluated := e.Evaluate(expr)
 		if core.IsError(evaluated) {
 			return evaluated
 		}
@@ -115,33 +115,33 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 	switch len(iterSpec.Elements) {
 	case 3: // core.List(i, max) → core.List(i, 1, max, 1)
 		start = core.NewInteger(1)
-		end = e.Evaluate(c, iterSpec.Elements[2])
+		end = e.Evaluate(iterSpec.Elements[2])
 		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = core.NewInteger(1)
 
 	case 4: // core.List(i, start, end) → core.List(i, start, end, 1)
-		start = e.Evaluate(c, iterSpec.Elements[2])
+		start = e.Evaluate(iterSpec.Elements[2])
 		if core.IsError(start) {
 			return "", nil, nil, nil, start
 		}
-		end = e.Evaluate(c, iterSpec.Elements[3])
+		end = e.Evaluate(iterSpec.Elements[3])
 		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = core.NewInteger(1)
 
 	case 5: // core.List(i, start, end, increment)
-		start = e.Evaluate(c, iterSpec.Elements[2])
+		start = e.Evaluate(iterSpec.Elements[2])
 		if core.IsError(start) {
 			return "", nil, nil, nil, start
 		}
-		end = e.Evaluate(c, iterSpec.Elements[3])
+		end = e.Evaluate(iterSpec.Elements[3])
 		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
-		increment = e.Evaluate(c, iterSpec.Elements[4])
+		increment = e.Evaluate(iterSpec.Elements[4])
 		if core.IsError(increment) {
 			return "", nil, nil, nil, increment
 		}
@@ -153,7 +153,7 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 	// Validate that arithmetic and comparison operations can be evaluated
 	// Test if Plus(start, increment) evaluates to something different (not unevaluated)
 	testPlus := core.NewList("Plus", start, increment)
-	plusResult := e.Evaluate(c, testPlus)
+	plusResult := e.Evaluate(testPlus)
 	if core.IsError(plusResult) {
 		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult), []core.Expr{plusResult})
@@ -165,7 +165,7 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 
 	// Test if comparison operation evaluates
 	testLessEqual := core.NewList("LessEqual", start, end)
-	compareResult := e.Evaluate(c, testLessEqual)
+	compareResult := e.Evaluate(testLessEqual)
 	if core.IsError(compareResult) {
 		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
 			fmt.Sprintf("Table iterator comparison failed: %s", compareResult), []core.Expr{compareResult})
@@ -192,7 +192,7 @@ func evaluateIteratorCondition(e *engine.Evaluator, c *engine.Context, current, 
 
 	// Create and evaluate comparison expression
 	compExpr := core.NewList(compSymbol, current, end)
-	result := e.Evaluate(c, compExpr)
+	result := e.Evaluate(compExpr)
 
 	// Extract boolean result
 	if boolVal, ok := core.ExtractBool(result); ok {
@@ -214,7 +214,7 @@ func evaluateIteratorCondition(e *engine.Evaluator, c *engine.Context, current, 
 // evaluateIteratorIncrement adds increment to current value using expression arithmetic
 func evaluateIteratorIncrement(e *engine.Evaluator, c *engine.Context, current, increment core.Expr) core.Expr {
 	plusExpr := core.NewList("Plus", current, increment)
-	return e.Evaluate(c, plusExpr)
+	return e.Evaluate(plusExpr)
 }
 
 // isNegativeIncrement determines if increment is negative using expression evaluation
@@ -222,7 +222,7 @@ func isNegativeIncrement(e *engine.Evaluator, c *engine.Context, increment core.
 	// Create comparison: increment < 0
 	zeroExpr := core.NewInteger(0)
 	lessExpr := core.NewList("Less", increment, zeroExpr)
-	result := e.Evaluate(c, lessExpr)
+	result := e.Evaluate(lessExpr)
 
 	if boolVal, ok := core.ExtractBool(result); ok {
 		return boolVal

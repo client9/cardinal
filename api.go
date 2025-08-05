@@ -33,8 +33,7 @@ func EvaluateString(input string) (core.Expr, error) {
 		return nil, err
 	}
 	e := NewEvaluator()
-	c := e.GetContext()
-	return e.Evaluate(c, expr), nil
+	return e.Evaluate(expr), nil
 }
 
 // AttributesToString converts attributes to a string representation

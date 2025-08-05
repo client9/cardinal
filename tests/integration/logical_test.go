@@ -168,14 +168,13 @@ func TestAndOrNestedMixed(t *testing.T) {
 
 func TestAndOrWithVariableAssignments(t *testing.T) {
 	evaluator := sexpr.NewEvaluator()
-	ctx := evaluator.GetContext()
 	// Set up some variables
 	expr, _ := sexpr.ParseString("Set(a, True)")
-	evaluator.Evaluate(ctx, expr)
+	evaluator.Evaluate(expr)
 	expr, _ = sexpr.ParseString("Set(b, False)")
-	evaluator.Evaluate(ctx, expr)
+	evaluator.Evaluate(expr)
 	expr, _ = sexpr.ParseString("Set(c, 42)")
-	evaluator.Evaluate(ctx, expr)
+	evaluator.Evaluate(expr)
 
 	tests := []struct {
 		name     string
@@ -215,7 +214,7 @@ func TestAndOrWithVariableAssignments(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
-			result := evaluator.Evaluate(ctx, expr)
+			result := evaluator.Evaluate(expr)
 			if result.String() != tt.expected {
 				t.Errorf("Expected %s, got %s", tt.expected, result.String())
 			}

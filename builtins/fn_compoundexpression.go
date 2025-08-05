@@ -11,7 +11,7 @@ func CompoundExpression(e *engine.Evaluator, c *engine.Context, args []core.Expr
 	var result core.Expr = core.NewSymbolNull()
 
 	for _, arg := range args {
-		result = e.Evaluate(c, arg)
+		result = e.Evaluate(arg)
 		if core.IsError(result) {
 			return result
 		}

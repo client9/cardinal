@@ -8,7 +8,7 @@ import (
 // SetExpr evaluates immediate assignment: Set(lhs, rhs)
 func SetExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) core.Expr {
 	// Evaluate the right-hand side immediately
-	evalRhs := e.Evaluate(c, rhs)
+	evalRhs := e.Evaluate(rhs)
 
 	// Handle assignment to symbol
 	if symbolName, ok := core.ExtractSymbol(lhs); ok {
