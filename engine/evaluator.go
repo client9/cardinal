@@ -26,11 +26,6 @@ func (e *Evaluator) GetContext() *Context {
 
 // Evaluate evaluates an expression in the current context
 func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
-	return e.evaluate(e.context, expr)
-}
-
-// evaluate is the main evaluation function
-func (e *Evaluator) evaluate(_ *Context, expr core.Expr) core.Expr {
 	ctx := e.context
 	// Push current expression to stack for recursion tracking
 
@@ -87,7 +82,7 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 	args := list.Elements[1:]
 
 	// Evaluate the head to get the function name
-	evaluatedHead := e.evaluate(c, head)
+	evaluatedHead := e.Evaluate(head)
 
 	// Check if head is an error - propagate it
 	if core.IsError(evaluatedHead) {
@@ -103,7 +98,7 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 	/*
 		if evaluatedHead.Head() == "Function" {
 			//log.Printf("Got unparsed Function")
-			fn := e.evaluate(ctx, evaluatedHead)
+			fn := e.Evaluate(, evaluatedHead)
 			// log.Printf("Reparsed Function: %v", fn)
 			if funcExpr, ok := fn.(core.FunctionExpr); ok {
 				return e.applyFunction(funcExpr, args, ctx)
@@ -130,7 +125,7 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 	// Handle OneIdentity attribute specially - it can return a non-List
 	if c.symbolTable.HasAttribute(headName, OneIdentity) && len(list.Elements) == 2 {
 		// OneIdentity: f(x) = x
-		result := e.evaluate(c, list.Elements[1])
+		result := e.Evaluate(list.Elements[1])
 		return result
 	}
 
@@ -230,7 +225,7 @@ func (e *Evaluator) evaluateArguments(headName string, args []core.Expr, ctx *Co
 		if holdAll || (holdFirst && i == 0) || (holdRest && i > 0) {
 			evaluatedArgs[i] = arg // Don't evaluate
 		} else {
-			evaluatedArgs[i] = e.evaluate(ctx, arg)
+			evaluatedArgs[i] = e.Evaluate(arg)
 		}
 	}
 
@@ -344,7 +339,7 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 	// Evaluate all arguments first
 	evaluatedArgs := make([]core.Expr, len(args))
 	for i, arg := range args {
-		evaluatedArgs[i] = e.evaluate(c, arg)
+		evaluatedArgs[i] = e.Evaluate(arg)
 		if core.IsError(evaluatedArgs[i]) {
 			return evaluatedArgs[i]
 		}
@@ -392,7 +387,7 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 	}
 
 	// Evaluate the expression being sliced
-	expr := e.evaluate(ctx, args[0])
+	expr := e.Evaluate(args[0])
 	if core.IsError(expr) {
 		return expr
 	}
@@ -405,12 +400,12 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 	}
 
 	// Evaluate start and end indices
-	startExpr := e.evaluate(ctx, args[1])
+	startExpr := e.Evaluate(args[1])
 	if core.IsError(startExpr) {
 		return startExpr
 	}
 
-	endExpr := e.evaluate(ctx, args[2])
+	endExpr := e.Evaluate(args[2])
 	if core.IsError(endExpr) {
 		return endExpr
 	}
@@ -442,13 +437,13 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate the expression being sliced
-	expr := e.evaluate(ctx, args[0])
+	expr := e.Evaluate(args[0])
 	if core.IsError(expr) {
 		return expr
 	}
 
 	// Evaluate start index
-	startExpr := e.evaluate(ctx, args[1])
+	startExpr := e.Evaluate(args[1])
 	if core.IsError(startExpr) {
 		return startExpr
 	}
@@ -463,12 +458,12 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	if start < 0 {
 		// Negative start: use Take to get last |start| elements
 		// Take([1,2,3,4,5], -2) gives [4,5]
-		return e.evaluate(ctx, core.NewList("Take", expr, core.NewInteger(start)))
+		return e.Evaluate(core.NewList("Take", expr, core.NewInteger(start)))
 	} else {
 		// Positive start: use Drop to remove first (start-1) elements
 		// Drop([1,2,3,4,5], 2) gives [3,4,5] (for start=3, 1-indexed)
 		dropCount := start - 1
-		return e.evaluate(ctx, core.NewList("Drop", expr, core.NewInteger(dropCount)))
+		return e.Evaluate(core.NewList("Drop", expr, core.NewInteger(dropCount)))
 	}
 }
 
@@ -480,7 +475,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate the expression being modified
-	expr := e.evaluate(ctx, args[0])
+	expr := e.Evaluate(args[0])
 	if core.IsError(expr) {
 		return expr
 	}
@@ -493,7 +488,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate index
-	indexExpr := e.evaluate(ctx, args[1])
+	indexExpr := e.Evaluate(args[1])
 	if core.IsError(indexExpr) {
 		return indexExpr
 	}
@@ -506,7 +501,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate value
-	value := e.evaluate(ctx, args[2])
+	value := e.Evaluate(args[2])
 	if core.IsError(value) {
 		return value
 	}
@@ -523,7 +518,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate the expression being modified
-	expr := e.evaluate(ctx, args[0])
+	expr := e.Evaluate(args[0])
 	if core.IsError(expr) {
 		return expr
 	}
@@ -536,7 +531,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate start index
-	startExpr := e.evaluate(ctx, args[1])
+	startExpr := e.Evaluate(args[1])
 	if core.IsError(startExpr) {
 		return startExpr
 	}
@@ -549,7 +544,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate end index
-	endExpr := e.evaluate(ctx, args[2])
+	endExpr := e.Evaluate(args[2])
 	if core.IsError(endExpr) {
 		return endExpr
 	}
@@ -567,7 +562,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	}
 
 	// Evaluate value
-	value := e.evaluate(ctx, args[3])
+	value := e.Evaluate(args[3])
 	if core.IsError(value) {
 		return value
 	}
