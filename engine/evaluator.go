@@ -38,16 +38,6 @@ func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
 	//return e.evaluateExpr(ctx, expr)
 }
 
-// evaluate is the main evaluation function
-func (e *Evaluator) evaluateOnce(ctx *Context, expr core.Expr) core.Expr {
-	if err := ctx.stack.Push("evaluate", expr); err != nil {
-		// Return recursion error with stack trace
-		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
-	}
-	defer ctx.stack.Pop()
-	return e.evaluateExpr(ctx, expr)
-}
-
 func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 	switch ex := expr.(type) {
 	case core.Symbol:
@@ -95,17 +85,6 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 		//log.Printf("Converted Head to funcExpr: vars=%s, body=%s", funcExpr.Parameters, funcExpr.Body)
 		return e.applyFunction(c, funcExpr, args)
 	}
-	/*
-		if evaluatedHead.Head() == "Function" {
-			//log.Printf("Got unparsed Function")
-			fn := e.Evaluate(, evaluatedHead)
-			// log.Printf("Reparsed Function: %v", fn)
-			if funcExpr, ok := fn.(core.FunctionExpr); ok {
-				return e.applyFunction(funcExpr, args, ctx)
-			}
-			log.Printf("FAIL123")
-		}
-	*/
 
 	// Extract function name from evaluated head
 	headName, ok := core.ExtractSymbol(evaluatedHead)
@@ -165,13 +144,6 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 				}
 			}
 		}
-		/*
-			// Re-evaluate function results until fixed point for proper symbolic computation
-			// Only re-evaluate non-atomic expressions to avoid infinite recursion
-			if !result.IsAtom() && !result.Equal(callExpr) {
-				return e.evaluateToFixedPoint(ctx, result)
-			}
-		*/
 		return result
 	}
 
@@ -187,7 +159,7 @@ func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr
 	current := expr
 
 	for i := 0; i < maxIterations; i++ {
-		next := e.evaluateOnce(ctx, current)
+		next := e.evaluateExpr(ctx, current)
 
 		// If the result is atomic, we can't evaluate further
 		if next.IsAtom() {
@@ -317,10 +289,6 @@ func (e *Evaluator) applyOneIdentity(list core.List) core.List {
 func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *Context) core.Expr {
 	switch headName {
 	// Special forms that are not yet moved to builtins (complex implementation)
-	/*
-		case "Function":
-			return e.evaluateFunction(args, ctx)
-	*/
 	case "SliceRange":
 		return e.evaluateSliceRange(args, ctx)
 	case "TakeFrom":
