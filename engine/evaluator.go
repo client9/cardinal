@@ -30,12 +30,38 @@ func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
 	// Push current expression to stack for recursion tracking
 
 	if err := ctx.stack.Push("evaluate", expr); err != nil {
-		// Return recursion error with stack trace
 		return core.NewError("RecursionError", err.Error(), expr)
 	}
 	defer ctx.stack.Pop()
 	return e.evaluateToFixedPoint(e.context, expr)
-	//return e.evaluateExpr(ctx, expr)
+}
+
+// evaluateToFixedPoint continues evaluating an expression until it reaches a fixed point
+// (no more changes occur) or until a maximum number of iterations to prevent infinite loops
+func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr {
+	// TODO get value from config
+	const maxIterations = 100 // Prevent infinite loops
+	current := expr
+
+	for range maxIterations {
+		next := e.evaluateExpr(ctx, current)
+		// Check for errors
+		if err, ok := core.AsError(next); ok {
+			return err.Wrap(current)
+		}
+
+		// If the result is atomic, we can't evaluate further
+		if next.IsAtom() {
+			return next
+		}
+		// Check if we've reached a fixed point (no more changes)
+		if next.Equal(current) {
+			return next
+		}
+		current = next
+	}
+
+	return core.NewError("IterationLimit", "maxed out!", current)
 }
 
 func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
@@ -48,9 +74,6 @@ func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 			return value
 		}
 		// Return the symbol itself if not bound
-		return ex
-	case core.String, core.Integer, core.Real:
-		// New atomic types evaluate to themselves
 		return ex
 	case core.List:
 		return e.evaluateList(ctx, ex)
@@ -89,7 +112,6 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 	// Extract function name from evaluated head
 	headName, ok := core.ExtractSymbol(evaluatedHead)
 	if !ok {
-
 		// Head is not a symbol, return unevaluated
 		return list
 	}
@@ -149,39 +171,6 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 
 	// No pattern matched, return the unevaluated expression
 	return callExpr
-}
-
-// evaluateToFixedPoint continues evaluating an expression until it reaches a fixed point
-// (no more changes occur) or until a maximum number of iterations to prevent infinite loops
-func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr {
-	// TODO get value from config
-	const maxIterations = 100 // Prevent infinite loops
-	current := expr
-
-	for i := 0; i < maxIterations; i++ {
-		next := e.evaluateExpr(ctx, current)
-
-		// If the result is atomic, we can't evaluate further
-		if next.IsAtom() {
-			return next
-		}
-		// Check if we've reached a fixed point (no more changes)
-		if next.Equal(current) {
-			return next
-		}
-
-		// Check for errors
-		if core.IsError(next) {
-			return next
-		}
-
-		current = next
-	}
-
-	// If we've hit the iteration limit, return what we have
-	// This prevents infinite loops while still allowing significant evaluation
-	// TODO WRONG
-	return current
 }
 
 // evaluateArguments evaluates arguments based on hold attributes

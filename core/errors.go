@@ -2,36 +2,29 @@ package core
 
 import "fmt"
 
-// StackFrame represents a single frame in the evaluation stack
-type StackFrame struct {
-	Function   string // Function name being evaluated
-	Expression Expr   // String representation of the expression
-	Location   string // Optional location information
-}
-
 // ErrorExpr represents an error that occurred during evaluation
 type ErrorExpr struct {
-	ErrorType  string // "DivisionByZero", "ArgumentError", etc.
-	Message    string // Detailed error message
-	Args       []Expr // Arguments that caused the error
-	Arg        Expr
-	Err        *ErrorExpr
+	ErrorType string // "DivisionByZero", "ArgumentError", etc.
+	Message   string // Detailed error message
+	Args      []Expr // Arguments that caused the error
+	Arg       Expr
+	Err       *ErrorExpr
 }
 
 func NewError(etype string, message string, arg Expr) ErrorExpr {
 	return ErrorExpr{
 		ErrorType: etype,
-		Message: message,
-		Arg: arg,
+		Message:   message,
+		Arg:       arg,
 	}
 }
 
 // NewErrorExpr creates a new error expression
 func NewErrorExpr(errorType, message string, args []Expr) ErrorExpr {
 	return ErrorExpr{
-		ErrorType:  errorType,
-		Message:    message,
-		Args:       args,
+		ErrorType: errorType,
+		Message:   message,
+		Args:      args,
 	}
 }
 

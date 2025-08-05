@@ -8,7 +8,6 @@ import (
 
 // EvaluationStack represents the current evaluation call stack
 type EvaluationStack struct {
-	frames   []core.StackFrame
 	depth    int
 	maxDepth int
 }
@@ -16,7 +15,6 @@ type EvaluationStack struct {
 // NewEvaluationStack creates a new evaluation stack with the given maximum depth
 func NewEvaluationStack(maxDepth int) *EvaluationStack {
 	return &EvaluationStack{
-		frames:   make([]core.StackFrame, 0, maxDepth),
 		depth:    0,
 		maxDepth: maxDepth,
 	}
@@ -27,14 +25,6 @@ func (s *EvaluationStack) Push(function string, expression core.Expr) error {
 	if s.depth >= s.maxDepth {
 		return fmt.Errorf("maximum recursion depth exceeded: %d", s.maxDepth)
 	}
-
-	frame := core.StackFrame{
-		Function:   function,
-		Expression: expression,
-		Location:   "", // Can be set later if needed
-	}
-
-	s.frames = append(s.frames, frame)
 	s.depth++
 	return nil
 }
@@ -42,16 +32,8 @@ func (s *EvaluationStack) Push(function string, expression core.Expr) error {
 // Pop removes the top frame from the stack
 func (s *EvaluationStack) Pop() {
 	if s.depth > 0 {
-		s.frames = s.frames[:len(s.frames)-1]
 		s.depth--
 	}
-}
-
-// GetFrames returns a copy of the current stack frames
-func (s *EvaluationStack) GetFrames() []core.StackFrame {
-	frames := make([]core.StackFrame, len(s.frames))
-	copy(frames, s.frames)
-	return frames
 }
 
 // Depth returns the current stack depth
@@ -62,7 +44,6 @@ func (s *EvaluationStack) Depth() int {
 // Context represents the evaluation context with variable bindings and symbol attributes
 type Context struct {
 	variables map[string]core.Expr
-	//parent           *Context
 	symbolTable      *SymbolTable
 	functionRegistry *FunctionRegistry // Unified pattern-based function system
 	stack            *EvaluationStack
@@ -114,11 +95,6 @@ func (c *Context) Delete(name string) error {
 	}
 	delete(c.variables, name)
 	return nil
-}
-
-// SetStack sets the evaluation stack for the context
-func (c *Context) SetStack(stack *EvaluationStack) {
-	c.stack = stack
 }
 
 // GetFunctionRegistry returns the context's function registry
