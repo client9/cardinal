@@ -20,16 +20,6 @@ func NewBool(value bool) Symbol {
 	}
 }
 
-// NewErrorExpr creates a new error expression
-func NewErrorExpr(errorType, message string, args []Expr) *ErrorExpr {
-	return &ErrorExpr{
-		ErrorType:  errorType,
-		Message:    message,
-		Args:       args,
-		StackTrace: []StackFrame{},
-	}
-}
-
 // NewErrorExprWithStack creates a new error expression with stack trace
 func NewErrorExprWithStack(errorType, message string, args []Expr, stack []StackFrame) *ErrorExpr {
 	return &ErrorExpr{

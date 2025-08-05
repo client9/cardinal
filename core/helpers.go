@@ -6,13 +6,14 @@ import (
 )
 
 // Type extraction helper functions for builtin function wrappers
-
+/*
 func AsError(expr Expr) (*ErrorExpr, bool) {
 	if err, ok := expr.(*ErrorExpr); ok {
 		return err, ok
 	}
 	return &ErrorExpr{}, false
 }
+*/
 
 // ExtractInt64 safely extracts an int64 value from an Expr
 func ExtractInt64(expr Expr) (int64, bool) {
@@ -75,7 +76,7 @@ func CopyExprList(head string, args []Expr) List {
 
 // IsError checks if an expression is an error
 func IsError(expr Expr) bool {
-	_, ok := expr.(*ErrorExpr)
+	_, ok := expr.(ErrorExpr)
 	return ok
 }
 

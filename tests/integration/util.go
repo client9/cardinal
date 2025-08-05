@@ -41,16 +41,13 @@ func evaluateAndExpect(t *testing.T, tt TestCase) {
 
 	// expected error case
 
-	errorExpr, ok := result.(*core.ErrorExpr)
-	if !ok {
-		t.Errorf("%s: expected error %s, but got ordinary result %s", L4(tt.name), tt.errorType, result.String())
+	if errorExpr, ok := core.AsError(result); ok {
+		if errorExpr.ErrorType != tt.errorType {
+			t.Errorf("%s: expected error type %q for input %q, got %q", L4(tt.name), tt.errorType, tt.input, errorExpr.ErrorType)
+		}
 		return
 	}
-	if errorExpr.ErrorType != tt.errorType {
-		t.Errorf("%s: expected error type %q for input %q, got %q", L4(tt.name), tt.errorType, tt.input, errorExpr.ErrorType)
-		return
-	}
-	return
+	t.Errorf("%s: expected error, got oridinary result", L4(tt.name))
 }
 
 // evaluateAndExpectError is a test helper that expects an error of a specific type
@@ -66,9 +63,10 @@ func evaluateAndExpectError(t *testing.T, input, errorType string) {
 		t.Errorf("Expected error for %q, got: %q", input, result.String())
 		return
 	}
-	errorExpr := result.(*core.ErrorExpr)
-	if errorExpr.ErrorType != errorType {
-		t.Errorf("Expected error type %q for input %q, got %q", errorType, input, errorExpr.ErrorType)
+	if errorExpr, ok := core.AsError(result); ok {
+		if errorExpr.ErrorType != errorType {
+			t.Errorf("Expected error type %q for input %q, got %q", errorType, input, errorExpr.ErrorType)
+		}
 	}
 }
 
@@ -79,10 +77,7 @@ func runTestCases(t *testing.T, tests []TestCase) {
 		if tt.skip {
 			continue
 		}
-		//t.Run(tt.name, func(t *testing.T) {
-		//t.Helper()
 		evaluateAndExpect(t, tt)
-		//})
 	}
 }
 
