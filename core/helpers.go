@@ -1,10 +1,5 @@
 package core
 
-import (
-	"fmt"
-	"strings"
-)
-
 // Type extraction helper functions for builtin function wrappers
 /*
 func AsError(expr Expr) (*ErrorExpr, bool) {
@@ -78,29 +73,6 @@ func CopyExprList(head string, args []Expr) List {
 func IsError(expr Expr) bool {
 	_, ok := expr.(ErrorExpr)
 	return ok
-}
-
-// GetStackTrace returns a formatted string representation of the stack trace
-func (e *ErrorExpr) GetStackTrace() string {
-	if len(e.StackTrace) == 0 {
-		return "No stack trace available"
-	}
-
-	var trace strings.Builder
-	trace.WriteString("Stack trace:\n")
-	for i, frame := range e.StackTrace {
-		trace.WriteString(fmt.Sprintf("  %d. %s: %s", i+1, frame.Function, frame.Expression))
-		if frame.Location != "" {
-			trace.WriteString(fmt.Sprintf(" at %s", frame.Location))
-		}
-		trace.WriteString("\n")
-	}
-	return trace.String()
-}
-
-// GetDetailedMessage returns the error message with stack trace
-func (e *ErrorExpr) GetDetailedMessage() string {
-	return fmt.Sprintf("Error: %s\nMessage: %s\n%s", e.ErrorType, e.Message, e.GetStackTrace())
 }
 
 // GetNumericValue safely extracts a numeric value (int or float) as float64 from an Expr

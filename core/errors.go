@@ -15,8 +15,15 @@ type ErrorExpr struct {
 	Message    string // Detailed error message
 	Args       []Expr // Arguments that caused the error
 	Arg        Expr
-	StackTrace []StackFrame // Stack trace of evaluation frames
 	Err        *ErrorExpr
+}
+
+func NewError(etype string, message string, arg Expr) ErrorExpr {
+	return ErrorExpr{
+		ErrorType: etype,
+		Message: message,
+		Arg: arg,
+	}
 }
 
 // NewErrorExpr creates a new error expression
@@ -25,7 +32,6 @@ func NewErrorExpr(errorType, message string, args []Expr) ErrorExpr {
 		ErrorType:  errorType,
 		Message:    message,
 		Args:       args,
-		StackTrace: []StackFrame{},
 	}
 }
 

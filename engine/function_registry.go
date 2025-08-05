@@ -182,17 +182,6 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 	// If pattern matches, substitute variables in replacement and return it
 	//return core.SubstituteBindings(replacement, bindings), true
 
-	/*
-		// Create child context with pattern variable bindings
-		funcCtx := NewChildContext(ctx)
-		for varName, value := range bindings {
-			funcCtx.AddScopedVar(varName) // Keep pattern variables local to this context
-			if err := funcCtx.Set(varName, value); err != nil {
-				// Pattern variable binding failed - this shouldn't happen in scoped context
-				return core.NewErrorExpr("ProtectionError", err.Error(), args), true
-			}
-		}
-	*/
 	// Call the function
 	if funcDef.GoImpl != nil {
 		// Built-in function - call Go implementation

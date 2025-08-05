@@ -20,16 +20,6 @@ func NewBool(value bool) Symbol {
 	}
 }
 
-// NewErrorExprWithStack creates a new error expression with stack trace
-func NewErrorExprWithStack(errorType, message string, args []Expr, stack []StackFrame) *ErrorExpr {
-	return &ErrorExpr{
-		ErrorType:  errorType,
-		Message:    message,
-		Args:       args,
-		StackTrace: stack,
-	}
-}
-
 // NewList creates a new List with a Symbol head and arguments
 // This reflects the s-expression semantics where lists are function calls
 func NewList(head string, args ...Expr) List {

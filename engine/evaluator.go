@@ -31,7 +31,7 @@ func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
 
 	if err := ctx.stack.Push("evaluate", expr); err != nil {
 		// Return recursion error with stack trace
-		return core.NewErrorExprWithStack("RecursionError", err.Error(), []core.Expr{expr}, ctx.stack.GetFrames())
+		return core.NewError("RecursionError", err.Error(), expr)
 	}
 	defer ctx.stack.Pop()
 	return e.evaluateToFixedPoint(e.context, expr)
@@ -140,7 +140,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 				// Add stack frame for this function call
 				if err := ctx.stack.Push(headName, callExpr); err == nil {
 					ctx.stack.Pop() // Immediately pop since we're just adding to trace
-					return core.NewErrorExprWithStack(errorExpr.ErrorType, errorExpr.Message, errorExpr.Args, ctx.stack.GetFrames())
+					return core.NewError(errorExpr.ErrorType, errorExpr.Message, errorExpr.Arg)
 				}
 			}
 		}
