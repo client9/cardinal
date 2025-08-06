@@ -11,16 +11,16 @@ type List struct {
 }
 
 func NewList(head string, args ...Expr) List {
-        elements := make([]Expr, len(args)+1)
-        elements[0] = NewSymbol(head)
-        copy(elements[1:], args)
-        return List{Elements: elements}
+	elements := make([]Expr, len(args)+1)
+	elements[0] = NewSymbol(head)
+	copy(elements[1:], args)
+	return List{Elements: elements}
 }
 
 // NewListFromExprs creates a List directly from expressions (for special cases)
 // Use NewList instead when possible, as it enforces the Symbol-head convention
 func NewListFromExprs(elements ...Expr) List {
-       return List{Elements: elements}
+	return List{Elements: elements}
 }
 
 // Copy does a shallow clone of the List

@@ -92,4 +92,3 @@ func (s Symbol) Equal(rhs Expr) bool {
 func (s Symbol) IsAtom() bool {
 	return true
 }
-

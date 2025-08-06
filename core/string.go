@@ -7,7 +7,7 @@ import (
 
 type String string
 
-func NewString(s string) String  { return String(s) }
+func NewString(s string) String { return String(s) }
 
 // String type implementation
 func (s String) String() string {

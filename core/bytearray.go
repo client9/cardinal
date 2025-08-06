@@ -120,7 +120,7 @@ func (b ByteArray) Slice(start, stop int64) Expr {
 		return NewError(err.Error(), "")
 	}
 	// no need for copy.  Original data is not changed
-	     return ByteArray{data: r}
+	return ByteArray{data: r}
 }
 
 // Utility methods
