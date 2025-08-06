@@ -10,6 +10,19 @@ type List struct {
 	Elements []Expr
 }
 
+func NewList(head string, args ...Expr) List {
+        elements := make([]Expr, len(args)+1)
+        elements[0] = NewSymbol(head)
+        copy(elements[1:], args)
+        return List{Elements: elements}
+}
+
+// NewListFromExprs creates a List directly from expressions (for special cases)
+// Use NewList instead when possible, as it enforces the Symbol-head convention
+func NewListFromExprs(elements ...Expr) List {
+       return List{Elements: elements}
+}
+
 // Copy does a shallow clone of the List
 // TBD if this should return List or Expr
 func (l List) Copy() List {
@@ -103,66 +116,23 @@ func (l List) IsAtom() bool {
 // ElementAt returns the nth element (1-indexed, excludes head)
 // For a list [head, e1, e2, e3], ElementAt(1) returns e1
 func (l List) ElementAt(n int64) Expr {
-	if len(l.Elements) <= 1 {
-		return NewError("PartError", "List has no elements")
+	e, err := ElementAt(l.Elements[1:], int(n))
+	if err != nil {
+		return NewError(err.Error(), "")
 	}
-
-	length := l.Length() // Number of elements excluding head
-
-	// Handle negative indexing
-	if n < 0 {
-		n = length + n + 1
-	}
-
-	// Check bounds (1-indexed)
-	if n <= 0 || n > length {
-		return NewError("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for list with %d elements", n, length))
-	}
-
-	// Convert to 0-based index (adding 1 because Elements[0] is head)
-	return l.Elements[n]
+	return e
 }
 
 // Slice returns a new list containing elements from start to stop (inclusive, 1-indexed)
 // For a list [head, e1, e2, e3, e4], Slice(2, 3) returns [head, e2, e3]
 func (l List) Slice(start, stop int64) Expr {
-	if len(l.Elements) <= 1 {
-		// Empty list - return list with just head
-		return List{Elements: []Expr{l.Elements[0]}}
+	e, err := Slice(l.Elements[1:], int(start), int(stop))
+	if err != nil {
+		return NewError(err.Error(), "")
 	}
-
-	length := l.Length()
-
-	// Handle negative indexing
-	if start < 0 {
-		start = length + start + 1
-	}
-	if stop < 0 {
-		stop = length + stop + 1
-	}
-
-	// Check bounds
-	if start <= 0 || stop <= 0 || start > length || stop > length {
-		return NewError("PartError",
-			fmt.Sprintf("Slice indices [%d, %d] out of bounds for list with %d elements",
-				start, stop, length))
-	}
-
-	if start > stop {
-		return NewError("PartError",
-			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop))
-	}
-
-	// Create new list with head + sliced elements
-	// Convert to 0-based indices (Elements[0] is head, Elements[1] is first element)
-	startIdx := start   // Elements[start] is the start element
-	stopIdx := stop + 1 // Elements[stop+1] is exclusive end for Go slice
-
-	newElements := make([]Expr, stopIdx-startIdx+1)
+	newElements := make([]Expr, len(e)+1)
 	newElements[0] = l.Elements[0] // Copy head
-	copy(newElements[1:], l.Elements[startIdx:stopIdx])
-
+	copy(newElements[1:], e)
 	return List{Elements: newElements}
 }
 

@@ -106,60 +106,21 @@ func (b ByteArray) Equal(rhs Expr) bool {
 
 // ElementAt returns the nth byte (1-indexed) as an integer atom
 func (b ByteArray) ElementAt(n int64) Expr {
-	length := int64(len(b.data))
-
-	if length == 0 {
-		return NewError("PartError", "ByteArray is empty")
+	r, err := ElementAt(b.data, int(n))
+	if err != nil {
+		return NewError(err.Error(), "")
 	}
-
-	// Handle negative indexing
-	if n < 0 {
-		n = length + n + 1
-	}
-
-	// Check bounds (1-indexed)
-	if n <= 0 || n > length {
-		return NewError("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for ByteArray with %d bytes", n, length))
-	}
-
-	// Convert to 0-based index and return byte as integer
-	return NewInteger(int64(b.data[n-1]))
+	return NewInteger(int64(r))
 }
 
 // Slice returns a new ByteArray containing bytes from start to stop (inclusive, 1-indexed)
 func (b ByteArray) Slice(start, stop int64) Expr {
-	length := int64(len(b.data))
-
-	if length == 0 {
-		return NewByteArray(nil)
+	r, err := Slice(b.data, int(start), int(stop))
+	if err != nil {
+		return NewError(err.Error(), "")
 	}
-
-	// Handle negative indexing
-	if start < 0 {
-		start = length + start + 1
-	}
-	if stop < 0 {
-		stop = length + stop + 1
-	}
-
-	// Check bounds
-	if start <= 0 || stop <= 0 || start > length || stop > length {
-		return NewError("PartError",
-			fmt.Sprintf("Slice indices [%d, %d] out of bounds for ByteArray with %d bytes",
-				start, stop, length))
-	}
-
-	if start > stop {
-		return NewError("PartError",
-			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop))
-	}
-
-	// Convert to 0-based indices and create new ByteArray
-	startIdx := start - 1
-	stopIdx := stop // stop is inclusive, so we include it
-
-	return NewByteArray(b.data[startIdx:stopIdx])
+	// no need for copy.  Original data is not changed
+	     return ByteArray{data: r}
 }
 
 // Utility methods
