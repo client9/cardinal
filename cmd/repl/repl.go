@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/lmorg/readline/v4"
+
 	"github.com/client9/sexpr"
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
@@ -68,29 +70,100 @@ func (r *REPL) isInteractive() bool {
 	return false
 }
 
-// Run starts the REPL loop
-func (r *REPL) Run() error {
-	scanner := bufio.NewScanner(r.input)
-
-	// Print welcome message only in interactive mode (when stdin is a terminal)
-	if r.isInteractive() {
-		_, _ = fmt.Fprintf(r.output, "S-Expression REPL v1.0\n")
-		_, _ = fmt.Fprintf(r.output, "Type 'quit' or 'exit' to exit, 'help' for help\n")
-	}
+func (r *REPL) RunInteractive() error {
+	rl := readline.NewInstance()
 
 	var currentExpr strings.Builder
 	var emptyLineCount int
 
 	for {
-		// Print prompt only in interactive mode
-		if r.isInteractive() {
+
+		if currentExpr.Len() == 0 {
+			rl.SetPrompt("  > ")
+		} else {
+			rl.SetPrompt("... ")
+		}
+		line, err := rl.Readline()
+		if err != nil {
+			fmt.Println("Error:", err)
+			return err
+		}
+		//		line = strings.TrimSpace(line)
+
+		// Handle empty input
+		if line == "" {
 			if currentExpr.Len() == 0 {
-				_, _ = fmt.Fprint(r.output, r.prompt)
-			} else {
-				_, _ = fmt.Fprint(r.output, "   ... ")
+				continue
 			}
+			// Count consecutive empty lines in multi-line mode
+			emptyLineCount++
+			if emptyLineCount >= 2 {
+				// Two empty lines in a row - abandon current expression
+				fmt.Printf("Expression abandoned.\n")
+				currentExpr.Reset()
+				emptyLineCount = 0
+				continue
+			}
+			// Single empty line in multi-line - continue building
+		} else {
+			emptyLineCount = 0 // Reset empty line counter
+
+			// Check for special reset command even when building expression
+			if line == ":reset" || line == ":clear" {
+				if currentExpr.Len() > 0 {
+					fmt.Printf("Expression abandoned.\n")
+					currentExpr.Reset()
+				}
+				continue
+			}
+
+			// Handle special commands only if we're not building an expression
+			if currentExpr.Len() == 0 && r.handleSpecialCommands(line) {
+				continue
+			}
+
+			// Add line to current expression
+			if currentExpr.Len() > 0 {
+				// Use newline instead of space to preserve comment boundaries
+				currentExpr.WriteString("\n")
+			}
+			currentExpr.WriteString(line)
 		}
 
+		// Try to parse and evaluate the current expression
+		if currentExpr.Len() > 0 {
+			expr := currentExpr.String()
+			if r.tryProcessExpression(expr) {
+				// Successfully processed, reset for next expression
+				currentExpr.Reset()
+			}
+			// If parsing failed, continue accumulating lines
+		}
+	}
+
+	// Handle any incomplete expression at the end
+	if currentExpr.Len() > 0 {
+		expr := currentExpr.String()
+		if err := r.processLine(expr); err != nil {
+			fmt.Printf("Error: %v\n", err)
+		}
+	}
+	return nil
+}
+
+// Run starts the REPL loop
+func (r *REPL) Run() error {
+
+	if r.isInteractive() {
+		return r.RunInteractive()
+	}
+
+	scanner := bufio.NewScanner(r.input)
+
+	var currentExpr strings.Builder
+	var emptyLineCount int
+
+	for {
 		// Read input
 		if !scanner.Scan() {
 			break
@@ -107,9 +180,6 @@ func (r *REPL) Run() error {
 			emptyLineCount++
 			if emptyLineCount >= 2 {
 				// Two empty lines in a row - abandon current expression
-				if r.isInteractive() {
-					_, _ = fmt.Fprintf(r.output, "Expression abandoned.\n")
-				}
 				currentExpr.Reset()
 				emptyLineCount = 0
 				continue
@@ -117,17 +187,6 @@ func (r *REPL) Run() error {
 			// Single empty line in multi-line - continue building
 		} else {
 			emptyLineCount = 0 // Reset empty line counter
-
-			// Check for special reset command even when building expression
-			if line == ":reset" || line == ":clear" {
-				if currentExpr.Len() > 0 {
-					if r.isInteractive() {
-						_, _ = fmt.Fprintf(r.output, "Expression abandoned.\n")
-					}
-					currentExpr.Reset()
-				}
-				continue
-			}
 
 			// Handle special commands only if we're not building an expression
 			if currentExpr.Len() == 0 && r.handleSpecialCommands(line) {
