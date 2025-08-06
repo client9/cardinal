@@ -611,11 +611,7 @@ func (p *Parser) parseIndexOrSlice(expr core.Expr) core.Expr {
 			if startExpr == nil {
 				return expr
 			}
-			// For start:, we want everything from start onwards
-			// If start is negative, use Take(expr, start) for last n elements
-			// If start is positive, use Drop(expr, start-1) since Drop removes the first n elements
-			// But we can't easily detect negative at parse time, so we'll use a special function
-			return core.NewList("TakeFrom", expr, startExpr)
+			return core.NewList("Take", expr, core.NewList("List", startExpr, core.NewInteger(-1)))
 		} else {
 			// Parse end expression
 			endExpr = p.parseSliceExpression()
@@ -631,7 +627,7 @@ func (p *Parser) parseIndexOrSlice(expr core.Expr) core.Expr {
 				return core.NewList("Take", expr, endExpr)
 			} else {
 				// [start:end] syntax - Slice operation
-				return core.NewList("SliceRange", expr, startExpr, endExpr)
+				return core.NewList("Take", expr, core.NewList("List", startExpr, endExpr))
 			}
 		}
 	} else {
@@ -695,7 +691,7 @@ func (p *Parser) isSliceExpression(expr core.Expr) bool {
 	if !ok {
 		return false
 	}
-	return headName == "Part" || headName == "SliceRange" || headName == "Take" || headName == "TakeFrom"
+	return headName == "Part" || headName == "Take"
 }
 
 // createSliceAssignment creates the appropriate slice assignment AST node
@@ -715,36 +711,22 @@ func (p *Parser) createSliceAssignment(sliceExpr core.Expr, value core.Expr) cor
 			return nil
 		}
 		return core.NewList("PartSet", list.Elements[1], list.Elements[2], value)
-
-	case "SliceRange":
-		// SliceRange(expr, start, end) = value -> SliceSet(expr, start, end, value)
-		if len(list.Elements) != 4 {
-			p.addError("SliceRange expression must have exactly 3 arguments for assignment")
-			return nil
-		}
-		return core.NewList("SliceSet", list.Elements[1], list.Elements[2], list.Elements[3], value)
-
 	case "Take":
 		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
+		// Take(expr, [n, m]) = value --> SliceSet(expr, n, m, value)
 		if len(list.Elements) != 3 {
 			p.addError("Take expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return core.NewList("SliceSet", list.Elements[1], core.NewInteger(1), list.Elements[2], value)
-
-	case "TakeFrom":
-		// TakeFrom(expr, start) = value -> SliceSet(expr, start, -1, value)
-		// Note: -1 represents "to end" in our slice assignment semantics
-		if len(list.Elements) != 3 {
-			p.addError("TakeFrom expression must have exactly 2 arguments for assignment")
-			return nil
+		if _, ok := core.ExtractInt64(list.Elements[2]); ok {
+			return core.NewList("SliceSet", list.Elements[1], core.NewInteger(1), list.Elements[2], value)
 		}
-		return core.NewList("SliceSet", list.Elements[1], list.Elements[2], core.NewInteger(-1), value)
-
-	default:
-		p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))
-		return nil
+		if rangelist, ok := list.Elements[2].(core.List); ok && rangelist.Length() == 2 {
+			return core.NewList("SliceSet", list.Elements[1], rangelist.Elements[1], rangelist.Elements[2], value)
+		}
 	}
+	p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))
+	return nil
 }
 
 // parseUnderscorePattern parses anonymous patterns (_, __, ___, _Integer, __Integer, ___Integer)

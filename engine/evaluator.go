@@ -267,10 +267,6 @@ func (e *Evaluator) applyOneIdentity(list core.List) core.List {
 func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *Context) core.Expr {
 	switch headName {
 	// Special forms that are not yet moved to builtins (complex implementation)
-	case "SliceRange":
-		return e.evaluateSliceRange(args, ctx)
-	case "TakeFrom":
-		return e.evaluateTakeFrom(args, ctx)
 	case "PartSet":
 		return e.evaluatePartSet(args, ctx)
 	case "SliceSet":
@@ -324,94 +320,6 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 
 	result := e.Evaluate(modified)
 	return result
-}
-
-// evaluateSliceRange implements slice range syntax: expr[start:end]
-func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr {
-	if len(args) != 3 {
-		return core.NewError("ArgumentError",
-			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)))
-	}
-
-	// Evaluate the expression being sliced
-	expr := e.Evaluate(args[0])
-	if core.IsError(expr) {
-		return expr
-	}
-
-	// Check if the expression is sliceable
-	sliceable := core.AsSliceable(expr)
-	if sliceable == nil {
-		return core.NewError("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()))
-	}
-
-	// Evaluate start and end indices
-	startExpr := e.Evaluate(args[1])
-	if core.IsError(startExpr) {
-		return startExpr
-	}
-
-	endExpr := e.Evaluate(args[2])
-	if core.IsError(endExpr) {
-		return endExpr
-	}
-
-	// Extract integer values for start and end
-	start, ok := core.ExtractInt64(startExpr)
-	if !ok {
-		return core.NewError("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()))
-	}
-
-	end, ok := core.ExtractInt64(endExpr)
-	if !ok {
-		return core.NewError("TypeError",
-			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()))
-	}
-
-	// Use the Sliceable interface to perform the slice operation
-	return sliceable.Slice(start, end)
-}
-
-// evaluateTakeFrom implements slice syntax: expr[start:]
-// If start is negative, uses Take for last n elements
-// If start is positive, uses Drop for first n elements
-func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
-	if len(args) != 2 {
-		return core.NewError("ArgumentError",
-			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)))
-	}
-
-	// Evaluate the expression being sliced
-	expr := e.Evaluate(args[0])
-	if core.IsError(expr) {
-		return expr
-	}
-
-	// Evaluate start index
-	startExpr := e.Evaluate(args[1])
-	if core.IsError(startExpr) {
-		return startExpr
-	}
-
-	// Extract integer value for start
-	start, ok := core.ExtractInt64(startExpr)
-	if !ok {
-		return core.NewError("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()))
-	}
-
-	if start < 0 {
-		// Negative start: use Take to get last |start| elements
-		// Take([1,2,3,4,5], -2) gives [4,5]
-		return e.Evaluate(core.NewList("Take", expr, core.NewInteger(start)))
-	} else {
-		// Positive start: use Drop to remove first (start-1) elements
-		// Drop([1,2,3,4,5], 2) gives [3,4,5] (for start=3, 1-indexed)
-		dropCount := start - 1
-		return e.Evaluate(core.NewList("Drop", expr, core.NewInteger(dropCount)))
-	}
 }
 
 // evaluatePartSet implements slice assignment syntax: expr[index] = value
