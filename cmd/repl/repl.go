@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/client9/sexpr"
+	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -246,8 +247,15 @@ func (r *REPL) processLine(line string) error {
 	}
 
 	// Evaluate the expression
-	result := r.evaluator.Evaluate( expr)
+	result := r.evaluator.Evaluate(expr)
 
+	if errVal, ok := core.AsError(result); ok {
+		st := errVal.StackTrace()
+		for _, frame := range st {
+			_, _ = fmt.Fprintf(r.output, "%s: %s\n", frame.ErrorType, frame.Arg)
+		}
+		return nil
+	}
 	// Print the result
 	_, _ = fmt.Fprintf(r.output, "%s\n", result.String())
 
@@ -396,6 +404,14 @@ func (r *REPL) EvaluateString(input string) (string, error) {
 	}
 
 	result := r.evaluator.Evaluate(expr)
+	if errVal, ok := core.AsError(result); ok {
+		st := errVal.StackTrace()
+		out := []string{}
+		for _, frame := range st {
+			out = append(out, fmt.Sprintf("%s: %s", frame.ErrorType, frame.Arg))
+		}
+		return strings.Join(out, "\n"), fmt.Errorf("Failed")
+	}
 	return result.String(), nil
 }
 
@@ -453,6 +469,7 @@ func (r *REPL) ExecuteFile(filename string) error {
 		// Execute the expression
 		result, err := r.EvaluateString(exprInfo.text)
 		if err != nil {
+			_, _ = fmt.Fprintf(r.output, "Out(%d): %s\n", i+1, result)
 			return fmt.Errorf("error at expression %d (line %d): %v", i+1, exprInfo.startLine, err)
 		}
 

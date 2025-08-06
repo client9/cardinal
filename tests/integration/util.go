@@ -42,8 +42,10 @@ func evaluateAndExpect(t *testing.T, tt TestCase) {
 	// expected error case
 
 	if errorExpr, ok := core.AsError(result); ok {
-		if errorExpr.ErrorType != tt.errorType {
-			t.Errorf("%s: expected error type %q for input %q, got %q", L4(tt.name), tt.errorType, tt.input, errorExpr.ErrorType)
+		st := errorExpr.StackTrace()
+		src := st[0]
+		if src.ErrorType != tt.errorType {
+			t.Errorf("%s: expected error type %q for input %q, got %v", L4(tt.name), tt.errorType, tt.input, src)
 		}
 		return
 	}

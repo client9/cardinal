@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"sort"
+	//"log"
 
 	"github.com/client9/sexpr/core"
 )
@@ -27,48 +28,41 @@ func (e *Evaluator) GetContext() *Context {
 // Evaluate evaluates an expression in the current context
 func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
 	ctx := e.context
-	// Push current expression to stack for recursion tracking
-
 	if err := ctx.stack.Push("evaluate", expr); err != nil {
 		return core.NewError("RecursionError", err.Error(), expr)
 	}
 	defer ctx.stack.Pop()
-	return e.evaluateToFixedPoint(e.context, expr)
+	result := e.evaluateToFixedPoint(e.context, expr)
+	if err, ok := core.AsError(result); ok {
+		return err.Wrap(expr)
+	}
+	return result
 }
 
 // evaluateToFixedPoint continues evaluating an expression until it reaches a fixed point
 // (no more changes occur) or until a maximum number of iterations to prevent infinite loops
 func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr {
-	// TODO get value from config
-	const maxIterations = 100 // Prevent infinite loops
-	current := expr
-
-	for range maxIterations {
-		next := e.evaluateExpr(ctx, current)
-		// Check for errors
-		if err, ok := core.AsError(next); ok {
-			return err.Wrap(current)
-		}
-
-		// If the result is atomic, we can't evaluate further
-		if next.IsAtom() {
-			return next
-		}
-		// Check if we've reached a fixed point (no more changes)
-		if next.Equal(current) {
-			return next
-		}
-		current = next
+	next := e.evaluateExpr(ctx, expr)
+	if core.IsError(next) {
+		return next
 	}
 
-	return core.NewError("IterationLimit", "maxed out!", current)
+	// If the result is atomic, we can't evaluate further
+	if next.IsAtom() {
+		return next
+	}
+	// Check if we've reached a fixed point (no more changes)
+	if next.Equal(expr) {
+		return next
+	}
+
+	return e.Evaluate(next)
 }
 
 func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 	switch ex := expr.(type) {
 	case core.Symbol:
 		symbolName := string(ex)
-
 		// Check for variable binding first
 		if value, ok := ctx.Get(symbolName); ok {
 			return value
@@ -85,7 +79,6 @@ func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 
 // evaluateList evaluates a list expression
 func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
-
 	if len(list.Elements) == 0 {
 		return list
 	}
@@ -96,16 +89,12 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 
 	// Evaluate the head to get the function name
 	evaluatedHead := e.Evaluate(head)
-
-	// Check if head is an error - propagate it
-	if core.IsError(evaluatedHead) {
-		return evaluatedHead
+	if _, ok := core.AsError(evaluatedHead); ok {
+		return list
 	}
 
 	// Check if head is a function expression (function application)
 	if funcExpr, ok := evaluatedHead.(core.FunctionExpr); ok {
-
-		//log.Printf("Converted Head to funcExpr: vars=%s, body=%s", funcExpr.Parameters, funcExpr.Body)
 		return e.applyFunction(c, funcExpr, args)
 	}
 
@@ -297,8 +286,9 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 	evaluatedArgs := make([]core.Expr, len(args))
 	for i, arg := range args {
 		evaluatedArgs[i] = e.Evaluate(arg)
-		if core.IsError(evaluatedArgs[i]) {
-			return evaluatedArgs[i]
+		if err, ok := core.AsError(evaluatedArgs[i]); ok {
+			return err.Wrap(arg)
+			//return evaluatedArgs[i]
 		}
 	}
 

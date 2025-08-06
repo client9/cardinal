@@ -193,19 +193,16 @@ func TestArithmeticAttributes(t *testing.T) {
 }
 
 func TestArithmeticErrors(t *testing.T) {
-	tests := []struct {
-		name      string
-		input     string
-		errorType string
-	}{
+	tests := []TestCase{
 		{
 			name:      "Division by zero",
 			input:     "Divide(1, 0)",
+			expected:  "",
 			errorType: "DivisionByZero",
 		},
 	}
 
-	runErrorTestCases(t, tests)
+	runTestCases(t, tests)
 }
 
 func TestUnaryMinus(t *testing.T) {

@@ -1,6 +1,9 @@
 package core
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // ErrorExpr represents an error that occurred during evaluation
 type ErrorExpr struct {
@@ -55,6 +58,18 @@ func (e ErrorExpr) Error() string {
 
 func (e ErrorExpr) Unwrap() error {
 	return e.Err
+}
+
+// StackTrace unwrapps the error chain, return deepest error (the originator) first.
+// Output always has at least one element
+func (e ErrorExpr) StackTrace() []ErrorExpr {
+	out := []ErrorExpr{e}
+	for e.Err != nil {
+		out = append(out, *e.Err)
+		e = *e.Err
+	}
+	slices.Reverse(out)
+	return out
 }
 
 // Length of an Error is 0 (zero).
