@@ -11,6 +11,11 @@ import (
 // The evaluator parameter allows access to the calling evaluator for recursive evaluation
 type PatternFunc func(e *Evaluator, c *Context, args []core.Expr) core.Expr
 
+type PatternRule struct {
+	PatternString string
+	Function      PatternFunc
+}
+
 // FunctionDef represents a single function definition with pattern and implementation
 type FunctionDef struct {
 	Pattern     core.Expr   // The pattern to match (e.g., Plus(x_Integer, y_Integer))
@@ -46,7 +51,8 @@ func calculatePatternSpecificity(pattern core.Expr) int {
 
 // RegisterPatternBuiltin registers a built-in function with a pattern from Go code
 func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl PatternFunc) error {
-	// Parse the pattern string
+	// Parse the pattern stringp
+	// 'RReal(max_Number)' -> RReal(Pattern(max, Blank(Number)))
 	pattern, err := ParseString(patternStr)
 	if err != nil {
 		return fmt.Errorf("invalid pattern syntax: %v", err)
@@ -84,10 +90,10 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 }
 
 // RegisterPatternBuiltins registers multiple built-in functions from a map
-func (r *FunctionRegistry) RegisterPatternBuiltins(patterns map[string]PatternFunc) error {
-	for patternStr, impl := range patterns {
-		if err := r.RegisterPatternBuiltin(patternStr, impl); err != nil {
-			return fmt.Errorf("failed to register pattern %s: %v", patternStr, err)
+func (r *FunctionRegistry) RegisterPatternBuiltins(patterns []PatternRule) error {
+	for _, rule := range patterns {
+		if err := r.RegisterPatternBuiltin(rule.PatternString, rule.Function); err != nil {
+			return fmt.Errorf("failed to register pattern %s: %v", rule.PatternString, err)
 		}
 	}
 	return nil
@@ -374,7 +380,7 @@ func extractFunctionName(pattern core.Expr) (string, error) {
 func matchesPattern(pattern core.Expr, functionName string, args []core.Expr) (bool, map[string]core.Expr) {
 
 	// TODO: for unknown reasons the original expression is chopped up into the
-	// function name and args.  But now it needs to restored to a complete express
+	// function name and args.  But now it needs to restored to a complete expressions
 	// Since it's immutable unclear why we are copying it.
 
 	// Create a mock function call to match against the pattern

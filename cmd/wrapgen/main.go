@@ -281,13 +281,13 @@ func SetupBuiltinAttributes(symbolTable *engine.SymbolTable) {
 // RegisterDefaultBuiltins registers all built-in functions with their patterns
 func RegisterDefaultBuiltins(registry *engine.FunctionRegistry) {
 	// Register built-in functions with pattern-based dispatch
-	builtinPatterns := map[string]engine.PatternFunc{
+	builtinPatterns := []engine.PatternRule{
 		// Generated pattern registrations
 {{range .Functions}}
 {{- if .DirectCall }}
-          "{{.Pattern}}": builtins.{{.FunctionName}},
+          { "{{.Pattern}}", builtins.{{.FunctionName}} },
 {{- else}}
-	  "{{.Pattern}}": wrapped.{{.WrapperName}},
+	  { "{{.Pattern}}", wrapped.{{.WrapperName}} },
 {{- end}}
 {{end}}
 	}
