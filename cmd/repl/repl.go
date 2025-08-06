@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"golang.org/x/term"
 	"io"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lmorg/readline/v4"
 
@@ -26,11 +28,12 @@ type REPL struct {
 
 // NewREPL creates a new REPL instance
 func NewREPL() *REPL {
+	start := time.Now()
 	e := sexpr.NewEvaluator()
-	c := e.GetContext()
-	// Set up built-in attributes for the evaluator
-	sexpr.SetupBuiltinAttributes(c.GetSymbolTable())
+	elapsed := time.Since(start)
+	log.Printf("Start up in %g ms", 1000.0*float64(elapsed)/1.0e9)
 
+	c := e.GetContext()
 	return &REPL{
 		evaluator: e,
 		ctx:       c,
