@@ -109,7 +109,7 @@ func (b ByteArray) ElementAt(n int64) Expr {
 	length := int64(len(b.data))
 
 	if length == 0 {
-		return NewErrorExpr("PartError", "ByteArray is empty", []Expr{b})
+		return NewError("PartError", "ByteArray is empty")
 	}
 
 	// Handle negative indexing
@@ -119,9 +119,8 @@ func (b ByteArray) ElementAt(n int64) Expr {
 
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for ByteArray with %d bytes", n, length),
-			[]Expr{b})
+		return NewError("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for ByteArray with %d bytes", n, length))
 	}
 
 	// Convert to 0-based index and return byte as integer
@@ -146,15 +145,14 @@ func (b ByteArray) Slice(start, stop int64) Expr {
 
 	// Check bounds
 	if start <= 0 || stop <= 0 || start > length || stop > length {
-		return NewErrorExpr("PartError",
+		return NewError("PartError",
 			fmt.Sprintf("Slice indices [%d, %d] out of bounds for ByteArray with %d bytes",
-				start, stop, length), []Expr{b})
+				start, stop, length))
 	}
 
 	if start > stop {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop),
-			[]Expr{b})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop))
 	}
 
 	// Convert to 0-based indices and create new ByteArray
@@ -184,9 +182,8 @@ func (b ByteArray) Join(other Sliceable) Expr {
 	// Type check: ensure other is also a ByteArray
 	otherByteArray, ok := other.(ByteArray)
 	if !ok {
-		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Cannot join %T with ByteArray", other),
-			[]Expr{b, other.(Expr)})
+		return NewError("TypeError",
+			fmt.Sprintf("Cannot join %T with ByteArray", other))
 	}
 
 	// Get data from both byte arrays
@@ -207,20 +204,19 @@ func (b ByteArray) SetElementAt(n int64, value Expr) Expr {
 	// Validate that value is an integer representing a valid byte (0-255)
 	byteValue, ok := value.(Integer)
 	if !ok {
-		return NewErrorExpr("TypeError",
-			"ByteArray assignment requires integer value (0-255)", []Expr{b, value})
+		return NewError("TypeError",
+			"ByteArray assignment requires integer value (0-255)")
 	}
 
 	if byteValue < 0 || byteValue > 255 {
-		return NewErrorExpr("ValueError",
-			fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue),
-			[]Expr{b, value})
+		return NewError("ValueError",
+			fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue))
 	}
 
 	length := int64(len(b.data))
 
 	if length == 0 {
-		return NewErrorExpr("PartError", "ByteArray is empty", []Expr{b})
+		return NewError("PartError", "ByteArray is empty")
 	}
 
 	// Handle negative indexing
@@ -230,9 +226,8 @@ func (b ByteArray) SetElementAt(n int64, value Expr) Expr {
 
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for ByteArray with %d bytes", n, length),
-			[]Expr{b})
+		return NewError("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for ByteArray with %d bytes", n, length))
 	}
 
 	// Create new ByteArray with byte replaced
@@ -254,7 +249,7 @@ func (b ByteArray) SetSlice(start, stop int64, values Expr) Expr {
 			// Insert at beginning of empty ByteArray
 			return b.convertToByteArray(values)
 		}
-		return NewErrorExpr("PartError", "ByteArray is empty", []Expr{b})
+		return NewError("PartError", "ByteArray is empty")
 	}
 
 	// Handle negative indexing
@@ -267,22 +262,19 @@ func (b ByteArray) SetSlice(start, stop int64, values Expr) Expr {
 
 	// Validate range
 	if start <= 0 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d must be positive", start),
-			[]Expr{b})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d must be positive", start))
 	}
 
 	if start > length+1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d is out of bounds for ByteArray with %d bytes", start, length),
-			[]Expr{b})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d is out of bounds for ByteArray with %d bytes", start, length))
 	}
 
 	// Handle special cases
 	if stop < start-1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start),
-			[]Expr{b})
+		return NewError("PartError",
+			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start))
 	}
 
 	// Convert values to byte slice
@@ -346,9 +338,8 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 	// Handle single integer (representing a byte)
 	if byteValue, ok := values.(Integer); ok {
 		if byteValue < 0 || byteValue > 255 {
-			return nil, NewErrorExpr("ValueError",
-				fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue),
-				[]Expr{b, values})
+			return nil, NewError("ValueError",
+				fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue))
 		}
 		return []byte{byte(byteValue)}, nil
 	}
@@ -362,21 +353,18 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 		for i, elem := range elements {
 			if byteValue, ok := elem.(Integer); ok {
 				if byteValue < 0 || byteValue > 255 {
-					return nil, NewErrorExpr("ValueError",
-						fmt.Sprintf("Byte value %d at position %d is out of range (0-255)", byteValue, i+1),
-						[]Expr{b, values})
+					return nil, NewError("ValueError",
+						fmt.Sprintf("Byte value %d at position %d is out of range (0-255)", byteValue, i+1))
 				}
 				bytes[i] = byte(byteValue)
 			} else {
-				return nil, NewErrorExpr("TypeError",
-					fmt.Sprintf("List element at position %d must be an integer (0-255)", i+1),
-					[]Expr{b, values})
+				return nil, NewError("TypeError",
+					fmt.Sprintf("List element at position %d must be an integer (0-255)", i+1))
 			}
 		}
 		return bytes, nil
 	}
 
-	return nil, NewErrorExpr("TypeError",
-		"ByteArray slice assignment requires ByteArray, integer, or List of integers",
-		[]Expr{b, values})
+	return nil, NewError("TypeError",
+		"ByteArray slice assignment requires ByteArray, integer, or List of integers")
 }

@@ -482,15 +482,15 @@ var symbolSpecs = []SymbolSpec{
 			{"(vars_, body_)", builtins.With},
 		},
 	},
-/*
-	{
-		Name:       "Module",
-		Attributes: []string{"HoldAll"},
-		Functions: []rule{
-			{"(vars_, body_)", builtins.Module},
+	/*
+		{
+			Name:       "Module",
+			Attributes: []string{"HoldAll"},
+			Functions: []rule{
+				{"(vars_, body_)", builtins.Module},
+			},
 		},
-	},
-*/
+	*/
 	{
 		Name:       "RuleDelayed",
 		Attributes: []string{"HoldRest"},

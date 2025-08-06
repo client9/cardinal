@@ -45,8 +45,8 @@ func AssociationRules(rules ...core.Expr) core.Expr {
 		}
 
 		// Invalid argument - not a Rule
-		return core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Association expects Rule expressions, got %s", rule.String()), []core.Expr{rule})
+		return core.NewError("ArgumentError",
+			fmt.Sprintf("Association expects Rule expressions, got %s", rule.String()))
 	}
 
 	return assoc
@@ -58,6 +58,6 @@ func PartAssociation(assoc core.Association, key core.Expr) core.Expr {
 	if value, exists := assoc.Get(key); exists {
 		return value
 	}
-	return core.NewErrorExpr("PartError",
-		fmt.Sprintf("Key %s not found in association", key.String()), []core.Expr{assoc, key})
+	return core.NewError("PartError",
+		fmt.Sprintf("Key %s not found in association", key.String()))
 }

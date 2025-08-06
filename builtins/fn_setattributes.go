@@ -18,7 +18,7 @@ func SetAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs cor
 				symbolTable.SetAttributes(symbolName, []engine.Attribute{attr})
 				return core.NewSymbol("Null")
 			}
-			return core.NewErrorExpr("Attribute", fmt.Sprintf("unknown attribute %q", attrName), nil)
+			return core.NewError("Attribute", fmt.Sprintf("unknown attribute %q", attrName))
 		}
 
 		// Handle list of attributes
@@ -30,7 +30,7 @@ func SetAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs cor
 						if attr, ok := engine.StringToAttribute(attrName); ok {
 							attributes = append(attributes, attr)
 						} else {
-							return core.NewErrorExpr("Attribute", fmt.Sprintf("unknown attribute %q", attrName), nil)
+							return core.NewError("Attribute", fmt.Sprintf("unknown attribute %q", attrName))
 						}
 					}
 				}
@@ -42,5 +42,5 @@ func SetAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs cor
 		}
 	}
 
-	return core.NewErrorExpr("ArgumentError", "Invalid arguments to SetAttributes", []core.Expr{symbol, attrs})
+	return core.NewError("ArgumentError", "Invalid arguments to SetAttributes")
 }

@@ -43,7 +43,7 @@ func (s *EvaluationStack) Depth() int {
 
 // Context represents the evaluation context with variable bindings and symbol attributes
 type Context struct {
-	variables map[string]core.Expr
+	variables        map[string]core.Expr
 	symbolTable      *SymbolTable
 	functionRegistry *FunctionRegistry // Unified pattern-based function system
 	stack            *EvaluationStack

@@ -207,53 +207,45 @@ func TestErrorEqual(t *testing.T) {
 		// Same errors
 		{
 			name:     "same basic error",
-			error1:   NewErrorExpr("DivisionByZero", "Division by zero", []Expr{}),
-			error2:   NewErrorExpr("DivisionByZero", "Division by zero", []Expr{}),
+			error1:   NewError("DivisionByZero", "Division by zero"),
+			error2:   NewError("DivisionByZero", "Division by zero"),
 			expected: true,
 		},
 		{
-			name: "same error with args",
-			error1: NewErrorExpr("ArgumentError", "Wrong number of args", []Expr{
-				NewInteger(1), NewInteger(2),
-			}),
-			error2: NewErrorExpr("ArgumentError", "Wrong number of args", []Expr{
-				NewInteger(1), NewInteger(2),
-			}),
+			name:     "same error with args",
+			error1:   NewError("ArgumentError", "Wrong number of args"),
+			error2:   NewError("ArgumentError", "Wrong number of args"),
 			expected: true,
 		},
 
 		// Different error types
 		{
 			name:     "different error types",
-			error1:   NewErrorExpr("DivisionByZero", "Division by zero", []Expr{}),
-			error2:   NewErrorExpr("ArgumentError", "Division by zero", []Expr{}),
+			error1:   NewError("DivisionByZero", "Division by zero"),
+			error2:   NewError("ArgumentError", "Division by zero"),
 			expected: false,
 		},
 
 		// Different messages
 		{
 			name:     "different messages",
-			error1:   NewErrorExpr("DivisionByZero", "Division by zero", []Expr{}),
-			error2:   NewErrorExpr("DivisionByZero", "Cannot divide by zero", []Expr{}),
+			error1:   NewError("DivisionByZero", "Division by zero"),
+			error2:   NewError("DivisionByZero", "Cannot divide by zero"),
 			expected: false,
 		},
 
 		// Different arguments
 		{
-			name: "different arguments",
-			error1: NewErrorExpr("ArgumentError", "Wrong args", []Expr{
-				NewInteger(1),
-			}),
-			error2: NewErrorExpr("ArgumentError", "Wrong args", []Expr{
-				NewInteger(2),
-			}),
+			name:     "different arguments",
+			error1:   NewError("ArgumentError", "Wrong args"),
+			error2:   NewError("ArgumentError", "Wrong args"),
 			expected: false,
 		},
 
 		// Error vs non-error
 		{
 			name:     "error vs atom",
-			error1:   NewErrorExpr("DivisionByZero", "Division by zero", []Expr{}),
+			error1:   NewError("DivisionByZero", "Division by zero"),
 			error2:   NewInteger(42),
 			expected: false,
 		},

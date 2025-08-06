@@ -20,7 +20,7 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) 
 			err := registry.RegisterUserFunction(lhs, rhs)
 
 			if err != nil {
-				return core.NewErrorExpr("DefinitionError", err.Error(), []core.Expr{lhs, rhs})
+				return core.NewError("DefinitionError", err.Error())
 			}
 
 			return core.NewSymbol("Null")
@@ -31,10 +31,10 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) 
 	if symbolName, ok := core.ExtractSymbol(lhs); ok {
 		// Store the right-hand side without evaluation (delayed)
 		if err := c.Set(symbolName, rhs); err != nil {
-			return core.NewErrorExpr("Protected", err.Error(), []core.Expr{lhs})
+			return core.NewError("Protected", err.Error())
 		}
 		return core.NewSymbol("Null")
 	}
 
-	return core.NewErrorExpr("SetDelayedError", "Invalid assignment target", []core.Expr{lhs})
+	return core.NewError("SetDelayedError", "Invalid assignment target")
 }

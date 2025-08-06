@@ -14,13 +14,13 @@ func With(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr
 
 	list, ok := vars.(core.List)
 	if !ok {
-		return core.NewErrorExpr("ArgumentError", "With expected list for first argument", []core.Expr{vars})
+		return core.NewError("ArgumentError", "With expected list for first argument")
 	}
 	rules := list.Copy()
 	for i := int64(1); i <= rules.Length(); i++ {
 		r, ok := rules.Elements[i].(core.List)
 		if !ok || r.Head() != "Set" || r.Length() != 2 {
-			return core.NewErrorExpr("ArgumentError", "With expected list of set assignments", []core.Expr{vars})
+			return core.NewError("ArgumentError", "With expected list of set assignments")
 		}
 		r.Elements[0] = core.NewSymbol("Rule")
 	}

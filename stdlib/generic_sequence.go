@@ -11,8 +11,8 @@ import (
 func Take(expr core.Expr, n int64) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Take requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"Take requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	length := expr.Length()
@@ -47,8 +47,8 @@ func Take(expr core.Expr, n int64) core.Expr {
 func Drop(expr core.Expr, n int64) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Drop requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"Drop requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	length := expr.Length()
@@ -81,8 +81,8 @@ func Drop(expr core.Expr, n int64) core.Expr {
 func Part(expr core.Expr, n int64) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Part requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"Part requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	return sliceable.ElementAt(n)
@@ -117,21 +117,21 @@ func Last(expr core.Expr) core.Expr {
 func TakeRange(expr core.Expr, rangeList core.List) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Take requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"Take requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	// Extract range indices
 	if len(rangeList.Elements) != 3 { // Head + two elements
-		return core.NewErrorExpr("ArgumentError",
-			"Take with range requires exactly two indices", []core.Expr{rangeList})
+		return core.NewError("ArgumentError",
+			"Take with range requires exactly two indices")
 	}
 
 	start, ok1 := core.ExtractInt64(rangeList.Elements[1])
 	stop, ok2 := core.ExtractInt64(rangeList.Elements[2])
 	if !ok1 || !ok2 {
-		return core.NewErrorExpr("ArgumentError",
-			"Take indices must be integers", rangeList.Elements[1:])
+		return core.NewError("ArgumentError",
+			"Take indices must be integers")
 	}
 
 	return sliceable.Slice(start, stop)
@@ -142,21 +142,21 @@ func TakeRange(expr core.Expr, rangeList core.List) core.Expr {
 func DropRange(expr core.Expr, rangeList core.List) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Drop requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"Drop requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	// Extract range indices
 	if len(rangeList.Elements) != 3 { // Head + two elements
-		return core.NewErrorExpr("ArgumentError",
-			"Drop with range requires exactly two indices", []core.Expr{rangeList})
+		return core.NewError("ArgumentError",
+			"Drop with range requires exactly two indices")
 	}
 
 	start, ok1 := core.ExtractInt64(rangeList.Elements[1])
 	stop, ok2 := core.ExtractInt64(rangeList.Elements[2])
 	if !ok1 || !ok2 {
-		return core.NewErrorExpr("ArgumentError",
-			"Drop indices must be integers", rangeList.Elements[1:])
+		return core.NewError("ArgumentError",
+			"Drop indices must be integers")
 	}
 
 	length := expr.Length()
@@ -196,7 +196,7 @@ func createEmpty(expr core.Expr) core.Expr {
 	case core.ByteArray:
 		return core.NewByteArray(nil)
 	default:
-		return core.NewErrorExpr("TypeError", "Cannot create empty version of unknown type", []core.Expr{expr})
+		return core.NewError("TypeError", "Cannot create empty version of unknown type")
 	}
 }
 
@@ -205,8 +205,8 @@ func createEmpty(expr core.Expr) core.Expr {
 func RotateLeft(expr core.Expr, n int64) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"RotateLeft requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"RotateLeft requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	length := expr.Length()
@@ -238,8 +238,8 @@ func RotateLeft(expr core.Expr, n int64) core.Expr {
 func RotateRight(expr core.Expr, n int64) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"RotateRight requires a sliceable expression (List, String, or ByteArray)", []core.Expr{expr})
+		return core.NewError("TypeError",
+			"RotateRight requires a sliceable expression (List, String, or ByteArray)")
 	}
 
 	length := expr.Length()
@@ -271,14 +271,14 @@ func concatenateSliceable(left, right core.Expr) core.Expr {
 	// Ensure both expressions are sliceable
 	leftSliceable := core.AsSliceable(left)
 	if leftSliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Left operand is not sliceable", []core.Expr{left})
+		return core.NewError("TypeError",
+			"Left operand is not sliceable")
 	}
 
 	rightSliceable := core.AsSliceable(right)
 	if rightSliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			"Right operand is not sliceable", []core.Expr{right})
+		return core.NewError("TypeError",
+			"Right operand is not sliceable")
 	}
 
 	// Use the Join method - this handles type checking and implementation details
@@ -289,6 +289,6 @@ func concatenateSliceable(left, right core.Expr) core.Expr {
 // This is a simplified implementation - a more sophisticated version would handle all expression types
 func joinSlices(expr core.Expr, sliceable core.Sliceable, start1, stop1, start2, stop2 int64) core.Expr {
 	// For now, return an error for complex joins - this would need type-specific implementation
-	return core.NewErrorExpr("NotImplemented",
-		"Dropping middle ranges not yet implemented for this type", []core.Expr{expr})
+	return core.NewError("NotImplemented",
+		"Dropping middle ranges not yet implemented for this type")
 }

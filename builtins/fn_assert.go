@@ -12,5 +12,5 @@ func Assert(e *engine.Evaluator, c *engine.Context, arg core.Expr) core.Expr {
 	if istrue {
 		return result
 	}
-	return core.NewError("AssertionFailed", arg.InputForm(), arg)
+	return core.NewError("AssertionFailed", arg.InputForm())
 }

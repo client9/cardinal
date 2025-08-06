@@ -21,8 +21,8 @@ func ShowPatterns(e *engine.Evaluator, c *engine.Context, functionName core.Expr
 		// Get function definitions from the registry
 		definitions := c.GetFunctionDefinitions(funcName)
 		if definitions == nil {
-			return core.NewErrorExpr("ArgumentError",
-				fmt.Sprintf("No patterns found for function: %s", funcName), []core.Expr{functionName})
+			return core.NewError("ArgumentError",
+				fmt.Sprintf("No patterns found for function: %s", funcName))
 		}
 
 		// Create a list of pattern information
@@ -46,6 +46,5 @@ func ShowPatterns(e *engine.Evaluator, c *engine.Context, functionName core.Expr
 		return core.List{Elements: elements}
 	}
 
-	return core.NewErrorExpr("ArgumentError",
-		"ShowPatterns expects a symbol", []core.Expr{functionName})
+	return core.NewError("ArgumentError", "ShowPatterns expects a symbol")
 }

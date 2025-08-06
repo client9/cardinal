@@ -12,7 +12,7 @@ import (
 // Do(expr, core.List(i, start, end, increment)) iterates with variable binding
 func Do(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Do expects 2 arguments, got %d", len(args)), args)
+		return core.NewError("ArgumentError", fmt.Sprintf("Do expects 2 arguments, got %d", len(args)))
 	}
 
 	expr := args[0] // Don't evaluate expr yet - Do has HoldAll
@@ -28,13 +28,13 @@ func Do(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 		return doIterator(e, c, expr, iterList)
 	}
 
-	return core.NewErrorExpr("ArgumentError", "Do second argument must be integer or core.List", args)
+	return core.NewError("ArgumentError", "Do second argument must be integer or core.List")
 }
 
 // evaluateDoSimple implements Do(expr, n) - evaluates expr n times and returns Null
 func doSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64) core.Expr {
 	if n < 0 {
-		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Do count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
+		return core.NewError("ArgumentError", fmt.Sprintf("Do count must be non-negative, got %d", n))
 	}
 
 	// Evaluate expr n times (side effects only)

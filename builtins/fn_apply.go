@@ -12,8 +12,7 @@ func ApplyExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list 
 	// Check if the second argument is a list
 	listExpr, ok := list.(core.List)
 	if !ok {
-		return core.NewErrorExpr("ArgumentError",
-			"Apply expects a list as the second argument", []core.Expr{list})
+		return core.NewError("ArgumentError", "second argument must be a list")
 	}
 
 	// Extract elements (skip the head)

@@ -104,7 +104,7 @@ func (l List) IsAtom() bool {
 // For a list [head, e1, e2, e3], ElementAt(1) returns e1
 func (l List) ElementAt(n int64) Expr {
 	if len(l.Elements) <= 1 {
-		return NewErrorExpr("PartError", "List has no elements", []Expr{l})
+		return NewError("PartError", "List has no elements")
 	}
 
 	length := l.Length() // Number of elements excluding head
@@ -116,9 +116,8 @@ func (l List) ElementAt(n int64) Expr {
 
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for list with %d elements", n, length),
-			[]Expr{l})
+		return NewError("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for list with %d elements", n, length))
 	}
 
 	// Convert to 0-based index (adding 1 because Elements[0] is head)
@@ -145,15 +144,14 @@ func (l List) Slice(start, stop int64) Expr {
 
 	// Check bounds
 	if start <= 0 || stop <= 0 || start > length || stop > length {
-		return NewErrorExpr("PartError",
+		return NewError("PartError",
 			fmt.Sprintf("Slice indices [%d, %d] out of bounds for list with %d elements",
-				start, stop, length), []Expr{l})
+				start, stop, length))
 	}
 
 	if start > stop {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop),
-			[]Expr{l})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop))
 	}
 
 	// Create new list with head + sliced elements
@@ -174,9 +172,8 @@ func (l List) Join(other Sliceable) Expr {
 	// Type check: ensure other is also a List
 	otherList, ok := other.(List)
 	if !ok {
-		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Cannot join %T with List", other),
-			[]Expr{l, other.(Expr)})
+		return NewError("TypeError",
+			fmt.Sprintf("Cannot join %T with List", other))
 	}
 
 	// Handle empty lists
@@ -189,10 +186,9 @@ func (l List) Join(other Sliceable) Expr {
 
 	// Check that both lists have the same head
 	if !l.Elements[0].Equal(otherList.Elements[0]) {
-		return NewErrorExpr("TypeError",
+		return NewError("TypeError",
 			fmt.Sprintf("Cannot join lists with different heads: %s and %s",
-				l.Elements[0].String(), otherList.Elements[0].String()),
-			[]Expr{l, otherList})
+				l.Elements[0].String(), otherList.Elements[0].String()))
 	}
 
 	// Create new list with combined elements
@@ -221,7 +217,7 @@ func (l List) Append(e Expr) List {
 // Returns an error Expr if index is out of bounds
 func (l List) SetElementAt(n int64, value Expr) Expr {
 	if len(l.Elements) <= 1 {
-		return NewErrorExpr("PartError", "List has no elements", []Expr{l})
+		return NewError("PartError", "List has no elements")
 	}
 
 	length := l.Length() // Number of elements excluding head
@@ -233,9 +229,8 @@ func (l List) SetElementAt(n int64, value Expr) Expr {
 
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for list with %d elements", n, length),
-			[]Expr{l})
+		return NewError("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for list with %d elements", n, length))
 	}
 
 	// Create new list with element replaced
@@ -254,7 +249,7 @@ func (l List) SetSlice(start, stop int64, values Expr) Expr {
 		if start == 1 && stop == 0 {
 			return l.insertValues(1, values)
 		}
-		return NewErrorExpr("PartError", "List has no elements", []Expr{l})
+		return NewError("PartError", "List has no elements")
 	}
 
 	length := l.Length()
@@ -269,22 +264,19 @@ func (l List) SetSlice(start, stop int64, values Expr) Expr {
 
 	// Validate range
 	if start <= 0 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d must be positive", start),
-			[]Expr{l})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d must be positive", start))
 	}
 
 	if start > length+1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d is out of bounds for list with %d elements", start, length),
-			[]Expr{l})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d is out of bounds for list with %d elements", start, length))
 	}
 
 	// Handle special cases
 	if stop < start-1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start),
-			[]Expr{l})
+		return NewError("PartError",
+			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start))
 	}
 
 	// Convert values to slice

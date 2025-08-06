@@ -38,7 +38,7 @@ func ClearAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs c
 		}
 	}
 
-	return core.NewErrorExpr("ArgumentError", "Invalid arguments to ClearAttributes", []core.Expr{symbol, attrs})
+	return core.NewError("ArgumentError", "Invalid arguments to ClearAttributes")
 }
 
 /*

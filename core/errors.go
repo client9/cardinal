@@ -9,26 +9,20 @@ import (
 type ErrorExpr struct {
 	ErrorType string // "DivisionByZero", "ArgumentError", etc.
 	Message   string // Detailed error message
-	Args      []Expr // Arguments that caused the error
 	Arg       Expr
 	Err       *ErrorExpr
 }
 
-func NewError(etype string, message string, arg Expr) ErrorExpr {
+func NewError(etype string, message string) ErrorExpr {
 	return ErrorExpr{
 		ErrorType: etype,
 		Message:   message,
-		Arg:       arg,
 	}
 }
 
-// NewErrorExpr creates a new error expression
-func NewErrorExpr(errorType, message string, args []Expr) ErrorExpr {
-	return ErrorExpr{
-		ErrorType: errorType,
-		Message:   message,
-		Args:      args,
-	}
+func (e ErrorExpr) SetCaller(arg Expr) ErrorExpr {
+	e.Arg = arg
+	return e
 }
 
 // AsError returns the ErrorExpr or nil.

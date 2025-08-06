@@ -64,7 +64,7 @@ func applyRuleDelayedAware(expr core.Expr, rule core.Expr) core.Expr {
 					for varName, value := range bindings {
 						ruleCtx.AddScopedVar(varName) // Keep bindings local
 						if err := ruleCtx.Set(varName, value); err != nil {
-							return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+							return core.NewError("BindingError", err.Error())
 						}
 					}
 					// Evaluate replacement in the rule context
@@ -85,7 +85,7 @@ func applyRuleDelayedAware(expr core.Expr, rule core.Expr) core.Expr {
 				for varName, value := range bindings {
 					ruleCtx.AddScopedVar(varName) // Keep bindings local
 					if err := ruleCtx.Set(varName, value); err != nil {
-						return core.NewErrorExpr("BindingError", err.Error(), []core.Expr{rule})
+						return core.NewError("BindingError", err.Error())
 					}
 				}
 
@@ -101,7 +101,7 @@ func applyRuleDelayedAware(expr core.Expr, rule core.Expr) core.Expr {
 // Replace,  supports both Rule and RuleDelayed
 func Replace(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError", "Replace requires exactly 2 arguments", args)
+		return core.NewError("ArgumentError", "Replace requires exactly 2 arguments")
 	}
 
 	expr := args[0]
@@ -118,7 +118,7 @@ func Replace(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 			// First, check if ALL elements (except head) are Rules or RuleDelayed
 			for i := 1; i < len(rulesList.Elements); i++ {
 				if !isRuleOrRuleDelayed(rulesList.Elements[i]) {
-					return core.NewErrorExpr("ArgumentError", "Input was not a list of rules", args)
+					return core.NewError("ArgumentError", "Input was not a list of rules")
 				}
 			}
 

@@ -9,7 +9,7 @@ import (
 func PatternSpecificity(patternStr core.Expr) core.Expr {
 	// This function will be called by WrapPatternSpecificity in builtin_funcs.go
 	// which has access to the full context and functionality
-	return core.NewErrorExpr("InternalError", "PatternSpecificity should be called via wrapper", []core.Expr{patternStr})
+	return core.NewError("InternalError", "PatternSpecificity should be called via wrapper")
 }
 
 // ShowPatterns is a placeholder - the actual implementation is in the main package
@@ -17,5 +17,5 @@ func PatternSpecificity(patternStr core.Expr) core.Expr {
 func ShowPatterns(functionName core.Expr) core.Expr {
 	// This function will be called by WrapShowPatterns in builtin_funcs.go
 	// which has access to the full context and functionality
-	return core.NewErrorExpr("InternalError", "ShowPatterns should be called via wrapper", []core.Expr{functionName})
+	return core.NewError("InternalError", "ShowPatterns should be called via wrapper")
 }

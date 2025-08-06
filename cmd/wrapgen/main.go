@@ -624,7 +624,7 @@ func {{.WrapperName}}(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 	{{- end}}
 	{{- end}}
 	if err != nil {
-		return core.NewErrorExpr(err.Error(), err.Error(), args)
+		return core.NewError(err.Error(), err.Error())
 	}
 	{{- else}}
 	{{- if .NeedsEvaluator}}
@@ -653,8 +653,8 @@ func {{.WrapperName}}(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 		{{- if eq $.ValidationMode "debug"}}
 		panic(fmt.Sprintf("{{.FunctionName}} expects {{len .ParamTypes}} arguments, got %d", len(args)))
 		{{- else}}
-		return core.NewErrorExpr("ArgumentError", 
-			"{{.FunctionName}} expects {{len .ParamTypes}} arguments", args)
+		return core.NewError("ArgumentError", 
+			"{{.FunctionName}} expects {{len .ParamTypes}} arguments")
 		{{- end}}
 	}
 	{{- end}}
@@ -669,7 +669,7 @@ func {{.WrapperName}}(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 	result, err := {{.PackageName}}.{{.FunctionName}}({{.ParamTypes | getCallArgs}})
 	{{- end}}
 	if err != nil {
-		return core.NewErrorExpr(err.Error(), err.Error(), args)
+		return core.NewError(err.Error(), err.Error())
 	}
 	{{- else}}
 	{{- if .NeedsEvaluator}}

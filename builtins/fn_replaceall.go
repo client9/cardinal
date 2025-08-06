@@ -8,7 +8,7 @@ import (
 // evaluateReplaceAll implements enhanced ReplaceAll that supports both Rule and RuleDelayed
 func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError", "ReplaceAll requires exactly 2 arguments", args)
+		return core.NewError("ArgumentError", "ReplaceAll requires exactly 2 arguments")
 	}
 
 	// Evaluate the expression to be replaced
@@ -32,7 +32,7 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 				// Check if this list contains non-rules
 				for i := 1; i < len(rulesList.Elements); i++ {
 					if !isRuleOrRuleDelayed(rulesList.Elements[i]) {
-						return core.NewErrorExpr("ArgumentError", "Input was not a list of rules", args)
+						return core.NewError("ArgumentError", "Input was not a list of rules")
 					}
 				}
 			}

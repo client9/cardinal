@@ -29,7 +29,7 @@ func (e *Evaluator) GetContext() *Context {
 func (e *Evaluator) Evaluate(expr core.Expr) core.Expr {
 	ctx := e.context
 	if err := ctx.stack.Push("evaluate", expr); err != nil {
-		return core.NewError("RecursionError", err.Error(), expr)
+		return core.NewError("RecursionError", err.Error()).SetCaller(expr)
 	}
 	defer ctx.stack.Pop()
 	result := e.evaluateToFixedPoint(e.context, expr)
@@ -70,7 +70,17 @@ func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 		// Return the symbol itself if not bound
 		return ex
 	case core.List:
-		return e.evaluateList(ctx, ex)
+		result := e.evaluateList(ctx, ex)
+
+		// downstream doesn't have access to the original
+		// expression so fill it in here
+		if err, ok := core.AsError(result); ok {
+			if err.Arg == nil {
+				err.Arg = expr
+			}
+			return err
+		}
+		return result
 	default:
 		// All other types (ByteArray, Association, ErrorExpr, etc.) evaluate to themselves
 		return expr
@@ -145,16 +155,6 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 
 	// Try to find a matching pattern in the function registry
 	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx, e); found {
-		// Check if result is an error and needs stack trace
-		if core.IsError(result) {
-			if errorExpr, ok := result.(*core.ErrorExpr); ok {
-				// Add stack frame for this function call
-				if err := ctx.stack.Push(headName, callExpr); err == nil {
-					ctx.stack.Pop() // Immediately pop since we're just adding to trace
-					return core.NewError(errorExpr.ErrorType, errorExpr.Message, errorExpr.Arg)
-				}
-			}
-		}
 		return result
 	}
 
@@ -286,9 +286,8 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 	evaluatedArgs := make([]core.Expr, len(args))
 	for i, arg := range args {
 		evaluatedArgs[i] = e.Evaluate(arg)
-		if err, ok := core.AsError(evaluatedArgs[i]); ok {
-			return err.Wrap(arg)
-			//return evaluatedArgs[i]
+		if core.IsError(evaluatedArgs[i]) {
+			return evaluatedArgs[i]
 		}
 	}
 
@@ -307,9 +306,10 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 	} else {
 		// Named - Check argument count
 		if len(args) != len(funcExpr.Parameters) {
-			return core.NewErrorExpr("ArgumentError",
-				fmt.Sprintf("Function expects %d arguments, got %d", len(funcExpr.Parameters), len(args)),
-				args)
+			return core.NewError(
+				"ArgumentError",
+				fmt.Sprintf("Function expects %d arguments, got %d",
+					len(funcExpr.Parameters), len(args)))
 		}
 		for i := 0; i < len(args); i++ {
 			rules[i] = core.NewList("Rule", funcExpr.Parameters[i], evaluatedArgs[i])
@@ -329,8 +329,8 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 // evaluateSliceRange implements slice range syntax: expr[start:end]
 func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 3 {
-		return core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)), args)
+		return core.NewError("ArgumentError",
+			fmt.Sprintf("SliceRange expects 3 arguments (expr, start, end), got %d", len(args)))
 	}
 
 	// Evaluate the expression being sliced
@@ -342,8 +342,8 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()))
 	}
 
 	// Evaluate start and end indices
@@ -360,14 +360,14 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 	// Extract integer values for start and end
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()))
 	}
 
 	end, ok := core.ExtractInt64(endExpr)
 	if !ok {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()), []core.Expr{endExpr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()))
 	}
 
 	// Use the Sliceable interface to perform the slice operation
@@ -379,8 +379,8 @@ func (e *Evaluator) evaluateSliceRange(args []core.Expr, ctx *Context) core.Expr
 // If start is positive, uses Drop for first n elements
 func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)), args)
+		return core.NewError("ArgumentError",
+			fmt.Sprintf("TakeFrom expects 2 arguments (expr, start), got %d", len(args)))
 	}
 
 	// Evaluate the expression being sliced
@@ -398,8 +398,8 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 	// Extract integer value for start
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()))
 	}
 
 	if start < 0 {
@@ -417,8 +417,8 @@ func (e *Evaluator) evaluateTakeFrom(args []core.Expr, ctx *Context) core.Expr {
 // evaluatePartSet implements slice assignment syntax: expr[index] = value
 func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 3 {
-		return core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("PartSet expects 3 arguments (expr, index, value), got %d", len(args)), args)
+		return core.NewError("ArgumentError",
+			fmt.Sprintf("PartSet expects 3 arguments (expr, index, value), got %d", len(args)))
 	}
 
 	// Evaluate the expression being modified
@@ -430,8 +430,8 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()))
 	}
 
 	// Evaluate index
@@ -443,8 +443,8 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	// Extract integer value for index
 	index, ok := core.ExtractInt64(indexExpr)
 	if !ok {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Head()), []core.Expr{indexExpr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Head()))
 	}
 
 	// Evaluate value
@@ -460,8 +460,8 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 // evaluateSliceSet implements slice assignment syntax: expr[start:end] = value
 func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	if len(args) != 4 {
-		return core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("SliceSet expects 4 arguments (expr, start, end, value), got %d", len(args)), args)
+		return core.NewError("ArgumentError",
+			fmt.Sprintf("SliceSet expects 4 arguments (expr, start, end, value), got %d", len(args)))
 	}
 
 	// Evaluate the expression being modified
@@ -473,8 +473,8 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	// Check if the expression is sliceable
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()), []core.Expr{expr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()))
 	}
 
 	// Evaluate start index
@@ -486,8 +486,8 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	// Extract integer value for start
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()), []core.Expr{startExpr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()))
 	}
 
 	// Evaluate end index
@@ -504,8 +504,8 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	} else if endValue, ok := core.ExtractInt64(endExpr); ok {
 		end = endValue
 	} else {
-		return core.NewErrorExpr("TypeError",
-			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()), []core.Expr{endExpr})
+		return core.NewError("TypeError",
+			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()))
 	}
 
 	// Evaluate value

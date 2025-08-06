@@ -36,8 +36,8 @@ func RestExpr(list core.List) core.Expr {
 	// For lists, return a new list with the first element after head removed
 	if len(list.Elements) <= 1 {
 		// Return error for empty lists
-		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Rest: expression %s has no elements", list.String()), []core.Expr{list})
+		return core.NewError("PartError",
+			fmt.Sprintf("Rest: expression %s has no elements", list.String()))
 	}
 
 	// Use the modern Slice method to get elements from index 2 onwards
@@ -54,8 +54,8 @@ func MostExpr(list core.List) core.Expr {
 	// For lists, return a new list with the last element removed
 	if len(list.Elements) <= 1 {
 		// Return error for empty lists
-		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Most: expression %s has no elements", list.String()), []core.Expr{list})
+		return core.NewError("PartError",
+			fmt.Sprintf("Most: expression %s has no elements", list.String()))
 	}
 
 	// Use the modern Slice method to get elements from 1 to length-1
@@ -111,14 +111,14 @@ func TakeList(list core.List, n int64) core.Expr {
 func TakeListSingle(list core.List, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
 	if len(indexList.Elements) != 2 { // Head + one element
-		return core.NewErrorExpr("ArgumentError",
-			"Take with list spec requires exactly one index", []core.Expr{indexList})
+		return core.NewError("ArgumentError",
+			"Take with list spec requires exactly one index")
 	}
 
 	index, ok := core.ExtractInt64(indexList.Elements[1])
 	if !ok {
-		return core.NewErrorExpr("ArgumentError",
-			"Take index must be an integer", []core.Expr{indexList.Elements[1]})
+		return core.NewError("ArgumentError",
+			"Take index must be an integer")
 	}
 
 	// Use the ElementAt primitive method
@@ -136,15 +136,15 @@ func TakeListSingle(list core.List, indexList core.List) core.Expr {
 func TakeListRange(list core.List, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
 	if len(indexList.Elements) != 3 { // Head + two elements
-		return core.NewErrorExpr("ArgumentError",
-			"Take with range spec requires exactly two indices", []core.Expr{indexList})
+		return core.NewError("ArgumentError",
+			"Take with range spec requires exactly two indices")
 	}
 
 	start, ok1 := core.ExtractInt64(indexList.Elements[1])
 	end, ok2 := core.ExtractInt64(indexList.Elements[2])
 	if !ok1 || !ok2 {
-		return core.NewErrorExpr("ArgumentError",
-			"Take indices must be integers", indexList.Elements[1:])
+		return core.NewError("ArgumentError",
+			"Take indices must be integers")
 	}
 
 	return takeListRange(list, start, end)
@@ -160,8 +160,8 @@ func takeListRange(list core.List, start, end int64) core.Expr {
 
 	// Validate indices
 	if start == 0 || end == 0 {
-		return core.NewErrorExpr("PartError",
-			"Take index 0 is out of bounds (indices start at 1)", []core.Expr{list})
+		return core.NewError("PartError",
+			"Take index 0 is out of bounds (indices start at 1)")
 	}
 
 	// Convert negative indices to positive
@@ -176,9 +176,9 @@ func takeListRange(list core.List, start, end int64) core.Expr {
 
 	// Bounds checking
 	if actualStart < 1 || actualEnd > listLength || actualStart > actualEnd {
-		return core.NewErrorExpr("PartError",
+		return core.NewError("PartError",
 			fmt.Sprintf("Take range [%d, %d] is out of bounds for list with %d elements",
-				start, end, listLength), []core.Expr{list})
+				start, end, listLength))
 	}
 
 	// Use the modern Slice method
@@ -223,14 +223,14 @@ func DropList(list core.List, n int64) core.Expr {
 func DropListSingle(list core.List, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
 	if len(indexList.Elements) != 2 { // Head + one element
-		return core.NewErrorExpr("ArgumentError",
-			"Drop with list spec requires exactly one index", []core.Expr{indexList})
+		return core.NewError("ArgumentError",
+			"Drop with list spec requires exactly one index")
 	}
 
 	index, ok := core.ExtractInt64(indexList.Elements[1])
 	if !ok {
-		return core.NewErrorExpr("ArgumentError",
-			"Drop index must be an integer", []core.Expr{indexList.Elements[1]})
+		return core.NewError("ArgumentError",
+			"Drop index must be an integer")
 	}
 
 	return dropListSingle(list, index)
@@ -241,15 +241,15 @@ func DropListSingle(list core.List, indexList core.List) core.Expr {
 func DropListRange(list core.List, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
 	if len(indexList.Elements) != 3 { // Head + two elements
-		return core.NewErrorExpr("ArgumentError",
-			"Drop with range spec requires exactly two indices", []core.Expr{indexList})
+		return core.NewError("ArgumentError",
+			"Drop with range spec requires exactly two indices")
 	}
 
 	start, ok1 := core.ExtractInt64(indexList.Elements[1])
 	end, ok2 := core.ExtractInt64(indexList.Elements[2])
 	if !ok1 || !ok2 {
-		return core.NewErrorExpr("ArgumentError",
-			"Drop indices must be integers", indexList.Elements[1:])
+		return core.NewError("ArgumentError",
+			"Drop indices must be integers")
 	}
 
 	return dropListRange(list, start, end)
@@ -265,8 +265,8 @@ func dropListSingle(list core.List, index int64) core.Expr {
 
 	// Validate index
 	if index == 0 {
-		return core.NewErrorExpr("PartError",
-			"Drop index 0 is out of bounds (indices start at 1)", []core.Expr{list})
+		return core.NewError("PartError",
+			"Drop index 0 is out of bounds (indices start at 1)")
 	}
 
 	// Convert negative indices to positive
@@ -277,9 +277,7 @@ func dropListSingle(list core.List, index int64) core.Expr {
 
 	// Bounds checking
 	if actualIndex < 1 || actualIndex > listLength {
-		return core.NewErrorExpr("PartError",
-			fmt.Sprintf("Drop index %d is out of bounds for list with %d elements",
-				index, listLength), []core.Expr{list})
+		return core.NewError("PartError", "Index out of bounds")
 	}
 
 	// Use modern Slice and Join methods to exclude single element
@@ -299,7 +297,7 @@ func dropListSingle(list core.List, index int64) core.Expr {
 		if sliceable, ok := before.(core.Sliceable); ok {
 			return sliceable.Join(after.(core.Sliceable))
 		}
-		return core.NewErrorExpr("InternalError", "Failed to join slices", []core.Expr{before, after})
+		return core.NewError("InternalError", "Failed to join slices")
 	}
 }
 
@@ -313,8 +311,8 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 
 	// Validate indices
 	if start == 0 || end == 0 {
-		return core.NewErrorExpr("PartError",
-			"Drop index 0 is out of bounds (indices start at 1)", []core.Expr{list})
+		return core.NewError("PartError",
+			"Drop index 0 is out of bounds (indices start at 1)")
 	}
 
 	// Convert negative indices to positive
@@ -329,9 +327,9 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 
 	// Bounds checking
 	if actualStart < 1 || actualEnd > listLength || actualStart > actualEnd {
-		return core.NewErrorExpr("PartError",
+		return core.NewError("PartError",
 			fmt.Sprintf("Drop range [%d, %d] is out of bounds for list with %d elements",
-				start, end, listLength), []core.Expr{list})
+				start, end, listLength))
 	}
 
 	// Use modern Slice and Join methods to exclude the range
@@ -351,7 +349,7 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 		if sliceable, ok := before.(core.Sliceable); ok {
 			return sliceable.Join(after.(core.Sliceable))
 		}
-		return core.NewErrorExpr("InternalError", "Failed to join slices", []core.Expr{before, after})
+		return core.NewError("InternalError", "Failed to join slices")
 	}
 }
 

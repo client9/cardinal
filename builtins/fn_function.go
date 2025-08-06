@@ -12,7 +12,7 @@ func Function(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Exp
 	case 2:
 		return FunctionNamed(e, c, args[0], args[1])
 	}
-	return core.NewErrorExpr("ArgumentError", "Function expected 1 or 2 args", args)
+	return core.NewError("ArgumentError", "Function expected 1 or 2 args")
 }
 
 func FunctionPure(e *engine.Evaluator, c *engine.Context, body core.Expr) core.Expr {

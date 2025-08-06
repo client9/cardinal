@@ -186,7 +186,15 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 	if funcDef.GoImpl != nil {
 		// Built-in function - call Go implementation
 		//return funcDef.GoImpl(e, funcCtx, args), true
-		return funcDef.GoImpl(e, ctx, args), true
+		result := funcDef.GoImpl(e, ctx, args)
+
+		// the downstream code doesn't have access to the single expression
+		// so we can add it here.
+		if err, ok := core.AsError(result); ok {
+			err.Arg = callExpr
+			return err, true
+		}
+		return result, true
 	}
 
 	// TODO: substitute bindings seems to do the same thing as the code below

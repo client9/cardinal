@@ -9,7 +9,7 @@ import (
 
 func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	if len(args) != 2 {
-		return core.NewErrorExpr("ArgumentError", "Table expects 2 arguments", args)
+		return core.NewError("ArgumentError", "Table expects 2 arguments")
 	}
 
 	expr := args[0] // Don't evaluate expr yet - Table has HoldAll
@@ -25,13 +25,13 @@ func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 		return tableIterator(e, c, expr, iterList)
 	}
 
-	return core.NewErrorExpr("ArgumentError", "Table second argument must be integer or core.List", args)
+	return core.NewError("ArgumentError", "Table second argument must be integer or core.List")
 }
 
 // evaluateTableSimple implements Table(expr, n) - creates n copies of expr
 func tableSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64) core.Expr {
 	if n < 0 {
-		return core.NewErrorExpr("ArgumentError", fmt.Sprintf("Table count must be non-negative, got %d", n), []core.Expr{core.NewInteger(n)})
+		return core.NewError("ArgumentError", fmt.Sprintf("Table count must be non-negative, got %d", n))
 	}
 
 	if n == 0 {
@@ -100,15 +100,15 @@ func tableIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterS
 // IMPORTANT: Evaluates start, end, and increment expressions and validates they are numeric
 func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec core.List) (variable string, start, end, increment core.Expr, err core.Expr) {
 	if len(iterSpec.Elements) < 3 || len(iterSpec.Elements) > 5 {
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
-			"Table iterator must be core.List(var, max), core.List(var, start, end), or core.List(var, start, end, step)", []core.Expr{iterSpec})
+		return "", nil, nil, nil, core.NewError("ArgumentError",
+			"Table iterator must be core.List(var, max), core.List(var, start, end), or core.List(var, start, end, step)")
 	}
 
 	// Extract variable name
 	if varSymbol, ok := core.ExtractSymbol(iterSpec.Elements[1]); ok {
 		variable = varSymbol
 	} else {
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError", "Table iterator variable must be a symbol", []core.Expr{iterSpec.Elements[1]})
+		return "", nil, nil, nil, core.NewError("ArgumentError", "Table iterator variable must be a symbol")
 	}
 
 	// Parse and evaluate based on number of arguments
@@ -147,7 +147,7 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 		}
 
 	default:
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError", "Invalid Table iterator specification", []core.Expr{iterSpec})
+		return "", nil, nil, nil, core.NewError("ArgumentError", "Invalid Table iterator specification")
 	}
 
 	// Validate that arithmetic and comparison operations can be evaluated
@@ -155,24 +155,24 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 	testPlus := core.NewList("Plus", start, increment)
 	plusResult := e.Evaluate(testPlus)
 	if core.IsError(plusResult) {
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult), []core.Expr{plusResult})
+		return "", nil, nil, nil, core.NewError("ArgumentError",
+			fmt.Sprintf("Table iterator arithmetic failed: %s", plusResult))
 	}
 	if plusResult.Equal(testPlus) && !plusResult.IsAtom() {
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator arithmetic unevaluated: Plus(%s, %s) - missing arithmetic definition", start, increment), []core.Expr{start, increment})
+		return "", nil, nil, nil, core.NewError("ArgumentError",
+			fmt.Sprintf("Table iterator arithmetic unevaluated: Plus(%s, %s) - missing arithmetic definition", start, increment))
 	}
 
 	// Test if comparison operation evaluates
 	testLessEqual := core.NewList("LessEqual", start, end)
 	compareResult := e.Evaluate(testLessEqual)
 	if core.IsError(compareResult) {
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator comparison failed: %s", compareResult), []core.Expr{compareResult})
+		return "", nil, nil, nil, core.NewError("ArgumentError",
+			fmt.Sprintf("Table iterator comparison failed: %s", compareResult))
 	}
 	if compareResult.Equal(testLessEqual) && !compareResult.IsAtom() {
-		return "", nil, nil, nil, core.NewErrorExpr("ArgumentError",
-			fmt.Sprintf("Table iterator comparison unevaluated: LessEqual(%s, %s) - missing comparison definition", start, end), []core.Expr{start, end})
+		return "", nil, nil, nil, core.NewError("ArgumentError",
+			fmt.Sprintf("Table iterator comparison unevaluated: LessEqual(%s, %s) - missing comparison definition", start, end))
 	}
 
 	return variable, start, end, increment, nil

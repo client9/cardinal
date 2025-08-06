@@ -9,8 +9,8 @@ import (
 func IfExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 
 	if len(args) < 2 || len(args) > 3 {
-		return core.NewErrorExpr("ArgumentError",
-			"If expects 2 or 3 arguments", args)
+		return core.NewError("ArgumentError",
+			"If expects 2 or 3 arguments")
 	}
 
 	// Evaluate the condition
@@ -33,5 +33,5 @@ func IfExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	}
 
 	// Condition is not a boolean, return an error
-	return core.NewErrorExpr("TypeError", "If condition must be True or False", []core.Expr{condition})
+	return core.NewError("TypeError", "If condition must be True or False")
 }

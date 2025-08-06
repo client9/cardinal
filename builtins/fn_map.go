@@ -13,8 +13,8 @@ func MapExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list co
 	// Check if the second argument is a list
 	listExpr, ok := list.(core.List)
 	if !ok {
-		return core.NewErrorExpr("ArgumentError",
-			"Map expects a list as the second argument", []core.Expr{list})
+		return core.NewError("ArgumentError",
+			"Map expects a list as the second argument")
 	}
 
 	// If the list is empty or only has a head, return it unchanged

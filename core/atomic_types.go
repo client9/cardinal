@@ -130,7 +130,7 @@ func (s String) ElementAt(n int64) Expr {
 	length := int64(len(runes))
 
 	if length == 0 {
-		return NewErrorExpr("PartError", "String is empty", []Expr{s})
+		return NewError("PartError", "String is empty")
 	}
 
 	// Handle negative indexing
@@ -140,9 +140,8 @@ func (s String) ElementAt(n int64) Expr {
 
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for string with %d characters", n, length),
-			[]Expr{s})
+		return NewError("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for string with %d characters", n, length))
 	}
 
 	// Convert to 0-based index and return character as string
@@ -168,15 +167,14 @@ func (s String) Slice(start, stop int64) Expr {
 
 	// Check bounds
 	if start <= 0 || stop <= 0 || start > length || stop > length {
-		return NewErrorExpr("PartError",
+		return NewError("PartError",
 			fmt.Sprintf("Slice indices [%d, %d] out of bounds for string with %d characters",
-				start, stop, length), []Expr{s})
+				start, stop, length))
 	}
 
 	if start > stop {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop),
-			[]Expr{s})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d is greater than stop index %d", start, stop))
 	}
 
 	// Convert to 0-based indices for Go slice
@@ -190,9 +188,8 @@ func (s String) Join(other Sliceable) Expr {
 	// Type check: ensure other is also a String
 	otherStr, ok := other.(String)
 	if !ok {
-		return NewErrorExpr("TypeError",
-			fmt.Sprintf("Cannot join %T with String", other),
-			[]Expr{s, other.(Expr)})
+		return NewError("TypeError",
+			fmt.Sprintf("Cannot join %T with String", other))
 	}
 
 	// Simple concatenation for strings
@@ -203,8 +200,8 @@ func (s String) SetElementAt(n int64, value Expr) Expr {
 	// Validate that value is a string
 	valueStr, ok := value.(String)
 	if !ok {
-		return NewErrorExpr("TypeError",
-			"String assignment requires string value", []Expr{s, value})
+		return NewError("TypeError",
+			"String assignment requires string value")
 	}
 
 	str := string(s)
@@ -212,7 +209,7 @@ func (s String) SetElementAt(n int64, value Expr) Expr {
 	length := int64(len(runes))
 
 	if length == 0 {
-		return NewErrorExpr("PartError", "String is empty", []Expr{s})
+		return NewError("PartError", "String is empty")
 	}
 
 	// Handle negative indexing
@@ -222,18 +219,15 @@ func (s String) SetElementAt(n int64, value Expr) Expr {
 
 	// Check bounds (1-indexed)
 	if n <= 0 || n > length {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Part index %d is out of bounds for string with %d characters", n, length),
-			[]Expr{s})
+		return NewError("PartError",
+			fmt.Sprintf("Part index %d is out of bounds for string with %d characters", n, length))
 	}
 
 	valueRunes := []rune(string(valueStr))
 
 	// For single character replacement, value should be a single character
 	if len(valueRunes) != 1 {
-		return NewErrorExpr("ValueError",
-			fmt.Sprintf("Single character replacement requires exactly one character, got %d", len(valueRunes)),
-			[]Expr{s, value})
+		return NewError("ValueError", "Single character replacement requires exactly one character")
 	}
 
 	// Create new string with character replaced
@@ -248,8 +242,8 @@ func (s String) SetSlice(start, stop int64, values Expr) Expr {
 	// Validate that values is a string
 	valueStr, ok := values.(String)
 	if !ok {
-		return NewErrorExpr("TypeError",
-			"String slice assignment requires string value", []Expr{s, values})
+		return NewError("TypeError",
+			"String slice assignment requires string value")
 	}
 
 	str := string(s)
@@ -262,7 +256,7 @@ func (s String) SetSlice(start, stop int64, values Expr) Expr {
 			// Insert at beginning of empty string
 			return values
 		}
-		return NewErrorExpr("PartError", "String is empty", []Expr{s})
+		return NewError("PartError", "String is empty")
 	}
 
 	// Handle negative indexing
@@ -275,22 +269,19 @@ func (s String) SetSlice(start, stop int64, values Expr) Expr {
 
 	// Validate range
 	if start <= 0 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d must be positive", start),
-			[]Expr{s})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d must be positive", start))
 	}
 
 	if start > length+1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Start index %d is out of bounds for string with %d characters", start, length),
-			[]Expr{s})
+		return NewError("PartError",
+			fmt.Sprintf("Start index %d is out of bounds for string with %d characters", start, length))
 	}
 
 	// Handle special cases
 	if stop < start-1 {
-		return NewErrorExpr("PartError",
-			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start),
-			[]Expr{s})
+		return NewError("PartError",
+			fmt.Sprintf("Stop index %d cannot be less than start index %d - 1", stop, start))
 	}
 
 	valueRunes := []rune(string(valueStr))
