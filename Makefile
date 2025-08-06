@@ -33,6 +33,7 @@ cover:
 	cat coverage.html-tmp | sed 's/background: black/background: whitesmoke/g' | sed 's/80, 80, 80/0,0,0/g' | sed 's/Menlo/ui-monospace/g' | sed 's/bold/normal/g' | sed 's/rgb(192, 0, 0)/rgb(255,0,0);font-weight:bold;/g' > coverage.html
 
 clean:
+	rm -f cpu.prof mem.prof
 	rm -f repl cmd/repl/repl
 	rm -f main wrapgen
 	find . -name '*.bak*' | xargs rm -f

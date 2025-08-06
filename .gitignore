@@ -39,3 +39,5 @@ wrapped
 builtin_setup.go
 ./repl
 attribute_string.go
+cpu.prof
+mem.prof
