@@ -62,10 +62,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 	//fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
 
 	// Extract function name from original pattern (before conversion)
-	functionName, err := extractFunctionName(pattern)
-	if err != nil {
-		return fmt.Errorf("cannot extract function name from pattern: %v", err)
-	}
+	functionName := pattern.Head()
 
 	// Create function definition with symbolic pattern using compound specificity
 	specificity := calculatePatternSpecificity(pattern)
@@ -101,11 +98,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltins(patterns []PatternRule) error
 
 // RegisterUserFunction registers a user-defined function with pattern and body
 func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Expr) error {
-	// Extract function name from pattern
-	functionName, err := extractFunctionName(pattern)
-	if err != nil {
-		return fmt.Errorf("cannot extract function name from pattern: %v", err)
-	}
+	functionName := pattern.Head()
 
 	// // fmt.Printf("DEBUG: RegisterUserFunction: function=%s, pattern=%v, body=%v\\n", functionName, pattern, body)
 
