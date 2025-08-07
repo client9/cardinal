@@ -4,6 +4,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -51,71 +52,82 @@ func initStringToAttributeMap() {
 
 // SymbolTable manages attributes for symbols
 type SymbolTable struct {
-	attributes map[string]map[Attribute]bool
+	attributes map[string][]Attribute
 }
 
 // NewSymbolTable creates a new symbol table instance
 func NewSymbolTable() *SymbolTable {
 	return &SymbolTable{
-		attributes: make(map[string]map[Attribute]bool),
+		attributes: make(map[string][]Attribute),
 	}
+}
+
+// Reset clears all attributes from the symbol table (useful for testing)
+func (st *SymbolTable) Reset() {
+	st.attributes = make(map[string][]Attribute)
 }
 
 // SetAttributes sets one or more attributes for a symbol
 func (st *SymbolTable) SetAttributes(symbol string, attrs []Attribute) {
-	if st.attributes[symbol] == nil {
-		st.attributes[symbol] = make(map[Attribute]bool)
+
+	alist := st.attributes[symbol]
+
+	// if doesn't exist, just set directly
+	if alist == nil {
+		st.attributes[symbol] = attrs
+		return
 	}
 
+	dirty := false
 	for _, attr := range attrs {
-		st.attributes[symbol][attr] = true
+		if !slices.Contains(alist, attr) {
+			alist = append(alist, attr)
+			dirty = true
+		}
+	}
+	if dirty {
+		st.attributes[symbol] = alist
 	}
 }
 
 // ClearAttributes removes one or more attributes from a symbol
 func (st *SymbolTable) ClearAttributes(symbol string, attrs []Attribute) {
-	if st.attributes[symbol] == nil {
+	alist := st.attributes[symbol]
+	if alist == nil {
 		return
 	}
 
 	for _, attr := range attrs {
-		delete(st.attributes[symbol], attr)
+		if idx := slices.Index(alist, attr); idx != -1 {
+			alist = slices.Delete(alist, idx, idx+1)
+		}
 	}
-
-	// Clean up empty attribute maps
-	if len(st.attributes[symbol]) == 0 {
+	if len(alist) == 0 {
 		delete(st.attributes, symbol)
 	}
 }
 
 // Attributes returns all attributes for a symbol
 func (st *SymbolTable) Attributes(symbol string) []Attribute {
-
-	if st.attributes[symbol] == nil {
-		return nil
-	}
-
-	var attrs []Attribute
-	for attr := range st.attributes[symbol] {
-		attrs = append(attrs, attr)
-	}
+	alist := st.attributes[symbol]
 
 	// Sort for consistent output (alphabetically by name)
-	sort.Slice(attrs, func(i, j int) bool {
-		return attrs[i].String() < attrs[j].String()
+	sort.Slice(alist, func(i, j int) bool {
+		return alist[i].String() < alist[j].String()
 	})
 
-	return attrs
+	return alist
 }
 
 // HasAttribute checks if a symbol has a specific attribute
 func (st *SymbolTable) HasAttribute(symbol string, attr Attribute) bool {
 
-	if st.attributes[symbol] == nil {
+	alist := st.attributes[symbol]
+
+	if alist == nil {
 		return false
 	}
-
-	return st.attributes[symbol][attr]
+	return slices.Contains(alist, attr)
 }
 
 // ClearAllAttributes removes all attributes from a symbol
@@ -149,9 +161,4 @@ func (st *SymbolTable) AllSymbolsWithAttributes() []string {
 
 	sort.Strings(symbols)
 	return symbols
-}
-
-// Reset clears all attributes from the symbol table (useful for testing)
-func (st *SymbolTable) Reset() {
-	st.attributes = make(map[string]map[Attribute]bool)
 }
