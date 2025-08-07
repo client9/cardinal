@@ -16,13 +16,13 @@ func ApplyExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list 
 	}
 
 	// Extract elements (skip the head)
-	elements := listExpr.Elements[1:]
+	elements := listExpr.Tail()
 
 	// Create function application: function(element1, element2, ...)
 	applicationElements := make([]core.Expr, len(elements)+1)
 	applicationElements[0] = function
 	copy(applicationElements[1:], elements)
-	application := core.List{Elements: applicationElements}
+	application := core.NewListFromExprs(applicationElements...)
 
 	// Evaluate the function application using the evaluator
 	return e.Evaluate(application)

@@ -12,12 +12,12 @@ func ReplaceAllExpr(expr Expr, rule Expr) Expr {
 	}
 
 	// If no match at this level, recursively apply to subexpressions
-	if list, ok := expr.(List); ok && len(list.Elements) > 0 {
+	if list, ok := expr.(List); ok {
 		// Create new list with transformed elements
-		newElements := make([]Expr, len(list.Elements))
+		newElements := make([]Expr, list.Length()+1)
 		changed := false
 
-		for i, element := range list.Elements {
+		for i, element := range list.AsSlice() {
 			newElement := ReplaceAllExpr(element, rule)
 			newElements[i] = newElement
 			if !newElement.Equal(element) {
@@ -46,12 +46,12 @@ func ReplaceAllWithRules(expr Expr, rulesList Expr) Expr {
 	}
 
 	// If no match at this level, recursively apply to subexpressions
-	if list, ok := expr.(List); ok && len(list.Elements) > 0 {
+	if list, ok := expr.(List); ok {
 		// Create new list with transformed elements
-		newElements := make([]Expr, len(list.Elements))
+		newElements := make([]Expr, list.Length()+1)
 		changed := false
 
-		for i, element := range list.Elements {
+		for i, element := range list.AsSlice() {
 			newElement := ReplaceAllWithRules(element, rulesList)
 			newElements[i] = newElement
 			if !newElement.Equal(element) {

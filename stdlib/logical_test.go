@@ -141,7 +141,7 @@ func TestMatchQExprs(t *testing.T) {
 
 func createList(head string, elements ...core.Expr) core.Expr {
 	allElements := append([]core.Expr{core.NewSymbol(head)}, elements...)
-	return core.List{Elements: allElements}
+	return core.NewListFromExprs(allElements...)
 }
 
 func createPattern(varName string, blankExpr core.Expr) core.Expr {

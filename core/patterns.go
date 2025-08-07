@@ -45,30 +45,30 @@ type CompoundSpecificity struct {
 // CreateBlankExpr creates a symbolic Blank[] expression
 func CreateBlankExpr(typeExpr Expr) Expr {
 	if typeExpr == nil {
-		return List{Elements: []Expr{NewSymbol("Blank")}}
+		return NewList("Blank")
 	}
-	return List{Elements: []Expr{NewSymbol("Blank"), typeExpr}}
+	return NewList("Blank", typeExpr)
 }
 
 // CreateBlankSequenceExpr creates a symbolic BlankSequence[] expression
 func CreateBlankSequenceExpr(typeExpr Expr) Expr {
 	if typeExpr == nil {
-		return List{Elements: []Expr{NewSymbol("BlankSequence")}}
+		return NewList("BlankSequence")
 	}
-	return List{Elements: []Expr{NewSymbol("BlankSequence"), typeExpr}}
+	return NewList("BlankSequence", typeExpr)
 }
 
 // CreateBlankNullSequenceExpr creates a symbolic BlankNullSequence[] expression
 func CreateBlankNullSequenceExpr(typeExpr Expr) Expr {
 	if typeExpr == nil {
-		return List{Elements: []Expr{NewSymbol("BlankNullSequence")}}
+		return NewList("BlankNullSequence")
 	}
-	return List{Elements: []Expr{NewSymbol("BlankNullSequence"), typeExpr}}
+	return NewList("BlankNullSequence", typeExpr)
 }
 
 // CreatePatternExpr creates a symbolic Pattern[name, blank] expression
 func CreatePatternExpr(nameExpr, blankExpr Expr) Expr {
-	return List{Elements: []Expr{NewSymbol("Pattern"), nameExpr, blankExpr}}
+	return NewList("Pattern", nameExpr, blankExpr)
 }
 
 // Pattern analysis functions
@@ -76,22 +76,17 @@ func CreatePatternExpr(nameExpr, blankExpr Expr) Expr {
 // IsSymbolicBlank checks if an expression is a symbolic blank pattern
 func IsSymbolicBlank(expr Expr) (bool, string, Expr) {
 	list, ok := expr.(List)
-	if !ok || len(list.Elements) < 1 {
-		return false, "", nil
-	}
-
-	head, ok := list.Elements[0].(Symbol)
 	if !ok {
 		return false, "", nil
 	}
 
-	headName := head.String()
+	headName := list.Head()
 	blankTypes := []string{"Blank", "BlankSequence", "BlankNullSequence"}
 	for _, bt := range blankTypes {
 		if headName == bt {
 			var typeExpr Expr
-			if len(list.Elements) > 1 {
-				typeExpr = list.Elements[1]
+			if list.Length() > 0 {
+				typeExpr = (*list.Elements)[1]
 			}
 			return true, headName, typeExpr
 		}
@@ -103,15 +98,16 @@ func IsSymbolicBlank(expr Expr) (bool, string, Expr) {
 // IsSymbolicPattern checks if an expression is a symbolic Pattern[name, blank]
 func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
 	list, ok := expr.(List)
-	if !ok || len(list.Elements) != 3 {
+	if !ok || list.Length() != 2 {
 		return false, nil, nil
 	}
 
-	if headName, ok := ExtractSymbol(list.Elements[0]); !ok || headName != "Pattern" {
+	if list.Head() != "Pattern" {
 		return false, nil, nil
 	}
 
-	return true, list.Elements[1], list.Elements[2]
+	args := list.Tail()
+	return true, args[0], args[1]
 }
 
 // GetSymbolicPatternInfo extracts pattern information from a symbolic pattern
@@ -305,11 +301,11 @@ func ConvertToSymbolicPattern(pattern Expr) Expr {
 		}
 
 		// Convert elements recursively
-		newElements := make([]Expr, len(p.Elements))
-		for i, elem := range p.Elements {
+		newElements := make([]Expr, p.Length()+1)
+		for i, elem := range p.AsSlice() {
 			newElements[i] = ConvertToSymbolicPattern(elem)
 		}
-		return List{Elements: newElements}
+		return NewListFromExprs(newElements...)
 	default:
 		return pattern
 	}
@@ -365,10 +361,8 @@ func MatchesType(expr Expr, typeName string) bool {
 		case "Rule":
 			log.Printf("IN RULE")
 			// Check if it's a List with "Rule" as the head
-			if list, ok := expr.(List); ok && len(list.Elements) >= 1 {
-				if head, ok := list.Elements[0].(Symbol); ok {
-					return head.String() == "Rule"
-				}
+			if list, ok := expr.(List); ok {
+				return list.Head() == "Rule"
 			}
 			return false
 
@@ -518,22 +512,23 @@ func GetPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 
 // CalculateCompoundSpecificity calculates specificity for compound patterns (lists)
 func CalculateCompoundSpecificity(pattern List) CompoundSpecificity {
-	if len(pattern.Elements) == 0 {
-		return CompoundSpecificity{}
-	}
-
+	/*
+		if pattern.Length() == 0 {
+			return CompoundSpecificity{}
+		}
+	*/
 	cs := CompoundSpecificity{
-		ArgsCount:       len(pattern.Elements) - 1, // Exclude head
+		ArgsCount:       int(pattern.Length()),
 		ArgsSpecificity: make([]PatternSpecificity, 0),
 	}
 
 	// Calculate head specificity
-	cs.HeadSpecificity = GetPatternSpecificity(pattern.Elements[0])
+	cs.HeadSpecificity = GetPatternSpecificity(pattern.HeadExpr())
 
 	// Calculate argument specificities
 	totalArgScore := 0
-	for i := 1; i < len(pattern.Elements); i++ {
-		argSpec := GetPatternSpecificity(pattern.Elements[i])
+	for _, e := range pattern.Tail() {
+		argSpec := GetPatternSpecificity(e)
 		cs.ArgsSpecificity = append(cs.ArgsSpecificity, argSpec)
 		totalArgScore += int(argSpec)
 	}
@@ -750,17 +745,20 @@ func matchListWithBindings(patternList, exprList List, bindings PatternBindings)
 
 // matchListWithBindingsSequential handles pattern matching with sequence patterns
 func matchListWithBindingsSequential(patternList, exprList List, bindings PatternBindings, patternIdx, exprIdx int) bool {
+	patternSlice := patternList.AsSlice()
+	exprSlice := exprList.AsSlice()
+
 	// If we've processed all pattern elements
-	if patternIdx >= len(patternList.Elements) {
+	if patternIdx >= len(patternSlice) {
 		// Success if we've also processed all expression elements
-		return exprIdx >= len(exprList.Elements)
+		return exprIdx >= len(exprSlice)
 	}
 
 	// If we've run out of expression elements but still have patterns
-	if exprIdx >= len(exprList.Elements) {
+	if exprIdx >= len(exprSlice) {
 		// Check if remaining patterns are all BlankNullSequence (which can match zero elements)
-		for i := patternIdx; i < len(patternList.Elements); i++ {
-			elem := patternList.Elements[i]
+		for i := patternIdx; i < len(patternSlice); i++ {
+			elem := patternSlice[i]
 			if !isNullSequencePattern(elem) {
 				return false
 			}
@@ -770,7 +768,7 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings Patter
 		return true
 	}
 
-	patternElem := patternList.Elements[patternIdx]
+	patternElem := patternSlice[patternIdx]
 
 	// Check if this is a sequence pattern
 	if isSequencePattern, varName, typeName, allowZero := analyzeSequencePattern(patternElem); isSequencePattern {
@@ -778,7 +776,7 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings Patter
 	}
 
 	// Regular pattern - match one element
-	if matchWithBindingsInternal(patternElem, exprList.Elements[exprIdx], bindings) {
+	if matchWithBindingsInternal(patternElem, exprSlice[exprIdx], bindings) {
 		return matchListWithBindingsSequential(patternList, exprList, bindings, patternIdx+1, exprIdx+1)
 	}
 
@@ -882,14 +880,18 @@ func bindNullSequencePattern(pattern Expr, bindings PatternBindings) {
 	// Bind to empty list if we have a variable name
 	if varName != "" {
 		// Create a proper List with "List" as the first element (like the old system)
-		bindings[varName] = List{Elements: []Expr{NewSymbol("List")}}
+		bindings[varName] = NewList("List")
 	}
 }
 
 // matchSequencePatternWithBindings handles matching sequence patterns
 func matchSequencePatternWithBindings(patternList, exprList List, bindings PatternBindings, patternIdx, exprIdx int, varName, typeName string, allowZero bool) bool {
-	remainingPatterns := len(patternList.Elements) - patternIdx - 1
-	remainingExprs := len(exprList.Elements) - exprIdx
+
+	patternSlice := patternList.AsSlice()
+	exprSlice := exprList.AsSlice()
+
+	remainingPatterns := len(patternSlice) - patternIdx - 1
+	remainingExprs := len(exprSlice) - exprIdx
 
 	// Minimum elements this sequence must consume
 	minConsume := 0
@@ -915,8 +917,8 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings Patte
 		// Collect the elements to bind to this sequence
 		var seqElements []Expr
 		for i := 0; i < consume; i++ {
-			if exprIdx+i < len(exprList.Elements) {
-				seqElements = append(seqElements, exprList.Elements[exprIdx+i])
+			if exprIdx+i < len(exprSlice) {
+				seqElements = append(seqElements, exprSlice[exprIdx+i])
 			}
 		}
 
@@ -938,7 +940,7 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings Patte
 		if varName != "" {
 			// Create a proper List with "List" as the first element (consistent with old system)
 			listElements := append([]Expr{NewSymbol("List")}, seqElements...)
-			testBindings[varName] = List{Elements: listElements}
+			testBindings[varName] = NewListFromExprs(listElements...)
 		}
 
 		// Try to match remaining patterns
@@ -961,12 +963,7 @@ func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings)
 		varName := string(elemSym)
 		if boundValue, exists := bindings[varName]; exists {
 			// Check if the bound value is a List (indicating sequence pattern)
-			if boundList, ok := boundValue.(List); ok && len(boundList.Elements) > 0 {
-				// Check if the List head is "List" (our sequence marker)
-				if headSym, ok := boundList.Elements[0].(Symbol); ok {
-					return headSym.String() == "List"
-				}
-			}
+			return boundValue.Head() == "List"
 		}
 	}
 	return false
@@ -984,10 +981,10 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 
 	case List:
 		// Recursively substitute in list elements with sequence splicing
-		newElements := make([]Expr, 0, len(e.Elements))
+		newElements := make([]Expr, 0, e.Length()+1)
 		changed := false
 
-		for i, elem := range e.Elements {
+		for i, elem := range e.AsSlice() {
 			newElem := SubstituteBindings(elem, bindings)
 
 			// Check if this is a sequence variable substitution that needs splicing
@@ -998,13 +995,13 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 					if boundValue, exists := bindings[varName]; exists {
 						if boundList, ok := boundValue.(List); ok {
 							// Check if it's an empty sequence (just "List" head)
-							if len(boundList.Elements) == 1 {
+							if boundList.Length() == 0 {
 								// Empty sequence - skip adding anything
 								changed = true
 								continue
-							} else if len(boundList.Elements) > 1 {
+							} else {
 								// Non-empty sequence - skip the "List" head and add the actual elements
-								newElements = append(newElements, boundList.Elements[1:]...)
+								newElements = append(newElements, boundList.Tail()...)
 								changed = true
 								continue
 							}
@@ -1021,7 +1018,7 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 		}
 
 		if changed {
-			return List{Elements: newElements}
+			return NewListFromExprs(newElements...)
 		}
 		return e
 
@@ -1061,11 +1058,14 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 		return false
 	case List:
 		if p2, ok := pattern2.(List); ok {
-			if len(p1.Elements) != len(p2.Elements) {
+			s1 := p1.AsSlice()
+			s2 := p2.AsSlice()
+
+			if len(s1) != len(s2) {
 				return false
 			}
-			for i := range p1.Elements {
-				if !PatternsEqual(p1.Elements[i], p2.Elements[i]) {
+			for i := range s1 {
+				if !PatternsEqual(s1[i], s2[i]) {
 					return false
 				}
 			}

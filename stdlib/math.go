@@ -202,7 +202,7 @@ func PlusExpr(args ...core.Expr) core.Expr {
 		return core.NewInteger(0)
 	}
 
-	return core.List{Elements: resultElements}
+	return core.NewListFromExprs(resultElements...)
 }
 
 // TimesExpr performs multiplication with light simplification
@@ -272,5 +272,5 @@ func TimesExpr(args ...core.Expr) core.Expr {
 		return core.NewInteger(1)
 	}
 
-	return core.List{Elements: resultElements}
+	return core.NewListFromExprs(resultElements...)
 }

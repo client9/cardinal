@@ -12,7 +12,7 @@ func TestSort(t *testing.T) {
 		exprs := make([]core.Expr, len(elements)+1)
 		exprs[0] = core.NewSymbol(head)
 		copy(exprs[1:], elements)
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	tests := []struct {

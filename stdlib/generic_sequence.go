@@ -122,13 +122,15 @@ func TakeRange(expr core.Expr, rangeList core.List) core.Expr {
 	}
 
 	// Extract range indices
-	if len(rangeList.Elements) != 3 { // Head + two elements
+	if rangeList.Length() != 2 { // Head + two elements
 		return core.NewError("ArgumentError",
 			"Take with range requires exactly two indices")
 	}
 
-	start, ok1 := core.ExtractInt64(rangeList.Elements[1])
-	stop, ok2 := core.ExtractInt64(rangeList.Elements[2])
+	args := rangeList.Tail()
+
+	start, ok1 := core.ExtractInt64(args[0])
+	stop, ok2 := core.ExtractInt64(args[1])
 	if !ok1 || !ok2 {
 		return core.NewError("ArgumentError",
 			"Take indices must be integers")
@@ -147,13 +149,14 @@ func DropRange(expr core.Expr, rangeList core.List) core.Expr {
 	}
 
 	// Extract range indices
-	if len(rangeList.Elements) != 3 { // Head + two elements
+	if rangeList.Length() != 2 {
 		return core.NewError("ArgumentError",
 			"Drop with range requires exactly two indices")
 	}
+	args := rangeList.Tail()
 
-	start, ok1 := core.ExtractInt64(rangeList.Elements[1])
-	stop, ok2 := core.ExtractInt64(rangeList.Elements[2])
+	start, ok1 := core.ExtractInt64(args[0])
+	stop, ok2 := core.ExtractInt64(args[1])
 	if !ok1 || !ok2 {
 		return core.NewError("ArgumentError",
 			"Drop indices must be integers")
@@ -186,11 +189,9 @@ func DropRange(expr core.Expr, rangeList core.List) core.Expr {
 func createEmpty(expr core.Expr) core.Expr {
 	switch e := expr.(type) {
 	case core.List:
-		// Return list with just the head
-		if len(e.Elements) > 0 {
-			return core.List{Elements: []core.Expr{e.Elements[0]}}
-		}
-		return core.List{Elements: []core.Expr{core.NewSymbol("List")}}
+		// TODO
+		head := e.Head()
+		return core.NewList(head)
 	case core.String:
 		return core.NewString("")
 	case core.ByteArray:

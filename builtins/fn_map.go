@@ -18,13 +18,13 @@ func MapExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list co
 	}
 
 	// If the list is empty or only has a head, return it unchanged
-	if len(listExpr.Elements) <= 1 {
+	if listExpr.Length() == 0 {
 		return listExpr
 	}
 
 	// Extract head and elements
-	head := listExpr.Elements[0]
-	elements := listExpr.Elements[1:]
+	head := listExpr.HeadExpr()
+	elements := listExpr.Tail()
 
 	// Apply the function to each element
 	resultElements := make([]core.Expr, len(elements)+1)
@@ -33,12 +33,12 @@ func MapExpr(e *engine.Evaluator, c *engine.Context, function core.Expr, list co
 	for i, element := range elements {
 		// Create function application: function(element)
 		applicationElements := []core.Expr{function, element}
-		application := core.List{Elements: applicationElements}
+		application := core.NewListFromExprs(applicationElements...)
 
 		// Evaluate the function application using the evaluator
 		result := e.Evaluate(application)
 		resultElements[i+1] = result
 	}
 
-	return core.List{Elements: resultElements}
+	return core.NewListFromExprs(resultElements...)
 }

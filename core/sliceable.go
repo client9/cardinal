@@ -27,24 +27,14 @@ type Sliceable interface {
 
 // IsSliceable checks if an expression implements the Sliceable interface and actually supports slicing
 func IsSliceable(expr Expr) bool {
-	switch expr.(type) {
-	case List:
-		return true
-	case String:
-		return true
-	case ByteArray:
-		return true
-	default:
-		return false
-	}
+	_, ok := expr.(Sliceable)
+	return ok
 }
 
 // AsSliceable safely casts an Expr to Sliceable, returning nil if not sliceable
 func AsSliceable(expr Expr) Sliceable {
-	if IsSliceable(expr) {
-		if sliceable, ok := expr.(Sliceable); ok {
-			return sliceable
-		}
+	if sliceable, ok := expr.(Sliceable); ok {
+		return sliceable
 	}
 	return nil
 }

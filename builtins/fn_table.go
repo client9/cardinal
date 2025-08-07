@@ -1,10 +1,9 @@
 package builtins
 
 import (
+	"fmt"
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
-
-	"fmt"
 )
 
 func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
@@ -15,16 +14,23 @@ func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	expr := args[0] // Don't evaluate expr yet - Table has HoldAll
 	spec := args[1] // Don't evaluate spec yet
 
+	// if list, assume iterator spec
+	if spec.Head() == "List" {
+		return tableIterator(e, c, expr, spec.(core.List))
+	}
+
+	// it's something else, evaluate it.
+	val := e.Evaluate(spec)
+	if core.IsError(val) {
+		return val
+	}
+
 	// Check if second argument is an integer (simple replication form)
-	if n, ok := core.ExtractInt64(spec); ok {
-		return tableSimple(e, c, expr, n)
+	// TODO
+	// Want "GetNumericInt" if int64, return int64, if float64 return int64
+	if n, ok := core.GetNumericValue(val); ok {
+		return tableSimple(e, c, expr, int64(n))
 	}
-
-	// Check if second argument is a core.List (iterator form)
-	if iterList, ok := spec.(core.List); ok {
-		return tableIterator(e, c, expr, iterList)
-	}
-
 	return core.NewError("ArgumentError", "Table second argument must be integer or core.List")
 }
 
@@ -99,49 +105,50 @@ func tableIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterS
 // core.List(i, start, end, increment) → core.List(i, start, end, increment)
 // IMPORTANT: Evaluates start, end, and increment expressions and validates they are numeric
 func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec core.List) (variable string, start, end, increment core.Expr, err core.Expr) {
-	if len(iterSpec.Elements) < 3 || len(iterSpec.Elements) > 5 {
+	iterArgs := iterSpec.Tail()
+	if len(iterArgs) < 2 || len(iterArgs) > 4 {
 		return "", nil, nil, nil, core.NewError("ArgumentError",
 			"Table iterator must be core.List(var, max), core.List(var, start, end), or core.List(var, start, end, step)")
 	}
 
 	// Extract variable name
-	if varSymbol, ok := core.ExtractSymbol(iterSpec.Elements[1]); ok {
+	if varSymbol, ok := core.ExtractSymbol(iterArgs[0]); ok {
 		variable = varSymbol
 	} else {
 		return "", nil, nil, nil, core.NewError("ArgumentError", "Table iterator variable must be a symbol")
 	}
 
 	// Parse and evaluate based on number of arguments
-	switch len(iterSpec.Elements) {
-	case 3: // core.List(i, max) → core.List(i, 1, max, 1)
+	switch len(iterArgs) {
+	case 2: // core.List(i, max) → core.List(i, 1, max, 1)
 		start = core.NewInteger(1)
-		end = e.Evaluate(iterSpec.Elements[2])
+		end = e.Evaluate(iterArgs[1])
 		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = core.NewInteger(1)
 
-	case 4: // core.List(i, start, end) → core.List(i, start, end, 1)
-		start = e.Evaluate(iterSpec.Elements[2])
+	case 3: // core.List(i, start, end) → core.List(i, start, end, 1)
+		start = e.Evaluate(iterArgs[1])
 		if core.IsError(start) {
 			return "", nil, nil, nil, start
 		}
-		end = e.Evaluate(iterSpec.Elements[3])
+		end = e.Evaluate(iterArgs[2])
 		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
 		increment = core.NewInteger(1)
 
-	case 5: // core.List(i, start, end, increment)
-		start = e.Evaluate(iterSpec.Elements[2])
+	case 4: // core.List(i, start, end, increment)
+		start = e.Evaluate(iterArgs[1])
 		if core.IsError(start) {
 			return "", nil, nil, nil, start
 		}
-		end = e.Evaluate(iterSpec.Elements[3])
+		end = e.Evaluate(iterArgs[2])
 		if core.IsError(end) {
 			return "", nil, nil, nil, end
 		}
-		increment = e.Evaluate(iterSpec.Elements[4])
+		increment = e.Evaluate(iterArgs[3])
 		if core.IsError(increment) {
 			return "", nil, nil, nil, increment
 		}

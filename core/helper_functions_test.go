@@ -296,22 +296,23 @@ func TestCopyExprList(t *testing.T) {
 			}
 
 			// Verify structure
-			if len(result.Elements) != len(tt.args)+1 {
+			if int(result.Length()) != len(tt.args) {
 				t.Errorf("CopyExprList result has %d elements, want %d",
-					len(result.Elements), len(tt.args)+1)
+					result.Length(), len(tt.args))
 			}
 
 			// Verify head
-			if headSymbol, ok := result.Elements[0].(Symbol); !ok || string(headSymbol) != tt.head {
+			if result.Head() != tt.head {
 				t.Errorf("CopyExprList head = %s, want %s",
-					result.Elements[0].String(), tt.head)
+					result.Head(), tt.head)
 			}
 
 			// Verify args (should be copies of references, not deep copies)
+			rslice := result.AsSlice()
 			for i, expectedArg := range tt.args {
-				if !result.Elements[i+1].Equal(expectedArg) {
+				if !rslice[i+1].Equal(expectedArg) {
 					t.Errorf("CopyExprList arg[%d] = %s, want %s",
-						i, result.Elements[i+1].String(), expectedArg.String())
+						i, rslice[i+1].String(), expectedArg.String())
 				}
 			}
 		})

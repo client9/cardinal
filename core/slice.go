@@ -75,7 +75,7 @@ func SetElementAt[S ~[]E, E any](s S, n int, val E) (S, error) {
 		return nil, fmt.Errorf("Part Error")
 	}
 
-	// Create new ByteArray with byte replaced
+	// Create new slice with element replaced
 	newData := make([]E, length)
 	copy(newData, s)
 	newData[n-1] = val // n is 1-indexed

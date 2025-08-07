@@ -17,12 +17,12 @@ func With(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr
 		return core.NewError("ArgumentError", "With expected list for first argument")
 	}
 	rules := list.Copy()
-	for i := int64(1); i <= rules.Length(); i++ {
-		r, ok := rules.Elements[i].(core.List)
+	for _, arg := range rules.Tail() {
+		r, ok := arg.(core.List)
 		if !ok || r.Head() != "Set" || r.Length() != 2 {
 			return core.NewError("ArgumentError", "With expected list of set assignments")
 		}
-		r.Elements[0] = core.NewSymbol("Rule")
+		(*r.Elements)[0] = core.NewSymbol("Rule")
 	}
 
 	modified := core.ReplaceAllWithRules(body, rules)

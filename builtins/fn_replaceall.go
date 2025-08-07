@@ -24,21 +24,19 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 	}
 
 	result := replaceAllRecursive(expr, rule)
+	if !result.Equal(expr) {
+		return result
+	}
+
 	// If no changes were made and rule is a list with non-rules, return unevaluated ReplaceAll
-	if result.Equal(expr) {
-		if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
-			head := rulesList.Elements[0]
-			if symbolName, ok := core.ExtractSymbol(head); ok && symbolName == "List" {
-				// Check if this list contains non-rules
-				for i := 1; i < len(rulesList.Elements); i++ {
-					if !isRuleOrRuleDelayed(rulesList.Elements[i]) {
-						return core.NewError("ArgumentError", "Input was not a list of rules")
-					}
-				}
+	if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 && rulesList.Head() == "List" {
+		for _, r := range rulesList.Tail() {
+			if !isRuleOrRuleDelayed(r) {
+				return core.NewError("ArgumentError", "Input was not a list of rules")
 			}
 		}
 	}
-	return result
+	return expr
 	// Re-evaluate the final result to handle expressions like Plus(2, 2) -> 4
 	//return e.Evaluate(c, result)
 }
@@ -55,41 +53,38 @@ func replaceAllRecursive(expr core.Expr, rule core.Expr) core.Expr {
 			// Rule matched at this level, return the result (don't recurse into replacement)
 			return result
 		}
-	} else if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
+	} else if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 && rulesList.Head() == "List" {
 		// Handle List of rules
-		head := rulesList.Elements[0]
-		if symbolName, ok := core.ExtractSymbol(head); ok && symbolName == "List" {
-			// First, check if ALL elements (except head) are Rules or RuleDelayed
-			allAreRules := true
-			for i := 1; i < len(rulesList.Elements); i++ {
-				if !isRuleOrRuleDelayed(rulesList.Elements[i]) {
-					allAreRules = false
-					break
-				}
+		// First, check if ALL elements (except head) are Rules or RuleDelayed
+		allAreRules := true
+		rulesSlice := rulesList.Tail()
+		for _, r := range rulesSlice {
+			if !isRuleOrRuleDelayed(r) {
+				allAreRules = false
+				break
 			}
+		}
 
-			// Only process as rule list if ALL elements are rules
-			if allAreRules {
-				// Try each rule in order
-				for i := 1; i < len(rulesList.Elements); i++ {
-					ruleItem := rulesList.Elements[i]
-					result = applyRuleDelayedAware(expr, ruleItem)
-					if !result.Equal(expr) {
-						// Rule matched at this level
-						return result
-					}
+		// Only process as rule list if ALL elements are rules
+		if allAreRules {
+			// Try each rule in order
+			for _, ruleItem := range rulesSlice {
+				result = applyRuleDelayedAware(expr, ruleItem)
+				if !result.Equal(expr) {
+					// Rule matched at this level
+					return result
 				}
 			}
 		}
 	}
 
 	// No match at this level, recursively apply to subexpressions
-	if list, ok := expr.(core.List); ok && len(list.Elements) > 0 {
+	if list, ok := expr.(core.List); ok {
 		// Create new list with transformed elements
-		newElements := make([]core.Expr, len(list.Elements))
+		newElements := make([]core.Expr, list.Length()+1)
 		changed := false
 
-		for i, element := range list.Elements {
+		for i, element := range list.AsSlice() {
 			newElement := replaceAllRecursive(element, rule)
 			newElements[i] = newElement
 			if !newElement.Equal(element) {
@@ -98,7 +93,7 @@ func replaceAllRecursive(expr core.Expr, rule core.Expr) core.Expr {
 		}
 
 		if changed {
-			return core.List{Elements: newElements}
+			return core.NewListFromExprs(newElements...)
 		}
 	}
 

@@ -306,9 +306,9 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 	}
 
 	// Handle List of integers
-	if list, ok := values.(List); ok && len(list.Elements) > 1 {
+	if list, ok := values.(List); ok && list.Length() > 1 {
 		// Extract bytes from List (excluding head)
-		elements := list.Elements[1:]
+		elements := list.Tail()
 		bytes := make([]byte, len(elements))
 
 		for i, elem := range elements {

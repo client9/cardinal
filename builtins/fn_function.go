@@ -28,7 +28,7 @@ func varsToSymbolList(vars core.Expr) []core.Expr {
 	// convert sexpression to native slice
 	if vlist, ok := vars.(core.List); ok {
 		// could validate here that all are symbols
-		return vlist.Elements[1:]
+		return vlist.Tail()
 	}
 
 	return nil
@@ -44,15 +44,16 @@ func FunctionNamed(e *engine.Evaluator, c *engine.Context, vars, body core.Expr)
 // partiallyEvaluateForFunction evaluates nested Function calls but preserves slot variables
 func partiallyEvaluateForFunction(e *engine.Evaluator, c *engine.Context, expr core.Expr) core.Expr {
 	if expr.Head() == "Function" {
-		return Function(e, c, expr.(core.List).Elements[1:])
+		return Function(e, c, expr.(core.List).Tail())
 
 	}
 	if list, ok := expr.(core.List); ok {
-		newElements := make([]core.Expr, len(list.Elements))
-		for i, elem := range list.Elements {
+		largs := list.AsSlice()
+		newElements := make([]core.Expr, len(largs))
+		for i, elem := range largs {
 			newElements[i] = partiallyEvaluateForFunction(e, c, elem)
 		}
-		return core.List{Elements: newElements}
+		return core.NewListFromExprs(newElements...)
 	}
 	return expr
 }

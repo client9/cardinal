@@ -452,13 +452,13 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core
 	switch operator {
 	case SEMICOLON:
 		// Flatten nested CompoundExpressions into a single flat list
-		if leftList, ok := left.(core.List); ok && len(leftList.Elements) > 0 {
-			if headSymbol, ok := core.ExtractSymbol(leftList.Elements[0]); ok && headSymbol == "CompoundExpression" {
+		if leftList, ok := left.(core.List); ok {
+			if leftList.Head() == "CompoundExpression" {
 				// Left is already a CompoundExpression, append right to it
-				elements := make([]core.Expr, len(leftList.Elements)+1)
-				copy(elements, leftList.Elements)
+				elements := make([]core.Expr, leftList.Length()+2)
+				copy(elements, leftList.AsSlice())
 				elements[len(elements)-1] = right
-				return core.List{Elements: elements}
+				return core.NewListFromExprs(elements...)
 			}
 		}
 		return core.NewList("CompoundExpression", left, right)
@@ -494,13 +494,13 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core
 		return core.NewList("GreaterEqual", left, right)
 	case PLUS:
 		// Flatten nested Plus expressions into a single flat list
-		if leftList, ok := left.(core.List); ok && len(leftList.Elements) > 0 {
-			if headSymbol, ok := core.ExtractSymbol(leftList.Elements[0]); ok && headSymbol == "Plus" {
+		if leftList, ok := left.(core.List); ok {
+			if leftList.Head() == "Plus" {
 				// Left is already a Plus, append right to it
-				elements := make([]core.Expr, len(leftList.Elements)+1)
-				copy(elements, leftList.Elements)
+				elements := make([]core.Expr, leftList.Length()+2)
+				copy(elements, leftList.AsSlice())
 				elements[len(elements)-1] = right
-				return core.List{Elements: elements}
+				return core.NewListFromExprs(elements...)
 			}
 		}
 		return core.NewList("Plus", left, right)
@@ -508,13 +508,13 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right core.Expr) core
 		return core.NewList("Subtract", left, right)
 	case MULTIPLY:
 		// Flatten nested Times expressions into a single flat list
-		if leftList, ok := left.(core.List); ok && len(leftList.Elements) > 0 {
-			if headSymbol, ok := core.ExtractSymbol(leftList.Elements[0]); ok && headSymbol == "Times" {
+		if leftList, ok := left.(core.List); ok {
+			if leftList.Head() == "Times" {
 				// Left is already a Times, append right to it
-				elements := make([]core.Expr, len(leftList.Elements)+1)
-				copy(elements, leftList.Elements)
+				elements := make([]core.Expr, leftList.Length()+2)
+				copy(elements, leftList.AsSlice())
 				elements[len(elements)-1] = right
-				return core.List{Elements: elements}
+				return core.NewListFromExprs(elements...)
 			}
 		}
 		return core.NewList("Times", left, right)
@@ -644,8 +644,8 @@ func (p *Parser) parseFunctionApplication(expr core.Expr) core.Expr {
 
 	// Handle empty argument list: f()
 	if p.currentToken.Type == RPAREN {
-		p.nextToken()                                 // consume ')'
-		return core.List{Elements: []core.Expr{expr}} // Just the function with no arguments
+		p.nextToken()                      // consume ')'
+		return core.NewListFromExprs(expr) // Just the function with no arguments
 	}
 
 	// Parse arguments
@@ -670,7 +670,7 @@ func (p *Parser) parseFunctionApplication(expr core.Expr) core.Expr {
 	elements[0] = expr
 	copy(elements[1:], args)
 
-	return core.List{Elements: elements}
+	return core.NewListFromExprs(elements...)
 }
 
 // parseSliceExpression parses expressions inside slice brackets, treating colons as separators
@@ -683,46 +683,41 @@ func (p *Parser) parseSliceExpression() core.Expr {
 // isSliceExpression checks if an expression is a slice or part expression
 func (p *Parser) isSliceExpression(expr core.Expr) bool {
 	list, ok := expr.(core.List)
-	if !ok || len(list.Elements) == 0 {
-		return false
-	}
-
-	headName, ok := core.ExtractSymbol(list.Elements[0])
 	if !ok {
 		return false
 	}
+	headName := list.Head()
 	return headName == "Part" || headName == "Take"
 }
 
 // createSliceAssignment creates the appropriate slice assignment AST node
 func (p *Parser) createSliceAssignment(sliceExpr core.Expr, value core.Expr) core.Expr {
 	list := sliceExpr.(core.List)
-	headName, ok := core.ExtractSymbol(list.Elements[0])
-	if !ok {
-		p.addError(fmt.Sprintf("Unknown slice expression type: %v", list.Elements[0]))
-		return nil
-	}
+	headName := list.Head()
 
 	switch headName {
 	case "Part":
 		// Part(expr, index) = value -> PartSet(expr, index, value)
-		if len(list.Elements) != 3 {
+		if list.Length() != 2 {
 			p.addError("Part expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		return core.NewList("PartSet", list.Elements[1], list.Elements[2], value)
+		args := list.Tail()
+		return core.NewList("PartSet", args[0], args[1], value)
 	case "Take":
 		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
 		// Take(expr, [n, m]) = value --> SliceSet(expr, n, m, value)
-		if len(list.Elements) != 3 {
+		if list.Length() != 2 {
 			p.addError("Take expression must have exactly 2 arguments for assignment")
 			return nil
 		}
-		if _, ok := core.ExtractInt64(list.Elements[2]); ok {
-			return core.NewList("SliceSet", list.Elements[1], core.NewInteger(1), list.Elements[2], value)
+		args := list.Tail()
+		if _, ok := core.ExtractInt64(args[1]); ok {
+			return core.NewList("SliceSet", args[0], core.NewInteger(1), args[1], value)
 		}
-		if rangelist, ok := list.Elements[2].(core.List); ok && rangelist.Length() == 2 {
-			return core.NewList("SliceSet", list.Elements[1], rangelist.Elements[1], rangelist.Elements[2], value)
+		if rangelist, ok := args[1].(core.List); ok && rangelist.Length() == 2 {
+			largs := rangelist.Tail()
+			return core.NewList("SliceSet", args[0], largs[0], largs[1], value)
 		}
 	}
 	p.addError(fmt.Sprintf("Unknown slice expression type: %s", headName))

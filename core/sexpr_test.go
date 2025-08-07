@@ -317,8 +317,8 @@ func TestNewList(t *testing.T) {
 				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.Head())
 			}
 
-			if len(tt.list.Elements) != tt.expectedLength {
-				t.Errorf("expected length %d, got %d", tt.expectedLength, len(tt.list.Elements))
+			if len(tt.list.AsSlice()) != tt.expectedLength {
+				t.Errorf("expected length %d, got %d", tt.expectedLength, len(tt.list.AsSlice()))
 			}
 		})
 	}

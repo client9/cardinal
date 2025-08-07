@@ -22,7 +22,7 @@ func AttributesExpr(e *engine.Evaluator, c *engine.Context, symbol core.Expr) co
 			attrElements[i+1] = core.NewSymbol(attr.String())
 		}
 
-		return core.List{Elements: attrElements}
+		return core.NewListFromExprs(attrElements...)
 	}
 
 	return core.NewError("ArgumentError",

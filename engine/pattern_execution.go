@@ -135,17 +135,20 @@ func (pe *PatternExecutor) matchBlankWithBinding(blankExpr, expr core.Expr, ctx 
 
 // matchListWithBinding matches two lists with binding
 func (pe *PatternExecutor) matchListWithBinding(patternList, exprList core.List, ctx *Context) bool {
+	lhs := patternList.AsSlice()
+	rhs := exprList.AsSlice()
+
 	// Simple case: same length, no sequence patterns
 	if !pe.hasSequencePatterns(patternList) {
-		if len(patternList.Elements) != len(exprList.Elements) {
+		if len(lhs) != len(rhs) {
 			return false
 		}
 
 		// Match each element
-		for i, patternElem := range patternList.Elements {
+		for i, patternElem := range lhs {
 			// Element 0 is head (literal), elements 1+ are parameters (pattern match)
 			isParameterPosition := i > 0
-			if !pe.matchWithBindingInternal(patternElem, exprList.Elements[i], ctx, isParameterPosition) {
+			if !pe.matchWithBindingInternal(patternElem, rhs[i], ctx, isParameterPosition) {
 				return false
 			}
 		}
@@ -154,12 +157,12 @@ func (pe *PatternExecutor) matchListWithBinding(patternList, exprList core.List,
 	}
 
 	// Complex case: has sequence patterns - need sequence matching
-	return pe.matchSequencePatternsWithBinding(patternList.Elements, exprList.Elements, ctx)
+	return pe.matchSequencePatternsWithBinding(lhs, rhs, ctx)
 }
 
 // hasSequencePatterns checks if a pattern list contains sequence patterns
 func (pe *PatternExecutor) hasSequencePatterns(patternList core.List) bool {
-	for _, elem := range patternList.Elements {
+	for _, elem := range patternList.AsSlice() {
 		// Check for symbolic sequence patterns
 		if isBlank, blankType, _ := core.IsSymbolicBlank(elem); isBlank {
 			if blankType == "BlankSequence" || blankType == "BlankNullSequence" {

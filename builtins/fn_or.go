@@ -41,5 +41,5 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	elements := make([]core.Expr, len(nonFalseArgs)+1)
 	elements[0] = core.NewSymbol("Or")
 	copy(elements[1:], nonFalseArgs)
-	return core.List{Elements: elements}
+	return core.NewListFromExprs(elements...)
 }

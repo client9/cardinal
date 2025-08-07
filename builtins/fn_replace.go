@@ -14,8 +14,8 @@ func asRule(expr core.Expr) (a, b core.Expr, ok bool) {
 	if head != "Rule" && head != "RuleDelayed" {
 		return nil, nil, false
 	}
-
-	return list.Elements[1], list.Elements[2], true
+	args := list.Tail()
+	return args[0], args[1], true
 }
 
 // isRuleOrRuleDelayed checks if an expression is a Rule or RuleDelayed
@@ -36,8 +36,8 @@ func isRuleList(expr core.Expr) bool {
 	if !ok {
 		return false
 	}
-	for i := int64(1); i <= list.Length(); i++ {
-		if !isRuleOrRuleDelayed(list.Elements[i]) {
+	for _, arg := range list.Tail() {
+		if !isRuleOrRuleDelayed(arg) {
 			return false
 		}
 	}
@@ -112,20 +112,19 @@ func Replace(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 	}
 
 	// Handle List of rules
-	if rulesList, ok := rule.(core.List); ok && len(rulesList.Elements) >= 1 {
-		head := rulesList.Elements[0]
-		if symbolName, ok := core.ExtractSymbol(head); ok && symbolName == "List" {
+	if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 {
+		if rulesList.Head() == "List" {
+			ruleSlice := rulesList.Tail()
 			// First, check if ALL elements (except head) are Rules or RuleDelayed
-			for i := 1; i < len(rulesList.Elements); i++ {
-				if !isRuleOrRuleDelayed(rulesList.Elements[i]) {
+			for _, r := range ruleSlice {
+				if !isRuleOrRuleDelayed(r) {
 					return core.NewError("ArgumentError", "Input was not a list of rules")
 				}
 			}
 
 			// Only process as rule list if ALL elements are rules
 			// Try each rule in order
-			for i := 1; i < len(rulesList.Elements); i++ {
-				ruleItem := rulesList.Elements[i]
+			for _, ruleItem := range ruleSlice {
 				result := applyRuleDelayedAware(expr, ruleItem)
 				if !result.Equal(expr) {
 					return result

@@ -164,12 +164,12 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 		return nil, false
 	}
 	// Check for new Symbol type first
-	functionName, ok := core.ExtractSymbol(list.Elements[0])
+	functionName, ok := core.ExtractSymbol(list.HeadExpr())
 
 	if !ok {
 		return nil, false
 	}
-	args := list.Elements[1:]
+	args := list.Tail()
 
 	// Find matching function definition
 	funcDef, bindings := r.FindMatchingFunction(functionName, args)
@@ -295,7 +295,7 @@ func extractTypeConstraints(pattern core.Expr) []string {
 	switch p := pattern.(type) {
 	case core.List:
 		// Process each element in the pattern
-		for _, elem := range p.Elements {
+		for _, elem := range p.AsSlice() {
 			types = append(types, extractTypeConstraints(elem)...)
 		}
 	default:
@@ -377,9 +377,11 @@ func matchesPattern(pattern core.Expr, functionName string, args []core.Expr) (b
 	// Since it's immutable unclear why we are copying it.
 
 	// Create a mock function call to match against the pattern
-	mockCall := core.List{Elements: make([]core.Expr, len(args)+1)}
-	mockCall.Elements[0] = core.NewSymbol(functionName)
-	copy(mockCall.Elements[1:], args)
+
+	part := make([]core.Expr, len(args)+1)
+	part[0] = core.NewSymbol(functionName)
+	copy(part[1:], args)
+	mockCall := core.NewListFromExprs(part...)
 
 	// Use the new unified pattern matching system with sequence pattern support
 	matches, bindings := core.MatchWithBindings(pattern, mockCall)

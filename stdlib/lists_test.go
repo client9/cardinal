@@ -14,7 +14,7 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		for i, elem := range elements {
 			exprs[i+1] = core.NewSymbol(elem)
 		}
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	// Helper function to create integer list spec
@@ -24,15 +24,17 @@ func TestTakeAndDropFunctions(t *testing.T) {
 		for i, num := range nums {
 			exprs[i+1] = core.NewInteger(num)
 		}
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	// Helper function to extract list elements as strings (for comparison)
 	extractElements := func(expr core.Expr) []string {
 		if list, ok := expr.(core.List); ok {
-			result := make([]string, len(list.Elements)-1) // Skip head
-			for i := 1; i < len(list.Elements); i++ {
-				result[i-1] = list.Elements[i].String()
+			args := list.Tail()
+
+			result := make([]string, len(args))
+			for i, a := range args {
+				result[i] = a.String()
 			}
 			return result
 		}
@@ -164,7 +166,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 		for i, elem := range elements {
 			exprs[i+1] = core.NewSymbol(elem)
 		}
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	// Helper function to create integer list spec
@@ -174,7 +176,7 @@ func TestTakeDropEdgeCases(t *testing.T) {
 		for i, num := range nums {
 			exprs[i+1] = core.NewInteger(num)
 		}
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	singleElementList := createList("x")
@@ -183,7 +185,8 @@ func TestTakeDropEdgeCases(t *testing.T) {
 	t.Run("Take from single element list", func(t *testing.T) {
 		result := TakeList(singleElementList, 1)
 		if list, ok := result.(core.List); ok {
-			if len(list.Elements) != 2 || list.Elements[1].String() != "x" {
+			args := list.AsSlice()
+			if len(args) != 2 || args[1].String() != "x" {
 				t.Errorf("Expected List(x), got %v", result)
 			}
 		} else {
@@ -194,7 +197,8 @@ func TestTakeDropEdgeCases(t *testing.T) {
 	t.Run("Drop from single element list", func(t *testing.T) {
 		result := DropList(singleElementList, 1)
 		if list, ok := result.(core.List); ok {
-			if len(list.Elements) != 1 { // Just the head
+			args := list.AsSlice()
+			if len(args) != 1 { // Just the head
 				t.Errorf("Expected empty list, got %v", result)
 			}
 		} else {
@@ -231,7 +235,7 @@ func TestRotateFunctions(t *testing.T) {
 		for i, elem := range elements {
 			exprs[i+1] = core.NewInteger(elem)
 		}
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	t.Run("RotateLeft basic tests", func(t *testing.T) {
@@ -327,7 +331,7 @@ func TestFlattenExpr(t *testing.T) {
 		exprs := make([]core.Expr, len(elements)+1)
 		exprs[0] = core.NewSymbol(head)
 		copy(exprs[1:], elements)
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	// Helper function to create simple integer lists
@@ -337,7 +341,7 @@ func TestFlattenExpr(t *testing.T) {
 		for i, num := range nums {
 			exprs[i+1] = core.NewInteger(num)
 		}
-		return core.List{Elements: exprs}
+		return core.NewListFromExprs(exprs...)
 	}
 
 	tests := []struct {

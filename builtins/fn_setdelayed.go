@@ -9,9 +9,9 @@ import (
 func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, lhs, rhs core.Expr) core.Expr {
 
 	// Handle function definitions: f(x_) := body
-	if list, ok := lhs.(core.List); ok && len(list.Elements) >= 1 {
+	if list, ok := lhs.(core.List); ok && list.Length() > 0 {
 		// This is a function definition
-		headExpr := list.Elements[0]
+		headExpr := list.HeadExpr()
 		if _, ok := core.ExtractSymbol(headExpr); ok {
 			// Get the function registry from context
 			registry := c.GetFunctionRegistry()

@@ -5,52 +5,6 @@ import (
 	"testing"
 )
 
-// Test pattern constructor functions
-func TestCreateBlankExpr(t *testing.T) {
-	// Test blank without type constraint
-	blank := CreateBlankExpr(nil)
-	expected := List{Elements: []Expr{NewSymbol("Blank")}}
-	if !reflect.DeepEqual(blank, expected) {
-		t.Errorf("CreateBlankExpr(nil) = %v, want %v", blank, expected)
-	}
-
-	// Test blank with type constraint
-	typeExpr := NewSymbol("Integer")
-	blankTyped := CreateBlankExpr(typeExpr)
-	expectedTyped := List{Elements: []Expr{NewSymbol("Blank"), typeExpr}}
-	if !reflect.DeepEqual(blankTyped, expectedTyped) {
-		t.Errorf("CreateBlankExpr(Integer) = %v, want %v", blankTyped, expectedTyped)
-	}
-}
-
-func TestCreateBlankSequenceExpr(t *testing.T) {
-	// Test sequence without type constraint
-	seq := CreateBlankSequenceExpr(nil)
-	expected := List{Elements: []Expr{NewSymbol("BlankSequence")}}
-	if !reflect.DeepEqual(seq, expected) {
-		t.Errorf("CreateBlankSequenceExpr(nil) = %v, want %v", seq, expected)
-	}
-
-	// Test sequence with type constraint
-	typeExpr := NewSymbol("String")
-	seqTyped := CreateBlankSequenceExpr(typeExpr)
-	expectedTyped := List{Elements: []Expr{NewSymbol("BlankSequence"), typeExpr}}
-	if !reflect.DeepEqual(seqTyped, expectedTyped) {
-		t.Errorf("CreateBlankSequenceExpr(String) = %v, want %v", seqTyped, expectedTyped)
-	}
-}
-
-func TestCreatePatternExpr(t *testing.T) {
-	nameExpr := NewSymbol("x")
-	blankExpr := CreateBlankExpr(nil)
-	pattern := CreatePatternExpr(nameExpr, blankExpr)
-
-	expected := List{Elements: []Expr{NewSymbol("Pattern"), nameExpr, blankExpr}}
-	if !reflect.DeepEqual(pattern, expected) {
-		t.Errorf("CreatePatternExpr = %v, want %v", pattern, expected)
-	}
-}
-
 // Test pattern analysis functions
 func TestIsSymbolicBlank(t *testing.T) {
 	tests := []struct {

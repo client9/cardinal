@@ -579,14 +579,14 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 
-			if len(list.Elements) == 0 {
+			if len(list.AsSlice()) == 0 {
 				t.Errorf("expected non-empty list")
 				return
 			}
 
-			head, ok := core.ExtractSymbol(list.Elements[0])
+			head, ok := core.ExtractSymbol(list.HeadExpr())
 			if !ok {
-				t.Errorf("expected head to be Symbol, got %T", list.Elements[0])
+				t.Errorf("expected head to be Symbol, got %T", list.HeadExpr())
 				return
 			}
 
@@ -594,7 +594,7 @@ func TestParser_ParseLists(t *testing.T) {
 				t.Errorf("expected head %q, got %q", tt.expectedHead, head)
 			}
 
-			argCount := len(list.Elements) - 1 // Subtract head
+			argCount := int(list.Length())
 			if argCount != tt.expectedArgCount {
 				t.Errorf("expected %d args, got %d", tt.expectedArgCount, argCount)
 			}

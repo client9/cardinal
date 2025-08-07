@@ -40,10 +40,10 @@ func ShowPatterns(e *engine.Evaluator, c *engine.Context, functionName core.Expr
 				core.NewString(specificityStr),
 			}
 
-			elements[i+1] = core.List{Elements: ruleElements}
+			elements[i+1] = core.NewListFromExprs(ruleElements...)
 		}
 
-		return core.List{Elements: elements}
+		return core.NewListFromExprs(elements...)
 	}
 
 	return core.NewError("ArgumentError", "ShowPatterns expects a symbol")

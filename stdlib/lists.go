@@ -34,7 +34,7 @@ func LastExpr(list core.List) core.Expr {
 // RestExpr returns a new list with the first element after head removed
 func RestExpr(list core.List) core.Expr {
 	// For lists, return a new list with the first element after head removed
-	if len(list.Elements) <= 1 {
+	if list.Length() == 0 {
 		// Return error for empty lists
 		return core.NewError("PartError",
 			fmt.Sprintf("Rest: expression %s has no elements", list.String()))
@@ -44,25 +44,25 @@ func RestExpr(list core.List) core.Expr {
 	listLength := list.Length()
 	if listLength == 1 {
 		// Only head, return empty list with same head
-		return core.List{Elements: []core.Expr{list.Elements[0]}}
+		return core.NewList(list.Head())
 	}
 	return list.Slice(2, listLength)
 }
 
 // MostExpr returns a new list with the last element removed
 func MostExpr(list core.List) core.Expr {
+	listLength := list.Length()
 	// For lists, return a new list with the last element removed
-	if len(list.Elements) <= 1 {
+	if listLength == 0 {
 		// Return error for empty lists
 		return core.NewError("PartError",
 			fmt.Sprintf("Most: expression %s has no elements", list.String()))
 	}
 
 	// Use the modern Slice method to get elements from 1 to length-1
-	listLength := list.Length()
 	if listLength == 1 {
 		// Special case: if only one element, return just the head
-		return core.List{Elements: []core.Expr{list.Elements[0]}}
+		return core.NewList(list.Head())
 	}
 	return list.Slice(1, listLength-1)
 }
@@ -76,16 +76,9 @@ func PartList(list core.List, index int64) core.Expr {
 // TakeList extracts the first or last n elements from a list
 // Take(expr, n) takes first n elements; Take(expr, -n) takes last n elements
 func TakeList(list core.List, n int64) core.Expr {
-	if len(list.Elements) <= 1 {
-		// Empty list - return empty list with same head
-		return core.List{Elements: []core.Expr{list.Elements[0]}}
-	}
-
 	listLength := list.Length()
-
-	if n == 0 {
-		// Take 0 elements - return empty list with same head
-		return core.List{Elements: []core.Expr{list.Elements[0]}}
+	if listLength == 0 || n == 0 {
+		return core.NewList(list.Head())
 	}
 
 	if n > 0 {
@@ -110,12 +103,12 @@ func TakeList(list core.List, n int64) core.Expr {
 // Take(expr, [n]) - returns List(element_n)
 func TakeListSingle(list core.List, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
-	if len(indexList.Elements) != 2 { // Head + one element
+	if indexList.Length() != 1 { // Head + one element
 		return core.NewError("ArgumentError",
 			"Take with list spec requires exactly one index")
 	}
-
-	index, ok := core.ExtractInt64(indexList.Elements[1])
+	args := indexList.Tail()
+	index, ok := core.ExtractInt64(args[0])
 	if !ok {
 		return core.NewError("ArgumentError",
 			"Take index must be an integer")
@@ -128,20 +121,20 @@ func TakeListSingle(list core.List, indexList core.List) core.Expr {
 	}
 
 	// Wrap the element in a list with the same head as the original list
-	return core.List{Elements: []core.Expr{list.Elements[0], element}}
+	return core.NewList(list.Head(), element)
 }
 
 // TakeListRange takes a range of elements from a list
 // Take(expr, [n, m]) - takes elements from index n to m (inclusive)
 func TakeListRange(list core.List, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
-	if len(indexList.Elements) != 3 { // Head + two elements
+	if indexList.Length() != 2 { // Head + two elements
 		return core.NewError("ArgumentError",
 			"Take with range spec requires exactly two indices")
 	}
-
-	start, ok1 := core.ExtractInt64(indexList.Elements[1])
-	end, ok2 := core.ExtractInt64(indexList.Elements[2])
+	args := indexList.Tail()
+	start, ok1 := core.ExtractInt64(args[0])
+	end, ok2 := core.ExtractInt64(args[1])
 	if !ok1 || !ok2 {
 		return core.NewError("ArgumentError",
 			"Take indices must be integers")
@@ -152,11 +145,10 @@ func TakeListRange(list core.List, indexList core.List) core.Expr {
 
 // takeListRange is a helper function that implements the range logic
 func takeListRange(list core.List, start, end int64) core.Expr {
-	if len(list.Elements) <= 1 {
-		return core.List{Elements: []core.Expr{list.Elements[0]}} // Empty list with same head
-	}
-
 	listLength := list.Length()
+	if listLength == 0 {
+		return core.NewList(list.Head())
+	}
 
 	// Validate indices
 	if start == 0 || end == 0 {
@@ -188,12 +180,10 @@ func takeListRange(list core.List, start, end int64) core.Expr {
 // DropList drops the first or last n elements from a list and returns the remainder
 // Drop(expr, n) drops first n elements; Drop(expr, -n) drops last n elements
 func DropList(list core.List, n int64) core.Expr {
-	if len(list.Elements) <= 1 {
-		// Empty list - return empty list with same head
-		return core.List{Elements: []core.Expr{list.Elements[0]}}
-	}
-
 	listLength := list.Length()
+	if listLength == 0 {
+		return core.NewList(list.Head())
+	}
 
 	if n == 0 {
 		// Drop 0 elements - return original list
@@ -204,15 +194,14 @@ func DropList(list core.List, n int64) core.Expr {
 		// Drop first n elements using modern Slice method
 		if n >= listLength {
 			// Drop all elements - return empty list with same head
-			return core.List{Elements: []core.Expr{list.Elements[0]}}
+			return core.NewList(list.Head())
 		}
 		return list.Slice(n+1, listLength) // Start from n+1 to end
 	} else {
 		// Drop last |n| elements using modern Slice method
 		absN := -n
 		if absN >= listLength {
-			// Drop all elements - return empty list with same head
-			return core.List{Elements: []core.Expr{list.Elements[0]}}
+			return core.NewList(list.Head())
 		}
 		return list.Slice(1, listLength-absN) // Keep first (length - |n|) elements
 	}
@@ -222,12 +211,12 @@ func DropList(list core.List, n int64) core.Expr {
 // Drop(expr, [n]) - removes the element at position n
 func DropListSingle(list core.List, indexList core.List) core.Expr {
 	// Extract single integer from List(n_Integer)
-	if len(indexList.Elements) != 2 { // Head + one element
+	if indexList.Length() != 1 { // Head + one element
 		return core.NewError("ArgumentError",
 			"Drop with list spec requires exactly one index")
 	}
-
-	index, ok := core.ExtractInt64(indexList.Elements[1])
+	args := indexList.Tail()
+	index, ok := core.ExtractInt64(args[0])
 	if !ok {
 		return core.NewError("ArgumentError",
 			"Drop index must be an integer")
@@ -240,13 +229,15 @@ func DropListSingle(list core.List, indexList core.List) core.Expr {
 // Drop(expr, [n, m]) - removes elements from index n to m (inclusive)
 func DropListRange(list core.List, indexList core.List) core.Expr {
 	// Extract two integers from List(n_Integer, m_Integer)
-	if len(indexList.Elements) != 3 { // Head + two elements
+	if indexList.Length() != 2 {
 		return core.NewError("ArgumentError",
 			"Drop with range spec requires exactly two indices")
 	}
 
-	start, ok1 := core.ExtractInt64(indexList.Elements[1])
-	end, ok2 := core.ExtractInt64(indexList.Elements[2])
+	args := indexList.Tail()
+	start, ok1 := core.ExtractInt64(args[0])
+	end, ok2 := core.ExtractInt64(args[1])
+
 	if !ok1 || !ok2 {
 		return core.NewError("ArgumentError",
 			"Drop indices must be integers")
@@ -257,11 +248,11 @@ func DropListRange(list core.List, indexList core.List) core.Expr {
 
 // dropListSingle is a helper function that drops a single element
 func dropListSingle(list core.List, index int64) core.Expr {
-	if len(list.Elements) <= 1 {
-		return core.List{Elements: []core.Expr{list.Elements[0]}} // Empty list with same head
-	}
-
 	listLength := list.Length()
+
+	if listLength == 0 {
+		return core.NewList(list.Head())
+	}
 
 	// Validate index
 	if index == 0 {
@@ -284,7 +275,7 @@ func dropListSingle(list core.List, index int64) core.Expr {
 	if actualIndex == 1 {
 		// Dropping first element
 		if listLength == 1 {
-			return core.List{Elements: []core.Expr{list.Elements[0]}} // Just head
+			return core.NewList(list.Head())
 		}
 		return list.Slice(2, listLength)
 	} else if actualIndex == listLength {
@@ -303,11 +294,10 @@ func dropListSingle(list core.List, index int64) core.Expr {
 
 // dropListRange is a helper function that drops a range of elements
 func dropListRange(list core.List, start, end int64) core.Expr {
-	if len(list.Elements) <= 1 {
-		return core.List{Elements: []core.Expr{list.Elements[0]}} // Empty list with same head
-	}
-
 	listLength := list.Length()
+	if listLength == 0 {
+		return core.NewList(list.Head())
+	}
 
 	// Validate indices
 	if start == 0 || end == 0 {
@@ -335,7 +325,7 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 	// Use modern Slice and Join methods to exclude the range
 	if actualStart == 1 && actualEnd == listLength {
 		// Dropping everything
-		return core.List{Elements: []core.Expr{list.Elements[0]}} // Just head
+		return core.NewList(list.Head())
 	} else if actualStart == 1 {
 		// Dropping from beginning
 		return list.Slice(actualEnd+1, listLength)
@@ -363,13 +353,13 @@ func FlattenExpr(expr core.Expr) core.Expr {
 		return expr
 	}
 
-	if len(list.Elements) == 0 {
+	if list.Length() == 0 {
 		// Empty list, return unchanged
 		return expr
 	}
 
 	// Extract the head (List, Zoo, etc.)
-	head := list.Elements[0]
+	head := list.HeadExpr()
 
 	// Get the head name to determine if we should flatten sublists with the same head
 	headName, isSymbol := core.ExtractSymbol(head)
@@ -382,18 +372,17 @@ func FlattenExpr(expr core.Expr) core.Expr {
 	var flattenedElements []core.Expr
 	flattenedElements = append(flattenedElements, head) // Keep the original head
 
-	for i := 1; i < len(list.Elements); i++ {
-		element := list.Elements[i]
+	for _, element := range list.Tail() {
 
 		// Check if this element is a list with the same head
-		if elementList, ok := element.(core.List); ok && len(elementList.Elements) > 0 {
-			if elementHeadName, ok := core.ExtractSymbol(elementList.Elements[0]); ok && elementHeadName == headName {
+		if elementList, ok := element.(core.List); ok {
+			if elementHeadName, ok := core.ExtractSymbol(elementList.HeadExpr()); ok && elementHeadName == headName {
 				// Same head - flatten this sublist's elements
 				// First recursively flatten the sublist
 				flattened := FlattenExpr(element)
-				if flattenedList, ok := flattened.(core.List); ok && len(flattenedList.Elements) > 1 {
+				if flattenedList, ok := flattened.(core.List); ok && flattenedList.Length() > 0 {
 					// Add all elements except the head
-					flattenedElements = append(flattenedElements, flattenedList.Elements[1:]...)
+					flattenedElements = append(flattenedElements, flattenedList.Tail()...)
 				}
 			} else {
 				// Different head - recursively flatten but keep as single element
@@ -405,21 +394,21 @@ func FlattenExpr(expr core.Expr) core.Expr {
 		}
 	}
 
-	return core.List{Elements: flattenedElements}
+	return core.NewListFromExprs(flattenedElements...)
 }
 
 // Sort sorts the elements of a list using canonical ordering
 // Uses the same ordering as the Orderless attribute and mathematical functions
 func Sort(expr core.Expr) core.Expr {
 	list, ok := expr.(core.List)
-	if !ok || len(list.Elements) <= 2 {
+	if !ok || list.Length() < 2 {
 		// Not a list or too few elements to sort
 		return expr
 	}
 
-	head := list.Elements[0]
-	args := make([]core.Expr, len(list.Elements)-1)
-	copy(args, list.Elements[1:])
+	head := list.HeadExpr()
+	args := make([]core.Expr, list.Length())
+	copy(args, list.Tail())
 
 	// Sort arguments using canonical ordering
 	sort.Slice(args, func(i, j int) bool {
@@ -427,9 +416,9 @@ func Sort(expr core.Expr) core.Expr {
 	})
 
 	// Reconstruct the list with sorted arguments
-	resultElements := make([]core.Expr, len(list.Elements))
+	resultElements := make([]core.Expr, list.Length()+1)
 	resultElements[0] = head
 	copy(resultElements[1:], args)
 
-	return core.List{Elements: resultElements}
+	return core.NewListFromExprs(resultElements...)
 }

@@ -22,11 +22,11 @@ func SetAttributesExpr(e *engine.Evaluator, c *engine.Context, symbol, attrs cor
 		}
 
 		// Handle list of attributes
-		if attrList, ok := attrs.(core.List); ok && len(attrList.Elements) > 0 {
-			if listHead, ok := core.ExtractSymbol(attrList.Elements[0]); ok && listHead == "List" {
+		if attrList, ok := attrs.(core.List); ok && attrList.Length() > 0 {
+			if attrList.Head() == "List" {
 				var attributes []engine.Attribute
-				for i := 1; i < len(attrList.Elements); i++ {
-					if attrName, ok := core.ExtractSymbol(attrList.Elements[i]); ok {
+				for _, arg := range attrList.Tail() {
+					if attrName, ok := core.ExtractSymbol(arg); ok {
 						if attr, ok := engine.StringToAttribute(attrName); ok {
 							attributes = append(attributes, attr)
 						} else {

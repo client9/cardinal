@@ -33,15 +33,10 @@ func AssociationRules(rules ...core.Expr) core.Expr {
 
 	// Process each Rule expression
 	for _, rule := range rules {
-		if ruleList, ok := rule.(core.List); ok && len(ruleList.Elements) == 3 {
-			// Check if this is Rule[key, value]
-			if headName, ok := core.ExtractSymbol(ruleList.Elements[0]); ok && headName == "Rule" {
-
-				key := ruleList.Elements[1]
-				value := ruleList.Elements[2]
-				assoc = assoc.Set(key, value) // Returns new association (immutable)
-				continue
-			}
+		if ruleList, ok := rule.(core.List); ok && ruleList.Length() == 2 && ruleList.Head() == "Rule" {
+			args := ruleList.Tail()
+			assoc = assoc.Set(args[0], args[1]) // Returns new association (immutable)
+			continue
 		}
 
 		// Invalid argument - not a Rule

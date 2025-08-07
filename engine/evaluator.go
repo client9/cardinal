@@ -3,7 +3,7 @@ package engine
 import (
 	"fmt"
 	"sort"
-	//"log"
+	//	"log"
 
 	"github.com/client9/sexpr/core"
 )
@@ -89,13 +89,9 @@ func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 
 // evaluateList evaluates a list expression
 func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
-	if len(list.Elements) == 0 {
-		return list
-	}
-
 	// Get the head (function name)
-	head := list.Elements[0]
-	args := list.Elements[1:]
+	head := list.HeadExpr()
+	args := list.Tail()
 
 	// Evaluate the head to get the function name
 	evaluatedHead := e.Evaluate(head)
@@ -123,9 +119,10 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 		return e.evaluateList(c, transformedList)
 	}
 	// Handle OneIdentity attribute specially - it can return a non-List
-	if c.symbolTable.HasAttribute(headName, OneIdentity) && len(list.Elements) == 2 {
+	if c.symbolTable.HasAttribute(headName, OneIdentity) && list.Length() == 1 {
 		// OneIdentity: f(x) = x
-		result := e.Evaluate(list.Elements[1])
+		args := list.Tail()
+		result := e.Evaluate(args[0])
 		return result
 	}
 
@@ -206,24 +203,22 @@ func (e *Evaluator) applyAttributeTransformations(headName string, list core.Lis
 
 // applyFlat implements the Flat attribute (associativity)
 func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
-	if len(list.Elements) <= 1 {
+	if list.Length() == 0 {
 		return list
 	}
 
 	head := list.Head()
-	args := list.Elements[1:]
+	args := list.Tail()
 
 	newArgs := []core.Expr{}
 
 	for _, arg := range args {
 		// If the argument is the same function, flatten it
-		if argList, ok := arg.(core.List); ok && len(argList.Elements) > 0 {
-			if argHeadName, ok := core.ExtractSymbol(argList.Elements[0]); ok {
-				if argHeadName == headName {
-					// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
-					newArgs = append(newArgs, argList.Elements[1:]...)
-					continue
-				}
+		if argList, ok := arg.(core.List); ok {
+			if argList.Head() == headName {
+				// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
+				newArgs = append(newArgs, argList.Tail()...)
+				continue
 			}
 		}
 		newArgs = append(newArgs, arg)
@@ -234,14 +229,14 @@ func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
 
 // applyOrderless implements the Orderless attribute (commutativity)
 func (e *Evaluator) applyOrderless(list core.List) core.List {
-	if len(list.Elements) <= 2 {
+	if list.Length() < 2 {
 		// Not enough elements to sort (need at least head + 2 args)
 		return list
 	}
 
-	head := list.Elements[0]
-	args := make([]core.Expr, len(list.Elements)-1)
-	copy(args, list.Elements[1:])
+	head := list.HeadExpr()
+	args := make([]core.Expr, list.Length())
+	copy(args, list.Tail())
 
 	// Sort arguments using canonical ordering
 	sort.Slice(args, func(i, j int) bool {
@@ -249,11 +244,11 @@ func (e *Evaluator) applyOrderless(list core.List) core.List {
 	})
 
 	// Reconstruct the list with sorted arguments
-	resultElements := make([]core.Expr, len(list.Elements))
+	resultElements := make([]core.Expr, list.Length()+1)
 	resultElements[0] = head
 	copy(resultElements[1:], args)
 
-	return core.List{Elements: resultElements}
+	return core.NewListFromExprs(resultElements...)
 }
 
 // applyOneIdentity implements the OneIdentity attribute
@@ -361,8 +356,19 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 		return value
 	}
 
-	// Use the Sliceable interface to perform the assignment
-	return sliceable.SetElementAt(index, value)
+	// get modified list
+	mlist := sliceable.SetElementAt(index, value)
+
+	// is this variable?  i.e. a[2] = 100
+	// then we need to update the variable
+	if name, ok := core.ExtractSymbol(args[0]); ok {
+		ctx.Set(name, mlist)
+
+		// TODO right value
+	}
+
+	// list literal [1,2,3,4][2] = 100 just returns a new list
+	return mlist
 }
 
 // evaluateSliceSet implements slice assignment syntax: expr[start:end] = value
@@ -447,12 +453,12 @@ func functionReplaceAll(e *Evaluator, c *Context, expr core.Expr, rule core.Expr
 	}
 
 	// If no match at this level, recursively apply to subexpressions
-	if list, ok := expr.(core.List); ok && len(list.Elements) > 0 {
+	if list, ok := expr.(core.List); ok {
 		// Create new list with transformed elements
-		newElements := make([]core.Expr, len(list.Elements))
+		newElements := make([]core.Expr, list.Length()+1)
 		changed := false
 
-		for i, element := range list.Elements {
+		for i, element := range list.AsSlice() {
 			newElement := functionReplaceAll(e, c, element, rule)
 			newElements[i] = newElement
 			if !newElement.Equal(element) {

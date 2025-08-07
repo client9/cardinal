@@ -41,5 +41,5 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 	elements := make([]core.Expr, len(unevaluatedArgs)+1)
 	elements[0] = core.NewSymbol("And")
 	copy(elements[1:], unevaluatedArgs)
-	return core.List{Elements: elements}
+	return core.NewListFromExprs(elements...)
 }

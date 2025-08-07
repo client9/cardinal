@@ -48,9 +48,7 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 		return nil, fmt.Errorf("first arg not a list")
 	}
 	// Expect List(Set(x, value), Set(y, value), ...)
-	for i := 1; i < len(varList.Elements); i++ {
-		arg := varList.Elements[i]
-
+	for _, arg := range varList.Tail() {
 		// can be a single symbol name
 		if varName, ok := core.ExtractSymbol(arg); ok {
 			// Save current value
@@ -67,8 +65,9 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 			return nil, fmt.Errorf("variable not a symbol or assignment. %s, len=%d, head=%s", setvar.String(), setvar.Length(), setvar.Head())
 			// ERROR
 		}
+		setvarArgs := setvar.Tail()
 
-		varName, ok := core.ExtractSymbol(setvar.Elements[1])
+		varName, ok := core.ExtractSymbol(setvarArgs[0])
 		if !ok {
 			return nil, fmt.Errorf("Set malformed")
 		}
@@ -80,7 +79,7 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 			savedVars[varName] = nil
 		}
 		// Set new value (evaluate the RHS) -- TODO ERROR CHECK
-		newValue := e.Evaluate(setvar.Elements[2])
+		newValue := e.Evaluate(setvarArgs[1])
 		c.Set(varName, newValue)
 	}
 	return savedVars, nil
