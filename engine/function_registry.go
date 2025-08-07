@@ -49,8 +49,36 @@ func calculatePatternSpecificity(pattern core.Expr) int {
 	return int(core.GetPatternSpecificity(pattern))
 }
 
+func sortBySpec(v []FunctionDef) {
+	sort.Slice(v, func(i, j int) bool {
+		// Higher specificity comes first
+		if v[i].Specificity != v[j].Specificity {
+			return v[i].Specificity > v[j].Specificity
+		}
+		// Tie-breaker: use lexicographic order of pattern strings for stability
+		// This ensures Integer patterns come before Number patterns when specificity is equal
+		return v[i].Pattern.String() < v[j].Pattern.String()
+	})
+}
+
+// RegisterPatternBuiltins registers multiple built-in functions from a map
+func (r *FunctionRegistry) RegisterPatternBuiltins(patterns []PatternRule) error {
+	for _, rule := range patterns {
+		if err := r.registerPatternBuiltin(rule.PatternString, rule.Function); err != nil {
+			return fmt.Errorf("failed to register pattern %s: %v", rule.PatternString, err)
+		}
+	}
+
+	for k, v := range r.functions {
+		sortBySpec(v)
+		r.functions[k] = v
+	}
+
+	return nil
+}
+
 // RegisterPatternBuiltin registers a built-in function with a pattern from Go code
-func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl PatternFunc) error {
+func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl PatternFunc) error {
 	// Parse the pattern stringp
 	// 'RReal(max_Number)' -> RReal(Pattern(max, Blank(Number)))
 	pattern, err := ParseString(patternStr)
@@ -58,15 +86,8 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		return fmt.Errorf("invalid pattern syntax: %v", err)
 	}
 
-	// Debug: print what was parsed and converted
-	//fmt.Printf("DEBUG: Parsed pattern '%s' -> %v\n", patternStr, pattern)
-
-	// Extract function name from original pattern (before conversion)
 	functionName := pattern.Head()
-
-	// Create function definition with symbolic pattern using compound specificity
 	specificity := calculatePatternSpecificity(pattern)
-
 	funcDef := FunctionDef{
 		Pattern:     pattern,
 		Body:        nil,
@@ -75,25 +96,66 @@ func (r *FunctionRegistry) RegisterPatternBuiltin(patternStr string, impl Patter
 		IsBuiltin:   true,
 	}
 
-	// Debug the stored pattern
-	// if list, ok := symbolicPattern.(List); ok && len(list.Elements) > 0 {
-	//	// fmt.Printf("DEBUG: Stored pattern head type: %T\n", list.Elements[0])
-	// }
+	//r.registerFunctionDef(functionName, funcDef)
 
-	// Register the function definition
-	// fmt.Printf("DEBUG: Registering function '%s' with specificity %d\n", functionName, funcDef.Specificity)
-	r.registerFunctionDef(functionName, funcDef)
+	definitions := r.functions[functionName]
+	definitions = append(definitions, funcDef)
+	r.functions[functionName] = definitions
+
 	return nil
 }
 
-// RegisterPatternBuiltins registers multiple built-in functions from a map
-func (r *FunctionRegistry) RegisterPatternBuiltins(patterns []PatternRule) error {
-	for _, rule := range patterns {
-		if err := r.RegisterPatternBuiltin(rule.PatternString, rule.Function); err != nil {
-			return fmt.Errorf("failed to register pattern %s: %v", rule.PatternString, err)
+// registerFunctionDef adds or replaces a function definition
+func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef FunctionDef) {
+	definitions := r.functions[functionName]
+
+	// Check if we need to replace an existing equivalent pattern
+	for i, existingDef := range definitions {
+		if core.PatternsEqual(existingDef.Pattern, newDef.Pattern) {
+			// Replace existing definition
+			definitions[i] = newDef
+			r.functions[functionName] = definitions
+			return
 		}
+
+		// Check for specificity collision with different patterns
+		// Note: Disabled warnings for now as they need fine-tuning for type overlap detection
+		// TODO: Re-enable after fixing type constraint extraction
+		_ = couldPatternsConflict // Prevent unused function warning
+		/*
+			if existingDef.Specificity == newDef.Specificity && couldPatternsConflict(existingDef.Pattern, newDef.Pattern) {
+				fmt.Printf("WARNING: Pattern specificity collision for function '%s'!\n", functionName)
+				fmt.Printf("  Existing: %s (specificity: %d)\n", existingDef.Pattern.String(), existingDef.Specificity)
+				fmt.Printf("  New:      %s (specificity: %d)\n", newDef.Pattern.String(), newDef.Specificity)
+				fmt.Printf("  Order will be determined by lexicographic tie-breaker: '%s' vs '%s'\n",
+					existingDef.Pattern.String(), newDef.Pattern.String())
+				if existingDef.Pattern.String() < newDef.Pattern.String() {
+					fmt.Printf("  Result: '%s' will match first\n", existingDef.Pattern.String())
+				} else {
+					fmt.Printf("  Result: '%s' will match first\n", newDef.Pattern.String())
+				}
+				fmt.Printf("  Consider adjusting pattern specificity to make matching order explicit.\n\n")
+			}
+		*/
 	}
-	return nil
+
+	// Add new definition and re-sort by specificity
+	definitions = append(definitions, newDef)
+	sortBySpec(definitions)
+
+	/*
+		sort.Slice(definitions, func(i, j int) bool {
+			// Higher specificity comes first
+			if definitions[i].Specificity != definitions[j].Specificity {
+				return definitions[i].Specificity > definitions[j].Specificity
+			}
+			// Tie-breaker: use lexicographic order of pattern strings for stability
+			// This ensures Integer patterns come before Number patterns when specificity is equal
+			return definitions[i].Pattern.String() < definitions[j].Pattern.String()
+		})
+	*/
+
+	r.functions[functionName] = definitions
 }
 
 // RegisterUserFunction registers a user-defined function with pattern and body
@@ -209,72 +271,6 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 
 		return mbody, true
 	*/
-}
-
-// RegisterFunction is an alias for RegisterUserFunction for backward compatibility
-func (r *FunctionRegistry) RegisterFunction(functionName string,
-	pattern core.Expr, implementation func(*Evaluator, *Context, []core.Expr) core.Expr) error {
-	// This is a simplified version that assumes the pattern contains the function name
-	// For the refactored code, we need to create a proper function definition
-	funcDef := FunctionDef{
-		Pattern:     pattern,
-		Body:        nil,
-		GoImpl:      implementation,
-		Specificity: calculatePatternSpecificity(pattern),
-		IsBuiltin:   false,
-	}
-
-	r.registerFunctionDef(functionName, funcDef)
-	return nil
-}
-
-// registerFunctionDef adds or replaces a function definition
-func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef FunctionDef) {
-	definitions := r.functions[functionName]
-
-	// Check if we need to replace an existing equivalent pattern
-	for i, existingDef := range definitions {
-		if core.PatternsEqual(existingDef.Pattern, newDef.Pattern) {
-			// Replace existing definition
-			definitions[i] = newDef
-			r.functions[functionName] = definitions
-			return
-		}
-
-		// Check for specificity collision with different patterns
-		// Note: Disabled warnings for now as they need fine-tuning for type overlap detection
-		// TODO: Re-enable after fixing type constraint extraction
-		_ = couldPatternsConflict // Prevent unused function warning
-		/*
-			if existingDef.Specificity == newDef.Specificity && couldPatternsConflict(existingDef.Pattern, newDef.Pattern) {
-				fmt.Printf("WARNING: Pattern specificity collision for function '%s'!\n", functionName)
-				fmt.Printf("  Existing: %s (specificity: %d)\n", existingDef.Pattern.String(), existingDef.Specificity)
-				fmt.Printf("  New:      %s (specificity: %d)\n", newDef.Pattern.String(), newDef.Specificity)
-				fmt.Printf("  Order will be determined by lexicographic tie-breaker: '%s' vs '%s'\n",
-					existingDef.Pattern.String(), newDef.Pattern.String())
-				if existingDef.Pattern.String() < newDef.Pattern.String() {
-					fmt.Printf("  Result: '%s' will match first\n", existingDef.Pattern.String())
-				} else {
-					fmt.Printf("  Result: '%s' will match first\n", newDef.Pattern.String())
-				}
-				fmt.Printf("  Consider adjusting pattern specificity to make matching order explicit.\n\n")
-			}
-		*/
-	}
-
-	// Add new definition and re-sort by specificity
-	definitions = append(definitions, newDef)
-	sort.Slice(definitions, func(i, j int) bool {
-		// Higher specificity comes first
-		if definitions[i].Specificity != definitions[j].Specificity {
-			return definitions[i].Specificity > definitions[j].Specificity
-		}
-		// Tie-breaker: use lexicographic order of pattern strings for stability
-		// This ensures Integer patterns come before Number patterns when specificity is equal
-		return definitions[i].Pattern.String() < definitions[j].Pattern.String()
-	})
-
-	r.functions[functionName] = definitions
 }
 
 // couldPatternsConflict checks if two patterns could potentially match the same arguments
