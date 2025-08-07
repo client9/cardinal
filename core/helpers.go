@@ -58,7 +58,7 @@ func CopyExprList(head string, args []Expr) List {
 	elements := make([]Expr, len(args)+1)
 	elements[0] = NewSymbol(head) // Use new Symbol constructor
 	copy(elements[1:], args)
-	return List{Elements: &elements}
+	return NewListFromExprs(elements...)
 }
 
 // IsError checks if an expression is an error

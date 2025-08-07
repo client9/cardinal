@@ -86,7 +86,8 @@ func IsSymbolicBlank(expr Expr) (bool, string, Expr) {
 		if headName == bt {
 			var typeExpr Expr
 			if list.Length() > 0 {
-				typeExpr = (*list.Elements)[1]
+				args := list.Tail()
+				typeExpr = args[0]
 			}
 			return true, headName, typeExpr
 		}

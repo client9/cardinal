@@ -22,7 +22,9 @@ func With(e *engine.Evaluator, c *engine.Context, vars core.Expr, body core.Expr
 		if !ok || r.Head() != "Set" || r.Length() != 2 {
 			return core.NewError("ArgumentError", "With expected list of set assignments")
 		}
-		(*r.Elements)[0] = core.NewSymbol("Rule")
+		// TODO: DANGER
+		r.SetHead("Rule")
+		//(*r.Elements)[0] = core.NewSymbol("Rule")
 	}
 
 	modified := core.ReplaceAllWithRules(body, rules)
