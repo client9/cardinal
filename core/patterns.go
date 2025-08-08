@@ -2,7 +2,6 @@ package core
 
 import (
 	"log"
-	"strings"
 )
 
 // Pattern types and enums
@@ -160,126 +159,9 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 	return PatternInfo{}
 }
 
-// Pattern parsing functions
-
-// IsPatternVariable checks if a string represents a pattern variable
-func IsPatternVariable(name string) bool {
-	return strings.Contains(name, "_")
-}
-
-// ParsePatternVariable extracts variable name and type from pattern string
-func ParsePatternVariable(name string) (varName string, typeName string) {
-	if !strings.Contains(name, "_") {
-		return "", ""
-	}
-
-	parts := strings.Split(name, "_")
-	if len(parts) == 2 {
-		varName = parts[0]
-		typeName = parts[1]
-		if varName == "" {
-			varName = "" // Anonymous pattern
-		}
-		if typeName == "" {
-			typeName = "" // No type constraint
-		}
-	}
-	return
-}
-
-// ConvertPatternStringToSymbolic converts string-based patterns to symbolic expressions
-func ConvertPatternStringToSymbolic(name string) Expr {
-	if !IsPatternVariable(name) {
-		return NewSymbol(name)
-	}
-
-	// Count underscores to determine pattern type
-	underscoreCount := strings.Count(name, "_")
-	if underscoreCount > 3 {
-		return NewSymbol(name) // Invalid pattern
-	}
-
-	// Extract variable name and type
-	var varName, typeName string
-
-	// Handle different underscore patterns
-	if strings.HasSuffix(name, "___") {
-		// BlankNullSequence pattern
-		prefix := strings.TrimSuffix(name, "___")
-		parts := strings.Split(prefix, "_")
-		if len(parts) == 2 {
-			varName = parts[0]
-			typeName = parts[1]
-		} else if len(parts) == 1 && parts[0] != "" {
-			varName = parts[0]
-		}
-		underscoreCount = 3
-	} else if strings.HasSuffix(name, "__") {
-		// BlankSequence pattern
-		prefix := strings.TrimSuffix(name, "__")
-		parts := strings.Split(prefix, "_")
-		if len(parts) == 2 {
-			varName = parts[0]
-			typeName = parts[1]
-		} else if len(parts) == 1 && parts[0] != "" {
-			varName = parts[0]
-		}
-		underscoreCount = 2
-	} else {
-		// Single blank pattern
-		varName, typeName = ParsePatternVariable(name)
-		underscoreCount = 1
-	}
-
-	// Create type expression if present
-	var typeExpr Expr
-	if typeName != "" {
-		typeExpr = NewSymbol(typeName)
-	}
-
-	// Create appropriate blank expression
-	var blankExpr Expr
-	switch underscoreCount {
-	case 1:
-		blankExpr = CreateBlankExpr(typeExpr)
-	case 2:
-		blankExpr = CreateBlankSequenceExpr(typeExpr)
-	case 3:
-		blankExpr = CreateBlankNullSequenceExpr(typeExpr)
-	default:
-		return NewSymbol(name) // Invalid pattern, return as symbol
-	}
-
-	// If there's a variable name, wrap in Pattern[name, blank]
-	if varName != "" {
-		return CreatePatternExpr(NewSymbol(varName), blankExpr)
-	}
-
-	// Anonymous pattern, just return the blank expression
-	return blankExpr
-}
-
-// ParsePatternInfo parses a pattern variable name and returns complete pattern information
-func ParsePatternInfo(name string) PatternInfo {
-	if !IsPatternVariable(name) {
-		return PatternInfo{}
-	}
-
-	// Convert to symbolic and extract info
-	symbolic := ConvertPatternStringToSymbolic(name)
-	return GetSymbolicPatternInfo(symbolic)
-}
-
 // ConvertToSymbolicPattern converts a pattern to symbolic representation if it's a string-based pattern
 func ConvertToSymbolicPattern(pattern Expr) Expr {
 	switch p := pattern.(type) {
-	case Symbol:
-		patternStr := p.String()
-		// Check if it's a pattern variable
-		if IsPatternVariable(patternStr) {
-			return ConvertPatternStringToSymbolic(patternStr)
-		}
-		return pattern
 	case List:
 		// Check if this is already a symbolic Pattern - don't convert its elements
 		if isPattern, _, _ := IsSymbolicPattern(p); isPattern {
@@ -566,17 +448,6 @@ func (pm *PatternMatcher) testMatchInternal(pattern, expr Expr) bool {
 	switch p := pattern.(type) {
 	case Symbol:
 		varName := p.String()
-		// Check if it's a pattern variable (legacy)
-		if IsPatternVariable(varName) {
-			info := ParsePatternInfo(varName)
-			if info.Type == BlankPattern {
-				// Check type constraint if present
-				return MatchesType(expr, info.TypeName)
-			}
-			// Sequence patterns don't match single expressions in pure matching
-			return false
-		}
-
 		// Regular symbol - must match literally
 		if exprAtom, ok := expr.(Symbol); ok {
 			return exprAtom.String() == varName
@@ -812,21 +683,6 @@ func analyzeSequencePattern(pattern Expr) (isSequence bool, varName string, type
 			return true, "", tn, true
 		}
 	}
-
-	// Check for legacy string-based sequence patterns
-	if sym, ok := pattern.(Symbol); ok {
-		name := sym.String()
-		if IsPatternVariable(name) {
-			info := ParsePatternInfo(name)
-			switch info.Type {
-			case BlankSequencePattern:
-				return true, info.VarName, info.TypeName, false
-			case BlankNullSequencePattern:
-				return true, info.VarName, info.TypeName, true
-			}
-		}
-	}
-
 	return false, "", "", false
 }
 
@@ -855,12 +711,6 @@ func bindNullSequencePattern(pattern Expr, bindings PatternBindings) {
 	// Check for symbolic Pattern[name, BlankNullSequence]
 	if isPattern, nameExpr, _ := IsSymbolicPattern(pattern); isPattern {
 		varName, _ = ExtractSymbol(nameExpr)
-	} else if sym, ok := pattern.(Symbol); ok {
-		name := sym.String()
-		if IsPatternVariable(name) {
-			info := ParsePatternInfo(name)
-			varName = info.VarName
-		}
 	}
 
 	// Bind to empty list if we have a variable name
@@ -1027,21 +877,8 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 
 	// For non-patterns or when one is a pattern and one isn't, do exact comparison
 	switch p1 := pattern1.(type) {
-	case Integer, Real, String:
+	case Integer, Real, String, Symbol:
 		return pattern1.Equal(pattern2)
-	case Symbol:
-		if name2, ok := ExtractSymbol(pattern2); ok {
-			// For symbol atoms that are pattern variables, ignore the variable name
-			name1 := string(p1)
-			// name2 already extracted above
-			if IsPatternVariable(name1) && IsPatternVariable(name2) {
-				info1 := ParsePatternInfo(name1)
-				info2 := ParsePatternInfo(name2)
-				return info1.Type == info2.Type && info1.TypeName == info2.TypeName
-			}
-			return name1 == name2
-		}
-		return false
 	case List:
 		if p2, ok := pattern2.(List); ok {
 			s1 := p1.AsSlice()

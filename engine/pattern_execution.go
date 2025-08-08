@@ -56,41 +56,20 @@ func (pe *PatternExecutor) matchWithBindingInternal(pattern, expr core.Expr, ctx
 	switch p := pattern.(type) {
 	case core.Symbol:
 		varName := p.String()
-		// Check if it's a pattern variable
-		if core.IsPatternVariable(varName) {
-			info := core.ParsePatternInfo(varName)
-			if info.Type == core.BlankPattern {
-				// Check type constraint if present
-				if !core.MatchesType(expr, info.TypeName) {
-					return false
-				}
-
-				// Bind the variable if named
-				if info.VarName != "" {
-					if err := ctx.Set(info.VarName, expr); err != nil {
-						return false
-					}
-				}
-				return true
-			}
-			// Sequence patterns need special handling in list context
-			return false
-		} else {
-			// Regular symbol behavior depends on context
-			if isParameter {
-				// In parameter lists, regular symbols bind to values
-				if err := ctx.Set(varName, expr); err != nil {
-					return false
-				}
-				return true
-			} else {
-				// In head patterns, regular symbols require exact matches
-				if exprName, ok := core.ExtractSymbol(expr); ok {
-					return exprName == varName
-				}
+		// Regular symbol behavior depends on context
+		if isParameter {
+			// In parameter lists, regular symbols bind to values
+			if err := ctx.Set(varName, expr); err != nil {
 				return false
 			}
+			return true
 		}
+		// In head patterns, regular symbols require exact matches
+		if exprName, ok := core.ExtractSymbol(expr); ok {
+			return exprName == varName
+		}
+		return false
+
 	case core.List:
 		exprList, ok := expr.(core.List)
 		if !ok {
@@ -174,17 +153,6 @@ func (pe *PatternExecutor) hasSequencePatterns(patternList core.List) bool {
 		if isPattern, _, blankExpr := core.IsSymbolicPattern(elem); isPattern {
 			if isBlank, blankType, _ := core.IsSymbolicBlank(blankExpr); isBlank {
 				if blankType == core.BlankSequencePattern || blankType == core.BlankNullSequencePattern {
-					return true
-				}
-			}
-		}
-
-		// Check for string-based sequence patterns
-		if atom, ok := elem.(core.String); ok {
-			name := atom.String()
-			if core.IsPatternVariable(name) {
-				info := core.ParsePatternInfo(name)
-				if info.Type == core.BlankSequencePattern || info.Type == core.BlankNullSequencePattern {
 					return true
 				}
 			}
@@ -297,13 +265,6 @@ func (pe *PatternExecutor) getPatternTypeInfo(pattern core.Expr) core.PatternInf
 	// Check direct symbolic blank
 	if isBlank, _, _ := core.IsSymbolicBlank(pattern); isBlank {
 		return core.GetSymbolicPatternInfo(pattern)
-	}
-
-	// Check string-based pattern
-	if name, ok := core.ExtractSymbol(pattern); ok {
-		if core.IsPatternVariable(name) {
-			return core.ParsePatternInfo(name)
-		}
 	}
 
 	return core.PatternInfo{}
