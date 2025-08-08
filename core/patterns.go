@@ -9,7 +9,8 @@ import (
 type PatternType int
 
 const (
-	BlankPattern PatternType = iota
+	PatternUnknown PatternType = iota
+	BlankPattern
 	BlankSequencePattern
 	BlankNullSequencePattern
 )
@@ -74,26 +75,30 @@ func CreatePatternExpr(nameExpr, blankExpr Expr) Expr {
 // Pattern analysis functions
 
 // IsSymbolicBlank checks if an expression is a symbolic blank pattern
-func IsSymbolicBlank(expr Expr) (bool, string, Expr) {
+func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 	list, ok := expr.(List)
 	if !ok {
-		return false, "", nil
+		return false, PatternUnknown, nil
 	}
 
-	headName := list.Head()
-	blankTypes := []string{"Blank", "BlankSequence", "BlankNullSequence"}
-	for _, bt := range blankTypes {
-		if headName == bt {
-			var typeExpr Expr
-			if list.Length() > 0 {
-				args := list.Tail()
-				typeExpr = args[0]
-			}
-			return true, headName, typeExpr
-		}
+	var ptype PatternType
+	switch list.Head() {
+	case "Blank":
+		ptype = BlankPattern
+	case "BlankSequence":
+		ptype = BlankSequencePattern
+	case "BlankNullSequence":
+		ptype = BlankNullSequencePattern
+	default:
+		return false, PatternUnknown, nil
 	}
+	var typeExpr Expr
+	if list.Length() > 0 {
+		args := list.Tail()
+		typeExpr = args[0]
+	}
+	return true, ptype, typeExpr
 
-	return false, "", nil
 }
 
 // IsSymbolicPattern checks if an expression is a symbolic Pattern[name, blank]
@@ -124,14 +129,7 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 
 		// Analyze the blank expression
 		if isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr); isBlank {
-			switch blankType {
-			case "Blank":
-				info.Type = BlankPattern
-			case "BlankSequence":
-				info.Type = BlankSequencePattern
-			case "BlankNullSequence":
-				info.Type = BlankNullSequencePattern
-			}
+			info.Type = blankType
 
 			// Extract type constraint
 			if typeExpr != nil {
@@ -147,15 +145,7 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 	// Check if it's a direct blank expression
 	if isBlank, blankType, typeExpr := IsSymbolicBlank(expr); isBlank {
 		info := PatternInfo{}
-
-		switch blankType {
-		case "Blank":
-			info.Type = BlankPattern
-		case "BlankSequence":
-			info.Type = BlankSequencePattern
-		case "BlankNullSequence":
-			info.Type = BlankNullSequencePattern
-		}
+		info.Type = blankType
 
 		// Extract type constraint
 		if typeExpr != nil {
@@ -411,14 +401,16 @@ func GetPatternSpecificity(pattern Expr) PatternSpecificity {
 		return PatternSpecificity(cs.TotalScore)
 	}
 
-	// Check for string-based patterns
-	if atom, ok := pattern.(Symbol); ok {
-		name := atom.String()
-		if IsPatternVariable(name) {
-			info := ParsePatternInfo(name)
-			return GetPatternVariableSpecificity(info)
+	/*
+		// Check for string-based patterns
+		if atom, ok := pattern.(Symbol); ok {
+			name := atom.String()
+			if IsPatternVariable(name) {
+				info := ParsePatternInfo(name)
+				return GetPatternVariableSpecificity(info)
+			}
 		}
-	}
+	*/
 
 	// Literal patterns are most specific - boost them above all pattern types
 	// Use a high multiplier to ensure they're always highest
@@ -446,15 +438,15 @@ func GetBlankExprSpecificity(blankExpr Expr) PatternSpecificity {
 	// Adjust specificity based on blank type (sequence vs single)
 	// Use the same multiplier approach as GetPatternVariableSpecificity
 	switch blankType {
-	case "BlankNullSequence":
+	case BlankNullSequencePattern:
 		// ___ - most general (can match 0 or more)
 		return baseSpecificity*10 + 0
 
-	case "BlankSequence":
+	case BlankSequencePattern:
 		// __ - less general than null sequence (must match 1 or more)
 		return baseSpecificity*10 + 1
 
-	case "Blank":
+	case BlankPattern:
 		// _ - single patterns are more specific than sequences
 		return baseSpecificity*10 + 2
 
@@ -623,9 +615,11 @@ func (pm *PatternMatcher) testMatchBlank(blankExpr, expr Expr) bool {
 	}
 
 	// For pure matching, single expressions match all blank types
-	// (sequence handling is more complex and typically needs context)
+	// (sequence handling is more complex and typically needs context
+
+	// TODO
 	switch blankType {
-	case "Blank", "BlankSequence", "BlankNullSequence":
+	case BlankPattern, BlankSequencePattern, BlankNullSequencePattern:
 		return true
 	}
 
@@ -796,9 +790,9 @@ func analyzeSequencePattern(pattern Expr) (isSequence bool, varName string, type
 			}
 
 			switch blankType {
-			case "BlankSequence":
+			case BlankSequencePattern:
 				return true, vn, tn, false
-			case "BlankNullSequence":
+			case BlankNullSequencePattern:
 				return true, vn, tn, true
 			}
 		}
@@ -812,9 +806,9 @@ func analyzeSequencePattern(pattern Expr) (isSequence bool, varName string, type
 		}
 
 		switch blankType {
-		case "BlankSequence":
+		case BlankSequencePattern:
 			return true, "", tn, false
-		case "BlankNullSequence":
+		case BlankNullSequencePattern:
 			return true, "", tn, true
 		}
 	}
@@ -840,23 +834,14 @@ func analyzeSequencePattern(pattern Expr) (isSequence bool, varName string, type
 func isNullSequencePattern(pattern Expr) bool {
 	// Check for symbolic Pattern[name, BlankNullSequence]
 	if isPattern, _, blankExpr := IsSymbolicPattern(pattern); isPattern {
-		if isBlank, blankType, _ := IsSymbolicBlank(blankExpr); isBlank && blankType == "BlankNullSequence" {
+		if isBlank, blankType, _ := IsSymbolicBlank(blankExpr); isBlank && blankType == BlankNullSequencePattern {
 			return true
 		}
 	}
 
 	// Check for direct symbolic BlankNullSequence
-	if isBlank, blankType, _ := IsSymbolicBlank(pattern); isBlank && blankType == "BlankNullSequence" {
+	if isBlank, blankType, _ := IsSymbolicBlank(pattern); isBlank && blankType == BlankNullSequencePattern {
 		return true
-	}
-
-	// Check for legacy string-based null sequence patterns
-	if sym, ok := pattern.(Symbol); ok {
-		name := sym.String()
-		if IsPatternVariable(name) {
-			info := ParsePatternInfo(name)
-			return info.Type == BlankNullSequencePattern
-		}
 	}
 
 	return false

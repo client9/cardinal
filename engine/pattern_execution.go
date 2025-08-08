@@ -126,7 +126,7 @@ func (pe *PatternExecutor) matchBlankWithBinding(blankExpr, expr core.Expr, ctx 
 	// For now, single blank expressions always match single expressions
 	// BlankSequence and BlankNullSequence handling for sequences happens in list context
 	switch blankType {
-	case "Blank", "BlankSequence", "BlankNullSequence":
+	case core.BlankPattern, core.BlankSequencePattern, core.BlankNullSequencePattern:
 		return true
 	}
 
@@ -165,7 +165,7 @@ func (pe *PatternExecutor) hasSequencePatterns(patternList core.List) bool {
 	for _, elem := range patternList.AsSlice() {
 		// Check for symbolic sequence patterns
 		if isBlank, blankType, _ := core.IsSymbolicBlank(elem); isBlank {
-			if blankType == "BlankSequence" || blankType == "BlankNullSequence" {
+			if blankType == core.BlankSequencePattern || blankType == core.BlankNullSequencePattern {
 				return true
 			}
 		}
@@ -173,7 +173,7 @@ func (pe *PatternExecutor) hasSequencePatterns(patternList core.List) bool {
 		// Check for symbolic Pattern[name, sequence]
 		if isPattern, _, blankExpr := core.IsSymbolicPattern(elem); isPattern {
 			if isBlank, blankType, _ := core.IsSymbolicBlank(blankExpr); isBlank {
-				if blankType == "BlankSequence" || blankType == "BlankNullSequence" {
+				if blankType == core.BlankSequencePattern || blankType == core.BlankNullSequencePattern {
 					return true
 				}
 			}

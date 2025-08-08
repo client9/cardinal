@@ -96,8 +96,6 @@ func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl Patter
 		IsBuiltin:   true,
 	}
 
-	//r.registerFunctionDef(functionName, funcDef)
-
 	definitions := r.functions[functionName]
 	definitions = append(definitions, funcDef)
 	r.functions[functionName] = definitions
@@ -142,19 +140,6 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 	// Add new definition and re-sort by specificity
 	definitions = append(definitions, newDef)
 	sortBySpec(definitions)
-
-	/*
-		sort.Slice(definitions, func(i, j int) bool {
-			// Higher specificity comes first
-			if definitions[i].Specificity != definitions[j].Specificity {
-				return definitions[i].Specificity > definitions[j].Specificity
-			}
-			// Tie-breaker: use lexicographic order of pattern strings for stability
-			// This ensures Integer patterns come before Number patterns when specificity is equal
-			return definitions[i].Pattern.String() < definitions[j].Pattern.String()
-		})
-	*/
-
 	r.functions[functionName] = definitions
 }
 
@@ -162,9 +147,6 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Expr) error {
 	functionName := pattern.Head()
 
-	// // fmt.Printf("DEBUG: RegisterUserFunction: function=%s, pattern=%v, body=%v\\n", functionName, pattern, body)
-
-	// Create function definition using compound specificity
 	funcDef := FunctionDef{
 		Pattern:     pattern,
 		Body:        body,
@@ -173,21 +155,33 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Exp
 		IsBuiltin:   false,
 	}
 
-	// Register the function definition (will replace equivalent patterns)
 	r.registerFunctionDef(functionName, funcDef)
 	return nil
+}
+
+func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, map[string]core.Expr) {
+	fname := fn.Head()
+
+	definitions, exists := r.functions[fname]
+	if !exists {
+		return nil, nil
+	}
+
+	for _, def := range definitions {
+		if matches, bindings := matchesPattern2(def.Pattern, fn); matches {
+			return &def, bindings
+		}
+	}
+	return nil, nil
+
 }
 
 // FindMatchingFunction finds the best matching function definition for given arguments
 func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []core.Expr) (*FunctionDef, map[string]core.Expr) {
 	definitions, exists := r.functions[functionName]
 	if !exists {
-		// fmt.Printf("DEBUG: No functions found for '%s'. Available functions: %v\n", functionName, r.GetAllFunctionNames())
 		return nil, nil
 	}
-
-	// fmt.Printf("DEBUG: Found %d definitions for function '%s'\n", len(definitions), functionName)
-
 	// Try each definition in order (most specific first)
 	for _, def := range definitions {
 		if matches, bindings := matchesPattern(def.Pattern, functionName, args); matches {
@@ -226,7 +220,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 		return nil, false
 	}
 	// Check for new Symbol type first
-	functionName, ok := core.ExtractSymbol(list.HeadExpr())
+	//functionName, ok := core.ExtractSymbol(list.HeadExpr())
 
 	if !ok {
 		return nil, false
@@ -234,7 +228,9 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 	args := list.Tail()
 
 	// Find matching function definition
-	funcDef, bindings := r.FindMatchingFunction(functionName, args)
+	//funcDef, bindings := r.FindMatchingFunction(functionName, args)
+
+	funcDef, bindings := r.FindMatchingFunction2(callExpr)
 	if funcDef == nil {
 		return nil, false
 	}
@@ -245,8 +241,6 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 
 	// Call the function
 	if funcDef.GoImpl != nil {
-		// Built-in function - call Go implementation
-		//return funcDef.GoImpl(e, funcCtx, args), true
 		result := funcDef.GoImpl(e, ctx, args)
 
 		// the downstream code doesn't have access to the single expression
@@ -255,6 +249,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 			err.Arg = callExpr
 			return err, true
 		}
+
 		return result, true
 	}
 
@@ -381,6 +376,23 @@ func matchesPattern(pattern core.Expr, functionName string, args []core.Expr) (b
 
 	// Use the new unified pattern matching system with sequence pattern support
 	matches, bindings := core.MatchWithBindings(pattern, mockCall)
+
+	if matches {
+		// Convert core.PatternBindings to map[string]Expr for compatibility
+		result := make(map[string]core.Expr)
+		for varName, value := range bindings {
+			result[varName] = value
+		}
+		return true, result
+	}
+	return false, nil
+}
+
+// matchesPattern checks if a pattern matches the given arguments and returns variable bindings
+func matchesPattern2(pattern core.Expr, fn core.Expr) (bool, map[string]core.Expr) {
+
+	// Use the new unified pattern matching system with sequence pattern support
+	matches, bindings := core.MatchWithBindings(pattern, fn)
 
 	if matches {
 		// Convert core.PatternBindings to map[string]Expr for compatibility

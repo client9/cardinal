@@ -10,15 +10,15 @@ func TestIsSymbolicBlank(t *testing.T) {
 	tests := []struct {
 		expr           Expr
 		expectBlank    bool
-		expectType     string
+		expectType     PatternType
 		expectTypeExpr Expr
 	}{
-		{CreateBlankExpr(nil), true, "Blank", nil},
-		{CreateBlankExpr(NewSymbol("Integer")), true, "Blank", NewSymbol("Integer")},
-		{CreateBlankSequenceExpr(nil), true, "BlankSequence", nil},
-		{CreateBlankNullSequenceExpr(NewSymbol("String")), true, "BlankNullSequence", NewSymbol("String")},
-		{NewSymbol("x"), false, "", nil},
-		{NewInteger(42), false, "", nil},
+		{CreateBlankExpr(nil), true, BlankPattern, nil},
+		{CreateBlankExpr(NewSymbol("Integer")), true, BlankPattern, NewSymbol("Integer")},
+		{CreateBlankSequenceExpr(nil), true, BlankSequencePattern, nil},
+		{CreateBlankNullSequenceExpr(NewSymbol("String")), true, BlankNullSequencePattern, NewSymbol("String")},
+		{NewSymbol("x"), false, PatternUnknown, nil},
+		{NewInteger(42), false, PatternUnknown, nil},
 	}
 
 	for _, test := range tests {
