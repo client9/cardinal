@@ -417,27 +417,15 @@ func (pm *PatternMatcher) testMatchInternal(pattern, expr Expr) bool {
 		return pm.testMatchBlank(pattern, expr)
 	}
 
-	// Handle different expression types
-	switch p := pattern.(type) {
-	case Symbol:
-		varName := p.String()
-		// Regular symbol - must match literally
-		if exprAtom, ok := expr.(Symbol); ok {
-			return exprAtom.String() == varName
+	// pattern and expr are both lists
+	if patList, ok := pattern.(List); ok {
+		if exprList, ok := expr.(List); ok {
+			return pm.testMatchList(patList, exprList)
 		}
 		return false
-	case List:
-		exprList, ok := expr.(List)
-		if !ok {
-			return false
-		}
-
-		return pm.testMatchList(p, exprList)
-
-	default:
-		// All other types must match exactly
-		return pattern.Equal(expr)
 	}
+
+	return pattern.Equal(expr)
 }
 
 // testMatchBlank tests if an expression matches a blank pattern
