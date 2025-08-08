@@ -20,10 +20,6 @@ func asRule(expr core.Expr) (a, b core.Expr, ok bool) {
 
 // isRuleOrRuleDelayed checks if an expression is a Rule or RuleDelayed
 func isRuleOrRuleDelayed(expr core.Expr) bool {
-
-	//if symbolName, ok := core.ExtractSymbol(expr); ok {
-	//	return symbolName == "Rule" || symbolName == "RuleDelayed"
-	//}
 	if expr.Length() != 2 {
 		return false
 	}
@@ -52,48 +48,9 @@ func applyRuleDelayedAware(expr core.Expr, rule core.Expr) core.Expr {
 		// Use pattern matching with variable binding
 		if matches, bindings := core.MatchWithBindings(pattern, expr); matches {
 			return core.SubstituteBindings(replacement, bindings)
-			/*
-				if rule.Head() == "Rule" {
-					// For Rule, substitute directly (current behavior)
-					return core.SubstituteBindings(replacement, bindings)
-				} else {
-					// For RuleDelayed, evaluate RHS in a context with bindings
-					ruleCtx := engine.NewChildContext(c)
-
-					// Add pattern variable bindings to the rule context
-					for varName, value := range bindings {
-						ruleCtx.AddScopedVar(varName) // Keep bindings local
-						if err := ruleCtx.Set(varName, value); err != nil {
-							return core.NewError("BindingError", err.Error())
-						}
-					}
-					// Evaluate replacement in the rule context
-					return e.Evaluate(ruleCtx, replacement)
-				}
-			*/
 		}
 	}
-	/*
-		if ruleDelayed, ok := rule.(core.RuleDelayedExpr); ok {
-			// Handle direct RuleDelayedExpr
-			matches, bindings := core.MatchWithBindings(ruleDelayed.Pattern, expr)
-			if matches {
-				// Create a new context with pattern variable bindings
-				ruleCtx := engine.NewChildContext(c)
 
-				// Add pattern variable bindings to the rule context
-				for varName, value := range bindings {
-					ruleCtx.AddScopedVar(varName) // Keep bindings local
-					if err := ruleCtx.Set(varName, value); err != nil {
-						return core.NewError("BindingError", err.Error())
-					}
-				}
-
-				// Evaluate RHS in the rule context
-				return e.Evaluate(ruleCtx, ruleDelayed.RHS)
-			}
-		}
-	*/
 	// If no match or invalid rule, return original expression
 	return expr
 }
@@ -111,28 +68,22 @@ func Replace(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 		return applyRuleDelayedAware(expr, rule)
 	}
 
-	// Handle List of rules
-	if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 {
-		if rulesList.Head() == "List" {
-			ruleSlice := rulesList.Tail()
-			// First, check if ALL elements (except head) are Rules or RuleDelayed
-			for _, r := range ruleSlice {
-				if !isRuleOrRuleDelayed(r) {
-					return core.NewError("ArgumentError", "Input was not a list of rules")
-				}
-			}
-
-			// Only process as rule list if ALL elements are rules
-			// Try each rule in order
-			for _, ruleItem := range ruleSlice {
-				result := applyRuleDelayedAware(expr, ruleItem)
-				if !result.Equal(expr) {
-					return result
-				}
-			}
-		}
+	if !isRuleList(rule) {
+		return core.NewError("ArgumentError", "Input was not a rule or list of rules")
 	}
 
+	// Handle List of rules
+	ruleList, _ := rule.(core.List)
+	ruleSlice := ruleList.Tail()
+
+	// Only process as rule list if ALL elements are rules
+	// Try each rule in order
+	for _, ruleItem := range ruleSlice {
+		result := applyRuleDelayedAware(expr, ruleItem)
+		if !result.Equal(expr) {
+			return result
+		}
+	}
 	// No rule matched or invalid rule format
 	return expr
 }
