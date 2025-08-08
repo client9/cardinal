@@ -159,31 +159,6 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 	return PatternInfo{}
 }
 
-// ConvertToSymbolicPattern converts a pattern to symbolic representation if it's a string-based pattern
-func ConvertToSymbolicPattern(pattern Expr) Expr {
-	switch p := pattern.(type) {
-	case List:
-		// Check if this is already a symbolic Pattern - don't convert its elements
-		if isPattern, _, _ := IsSymbolicPattern(p); isPattern {
-			return pattern
-		}
-
-		// Check if this is already a symbolic Blank - don't convert its elements
-		if isBlank, _, _ := IsSymbolicBlank(p); isBlank {
-			return pattern
-		}
-
-		// Convert elements recursively
-		newElements := make([]Expr, p.Length()+1)
-		for i, elem := range p.AsSlice() {
-			newElements[i] = ConvertToSymbolicPattern(elem)
-		}
-		return NewListFromExprs(newElements...)
-	default:
-		return pattern
-	}
-}
-
 // Type matching functions
 
 // MatchesType checks if an expression matches a given type name
@@ -426,9 +401,7 @@ func NewPatternMatcher() *PatternMatcher {
 
 // TestMatch tests if an expression matches a pattern (pure function, no binding)
 func (pm *PatternMatcher) TestMatch(pattern, expr Expr) bool {
-	// Convert pattern to symbolic if needed
-	symbolicPattern := ConvertToSymbolicPattern(pattern)
-	return pm.testMatchInternal(symbolicPattern, expr)
+	return pm.testMatchInternal(pattern, expr)
 }
 
 // testMatchInternal implements the core matching logic
@@ -518,11 +491,9 @@ func MatchWithBindings(pattern, expr Expr) (bool, PatternBindings) {
 
 // matchWithBindingsInternal implements pattern matching with binding capture
 func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) bool {
-	// Convert pattern to symbolic if needed
-	symbolicPattern := ConvertToSymbolicPattern(pattern)
 
 	// Handle symbolic patterns with variable binding
-	if isPattern, varName, blankExpr := IsSymbolicPattern(symbolicPattern); isPattern {
+	if isPattern, varName, blankExpr := IsSymbolicPattern(pattern); isPattern {
 		// Test if the blank part matches
 		if matchBlankWithBindings(blankExpr, expr, bindings) {
 			vn := varName.String()
@@ -542,12 +513,12 @@ func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) boo
 	}
 
 	// Handle direct symbolic blanks
-	if isBlank, _, _ := IsSymbolicBlank(symbolicPattern); isBlank {
-		return matchBlankWithBindings(symbolicPattern, expr, bindings)
+	if isBlank, _, _ := IsSymbolicBlank(pattern); isBlank {
+		return matchBlankWithBindings(pattern, expr, bindings)
 	}
 
 	// Handle different expression types
-	switch p := symbolicPattern.(type) {
+	switch p := pattern.(type) {
 	case Symbol:
 		// Direct symbol comparison
 		if exprSym, ok := expr.(Symbol); ok {
@@ -581,7 +552,7 @@ func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) boo
 
 	default:
 		// For other types, just check equality
-		return symbolicPattern.Equal(expr)
+		return pattern.Equal(expr)
 	}
 }
 

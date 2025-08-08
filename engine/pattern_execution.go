@@ -18,9 +18,7 @@ func NewPatternExecutor() *PatternExecutor {
 
 // MatchWithBinding performs pattern matching with variable binding in the provided Context
 func (pe *PatternExecutor) MatchWithBinding(pattern, expr core.Expr, ctx *Context) bool {
-	// Convert pattern to symbolic if needed
-	symbolicPattern := core.ConvertToSymbolicPattern(pattern)
-	return pe.matchWithBindingInternal(symbolicPattern, expr, ctx, false)
+	return pe.matchWithBindingInternal(pattern, expr, ctx, false)
 }
 
 // matchWithBindingInternal implements the core matching logic with binding
