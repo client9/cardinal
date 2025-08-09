@@ -168,7 +168,7 @@ func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, co
 	}
 
 	for _, def := range definitions {
-		if matches, bindings := matchesPattern2(def.Pattern, fn); matches {
+		if matches, bindings := core.MatchWithBindings(def.Pattern, fn); matches {
 			return &def, bindings
 		}
 	}
@@ -307,12 +307,4 @@ func typesCouldOverlap(type1, type2 string) bool {
 	// Different concrete types don't overlap
 	// Integer vs String, Integer vs Real, String vs Real, etc.
 	return false
-}
-
-// matchesPattern checks if a pattern matches the given arguments and returns variable bindings
-func matchesPattern2(pattern core.Expr, fn core.Expr) (bool, core.PatternBindings) {
-
-	// Use the new unified pattern matching system with sequence pattern support
-	return core.MatchWithBindings(pattern, fn)
-
 }
