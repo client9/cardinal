@@ -7,7 +7,6 @@ build:
 
 generate:
 	go generate ./...
-	(cd engine; go generate ./...)
 
 lint:
 	go mod tidy
@@ -38,7 +37,7 @@ clean:
 	rm -f main wrapgen
 	find . -name '*.bak*' | xargs rm -f
 	rm -rf wrapped
-	rm -f engine/builtin_setup.go
+	rm -f builtin_setup.go
 	rm -f engine/attribute_string.go
 
 setup:
