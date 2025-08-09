@@ -1,9 +1,5 @@
 package core
 
-import (
-	"log"
-)
-
 // Pattern types and enums
 type PatternType int
 
@@ -102,17 +98,11 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 
 // IsSymbolicPattern checks if an expression is a symbolic Pattern[name, blank]
 func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
-	list, ok := expr.(List)
-	if !ok || list.Length() != 2 {
-		return false, nil, nil
+	if list, ok := expr.(List); ok && list.Length() == 2 && list.Head() == "Pattern" {
+		args := list.Tail()
+		return true, args[0], args[1]
 	}
-
-	if list.Head() != "Pattern" {
-		return false, nil, nil
-	}
-
-	args := list.Tail()
-	return true, args[0], args[1]
+	return false, nil, nil
 }
 
 // GetSymbolicPatternInfo extracts pattern information from a symbolic pattern
@@ -150,64 +140,12 @@ func MatchesType(expr Expr, typeName string) bool {
 	if typeName == "" {
 		return true // No type constraint
 	}
-	if true {
-		// Number is a virtual type, and probably should be changed.
-		if typeName == "Number" {
-			_, ok := GetNumericValue(expr)
-			return ok
-		}
-		return expr.Head() == typeName
-	} else {
-		log.Printf("Checking typename=%s with expr=%s", typeName, expr.Head())
-		switch typeName {
-		case "Association":
-			log.Printf("typeName = %s, expr = %s", typeName, expr.Head())
-			return expr.Head() == typeName
-		case "Integer":
-
-			_, ok := expr.(Integer)
-			return ok
-
-		case "Real":
-
-			_, ok := expr.(Real)
-			return ok
-		case "Number":
-			// Number is a virtual type.. can be Real or Integer
-			_, ok := GetNumericValue(expr)
-			return ok
-		case "String":
-
-			_, ok := expr.(String)
-			return ok
-
-		case "Symbol":
-
-			_, ok := expr.(Symbol)
-			return ok
-
-		case "List":
-
-			_, ok := expr.(List)
-			return ok
-		case "Rule":
-			log.Printf("IN RULE")
-			// Check if it's a List with "Rule" as the head
-			if list, ok := expr.(List); ok {
-				return list.Head() == "Rule"
-			}
-			return false
-
-		default:
-
-			// Check for ObjectExpr with matching type
-			if obj, ok := expr.(ObjectExpr); ok {
-				return obj.TypeName == typeName
-			}
-		}
-
-		return false
+	// Number is a virtual type, and probably should be changed.
+	if typeName == "Number" {
+		_, ok := GetNumericValue(expr)
+		return ok
 	}
+	return expr.Head() == typeName
 }
 
 // IsBuiltinType checks if a type name is a built-in type
