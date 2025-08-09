@@ -117,33 +117,19 @@ func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
 
 // GetSymbolicPatternInfo extracts pattern information from a symbolic pattern
 func GetSymbolicPatternInfo(expr Expr) PatternInfo {
+	info := PatternInfo{}
+	blankExpr := expr
 	// Check if it's a Pattern[name, blank] first
-	if isPattern, nameExpr, blankExpr := IsSymbolicPattern(expr); isPattern {
-		info := PatternInfo{}
-
+	if isPattern, nameExpr, blank := IsSymbolicPattern(expr); isPattern {
 		// Extract variable name
 		if nameAtom, ok := nameExpr.(Symbol); ok {
 			info.VarName = nameAtom.String()
 		}
-
-		// Analyze the blank expression
-		if isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr); isBlank {
-			info.Type = blankType
-
-			// Extract type constraint
-			if typeExpr != nil {
-				if typeAtom, ok := typeExpr.(Symbol); ok {
-					info.TypeName = typeAtom.String()
-				}
-			}
-		}
-
-		return info
+		blankExpr = blank
 	}
 
 	// Check if it's a direct blank expression
-	if isBlank, blankType, typeExpr := IsSymbolicBlank(expr); isBlank {
-		info := PatternInfo{}
+	if isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr); isBlank {
 		info.Type = blankType
 
 		// Extract type constraint
@@ -152,11 +138,9 @@ func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 				info.TypeName = typeAtom.String()
 			}
 		}
-
-		return info
 	}
 
-	return PatternInfo{}
+	return info
 }
 
 // Type matching functions
@@ -258,17 +242,6 @@ func GetPatternSpecificity(pattern Expr) PatternSpecificity {
 		return PatternSpecificity(cs.TotalScore)
 	}
 
-	/*
-		// Check for string-based patterns
-		if atom, ok := pattern.(Symbol); ok {
-			name := atom.String()
-			if IsPatternVariable(name) {
-				info := ParsePatternInfo(name)
-				return GetPatternVariableSpecificity(info)
-			}
-		}
-	*/
-
 	// Literal patterns are most specific - boost them above all pattern types
 	// Use a high multiplier to ensure they're always highest
 	return SpecificityLiteral * 100
@@ -362,11 +335,7 @@ func GetPatternVariableSpecificity(info PatternInfo) PatternSpecificity {
 
 // CalculateCompoundSpecificity calculates specificity for compound patterns (lists)
 func CalculateCompoundSpecificity(pattern List) CompoundSpecificity {
-	/*
-		if pattern.Length() == 0 {
-			return CompoundSpecificity{}
-		}
-	*/
+
 	cs := CompoundSpecificity{
 		ArgsCount:       int(pattern.Length()),
 		ArgsSpecificity: make([]PatternSpecificity, 0),

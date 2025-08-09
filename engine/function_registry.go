@@ -159,7 +159,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Exp
 	return nil
 }
 
-func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, map[string]core.Expr) {
+func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, core.PatternBindings) {
 	fname := fn.Head()
 
 	definitions, exists := r.functions[fname]
@@ -174,21 +174,6 @@ func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, ma
 	}
 	return nil, nil
 
-}
-
-// FindMatchingFunction finds the best matching function definition for given arguments
-func (r *FunctionRegistry) FindMatchingFunction(functionName string, args []core.Expr) (*FunctionDef, map[string]core.Expr) {
-	definitions, exists := r.functions[functionName]
-	if !exists {
-		return nil, nil
-	}
-	// Try each definition in order (most specific first)
-	for _, def := range definitions {
-		if matches, bindings := matchesPattern(def.Pattern, functionName, args); matches {
-			return &def, bindings
-		}
-	}
-	return nil, nil
 }
 
 // GetFunctionDefinitions returns all definitions for a function name (for debugging/introspection)
@@ -219,16 +204,6 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 	if !ok {
 		return nil, false
 	}
-	// Check for new Symbol type first
-	//functionName, ok := core.ExtractSymbol(list.HeadExpr())
-
-	if !ok {
-		return nil, false
-	}
-	args := list.Tail()
-
-	// Find matching function definition
-	//funcDef, bindings := r.FindMatchingFunction(functionName, args)
 
 	funcDef, bindings := r.FindMatchingFunction2(callExpr)
 	if funcDef == nil {
@@ -241,6 +216,8 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 
 	// Call the function
 	if funcDef.GoImpl != nil {
+		args := list.Tail()
+
 		result := funcDef.GoImpl(e, ctx, args)
 
 		// the downstream code doesn't have access to the single expression
@@ -253,19 +230,7 @@ func (r *FunctionRegistry) CallFunction(callExpr core.Expr, ctx *Context, e *Eva
 		return result, true
 	}
 
-	// TODO: substitute bindings seems to do the same thing as the code below
-	// using ReplaceAllWithRules
 	return core.SubstituteBindings(funcDef.Body, bindings), true
-	/*
-		rules := make([]core.Expr, 0, len(bindings)+1)
-		for varName, value := range bindings {
-			rules = append(rules, core.NewList("Rule", core.NewSymbol(varName), value))
-		}
-		rlist := core.NewList("List", rules...)
-		mbody := core.ReplaceAllWithRules(funcDef.Body, rlist)
-
-		return mbody, true
-	*/
 }
 
 // couldPatternsConflict checks if two patterns could potentially match the same arguments
@@ -344,63 +309,10 @@ func typesCouldOverlap(type1, type2 string) bool {
 	return false
 }
 
-// extractFunctionName extracts the function name from a pattern
-func extractFunctionName(pattern core.Expr) (string, error) {
-	switch p := pattern.(type) {
-
-	// unclear how core.Symbol would be triggered.
-	case core.Symbol:
-		// This is questionable.  Indicates some other issue
-		panic("Why symbol?")
-		//return string(p), nil
-	case core.List:
-		return p.Head(), nil
-	default:
-		return "", fmt.Errorf("invalid pattern type")
-	}
-}
-
 // matchesPattern checks if a pattern matches the given arguments and returns variable bindings
-func matchesPattern(pattern core.Expr, functionName string, args []core.Expr) (bool, map[string]core.Expr) {
-
-	// TODO: for unknown reasons the original expression is chopped up into the
-	// function name and args.  But now it needs to restored to a complete expressions
-	// Since it's immutable unclear why we are copying it.
-
-	// Create a mock function call to match against the pattern
-
-	part := make([]core.Expr, len(args)+1)
-	part[0] = core.NewSymbol(functionName)
-	copy(part[1:], args)
-	mockCall := core.NewListFromExprs(part...)
+func matchesPattern2(pattern core.Expr, fn core.Expr) (bool, core.PatternBindings) {
 
 	// Use the new unified pattern matching system with sequence pattern support
-	matches, bindings := core.MatchWithBindings(pattern, mockCall)
+	return core.MatchWithBindings(pattern, fn)
 
-	if matches {
-		// Convert core.PatternBindings to map[string]Expr for compatibility
-		result := make(map[string]core.Expr)
-		for varName, value := range bindings {
-			result[varName] = value
-		}
-		return true, result
-	}
-	return false, nil
-}
-
-// matchesPattern checks if a pattern matches the given arguments and returns variable bindings
-func matchesPattern2(pattern core.Expr, fn core.Expr) (bool, map[string]core.Expr) {
-
-	// Use the new unified pattern matching system with sequence pattern support
-	matches, bindings := core.MatchWithBindings(pattern, fn)
-
-	if matches {
-		// Convert core.PatternBindings to map[string]Expr for compatibility
-		result := make(map[string]core.Expr)
-		for varName, value := range bindings {
-			result[varName] = value
-		}
-		return true, result
-	}
-	return false, nil
 }

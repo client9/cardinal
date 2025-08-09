@@ -2,6 +2,22 @@ package core
 
 // Pure pattern matching (no variable binding)
 
+func IsExcept(pattern Expr) Expr {
+	if pattern.Head() != "Except" {
+		return nil
+	}
+	plist, _ := pattern.(List)
+	return plist.Tail()[0]
+}
+
+func IsAlternatives(pattern Expr) []Expr {
+	if pattern.Head() != "Alternatives" {
+		return nil
+	}
+	plist, _ := pattern.(List)
+	return plist.Tail()
+}
+
 // PatternMatcher provides pure pattern matching without side effects
 type PatternMatcher struct{}
 
@@ -12,69 +28,8 @@ func NewPatternMatcher() *PatternMatcher {
 
 // TestMatch tests if an expression matches a pattern (pure function, no binding)
 func (pm *PatternMatcher) TestMatch(pattern, expr Expr) bool {
-	return pm.testMatchInternal(pattern, expr)
-}
-
-// testMatchInternal implements the core matching logic
-func (pm *PatternMatcher) testMatchInternal(pattern, expr Expr) bool {
-	// Handle symbolic patterns
-	if isPattern, _, blankExpr := IsSymbolicPattern(pattern); isPattern {
-		// For pure matching, just test the blank part (no variable binding)
-		return pm.testMatchBlank(blankExpr, expr)
-	}
-
-	// Handle direct symbolic blanks
-	if isBlank, _, _ := IsSymbolicBlank(pattern); isBlank {
-		return pm.testMatchBlank(pattern, expr)
-	}
-
-	// pattern and expr are both lists
-	if patList, ok := pattern.(List); ok {
-		if exprList, ok := expr.(List); ok {
-			return pm.testMatchList(patList, exprList)
-		}
-		return false
-	}
-
-	return pattern.Equal(expr)
-}
-
-// testMatchBlank tests if an expression matches a blank pattern
-func (pm *PatternMatcher) testMatchBlank(blankExpr, expr Expr) bool {
-	isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr)
-	if !isBlank {
-		return false
-	}
-
-	// Check type constraint if present
-	if typeExpr != nil {
-		var typeName string
-		if typeAtom, ok := typeExpr.(Symbol); ok {
-			typeName = typeAtom.String()
-		}
-		if !MatchesType(expr, typeName) {
-			return false
-		}
-	}
-
-	// For pure matching, single expressions match all blank types
-	// (sequence handling is more complex and typically needs context
-
-	// TODO
-	switch blankType {
-	case BlankPattern, BlankSequencePattern, BlankNullSequencePattern:
-		return true
-	}
-
-	return false
-}
-
-// testMatchList tests if two lists match
-func (pm *PatternMatcher) testMatchList(patternList, exprList List) bool {
-	// Use the full pattern matching logic but discard bindings
-	// This properly handles sequence patterns like z___
-	bindings := make(PatternBindings)
-	return matchListWithBindings(patternList, exprList, bindings)
+	ok, _ := MatchWithBindings(pattern, expr)
+	return ok
 }
 
 // PatternBindings represents variable bindings from pattern matching
@@ -91,29 +46,27 @@ func MatchWithBindings(pattern, expr Expr) (bool, PatternBindings) {
 // matchWithBindingsInternal implements pattern matching with binding capture
 func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) bool {
 
-	// Handle symbolic patterns with variable binding
-	if isPattern, varName, blankExpr := IsSymbolicPattern(pattern); isPattern {
-		// Test if the blank part matches
-		if matchBlankWithBindings(blankExpr, expr, bindings) {
-			vn := varName.String()
-			// If there's a variable name, check for existing binding or create new one
-			if vn != "" {
-				if existingValue, exists := bindings[vn]; exists {
-					// Variable already bound - check if values match
-					return existingValue.Equal(expr)
-				} else {
-					// New binding
-					bindings[vn] = expr
-				}
+	if plist := IsAlternatives(pattern); plist != nil {
+		for _, p := range plist {
+			if matchWithBindingsInternal(p, expr, bindings) {
+				return true
 			}
-			return true
 		}
 		return false
 	}
 
-	// Handle direct symbolic blanks
-	if isBlank, _, _ := IsSymbolicBlank(pattern); isBlank {
-		return matchBlankWithBindings(pattern, expr, bindings)
+	if pinfo := GetSymbolicPatternInfo(pattern); pinfo.Type != PatternUnknown {
+		if !matchBlankWithBindings(pinfo, expr, bindings) {
+			return false
+		}
+		if vn := pinfo.VarName; vn != "" {
+			if existingValue, exists := bindings[vn]; exists {
+				// Variable already bound - check if values match
+				return existingValue.Equal(expr)
+			}
+			bindings[vn] = expr
+		}
+		return true
 	}
 
 	// Handle different expression types
@@ -130,22 +83,13 @@ func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) boo
 }
 
 // matchBlankWithBindings tests if a blank pattern matches an expression
-func matchBlankWithBindings(blankExpr, expr Expr, bindings PatternBindings) bool {
-	isBlank, _, typeExpr := IsSymbolicBlank(blankExpr)
-	if !isBlank {
+func matchBlankWithBindings(pinfo PatternInfo, expr Expr, bindings PatternBindings) bool {
+	if pinfo.Type == PatternUnknown {
 		return false
 	}
 
-	// If no type constraint, accept any expression
-	if typeExpr == nil {
-		return true
-	}
-
-	// Extract type name from type expression
-	typeName, _ := ExtractSymbol(typeExpr)
-
 	// Check type constraint
-	return MatchesType(expr, typeName)
+	return MatchesType(expr, pinfo.TypeName)
 }
 
 // matchListWithBindings tests if a list pattern matches a list expression
@@ -169,20 +113,25 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings Patter
 		// Check if remaining patterns are all BlankNullSequence (which can match zero elements)
 		for i := patternIdx; i < len(patternSlice); i++ {
 			elem := patternSlice[i]
-			if !isNullSequencePattern(elem) {
+
+			pinfo := GetSymbolicPatternInfo(elem)
+			if pinfo.Type != BlankNullSequencePattern {
 				return false
 			}
-			// Bind null sequence patterns to empty list
-			bindNullSequencePattern(elem, bindings)
+			if vn := pinfo.VarName; vn != "" {
+				// Bind null sequence patterns to empty list
+				// Create a proper List with "List" as the first element (like the old system)
+				bindings[vn] = NewList("List")
+			}
 		}
 		return true
 	}
 
 	patternElem := patternSlice[patternIdx]
-
-	// Check if this is a sequence pattern
-	if isSequencePattern, varName, typeName, allowZero := analyzeSequencePattern(patternElem); isSequencePattern {
-		return matchSequencePatternWithBindings(patternList, exprList, bindings, patternIdx, exprIdx, varName, typeName, allowZero)
+	pinfo := GetSymbolicPatternInfo(patternElem)
+	if pinfo.Type == BlankNullSequencePattern || pinfo.Type == BlankSequencePattern {
+		// Check if this is a sequence pattern
+		return matchSequencePatternWithBindings(patternList, exprList, bindings, patternIdx, exprIdx, pinfo)
 	}
 
 	// Regular pattern - match one element
@@ -193,79 +142,13 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings Patter
 	return false
 }
 
-// analyzeSequencePattern determines if a pattern element is a sequence pattern
-func analyzeSequencePattern(pattern Expr) (isSequence bool, varName string, typeName string, allowZero bool) {
-	// Check for symbolic Pattern[name, BlankSequence/BlankNullSequence]
-	if isPattern, nameExpr, blankExpr := IsSymbolicPattern(pattern); isPattern {
-		if isBlank, blankType, typeExpr := IsSymbolicBlank(blankExpr); isBlank {
-			vn, _ := ExtractSymbol(nameExpr)
-			tn := ""
-			if typeExpr != nil {
-				tn, _ = ExtractSymbol(typeExpr)
-			}
-
-			switch blankType {
-			case BlankSequencePattern:
-				return true, vn, tn, false
-			case BlankNullSequencePattern:
-				return true, vn, tn, true
-			}
-		}
-	}
-
-	// Check for direct symbolic BlankSequence/BlankNullSequence
-	if isBlank, blankType, typeExpr := IsSymbolicBlank(pattern); isBlank {
-		tn := ""
-		if typeExpr != nil {
-			tn, _ = ExtractSymbol(typeExpr)
-		}
-
-		switch blankType {
-		case BlankSequencePattern:
-			return true, "", tn, false
-		case BlankNullSequencePattern:
-			return true, "", tn, true
-		}
-	}
-	return false, "", "", false
-}
-
-// isNullSequencePattern checks if a pattern is a BlankNullSequence that can match zero elements
-func isNullSequencePattern(pattern Expr) bool {
-	// Check for symbolic Pattern[name, BlankNullSequence]
-	if isPattern, _, blankExpr := IsSymbolicPattern(pattern); isPattern {
-		if isBlank, blankType, _ := IsSymbolicBlank(blankExpr); isBlank && blankType == BlankNullSequencePattern {
-			return true
-		}
-	}
-
-	// Check for direct symbolic BlankNullSequence
-	if isBlank, blankType, _ := IsSymbolicBlank(pattern); isBlank && blankType == BlankNullSequencePattern {
-		return true
-	}
-
-	return false
-}
-
-// bindNullSequencePattern binds a null sequence pattern to an empty list
-func bindNullSequencePattern(pattern Expr, bindings PatternBindings) {
-	// Extract variable name if present
-	varName := ""
-
-	// Check for symbolic Pattern[name, BlankNullSequence]
-	if isPattern, nameExpr, _ := IsSymbolicPattern(pattern); isPattern {
-		varName, _ = ExtractSymbol(nameExpr)
-	}
-
-	// Bind to empty list if we have a variable name
-	if varName != "" {
-		// Create a proper List with "List" as the first element (like the old system)
-		bindings[varName] = NewList("List")
-	}
-}
-
 // matchSequencePatternWithBindings handles matching sequence patterns
-func matchSequencePatternWithBindings(patternList, exprList List, bindings PatternBindings, patternIdx, exprIdx int, varName, typeName string, allowZero bool) bool {
+func matchSequencePatternWithBindings(patternList, exprList List, bindings PatternBindings, patternIdx, exprIdx int, pinfo PatternInfo) bool { //
+	// , varName, typeName string, allowZero bool) bool {
+
+	typeName := pinfo.TypeName
+	varName := pinfo.VarName
+	allowZero := pinfo.Type == BlankNullSequencePattern
 
 	patternSlice := patternList.AsSlice()
 	exprSlice := exprList.AsSlice()

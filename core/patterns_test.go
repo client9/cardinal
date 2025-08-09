@@ -181,6 +181,42 @@ func TestPatternMatcher(t *testing.T) {
 			NewList("Plus", NewInteger(1), NewInteger(2)), true},
 		{NewList("Plus", CreateBlankExpr(nil), CreateBlankExpr(nil)),
 			NewList("Times", NewInteger(1), NewInteger(2)), false},
+
+		// Alternatives, single
+		{NewList("Alternatives", CreateBlankExpr(NewSymbol("Integer")), CreateBlankExpr(NewSymbol("Real"))),
+			NewInteger(2), true},
+		{NewList("Alternatives", CreateBlankExpr(NewSymbol("Real")), CreateBlankExpr(NewSymbol("Integer"))),
+			NewInteger(2), true},
+		{NewList("Alternatives", CreateBlankExpr(NewSymbol("Real")), CreateBlankExpr(NewSymbol("Integer"))),
+			NewString("2"), false},
+
+		// Alternatives with Binding, single
+		{NewList("Alternatives",
+			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer"))),
+			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Real")))),
+			NewInteger(2), true},
+		{NewList("Alternatives",
+			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Real"))),
+			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer")))),
+			NewInteger(2), true},
+		{NewList("Alternatives",
+			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Real"))),
+			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer")))),
+			NewString("2"), false},
+
+		// List
+		{NewList("List",
+			NewList("Alternatives",
+				CreateBlankExpr(NewSymbol("Integer")),
+				CreateBlankExpr(NewSymbol("Real"))),
+			NewString("foo")),
+			NewList("List", NewInteger(2), NewString("foo")), true},
+		{NewList("List",
+			NewList("Alternatives",
+				CreateBlankExpr(NewSymbol("Integer")),
+				CreateBlankExpr(NewSymbol("Real"))),
+			NewString("junk")),
+			NewList("List", NewInteger(2), NewString("foo")), false},
 	}
 
 	for _, test := range tests {
