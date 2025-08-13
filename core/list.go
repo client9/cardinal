@@ -7,46 +7,46 @@ import (
 
 // List represents compound expressions
 type List struct {
-	elements *[]Expr
+	elements []Expr
 }
 
 func NewList(head string, args ...Expr) List {
 	elements := make([]Expr, len(args)+1)
 	elements[0] = NewSymbol(head)
 	copy(elements[1:], args)
-	return List{elements: &elements}
+	return List{elements: elements}
 }
 
 // NewListFromExprs creates a List directly from expressions (for special cases)
 // Use NewList instead when possible, as it enforces the Symbol-head convention
 func NewListFromExprs(elements ...Expr) List {
-	return List{elements: &elements}
+	return List{elements: elements}
 }
 
 // Copy does a shallow clone of the List
 // TBD if this should return List or Expr
 func (l List) Copy() List {
-	newelements := make([]Expr, len(*l.elements))
-	copy(newelements, *(l.elements))
-	return List{elements: &newelements}
+	newelements := make([]Expr, len(l.elements))
+	copy(newelements, (l.elements))
+	return List{elements: newelements}
 }
 
 func (l List) Length() int64 {
 	// really should panic
-	if len(*l.elements) == 0 {
+	if len(l.elements) == 0 {
 		return 0
 	}
 	// element[0] is the head
-	return int64(len(*l.elements)) - 1
+	return int64(len(l.elements)) - 1
 }
 
 func (l List) String() string {
-	if len(*l.elements) == 0 {
+	if len(l.elements) == 0 {
 		return "List()"
 	}
 
 	// Check if this is a List literal (head is "List")
-	if len(*l.elements) > 0 {
+	if len(l.elements) > 0 {
 		isListLiteral := false
 
 		// Check new Symbol type first
@@ -76,7 +76,7 @@ func (l List) InputForm() string {
 }
 
 func (l List) HeadExpr() Expr {
-	return (*l.elements)[0]
+	return (l.elements)[0]
 }
 
 func (l List) Head() string {
@@ -88,15 +88,15 @@ func (l List) Head() string {
 
 // TODO DANGER
 func (l List) SetHead(name string) {
-	(*l.elements)[0] = NewSymbol(name)
+	l.elements[0] = NewSymbol(name)
 }
 
 func (l List) Tail() []Expr {
-	return (*l.elements)[1:]
+	return l.elements[1:]
 }
 
 func (l List) AsSlice() []Expr {
-	return *(l.elements)
+	return l.elements
 }
 
 func (l List) Equal(rhs Expr) bool {
@@ -148,7 +148,7 @@ func (l List) Slice(start, stop int64) Expr {
 	newelements := make([]Expr, len(e)+1)
 	newelements[0] = l.HeadExpr()
 	copy(newelements[1:], e)
-	return List{elements: &newelements}
+	return List{elements: newelements}
 }
 
 // Join joins this list with another sliceable of the same type
@@ -186,7 +186,7 @@ func (l List) Join(other Sliceable) Expr {
 	// Copy elements from second list (excluding head)
 	copy(newelements[1+l.Length():], otherList.Tail())
 
-	return List{elements: &newelements}
+	return List{elements: newelements}
 }
 
 // Appends an expression to the end of a List
@@ -194,7 +194,7 @@ func (l List) Append(e Expr) List {
 	dest := make([]Expr, l.Length()+2)
 	copy(dest, l.AsSlice())
 	dest[len(dest)-1] = e
-	return List{elements: &dest}
+	return List{elements: dest}
 }
 
 // SetElementAt returns a new List with the nth element replaced (1-indexed)
@@ -218,13 +218,13 @@ func (l List) SetElementAt(n int64, value Expr) Expr {
 	}
 
 	// Create new list with element replaced
-	newelements := make([]Expr, len(*l.elements))
-	copy(newelements, *(l.elements))
+	newelements := make([]Expr, len(l.elements))
+	copy(newelements, l.elements)
 	newelements[n] = value // n is 1-indexed, but array is 0-indexed after head
 
-	l.elements = &newelements
+	//l.elements = newelements
 	//return value
-	return List{elements: &newelements}
+	return List{elements: newelements}
 }
 
 // SetSlice returns a new List with elements from start to stop replaced by values (1-indexed)
@@ -297,7 +297,7 @@ func (l List) SetSlice(start, stop int64, values Expr) Expr {
 
 	// Copy elements before the range
 	if start > 1 {
-		copy(newelements[1:start], (*l.elements)[1:start])
+		copy(newelements[1:start], l.elements[1:start])
 	}
 
 	// Insert new values
@@ -308,10 +308,10 @@ func (l List) SetSlice(start, stop int64, values Expr) Expr {
 	// Copy elements after the range
 	if stop < length {
 		afterStart := start + int64(len(valueSlice))
-		copy(newelements[afterStart:], (*l.elements)[stop+1:])
+		copy(newelements[afterStart:], l.elements[stop+1:])
 	}
 
-	return List{elements: &newelements}
+	return List{elements: newelements}
 }
 
 // insertValues is a helper method for inserting values at a specific position
@@ -344,5 +344,5 @@ func (l List) insertValues(pos int64, values Expr) Expr {
 		copy(newelements[pos+int64(len(valueSlice)):], l.Tail()[pos:])
 	}
 
-	return List{elements: &newelements}
+	return List{elements: newelements}
 }

@@ -60,6 +60,7 @@ func RandomReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 func RRealDefault(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	return core.NewReal(rand01())
 }
+
 func RRealMax(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	max, _ := core.GetNumericValue(args[0])
 	return core.NewReal(rand01() * max)

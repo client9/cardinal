@@ -18,14 +18,22 @@ func Do(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	expr := args[0] // Don't evaluate expr yet - Do has HoldAll
 	spec := args[1] // Don't evaluate spec yet
 
-	// Check if second argument is an integer (simple replication form)
-	if n, ok := core.ExtractInt64(spec); ok {
-		return doSimple(e, c, expr, n)
+	// if list, assume iterator spec
+	if spec.Head() == "List" {
+		return doIterator(e, c, expr, spec.(core.List))
 	}
 
-	// Check if second argument is a core.List (iterator form)
-	if iterList, ok := spec.(core.List); ok {
-		return doIterator(e, c, expr, iterList)
+	// it's something else, evaluate it.
+	val := e.Evaluate(spec)
+	if core.IsError(val) {
+		return val
+	}
+
+	// Check if second argument is an integer (simple replication form)
+	// TODO
+	// Want "GetNumericInt" if int64, return int64, if float64 return int64
+	if n, ok := core.GetNumericValue(val); ok {
+		return doSimple(e, c, expr, int64(n))
 	}
 
 	return core.NewError("ArgumentError", "Do second argument must be integer or core.List")

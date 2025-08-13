@@ -6,7 +6,7 @@ import (
 
 // MatchQExprs checks if an expression matches a pattern (pure test, no variable binding)
 func MatchQExprs(expr, pattern core.Expr) bool {
+	ok, _ := core.MatchWithBindings(expr, pattern)
+	return ok
 	// Use the pure pattern matcher from core (no Context needed for pure testing)
-	matcher := core.NewPatternMatcher()
-	return matcher.TestMatch(pattern, expr)
 }

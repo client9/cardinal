@@ -436,6 +436,8 @@ func getFixedConversionWithMode(paramTypes []string, validationMode, symbolName 
 				conversions = append(conversions, fmt.Sprintf("\t%s, _ := core.ExtractBool(args[%d]) // Trust bool extraction", varName, i))
 			case "List":
 				conversions = append(conversions, fmt.Sprintf("\t%s := args[%d].(core.List)", varName, i))
+			case "[]Expr":
+				conversions = append(conversions, fmt.Sprintf("\t%s := args[%d].(core.List)", varName, i))
 			case "ObjectExpr":
 				conversions = append(conversions, fmt.Sprintf("\t%s := args[%d].(core.ObjectExpr)", varName, i))
 			case "*engine.Evaluator":

@@ -46,7 +46,7 @@ func applyRuleDelayedAware(expr core.Expr, rule core.Expr) core.Expr {
 
 	if pattern, replacement, ok := asRule(rule); ok {
 		// Use pattern matching with variable binding
-		if matches, bindings := core.MatchWithBindings(pattern, expr); matches {
+		if matches, bindings := core.MatchWithBindings(expr, pattern); matches {
 			return core.SubstituteBindings(replacement, bindings)
 		}
 	}

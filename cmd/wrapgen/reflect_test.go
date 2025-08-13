@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+func TestList(t *testing.T) {
+	stats, err := analyzeFunctionSignature(stdlib.ListAppend)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	fmt.Printf("%v\n", stats)
+}
 func TestR1(t *testing.T) {
 
 	stats, err := analyzeFunctionSignature(stdlib.LessNumber)

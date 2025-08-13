@@ -4,10 +4,8 @@ package core
 func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings) bool {
 	// Check if original element is a symbol that was bound to a List
 	if elemSym, ok := originalElem.(Symbol); ok {
-		varName := string(elemSym)
-		if boundValue, exists := bindings[varName]; exists {
-			// Check if the bound value is a List (indicating sequence pattern)
-			return boundValue.Head() == "List"
+		if val := bindings.HasBinding(string(elemSym)); val != nil {
+			return val.Head() == "List"
 		}
 	}
 	return false
@@ -17,9 +15,8 @@ func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings)
 func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 	switch e := expr.(type) {
 	case Symbol:
-		// Check if this symbol is a bound variable
-		if value, exists := bindings[string(e)]; exists {
-			return value
+		if val := bindings.HasBinding(string(e)); val != nil {
+			return val
 		}
 		return e
 
@@ -35,9 +32,8 @@ func SubstituteBindings(expr Expr, bindings PatternBindings) Expr {
 			if i > 0 && needsSequenceSplicing(elem, newElem, bindings) {
 				// This is a sequence variable - splice its elements
 				if elemSym, ok := elem.(Symbol); ok {
-					varName := string(elemSym)
-					if boundValue, exists := bindings[varName]; exists {
-						if boundList, ok := boundValue.(List); ok {
+					if val := bindings.HasBinding(string(elemSym)); val != nil {
+						if boundList, ok := val.(List); ok {
 							// Check if it's an empty sequence (just "List" head)
 							if boundList.Length() == 0 {
 								// Empty sequence - skip adding anything

@@ -176,6 +176,11 @@ func TestPatternMatcher(t *testing.T) {
 		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewString("hello"), true},
 		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewInteger(42), false},
 
+		// Empty List patterns
+		{NewList("List"), NewList("List"), true},
+		{NewList("Foo"), NewList("Foo"), true},
+		{NewList("List"), NewList("Foo"), false},
+
 		// List patterns
 		{NewList("Plus", CreateBlankExpr(nil), CreateBlankExpr(nil)),
 			NewList("Plus", NewInteger(1), NewInteger(2)), true},
@@ -220,9 +225,9 @@ func TestPatternMatcher(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := matcher.TestMatch(test.pattern, test.expr)
+		result := matcher.TestMatch(test.expr, test.pattern)
 		if result != test.expected {
-			t.Errorf("TestMatch(%v, %v) = %v, want %v", test.pattern, test.expr, result, test.expected)
+			t.Errorf("TestMatch(%v, %v) = %v, want %v", test.expr, test.pattern, result, test.expected)
 		}
 	}
 }

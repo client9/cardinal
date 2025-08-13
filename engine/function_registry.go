@@ -168,7 +168,17 @@ func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, co
 	}
 
 	for _, def := range definitions {
-		if matches, bindings := core.MatchWithBindings(def.Pattern, fn); matches {
+		// If a pattern is longer than the function
+		// then it can't match (Maybe.. need to think about this more)
+		//
+		// the reverse if not true
+		// Plus(x___) has one arg, but Plus(1,2,3) has 3
+		/*
+			if def.Pattern.Length() > fn.Length() {
+				continue
+			}
+		*/
+		if matches, bindings := core.MatchWithBindings(fn, def.Pattern); matches {
 			return &def, bindings
 		}
 	}

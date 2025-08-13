@@ -18,6 +18,32 @@ func IsAlternatives(pattern Expr) []Expr {
 	return plist.Tail()
 }
 
+type Binding struct {
+	VarName string
+	Value   Expr
+}
+
+// PatternBindings represents variable bindings from pattern matching
+type PatternBindings []Binding
+
+func (p *PatternBindings) Add(varname string, value Expr) {
+	*p = append(*p, Binding{varname, value})
+}
+func (p *PatternBindings) Copy() *PatternBindings {
+	out := make(PatternBindings, len(*p))
+	copy(out, *p)
+	return &out
+}
+
+func (p *PatternBindings) HasBinding(name string) Expr {
+	for _, b := range *p {
+		if b.VarName == name {
+			return b.Value
+		}
+	}
+	return nil
+}
+
 // PatternMatcher provides pure pattern matching without side effects
 type PatternMatcher struct{}
 
@@ -27,24 +53,20 @@ func NewPatternMatcher() *PatternMatcher {
 }
 
 // TestMatch tests if an expression matches a pattern (pure function, no binding)
-func (pm *PatternMatcher) TestMatch(pattern, expr Expr) bool {
-	ok, _ := MatchWithBindings(pattern, expr)
-	return ok
+func (pm *PatternMatcher) TestMatch(expr, pattern Expr) bool {
+	return matchWithBindingsInternal(pattern, expr, nil)
 }
-
-// PatternBindings represents variable bindings from pattern matching
-type PatternBindings map[string]Expr
 
 // MatchWithBindings performs pattern matching and captures variable bindings
 // Returns (matches, bindings)
-func MatchWithBindings(pattern, expr Expr) (bool, PatternBindings) {
-	bindings := make(PatternBindings)
-	matches := matchWithBindingsInternal(pattern, expr, bindings)
+func MatchWithBindings(expr, pattern Expr) (bool, PatternBindings) {
+	bindings := make(PatternBindings, 0, 3)
+	matches := matchWithBindingsInternal(pattern, expr, &bindings)
 	return matches, bindings
 }
 
 // matchWithBindingsInternal implements pattern matching with binding capture
-func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) bool {
+func matchWithBindingsInternal(pattern, expr Expr, bindings *PatternBindings) bool {
 
 	if plist := IsAlternatives(pattern); plist != nil {
 		for _, p := range plist {
@@ -59,12 +81,12 @@ func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) boo
 		if !matchBlankWithBindings(pinfo, expr, bindings) {
 			return false
 		}
-		if vn := pinfo.VarName; vn != "" {
-			if existingValue, exists := bindings[vn]; exists {
+		if vn := pinfo.VarName; vn != "" && bindings != nil {
+			if val := bindings.HasBinding(vn); val != nil {
 				// Variable already bound - check if values match
-				return existingValue.Equal(expr)
+				return val.Equal(expr)
 			}
-			bindings[vn] = expr
+			bindings.Add(vn, expr)
 		}
 		return true
 	}
@@ -83,7 +105,7 @@ func matchWithBindingsInternal(pattern, expr Expr, bindings PatternBindings) boo
 }
 
 // matchBlankWithBindings tests if a blank pattern matches an expression
-func matchBlankWithBindings(pinfo PatternInfo, expr Expr, bindings PatternBindings) bool {
+func matchBlankWithBindings(pinfo PatternInfo, expr Expr, bindings *PatternBindings) bool {
 	if pinfo.Type == PatternUnknown {
 		return false
 	}
@@ -93,14 +115,18 @@ func matchBlankWithBindings(pinfo PatternInfo, expr Expr, bindings PatternBindin
 }
 
 // matchListWithBindings tests if a list pattern matches a list expression
-func matchListWithBindings(patternList, exprList List, bindings PatternBindings) bool {
+func matchListWithBindings(patternList, exprList List, bindings *PatternBindings) bool {
+	if patternList.Head() != exprList.Head() {
+		return false
+	}
 	return matchListWithBindingsSequential(patternList, exprList, bindings, 0, 0)
 }
 
 // matchListWithBindingsSequential handles pattern matching with sequence patterns
-func matchListWithBindingsSequential(patternList, exprList List, bindings PatternBindings, patternIdx, exprIdx int) bool {
-	patternSlice := patternList.AsSlice()
-	exprSlice := exprList.AsSlice()
+func matchListWithBindingsSequential(patternList, exprList List, bindings *PatternBindings, patternIdx, exprIdx int) bool {
+
+	patternSlice := patternList.Tail()
+	exprSlice := exprList.Tail()
 
 	// If we've processed all pattern elements
 	if patternIdx >= len(patternSlice) {
@@ -118,10 +144,11 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings Patter
 			if pinfo.Type != BlankNullSequencePattern {
 				return false
 			}
-			if vn := pinfo.VarName; vn != "" {
+			if vn := pinfo.VarName; vn != "" && bindings != nil {
 				// Bind null sequence patterns to empty list
 				// Create a proper List with "List" as the first element (like the old system)
-				bindings[vn] = NewList("List")
+				//bindings[vn] = NewList("List")
+				bindings.Add(vn, NewList("List"))
 			}
 		}
 		return true
@@ -143,15 +170,15 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings Patter
 }
 
 // matchSequencePatternWithBindings handles matching sequence patterns
-func matchSequencePatternWithBindings(patternList, exprList List, bindings PatternBindings, patternIdx, exprIdx int, pinfo PatternInfo) bool { //
+func matchSequencePatternWithBindings(patternList, exprList List, bindings *PatternBindings, patternIdx, exprIdx int, pinfo PatternInfo) bool { //
 	// , varName, typeName string, allowZero bool) bool {
 
 	typeName := pinfo.TypeName
 	varName := pinfo.VarName
 	allowZero := pinfo.Type == BlankNullSequencePattern
 
-	patternSlice := patternList.AsSlice()
-	exprSlice := exprList.AsSlice()
+	patternSlice := patternList.Tail()
+	exprSlice := exprList.Tail()
 
 	remainingPatterns := len(patternSlice) - patternIdx - 1
 	remainingExprs := len(exprSlice) - exprIdx
@@ -171,11 +198,6 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings Patte
 
 	// Try consuming different numbers of elements (greedy approach)
 	for consume := maxConsume; consume >= minConsume; consume-- {
-		// Create a copy of bindings for this attempt
-		testBindings := make(PatternBindings)
-		for k, v := range bindings {
-			testBindings[k] = v
-		}
 
 		// Collect the elements to bind to this sequence
 		var seqElements []Expr
@@ -200,17 +222,20 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings Patte
 		}
 
 		// Bind the sequence variable if we have a name
-		if varName != "" {
-			// Create a proper List with "List" as the first element (consistent with old system)
-			listElements := append([]Expr{NewSymbol("List")}, seqElements...)
-			testBindings[varName] = NewListFromExprs(listElements...)
-		}
+		//if varName != "" {
+		// Create a copy of bindings for this attempt
+		//testBindings = bindings.Copy()
+		//testBindings.Add(varName, NewList("List", seqElements...))
+		// Create a proper List with "List" as the first element (consistent with old system)
+
+		//}
 
 		// Try to match remaining patterns
-		if matchListWithBindingsSequential(patternList, exprList, testBindings, patternIdx+1, exprIdx+consume) {
+		if matchListWithBindingsSequential(patternList, exprList, bindings, patternIdx+1, exprIdx+consume) {
 			// Success - copy bindings back
-			for k, v := range testBindings {
-				bindings[k] = v
+			//*bindings = *testBindings
+			if varName != "" && bindings != nil {
+				bindings.Add(varName, NewList("List", seqElements...))
 			}
 			return true
 		}

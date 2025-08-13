@@ -308,11 +308,11 @@ func TestCopyExprList(t *testing.T) {
 			}
 
 			// Verify args (should be copies of references, not deep copies)
-			rslice := result.AsSlice()
+			rslice := result.Tail()
 			for i, expectedArg := range tt.args {
-				if !rslice[i+1].Equal(expectedArg) {
+				if !rslice[i].Equal(expectedArg) {
 					t.Errorf("CopyExprList arg[%d] = %s, want %s",
-						i, rslice[i+1].String(), expectedArg.String())
+						i, rslice[i].String(), expectedArg.String())
 				}
 			}
 		})

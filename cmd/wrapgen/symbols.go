@@ -29,7 +29,17 @@ var symbolSpecs = []SymbolSpec{
 	{
 		Name: "RandomReal",
 		Functions: []rule{
-			{"()", builtins.RandomReal},
+			{"(x___)", builtins.RandomReal},
+		},
+	},
+	{
+		Name: "RReal",
+		Functions: []rule{
+			{"()", builtins.RRealDefault},
+			{"(_Number)", builtins.RRealMax},
+			{"(_Number, _Number)", builtins.RRealMaxCount},
+			{"(List(x_Number,y _Number))", builtins.RRealMinMax},
+			{"(List(x_Number,y _Number),n_Number)", builtins.RRealMinMaxCount},
 		},
 	},
 	{

@@ -10,32 +10,6 @@ const (
 	BlankNullSequencePattern
 )
 
-// PatternInfo represents complete information about a pattern variable
-type PatternInfo struct {
-	Type     PatternType
-	VarName  string // Variable name (empty for anonymous patterns)
-	TypeName string // Type constraint (empty for no constraint)
-}
-
-// PatternSpecificity represents the specificity of a pattern for ordering
-type PatternSpecificity int
-
-const (
-	SpecificityGeneral     PatternSpecificity = iota // _ (most general)
-	SpecificityTyped                                 // _Integer, _String, etc.
-	SpecificityBuiltinType                           // Built-in types
-	SpecificityUserType                              // User-defined types
-	SpecificityLiteral                               // Exact literals (most specific)
-)
-
-// CompoundSpecificity represents specificity for complex patterns
-type CompoundSpecificity struct {
-	HeadSpecificity PatternSpecificity
-	ArgsCount       int
-	ArgsSpecificity []PatternSpecificity
-	TotalScore      int
-}
-
 // Pattern constructors
 
 // CreateBlankExpr creates a symbolic Blank[] expression
@@ -65,6 +39,32 @@ func CreateBlankNullSequenceExpr(typeExpr Expr) Expr {
 // CreatePatternExpr creates a symbolic Pattern[name, blank] expression
 func CreatePatternExpr(nameExpr, blankExpr Expr) Expr {
 	return NewList("Pattern", nameExpr, blankExpr)
+}
+
+// PatternInfo represents complete information about a pattern variable
+type PatternInfo struct {
+	Type     PatternType
+	VarName  string // Variable name (empty for anonymous patterns)
+	TypeName string // Type constraint (empty for no constraint)
+}
+
+// PatternSpecificity represents the specificity of a pattern for ordering
+type PatternSpecificity int
+
+const (
+	SpecificityGeneral     PatternSpecificity = iota // _ (most general)
+	SpecificityTyped                                 // _Integer, _String, etc.
+	SpecificityBuiltinType                           // Built-in types
+	SpecificityUserType                              // User-defined types
+	SpecificityLiteral                               // Exact literals (most specific)
+)
+
+// CompoundSpecificity represents specificity for complex patterns
+type CompoundSpecificity struct {
+	HeadSpecificity PatternSpecificity
+	ArgsCount       int
+	ArgsSpecificity []PatternSpecificity
+	TotalScore      int
 }
 
 // Pattern analysis functions
@@ -313,8 +313,11 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 		return pattern1.Equal(pattern2)
 	case List:
 		if p2, ok := pattern2.(List); ok {
-			s1 := p1.AsSlice()
-			s2 := p2.AsSlice()
+			if p1.Head() != p2.Head() {
+				return false
+			}
+			s1 := p1.Tail()
+			s2 := p2.Tail()
 
 			if len(s1) != len(s2) {
 				return false

@@ -6,7 +6,7 @@ func ReplaceExpr(expr Expr, rule Expr) Expr {
 	// Extract pattern and replacement from Rule(pattern, replacement)
 	if ruleList, ok := rule.(List); ok && ruleList.Length() == 2 && ruleList.Head() == "Rule" {
 		e := ruleList.Tail()
-		if matches, bindings := MatchWithBindings(e[0], expr); matches {
+		if matches, bindings := MatchWithBindings(expr, e[0]); matches {
 			return SubstituteBindings(e[1], bindings)
 		}
 	}

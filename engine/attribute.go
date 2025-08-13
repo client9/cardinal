@@ -1,6 +1,6 @@
 package engine
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=Attribute
+//go:generate stringer -type=Attribute
 
 import (
 	"fmt"

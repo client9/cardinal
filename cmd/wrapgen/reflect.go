@@ -105,10 +105,14 @@ func typeToString(t reflect.Type) string {
 		} else if t.Elem().Kind() == reflect.Float64 {
 			return "float64"
 		}
+		if t.Name() == "List" {
+			return "List"
+		}
+		//	fmt.Printf("reflect: %v\n", t.Name())
 		// For other slices, return the element type
 		return typeToString(t.Elem())
 	}
-
+	//fmt.Printf("reflect2: %v\n", t)
 	// Use type name if available
 	if t.Name() != "" {
 		return t.Name()

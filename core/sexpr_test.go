@@ -300,13 +300,13 @@ func TestNewList(t *testing.T) {
 		{
 			name:           "multiple elements",
 			list:           NewList("Plus", NewInteger(1), NewInteger(2)),
-			expectedLength: 3,
+			expectedLength: 2,
 			expectedType:   "Plus",
 		},
 		{
 			name:           "nested list",
 			list:           NewList("f", NewList("g", NewInteger(1))),
-			expectedLength: 2,
+			expectedLength: 1,
 			expectedType:   "f",
 		},
 	}
@@ -317,7 +317,7 @@ func TestNewList(t *testing.T) {
 				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.Head())
 			}
 
-			if len(tt.list.AsSlice()) != tt.expectedLength {
+			if len(tt.list.Tail()) != tt.expectedLength {
 				t.Errorf("expected length %d, got %d", tt.expectedLength, len(tt.list.AsSlice()))
 			}
 		})
