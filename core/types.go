@@ -9,7 +9,3 @@ type Expr interface {
 	Equal(rhs Expr) bool
 	IsAtom() bool // Distinguishes atomic vs composite types
 }
-
-type Integer int64
-type Real float64
-type Symbol string
