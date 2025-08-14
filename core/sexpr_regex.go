@@ -336,6 +336,9 @@ type NFAState struct {
 	ID          int
 	Transitions []NFATransition
 	IsAccept    bool
+	// Group boundary tags for Named patterns
+	GroupStart string // If non-empty, entering this state starts capturing for this group name
+	GroupEnd   string // If non-empty, exiting this state ends capturing for this group name
 }
 
 // NFATransition represents a transition between states
@@ -402,7 +405,24 @@ type NamedCondition struct {
 
 func (c *NamedCondition) Matches(expr Expr, bindings map[string]Expr) bool {
 	if c.Inner.Matches(expr, bindings) {
-		bindings[c.Name] = expr
+		// Check if this name already has a binding
+		if existing, exists := bindings[c.Name]; exists {
+			// If it exists, we're accumulating matches for a quantifier
+			// Convert to List if it's not already
+			if existingList, isList := existing.(List); isList {
+				// Append to existing list
+				newElements := make([]Expr, len(existingList.Tail())+1)
+				copy(newElements, existingList.Tail())
+				newElements[len(newElements)-1] = expr
+				bindings[c.Name] = NewList(existingList.Head(), newElements...)
+			} else {
+				// Convert single element to list with two elements
+				bindings[c.Name] = NewList("List", existing, expr)
+			}
+		} else {
+			// First match - store as single element
+			bindings[c.Name] = expr
+		}
 		return true
 	}
 	return false
@@ -619,8 +639,6 @@ func (b *NFABuilder) BuildPredicate(inner NFAFragment, predicate func(Expr) bool
 		innerCondition := b.states[inner.Start].Transitions[0].Condition
 		predicateCondition := &PredicateCondition{Inner: innerCondition, Predicate: predicate, Name: name}
 		b.addTransition(start, MatchTransition, accept, predicateCondition)
-		// DEBUG: Print when simple optimization is used
-		// fmt.Printf("DEBUG: BuildPredicate simple optimization triggered for condition: %T\n", innerCondition)
 		return NFAFragment{Start: start, Accept: accept}
 	}
 
@@ -634,24 +652,17 @@ func (b *NFABuilder) BuildPredicate(inner NFAFragment, predicate func(Expr) bool
 }
 
 func (b *NFABuilder) BuildNamed(name string, inner NFAFragment) NFAFragment {
-	// For named patterns, we need to propagate the name through the inner NFA
+	// For named patterns, we tag the boundary states instead of wrapping transitions
 	start := b.newState()
 	accept := b.newState()
 
-	// If the inner fragment is a simple match, wrap its condition
-	if len(b.states[inner.Start].Transitions) == 1 &&
-		b.states[inner.Start].Transitions[0].Type == MatchTransition {
-		innerCondition := b.states[inner.Start].Transitions[0].Condition
-		namedCondition := &NamedCondition{Name: name, Inner: innerCondition}
-		b.addTransition(start, MatchTransition, accept, namedCondition)
-		return NFAFragment{Start: start, Accept: accept}
-	}
+	// Tag the start state to begin group capture
+	b.states[start].GroupStart = name
 
-	// For complex inner patterns, we need to propagate the named capture
-	// We do this by wrapping all match transitions in the inner NFA with NamedCondition
-	b.propagateNamedCapture(inner, name)
+	// Tag the accept state to end group capture
+	b.states[accept].GroupEnd = name
 
-	// Connect with epsilon transitions
+	// Connect with epsilon transitions - the inner NFA is preserved intact
 	b.addEpsilonTransition(start, inner.Start)
 	b.addEpsilonTransition(inner.Accept, accept)
 
@@ -886,18 +897,20 @@ func (ne *NFAExecutor) Match(expr Expr) MatchResult {
 type StateSet map[int]bool
 
 func (ne *NFAExecutor) matchSequence(exprs []Expr) MatchResult {
-	bindings := make(map[string]Expr)
+	// Track group boundaries and captured elements
+	groupCaptures := make(map[string][]Expr) // Track elements captured within each group
+	activeGroups := make(map[int][]string)   // Track which groups are active for each state
 
 	// Initialize with epsilon closure of start state
 	currentStates := make(StateSet)
-	ne.addStateWithEpsilon(currentStates, ne.nfa.StartState, bindings)
+	ne.addStateWithEpsilonAndGroups(currentStates, ne.nfa.StartState, activeGroups, groupCaptures)
 
 	// Process each expression
 	for _, expr := range exprs {
-		currentStates = ne.step(currentStates, expr, bindings)
+		currentStates = ne.stepWithGroups(currentStates, expr, activeGroups, groupCaptures)
 		if len(currentStates) == 0 {
 			// No valid states remaining
-			return MatchResult{Matched: false, Bindings: bindings}
+			return MatchResult{Matched: false, Bindings: ne.buildBindings(groupCaptures)}
 		}
 	}
 
@@ -912,7 +925,7 @@ func (ne *NFAExecutor) matchSequence(exprs []Expr) MatchResult {
 
 	return MatchResult{
 		Matched:  matched,
-		Bindings: bindings,
+		Bindings: ne.buildBindings(groupCaptures),
 		Consumed: len(exprs),
 	}
 }
@@ -950,6 +963,162 @@ func (ne *NFAExecutor) addStateWithEpsilon(states StateSet, stateID int, binding
 			ne.addStateWithEpsilon(states, transition.Target, bindings)
 		}
 	}
+}
+
+func (ne *NFAExecutor) addStateWithEpsilonAndGroups(states StateSet, stateID int, activeGroups map[int][]string, groupCaptures map[string][]Expr) {
+	if states[stateID] {
+		return // Already added
+	}
+
+	states[stateID] = true
+	state := ne.nfa.States[stateID]
+
+	// Track groups for this state path
+	var currentGroups []string
+	if existing, ok := activeGroups[stateID]; ok {
+		currentGroups = make([]string, len(existing))
+		copy(currentGroups, existing)
+	}
+
+	// Handle group start
+	if state.GroupStart != "" {
+		currentGroups = append(currentGroups, state.GroupStart)
+		// Initialize capture slice for this group if not exists
+		if _, exists := groupCaptures[state.GroupStart]; !exists {
+			groupCaptures[state.GroupStart] = make([]Expr, 0)
+		}
+	}
+
+	// Handle group end
+	if state.GroupEnd != "" {
+		// Remove from active groups
+		for i, group := range currentGroups {
+			if group == state.GroupEnd {
+				currentGroups = append(currentGroups[:i], currentGroups[i+1:]...)
+				break
+			}
+		}
+	}
+
+	// Instead of overwriting, merge with any existing groups for this state
+	if existing, exists := activeGroups[stateID]; exists {
+		// Merge current groups with existing groups (avoid duplicates)
+		merged := append([]string{}, existing...)
+		for _, group := range currentGroups {
+			found := false
+			for _, existingGroup := range merged {
+				if existingGroup == group {
+					found = true
+					break
+				}
+			}
+			if !found {
+				merged = append(merged, group)
+			}
+		}
+		activeGroups[stateID] = merged
+	} else {
+		activeGroups[stateID] = currentGroups
+	}
+
+	// Follow epsilon transitions
+	for _, transition := range state.Transitions {
+		if transition.Type == EpsilonTransition {
+			// Epsilon transition - manually propagate groups to target first
+
+			// Ensure target state inherits our groups before recursing
+			if len(currentGroups) > 0 {
+				if existing, exists := activeGroups[transition.Target]; exists {
+					// Merge groups
+					merged := append([]string{}, existing...)
+					for _, group := range currentGroups {
+						found := false
+						for _, existingGroup := range merged {
+							if existingGroup == group {
+								found = true
+								break
+							}
+						}
+						if !found {
+							merged = append(merged, group)
+						}
+					}
+					activeGroups[transition.Target] = merged
+				} else {
+					activeGroups[transition.Target] = append([]string{}, currentGroups...)
+				}
+			}
+
+			ne.addStateWithEpsilonAndGroups(states, transition.Target, activeGroups, groupCaptures)
+		}
+	}
+}
+
+func (ne *NFAExecutor) stepWithGroups(currentStates StateSet, expr Expr, activeGroups map[int][]string, groupCaptures map[string][]Expr) StateSet {
+	nextStates := make(StateSet)
+
+	// For each active state, follow matching transitions
+	for stateID := range currentStates {
+		state := ne.nfa.States[stateID]
+
+		for _, transition := range state.Transitions {
+			if transition.Type == MatchTransition {
+				if transition.Condition.Matches(expr, make(map[string]Expr)) { // Use dummy bindings since we handle groups separately
+					// Capture this element in all active groups for this state
+					if groups, ok := activeGroups[stateID]; ok {
+						for _, groupName := range groups {
+							groupCaptures[groupName] = append(groupCaptures[groupName], expr)
+						}
+					}
+
+					// Propagate groups from source state to target state during match transition
+					if sourceGroups, hasGroups := activeGroups[stateID]; hasGroups && len(sourceGroups) > 0 {
+						if existing, exists := activeGroups[transition.Target]; exists {
+							// Merge groups
+							merged := append([]string{}, existing...)
+							for _, group := range sourceGroups {
+								found := false
+								for _, existingGroup := range merged {
+									if existingGroup == group {
+										found = true
+										break
+									}
+								}
+								if !found {
+									merged = append(merged, group)
+								}
+							}
+							activeGroups[transition.Target] = merged
+						} else {
+							activeGroups[transition.Target] = append([]string{}, sourceGroups...)
+						}
+					}
+
+					ne.addStateWithEpsilonAndGroups(nextStates, transition.Target, activeGroups, groupCaptures)
+				}
+			}
+		}
+	}
+
+	return nextStates
+}
+
+func (ne *NFAExecutor) buildBindings(groupCaptures map[string][]Expr) map[string]Expr {
+	bindings := make(map[string]Expr)
+
+	for groupName, captures := range groupCaptures {
+		if len(captures) == 0 {
+			continue // No captures for this group
+		} else if len(captures) == 1 {
+			// Single element - return as-is
+			bindings[groupName] = captures[0]
+		} else {
+			// Multiple elements - create List
+			bindings[groupName] = NewList("List", captures...)
+		}
+	}
+
+	return bindings
 }
 
 // Pattern builder functions
@@ -1038,8 +1207,22 @@ func (pa *PatternAnalyzer) analyzePattern(pattern Pattern, insideQuantifier bool
 		return StrategyNFA
 
 	case *NamedPattern:
-		// Named patterns can use direct matching if inner pattern can
-		return pa.analyzePattern(p.Inner, insideQuantifier)
+		// Simple Named patterns can use Direct strategy with enhanced Direct matcher
+		// Complex Named patterns (nested, quantifiers) need NFA
+		innerStrategy := pa.analyzePattern(p.Inner, insideQuantifier)
+
+		// If inner pattern needs NFA, Named wrapper also needs NFA
+		if innerStrategy == StrategyNFA {
+			return StrategyNFA
+		}
+
+		// Check if this is a complex nested case that needs NFA
+		if pa.isComplexNamed(p) {
+			return StrategyNFA
+		}
+
+		// Simple Named patterns can use enhanced Direct strategy
+		return StrategyDirect
 
 	case *PredicatePattern:
 		// Predicate patterns can use direct matching if inner pattern can
@@ -1124,6 +1307,16 @@ func (pa *PatternAnalyzer) analyzeSequence(patterns []Pattern) ExecutionStrategy
 		}
 	}
 
+	// Only complex Named patterns require NFA for state-tagged group boundaries
+	// Simple Named patterns in sequences can use Direct strategy
+	for _, p := range patterns {
+		if named, ok := p.(*NamedPattern); ok {
+			if pa.isComplexNamed(named) {
+				return StrategyNFA
+			}
+		}
+	}
+
 	// If quantifier is only at the end, we can use direct matching
 	if hasQuantifier && quantifierAtEnd {
 		return StrategyDirect
@@ -1136,6 +1329,54 @@ func (pa *PatternAnalyzer) analyzeSequence(patterns []Pattern) ExecutionStrategy
 
 	// Pure sequence of simple patterns - direct match
 	return StrategyDirect
+}
+
+// isComplexNamed determines if a Named pattern requires NFA due to complexity
+func (pa *PatternAnalyzer) isComplexNamed(named *NamedPattern) bool {
+	// Check for nested Named patterns (most common complex case)
+	if pa.hasNestedNamed(named.Inner) {
+		return true
+	}
+
+	// Named quantifiers need NFA for proper collection semantics
+	switch named.Inner.(type) {
+	case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
+		return true
+	}
+
+	// Simple Named patterns can use Direct
+	return false
+}
+
+// hasNestedNamed checks if a pattern contains nested Named patterns
+func (pa *PatternAnalyzer) hasNestedNamed(pattern Pattern) bool {
+	switch p := pattern.(type) {
+	case *NamedPattern:
+		return true
+	case *SequencePattern:
+		for _, subPattern := range p.Patterns {
+			if pa.hasNestedNamed(subPattern) {
+				return true
+			}
+		}
+	case *OrPattern:
+		for _, subPattern := range p.Alternatives {
+			if pa.hasNestedNamed(subPattern) {
+				return true
+			}
+		}
+	case *NotPattern:
+		return pa.hasNestedNamed(p.Inner)
+	case *ZeroOrMorePattern:
+		return pa.hasNestedNamed(p.Inner)
+	case *OneOrMorePattern:
+		return pa.hasNestedNamed(p.Inner)
+	case *ZeroOrOnePattern:
+		return pa.hasNestedNamed(p.Inner)
+	case *PredicatePattern:
+		return pa.hasNestedNamed(p.Inner)
+	}
+	return false
 }
 
 // CompilePattern analyzes a pattern and selects the optimal execution strategy

@@ -4,6 +4,55 @@ import (
 	"testing"
 )
 
+func TestMatchLiteralSequencesBinding(t *testing.T) {
+	e := NewList("List", NewInteger(1), NewInteger(2), NewInteger(3))
+
+	pattern1 := MatchSequence(
+		Named("x",MatchHead("Integer")),
+		Named("y", OneOrMore(MatchHead("Integer"))),
+	)
+	
+	compiled1, _ := CompilePattern(pattern1)
+	result := compiled1.Match(e)
+	if !result.Matched {
+		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
+	}
+	// expect: { y: 1, x:[1,2] }
+}
+
+func TestMatchSequencesLiteralBinding(t *testing.T) {
+
+	e := NewList("List", NewInteger(1), NewInteger(2), NewInteger(3))
+
+	pattern1 := MatchSequence(
+		Named("x", OneOrMore(MatchHead("Integer"))),
+		Named("y",MatchHead("Integer")),
+	)
+	
+	compiled1, _ := CompilePattern(pattern1)
+	result := compiled1.Match(e)
+	if !result.Matched {
+		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
+	}
+	// expect { x:[1,2], y: 3}
+
+}
+
+func TestMatchLiteralSequenceBinding(t *testing.T) {
+
+	e := NewList("List", NewInteger(1), NewInteger(2), NewInteger(3))
+
+	pattern1 := MatchSequence(
+		MatchHead("Integer"),
+		OneOrMore(MatchHead("Integer")),
+	)
+	
+	compiled1, _ := CompilePattern(pattern1)
+	result := compiled1.Match(e)
+	if !result.Matched {
+		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
+	}
+}
 func TestMatchTwoSequencesNoBinding(t *testing.T) {
 
 	e := NewList("List", NewInteger(1), NewInteger(2), NewInteger(3))
@@ -17,7 +66,7 @@ func TestMatchTwoSequencesNoBinding(t *testing.T) {
 	result := compiled1.Match(e)
 	if !result.Matched {
 		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
-	}	
+	}
 }
 
 
@@ -34,7 +83,7 @@ func TestMatchTwoSequences(t *testing.T) {
 	result := compiled1.Match(e)
 	if !result.Matched {
 		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
-	}	
+	}
 }
 
 

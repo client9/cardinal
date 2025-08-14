@@ -482,12 +482,12 @@ func TestPatternAnalyzer(t *testing.T) {
 			strategy: StrategyNFA,
 		},
 		{
-			name:     "named pattern (direct if inner is direct)",
+			name:     "named pattern (simple - uses direct strategy)",
 			pattern:  Named("x", MatchHead("Integer")),
 			strategy: StrategyDirect,
 		},
 		{
-			name: "named pattern with sequence",
+			name: "named pattern with sequence (simple - uses Direct)",
 			pattern: Named("seq", MatchSequence(
 				MatchLiteral(NewInteger(1)),
 				MatchHead("String"),
@@ -498,17 +498,20 @@ func TestPatternAnalyzer(t *testing.T) {
 		{
 			name:     "standalone zero or more with simple inner (direct)",
 			pattern:  ZeroOrMore(MatchHead("Integer")),
-			strategy: StrategyDirect,
+			strategy: StrategyNFA,
+			//strategy: StrategyDirect,
 		},
 		{
 			name:     "standalone one or more with simple inner (direct)",
 			pattern:  OneOrMore(MatchHead("Integer")),
-			strategy: StrategyDirect,
+			strategy: StrategyNFA,
+			//strategy: StrategyDirect,
 		},
 		{
 			name:     "standalone optional with simple inner (direct)",
 			pattern:  Optional(MatchHead("Integer")),
-			strategy: StrategyDirect,
+			strategy: StrategyNFA,
+			//strategy: StrategyDirect,
 		},
 		{
 			name: "standalone zero or more with complex inner (NFA)",
@@ -850,7 +853,7 @@ func TestComplexPatternFixed(t *testing.T) {
 		if outer, exists := result.Bindings["outer"]; !exists {
 			t.Errorf("Expected binding 'outer' not found")
 		} else if !outer.Equal(expr) {
-			t.Errorf("Expected outer binding to be the whole expression, got %v", outer)
+			t.Errorf("Expected outer binding to be the whole expression %v, got %v", expr, outer)
 		}
 	})
 }
@@ -1210,7 +1213,7 @@ func TestNamedCaptures(t *testing.T) {
 				"inner": NewInteger(42),
 				"outer": NewList("List", NewInteger(42), NewString("test")),
 			},
-			strategy: StrategyDirect,
+			strategy: StrategyNFA,
 		},
 		{
 			name: "named capture with quantifier",

@@ -79,8 +79,9 @@ func TestExampleUsage(t *testing.T) {
 		t.Error("Expected all examples to match")
 	}
 
+	// These simple patterns should use Direct strategy
 	if compiled1.Strategy() != StrategyDirect || compiled2.Strategy() != StrategyDirect || compiled3.Strategy() != StrategyDirect {
-		t.Error("Expected all examples to use direct strategy")
+		t.Error("Expected all examples to use Direct strategy (simple patterns use direct optimization)")
 	}
 }
 
@@ -132,7 +133,7 @@ func TestPredicateExamples(t *testing.T) {
 	}
 
 	// Example 2: Filter numeric data with business rules
-	// Pattern: Named capture of numbers in range [1, 100]
+	// Pattern: Named capture of numbers in range [1, 100] (uses NFA due to Or pattern)
 	numberInRangePattern := Named("validNumber", MatchPredicate(
 		MatchOr(MatchHead("Integer"), MatchHead("Real")),
 		func(expr Expr) bool {
@@ -253,7 +254,7 @@ func TestPerformanceComparison(t *testing.T) {
 // TestNamedCaptureExamples demonstrates named captures with practical examples
 func TestNamedCaptureExamples(t *testing.T) {
 	// Example 1: Extract function name and arguments
-	// Pattern: Named("func", MatchAny()), Named("args", ZeroOrMore(MatchAny()))
+	// Pattern: Simple Named patterns with MatchHead and MatchAny (uses Direct strategy)
 	pattern1 := MatchSequence(
 		Named("funcName", MatchHead("Symbol")),
 		Named("firstArg", MatchAny()),
@@ -275,7 +276,7 @@ func TestNamedCaptureExamples(t *testing.T) {
 	fmt.Printf("First argument: %v\n", result1.Bindings["firstArg"])
 
 	// Example 2: Configuration parsing
-	// Pattern: List("config", Named("name", MatchHead("String")), Named("value", MatchAny()))
+	// Pattern: Simple Named patterns (uses Direct strategy)
 	pattern2 := MatchSequence(
 		MatchLiteral(NewString("config")),
 		Named("name", MatchHead("String")),
@@ -296,7 +297,7 @@ func TestNamedCaptureExamples(t *testing.T) {
 	fmt.Printf("Config value: %v\n", result2.Bindings["value"])
 
 	// Example 3: Nested structure extraction
-	// Extract data from nested structures
+	// Extract data from nested structures (complex Named with nested sequence uses NFA)
 	pattern3 := Named("response", MatchSequence(
 		MatchLiteral(NewString("response")),
 		Named("status", MatchHead("Integer")),
@@ -320,12 +321,19 @@ func TestNamedCaptureExamples(t *testing.T) {
 	fmt.Printf("Data: %v\n", result3.Bindings["data"])
 	fmt.Printf("Full response: %v\n", result3.Bindings["response"])
 
-	// All examples should match and use direct strategy
+	// All examples should match
 	if !result1.Matched || !result2.Matched || !result3.Matched {
 		t.Error("Expected all examples to match")
 	}
 
-	if compiled1.Strategy() != StrategyDirect || compiled2.Strategy() != StrategyDirect || compiled3.Strategy() != StrategyDirect {
-		t.Error("Expected all examples to use direct strategy")
+	// Check strategies: simple Named patterns use Direct, complex ones use NFA
+	if compiled1.Strategy() != StrategyDirect {
+		t.Errorf("Expected pattern1 to use Direct strategy (simple Named), got %v", compiled1.Strategy())
+	}
+	if compiled2.Strategy() != StrategyDirect {
+		t.Errorf("Expected pattern2 to use Direct strategy (simple Named), got %v", compiled2.Strategy())
+	}
+	if compiled3.Strategy() != StrategyNFA {
+		t.Errorf("Expected pattern3 to use NFA strategy (complex Named), got %v", compiled3.Strategy())
 	}
 }
