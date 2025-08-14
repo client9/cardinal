@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 )
-
+/*
 // Precedence levels for InputForm formatting
 type Precedence int
 
@@ -18,6 +18,7 @@ const (
 	PrecedenceSum
 	PrecedenceProduct
 )
+*/
 
 // inputFormWithPrecedence formats a List with precedence-aware operator handling
 func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {

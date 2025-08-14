@@ -1,7 +1,6 @@
-package engine
+package core
 
 import (
-	"github.com/client9/sexpr/core"
 	"strings"
 	"testing"
 )
@@ -488,7 +487,7 @@ func TestParser_ParseAtoms(t *testing.T) {
 			// Check value based on the expected type
 			switch tt.expectedType {
 			case "Symbol":
-				if symbolName, ok := core.ExtractSymbol(expr); ok {
+				if symbolName, ok := ExtractSymbol(expr); ok {
 					if symbolName != tt.expectedVal {
 						t.Errorf("expected value %v, got %v", tt.expectedVal, symbolName)
 					}
@@ -496,7 +495,7 @@ func TestParser_ParseAtoms(t *testing.T) {
 					t.Errorf("expected Symbol, got %T", expr)
 				}
 			case "Integer":
-				if intValue, ok := core.ExtractInt64(expr); ok {
+				if intValue, ok := ExtractInt64(expr); ok {
 					if intValue != int64(tt.expectedVal.(int)) {
 						t.Errorf("expected value %v, got %v", tt.expectedVal, intValue)
 					}
@@ -504,7 +503,7 @@ func TestParser_ParseAtoms(t *testing.T) {
 					t.Errorf("expected Integer, got %T", expr)
 				}
 			case "Real":
-				if real, ok := expr.(core.Real); ok {
+				if real, ok := expr.(Real); ok {
 					if float64(real) != tt.expectedVal.(float64) {
 						t.Errorf("expected value %v, got %v", tt.expectedVal, float64(real))
 					}
@@ -512,7 +511,7 @@ func TestParser_ParseAtoms(t *testing.T) {
 					t.Errorf("expected Real, got %T", expr)
 				}
 			case "String":
-				if str, ok := expr.(core.String); ok {
+				if str, ok := expr.(String); ok {
 					if string(str) != tt.expectedVal.(string) {
 						t.Errorf("expected value %v, got %v", tt.expectedVal, string(str))
 					}
@@ -573,7 +572,7 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 
-			list, ok := expr.(core.List)
+			list, ok := expr.(List)
 			if !ok {
 				t.Errorf("expected List, got %T", expr)
 				return
@@ -584,7 +583,7 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 
-			head, ok := core.ExtractSymbol(list.HeadExpr())
+			head, ok := ExtractSymbol(list.HeadExpr())
 			if !ok {
 				t.Errorf("expected head to be Symbol, got %T", list.HeadExpr())
 				return

@@ -81,7 +81,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltins(patterns []PatternRule) error
 func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl PatternFunc) error {
 	// Parse the pattern stringp
 	// 'RReal(max_Number)' -> RReal(Pattern(max, Blank(Number)))
-	pattern, err := ParseString(patternStr)
+	pattern, err := core.ParseString(patternStr)
 	if err != nil {
 		return fmt.Errorf("invalid pattern syntax: %v", err)
 	}
