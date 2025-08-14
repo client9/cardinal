@@ -157,28 +157,10 @@ func (s ExecutionStrategy) String() string {
 	}
 }
 
-// CompiledPattern represents a compiled pattern ready for execution
-type CompiledPattern struct {
-	strategy      ExecutionStrategy
-	directMatcher *DirectMatcher // Fast path for simple patterns
-	nfaExecutor   *NFAExecutor   // Full NFA for complex patterns
-}
-
-// Match executes the pattern against an expression
-func (cp *CompiledPattern) Match(expr Expr) MatchResult {
-	switch cp.strategy {
-	case StrategyDirect:
-		return cp.directMatcher.Match(expr)
-	case StrategyNFA:
-		return cp.nfaExecutor.Match(expr)
-	default:
-		return MatchResult{Matched: false}
-	}
-}
-
-// Strategy returns the execution strategy used by this compiled pattern
-func (cp *CompiledPattern) Strategy() ExecutionStrategy {
-	return cp.strategy
+// Matcher represents a compiled pattern ready for execution
+type Matcher interface {
+	Match(expr Expr) MatchResult
+	Strategy() ExecutionStrategy
 }
 
 // DirectMatcher implements fast-path matching for simple patterns
@@ -195,6 +177,11 @@ func (dm *DirectMatcher) Match(expr Expr) MatchResult {
 		Bindings: bindings,
 		Consumed: 1,
 	}
+}
+
+// Strategy returns the execution strategy for DirectMatcher
+func (dm *DirectMatcher) Strategy() ExecutionStrategy {
+	return StrategyDirect
 }
 
 func (dm *DirectMatcher) matchDirectWithBindings(expr Expr, pattern Pattern, bindings map[string]Expr) bool {
@@ -829,6 +816,11 @@ func (ne *NFAExecutor) Match(expr Expr) MatchResult {
 	return ne.matchSequence(exprs)
 }
 
+// Strategy returns the execution strategy for NFAExecutor
+func (ne *NFAExecutor) Strategy() ExecutionStrategy {
+	return StrategyNFA
+}
+
 // StateSet represents a set of active NFA states
 type StateSet map[int]bool
 
@@ -1316,15 +1308,13 @@ func (pa *PatternAnalyzer) hasNestedNamed(pattern Pattern) bool {
 }
 
 // CompilePattern analyzes a pattern and selects the optimal execution strategy
-func CompilePattern(pattern Pattern) (*CompiledPattern, error) {
+func CompilePattern(pattern Pattern) (Matcher, error) {
 	analyzer := &PatternAnalyzer{}
 	strategy := analyzer.Analyze(pattern)
 
-	cp := &CompiledPattern{strategy: strategy}
-
 	switch strategy {
 	case StrategyDirect:
-		cp.directMatcher = &DirectMatcher{pattern: pattern}
+		return &DirectMatcher{pattern: pattern}, nil
 
 	case StrategyNFA:
 		// Build Thompson NFA for the pattern
@@ -1333,11 +1323,9 @@ func CompilePattern(pattern Pattern) (*CompiledPattern, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile NFA: %v", err)
 		}
-		cp.nfaExecutor = NewNFAExecutor(nfa)
+		return NewNFAExecutor(nfa), nil
 
 	default:
 		return nil, fmt.Errorf("unknown execution strategy: %v", strategy)
 	}
-
-	return cp, nil
 }
