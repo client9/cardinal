@@ -398,40 +398,6 @@ func (c *AnyCondition) String() string {
 	return "Any"
 }
 
-type NamedCondition struct {
-	Name  string
-	Inner NFACondition
-}
-
-func (c *NamedCondition) Matches(expr Expr, bindings map[string]Expr) bool {
-	if c.Inner.Matches(expr, bindings) {
-		// Check if this name already has a binding
-		if existing, exists := bindings[c.Name]; exists {
-			// If it exists, we're accumulating matches for a quantifier
-			// Convert to List if it's not already
-			if existingList, isList := existing.(List); isList {
-				// Append to existing list
-				newElements := make([]Expr, len(existingList.Tail())+1)
-				copy(newElements, existingList.Tail())
-				newElements[len(newElements)-1] = expr
-				bindings[c.Name] = NewList(existingList.Head(), newElements...)
-			} else {
-				// Convert single element to list with two elements
-				bindings[c.Name] = NewList("List", existing, expr)
-			}
-		} else {
-			// First match - store as single element
-			bindings[c.Name] = expr
-		}
-		return true
-	}
-	return false
-}
-
-func (c *NamedCondition) String() string {
-	return fmt.Sprintf("Named(%s, %s)", c.Name, c.Inner.String())
-}
-
 type NotCondition struct {
 	Inner NFACondition
 }
@@ -545,36 +511,6 @@ func (b *NFABuilder) addTransition(from int, transType NFATransitionType, to int
 
 func (b *NFABuilder) addEpsilonTransition(from, to int) {
 	b.addTransition(from, EpsilonTransition, to, nil)
-}
-
-// propagateNamedCapture wraps all match transitions in an NFA fragment with NamedCondition
-func (b *NFABuilder) propagateNamedCapture(fragment NFAFragment, name string) {
-	// Visit all states reachable from the fragment start
-	visited := make(map[int]bool)
-	b.visitStatesAndWrapConditions(fragment.Start, name, visited)
-}
-
-func (b *NFABuilder) visitStatesAndWrapConditions(stateID int, name string, visited map[int]bool) {
-	if visited[stateID] {
-		return
-	}
-	visited[stateID] = true
-
-	state := &b.states[stateID]
-
-	// Wrap all match transitions with NamedCondition
-	for i := range state.Transitions {
-		transition := &state.Transitions[i]
-		if transition.Type == MatchTransition && transition.Condition != nil {
-			// Only wrap if not already a NamedCondition to avoid double-wrapping
-			if _, isNamed := transition.Condition.(*NamedCondition); !isNamed {
-				transition.Condition = &NamedCondition{Name: name, Inner: transition.Condition}
-			}
-		}
-
-		// Recursively visit target states
-		b.visitStatesAndWrapConditions(transition.Target, name, visited)
-	}
 }
 
 // propagatePredicateCondition wraps all match transitions in an NFA fragment with PredicateCondition
