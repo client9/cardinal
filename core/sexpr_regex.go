@@ -821,220 +821,181 @@ func (ne *NFAExecutor) Strategy() ExecutionStrategy {
 	return StrategyNFA
 }
 
-// StateSet represents a set of active NFA states
-type StateSet map[int]bool
+// CaptureContext represents capture state for a specific execution path
+type CaptureContext struct {
+	GroupCaptures map[string][]Expr // Elements captured within each group
+	ActiveGroups  []string          // Currently active groups
+}
+
+func (cc *CaptureContext) Clone() *CaptureContext {
+	newContext := &CaptureContext{
+		GroupCaptures: make(map[string][]Expr),
+		ActiveGroups:  make([]string, len(cc.ActiveGroups)),
+	}
+	copy(newContext.ActiveGroups, cc.ActiveGroups)
+
+	// Deep copy group captures
+	for group, captures := range cc.GroupCaptures {
+		newCaptures := make([]Expr, len(captures))
+		copy(newCaptures, captures)
+		newContext.GroupCaptures[group] = newCaptures
+	}
+
+	return newContext
+}
+
+// ExecutionPath represents a single execution path through the NFA
+type ExecutionPath struct {
+	StateID int
+	Context *CaptureContext
+}
 
 func (ne *NFAExecutor) matchSequence(exprs []Expr) MatchResult {
-	// Track group boundaries and captured elements
-	groupCaptures := make(map[string][]Expr) // Track elements captured within each group
-	activeGroups := make(map[int][]string)   // Track which groups are active for each state
+	// Initialize with single path at start state
+	initialContext := &CaptureContext{
+		GroupCaptures: make(map[string][]Expr),
+		ActiveGroups:  make([]string, 0),
+	}
 
-	// Initialize with epsilon closure of start state
-	currentStates := make(StateSet)
-	ne.addStateWithEpsilonAndGroups(currentStates, ne.nfa.StartState, activeGroups, groupCaptures)
+	currentPaths := []*ExecutionPath{{
+		StateID: ne.nfa.StartState,
+		Context: initialContext,
+	}}
+
+	// Apply epsilon closure to initial paths
+	currentPaths = ne.expandPathsWithEpsilon(currentPaths)
 
 	// Process each expression
 	for _, expr := range exprs {
-		currentStates = ne.stepWithGroups(currentStates, expr, activeGroups, groupCaptures)
-		if len(currentStates) == 0 {
-			// No valid states remaining
-			return MatchResult{Matched: false, Bindings: ne.buildBindings(groupCaptures)}
+		currentPaths = ne.stepPaths(currentPaths, expr)
+		if len(currentPaths) == 0 {
+			// No valid paths remaining
+			return MatchResult{Matched: false, Bindings: make(map[string]Expr)}
 		}
 	}
 
-	// Check if any current state is an accept state
-	matched := false
-	for stateID := range currentStates {
-		if ne.nfa.States[stateID].IsAccept {
-			matched = true
-			break
+	// Collect all successful paths and select the best one (leftmost greedy)
+	var successfulPaths []*ExecutionPath
+	for _, path := range currentPaths {
+		if ne.nfa.States[path.StateID].IsAccept {
+			successfulPaths = append(successfulPaths, path)
 		}
 	}
 
-	return MatchResult{
-		Matched:  matched,
-		Bindings: ne.buildBindings(groupCaptures),
-		Consumed: len(exprs),
+	if len(successfulPaths) > 0 {
+		// For greedy matching, select the path that captures elements in leftmost groups first
+		bestPath := ne.selectGreedyPath(successfulPaths)
+		return MatchResult{
+			Matched:  true,
+			Bindings: ne.buildBindingsFromContext(bestPath.Context),
+			Consumed: len(exprs),
+		}
 	}
+
+	return MatchResult{Matched: false, Bindings: make(map[string]Expr)}
 }
 
-func (ne *NFAExecutor) step(currentStates StateSet, expr Expr, bindings map[string]Expr) StateSet {
-	nextStates := make(StateSet)
+func (ne *NFAExecutor) stepPaths(currentPaths []*ExecutionPath, expr Expr) []*ExecutionPath {
+	var nextPaths []*ExecutionPath
 
-	// For each active state, follow matching transitions
-	for stateID := range currentStates {
-		state := ne.nfa.States[stateID]
+	// For each active path, follow matching transitions
+	for _, path := range currentPaths {
+		state := ne.nfa.States[path.StateID]
 
 		for _, transition := range state.Transitions {
 			if transition.Type == MatchTransition {
-				if transition.Condition.Matches(expr, bindings) {
-					ne.addStateWithEpsilon(nextStates, transition.Target, bindings)
+				if transition.Condition.Matches(expr, make(map[string]Expr)) {
+					// Create new path context for this transition
+					newContext := path.Context.Clone()
+
+					// Capture this expression in all active groups
+					for _, groupName := range newContext.ActiveGroups {
+						newContext.GroupCaptures[groupName] = append(newContext.GroupCaptures[groupName], expr)
+					}
+
+					newPath := &ExecutionPath{
+						StateID: transition.Target,
+						Context: newContext,
+					}
+
+					nextPaths = append(nextPaths, newPath)
 				}
 			}
 		}
 	}
 
-	return nextStates
+	// Expand all paths with epsilon closure
+	return ne.expandPathsWithEpsilon(nextPaths)
 }
 
-func (ne *NFAExecutor) addStateWithEpsilon(states StateSet, stateID int, bindings map[string]Expr) {
-	if states[stateID] {
-		return // Already added
+func (ne *NFAExecutor) expandPathsWithEpsilon(paths []*ExecutionPath) []*ExecutionPath {
+	result := make([]*ExecutionPath, 0)
+	visited := make(map[string]bool) // Use string key: "stateID:contextHash" to avoid duplicate paths
+
+	for _, path := range paths {
+		ne.expandSinglePathWithEpsilon(path, &result, visited)
 	}
 
-	states[stateID] = true
-
-	// Follow epsilon transitions
-	state := ne.nfa.States[stateID]
-	for _, transition := range state.Transitions {
-		if transition.Type == EpsilonTransition {
-			ne.addStateWithEpsilon(states, transition.Target, bindings)
-		}
-	}
+	return result
 }
 
-func (ne *NFAExecutor) addStateWithEpsilonAndGroups(states StateSet, stateID int, activeGroups map[int][]string, groupCaptures map[string][]Expr) {
-	if states[stateID] {
-		return // Already added
+func (ne *NFAExecutor) expandSinglePathWithEpsilon(path *ExecutionPath, result *[]*ExecutionPath, visited map[string]bool) {
+	// Create a unique key for this path to avoid infinite loops
+	key := fmt.Sprintf("%d:%p", path.StateID, path.Context)
+	if visited[key] {
+		return
 	}
+	visited[key] = true
 
-	states[stateID] = true
-	state := ne.nfa.States[stateID]
+	state := ne.nfa.States[path.StateID]
+	context := path.Context
 
-	// Track groups for this state path
-	var currentGroups []string
-	if existing, ok := activeGroups[stateID]; ok {
-		currentGroups = make([]string, len(existing))
-		copy(currentGroups, existing)
-	}
-
-	// Handle group start
+	// Handle group start/end for this state
 	if state.GroupStart != "" {
-		currentGroups = append(currentGroups, state.GroupStart)
-		// Initialize capture slice for this group if not exists
-		if _, exists := groupCaptures[state.GroupStart]; !exists {
-			groupCaptures[state.GroupStart] = make([]Expr, 0)
+		// Start a new group - clone context to avoid affecting other paths
+		context = context.Clone()
+		context.ActiveGroups = append(context.ActiveGroups, state.GroupStart)
+		if _, exists := context.GroupCaptures[state.GroupStart]; !exists {
+			context.GroupCaptures[state.GroupStart] = make([]Expr, 0)
 		}
 	}
 
-	// Handle group end
 	if state.GroupEnd != "" {
-		// Remove from active groups
-		for i, group := range currentGroups {
+		// End a group - clone context to avoid affecting other paths
+		context = context.Clone()
+		for i, group := range context.ActiveGroups {
 			if group == state.GroupEnd {
-				currentGroups = append(currentGroups[:i], currentGroups[i+1:]...)
+				context.ActiveGroups = append(context.ActiveGroups[:i], context.ActiveGroups[i+1:]...)
 				break
 			}
 		}
 	}
 
-	// Instead of overwriting, merge with any existing groups for this state
-	if existing, exists := activeGroups[stateID]; exists {
-		// Merge current groups with existing groups (avoid duplicates)
-		merged := append([]string{}, existing...)
-		for _, group := range currentGroups {
-			found := false
-			for _, existingGroup := range merged {
-				if existingGroup == group {
-					found = true
-					break
-				}
-			}
-			if !found {
-				merged = append(merged, group)
-			}
-		}
-		activeGroups[stateID] = merged
-	} else {
-		activeGroups[stateID] = currentGroups
+	// Update the path with potentially modified context
+	updatedPath := &ExecutionPath{
+		StateID: path.StateID,
+		Context: context,
 	}
+
+	// Add this path to results
+	*result = append(*result, updatedPath)
 
 	// Follow epsilon transitions
 	for _, transition := range state.Transitions {
 		if transition.Type == EpsilonTransition {
-			// Epsilon transition - manually propagate groups to target first
-
-			// Ensure target state inherits our groups before recursing
-			if len(currentGroups) > 0 {
-				if existing, exists := activeGroups[transition.Target]; exists {
-					// Merge groups
-					merged := append([]string{}, existing...)
-					for _, group := range currentGroups {
-						found := false
-						for _, existingGroup := range merged {
-							if existingGroup == group {
-								found = true
-								break
-							}
-						}
-						if !found {
-							merged = append(merged, group)
-						}
-					}
-					activeGroups[transition.Target] = merged
-				} else {
-					activeGroups[transition.Target] = append([]string{}, currentGroups...)
-				}
+			newPath := &ExecutionPath{
+				StateID: transition.Target,
+				Context: context,
 			}
-
-			ne.addStateWithEpsilonAndGroups(states, transition.Target, activeGroups, groupCaptures)
+			ne.expandSinglePathWithEpsilon(newPath, result, visited)
 		}
 	}
 }
 
-func (ne *NFAExecutor) stepWithGroups(currentStates StateSet, expr Expr, activeGroups map[int][]string, groupCaptures map[string][]Expr) StateSet {
-	nextStates := make(StateSet)
-
-	// For each active state, follow matching transitions
-	for stateID := range currentStates {
-		state := ne.nfa.States[stateID]
-
-		for _, transition := range state.Transitions {
-			if transition.Type == MatchTransition {
-				if transition.Condition.Matches(expr, make(map[string]Expr)) { // Use dummy bindings since we handle groups separately
-					// Capture this element in all active groups for this state
-					if groups, ok := activeGroups[stateID]; ok {
-						for _, groupName := range groups {
-							groupCaptures[groupName] = append(groupCaptures[groupName], expr)
-						}
-					}
-
-					// Propagate groups from source state to target state during match transition
-					if sourceGroups, hasGroups := activeGroups[stateID]; hasGroups && len(sourceGroups) > 0 {
-						if existing, exists := activeGroups[transition.Target]; exists {
-							// Merge groups
-							merged := append([]string{}, existing...)
-							for _, group := range sourceGroups {
-								found := false
-								for _, existingGroup := range merged {
-									if existingGroup == group {
-										found = true
-										break
-									}
-								}
-								if !found {
-									merged = append(merged, group)
-								}
-							}
-							activeGroups[transition.Target] = merged
-						} else {
-							activeGroups[transition.Target] = append([]string{}, sourceGroups...)
-						}
-					}
-
-					ne.addStateWithEpsilonAndGroups(nextStates, transition.Target, activeGroups, groupCaptures)
-				}
-			}
-		}
-	}
-
-	return nextStates
-}
-
-func (ne *NFAExecutor) buildBindings(groupCaptures map[string][]Expr) map[string]Expr {
+func (ne *NFAExecutor) buildBindingsFromContext(context *CaptureContext) map[string]Expr {
 	bindings := make(map[string]Expr)
 
-	for groupName, captures := range groupCaptures {
+	for groupName, captures := range context.GroupCaptures {
 		if len(captures) == 0 {
 			continue // No captures for this group
 		} else if len(captures) == 1 {
@@ -1047,6 +1008,64 @@ func (ne *NFAExecutor) buildBindings(groupCaptures map[string][]Expr) map[string
 	}
 
 	return bindings
+}
+
+// selectGreedyPath implements leftmost greedy matching semantics
+// For patterns like ZeroOrMore(x), ZeroOrMore(y), prefer paths where leftmost groups capture more
+func (ne *NFAExecutor) selectGreedyPath(paths []*ExecutionPath) *ExecutionPath {
+	if len(paths) == 1 {
+		return paths[0]
+	}
+
+	bestPath := paths[0]
+	for _, candidate := range paths[1:] {
+		if ne.isMoreGreedy(candidate, bestPath) {
+			bestPath = candidate
+		}
+	}
+	return bestPath
+}
+
+// isMoreGreedy determines if candidate path is more greedy than current best
+// Implements leftmost-first greedy semantics: earlier groups should capture more elements
+func (ne *NFAExecutor) isMoreGreedy(candidate, current *ExecutionPath) bool {
+	// Get all group names in alphabetical order for consistent comparison
+	// In practice, for patterns like Named("x", ...), Named("y", ...), this gives x before y
+	allGroups := make(map[string]bool)
+	for group := range candidate.Context.GroupCaptures {
+		allGroups[group] = true
+	}
+	for group := range current.Context.GroupCaptures {
+		allGroups[group] = true
+	}
+
+	var sortedGroups []string
+	for group := range allGroups {
+		sortedGroups = append(sortedGroups, group)
+	}
+
+	// Sort to ensure consistent comparison (x comes before y)
+	for i := 0; i < len(sortedGroups)-1; i++ {
+		for j := i + 1; j < len(sortedGroups); j++ {
+			if sortedGroups[i] > sortedGroups[j] {
+				sortedGroups[i], sortedGroups[j] = sortedGroups[j], sortedGroups[i]
+			}
+		}
+	}
+
+	// Compare group by group - leftmost groups should be more greedy
+	for _, group := range sortedGroups {
+		candidateLen := len(candidate.Context.GroupCaptures[group])
+		currentLen := len(current.Context.GroupCaptures[group])
+
+		if candidateLen != currentLen {
+			// First differing group - prefer the path where this group captured more
+			return candidateLen > currentLen
+		}
+	}
+
+	// All groups captured the same amount - no preference
+	return false
 }
 
 // Pattern builder functions
