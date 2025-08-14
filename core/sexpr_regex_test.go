@@ -77,8 +77,8 @@ func TestSequencePatterns(t *testing.T) {
 		strategy ExecutionStrategy
 	}{
 		{
-			name: "simple sequence match",
-			pattern: MatchSequence(
+			name: "simple list match",
+			pattern: MatchList(
 				MatchLiteral(NewInteger(1)),
 				MatchHead("String"),
 				MatchAny(),
@@ -92,8 +92,8 @@ func TestSequencePatterns(t *testing.T) {
 			strategy: StrategyDirect,
 		},
 		{
-			name: "simple sequence no match - wrong length",
-			pattern: MatchSequence(
+			name: "simple list no match - wrong length",
+			pattern: MatchList(
 				MatchLiteral(NewInteger(1)),
 				MatchHead("String"),
 			),
@@ -106,8 +106,8 @@ func TestSequencePatterns(t *testing.T) {
 			strategy: StrategyDirect,
 		},
 		{
-			name: "simple sequence no match - wrong element",
-			pattern: MatchSequence(
+			name: "simple list no match - wrong element",
+			pattern: MatchList(
 				MatchLiteral(NewInteger(1)),
 				MatchHead("String"),
 			),
@@ -149,7 +149,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 	}{
 		{
 			name: "zero or more - zero matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
 			),
@@ -161,7 +161,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "zero or more - one match",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
 			),
@@ -174,7 +174,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "zero or more - multiple matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
 			),
@@ -189,7 +189,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "zero or more - non-matching type",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
 			),
@@ -202,7 +202,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "one or more - zero matches (should fail)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				OneOrMore(MatchHead("Integer")),
 			),
@@ -214,7 +214,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "one or more - one match",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				OneOrMore(MatchHead("Integer")),
 			),
@@ -227,7 +227,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "one or more - multiple matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				OneOrMore(MatchHead("Integer")),
 			),
@@ -242,7 +242,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "one or more - non-matching type (should fail)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				OneOrMore(MatchHead("Integer")),
 			),
@@ -255,7 +255,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "one or more - mixed types (should fail)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				OneOrMore(MatchHead("Integer")),
 			),
@@ -269,7 +269,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional - zero matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				Optional(MatchHead("Integer")),
 			),
@@ -281,7 +281,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional - one match",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				Optional(MatchHead("Integer")),
 			),
@@ -294,7 +294,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional - too many matches (should fail)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				Optional(MatchHead("Integer")),
 			),
@@ -308,7 +308,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional - non-matching type (should fail)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				Optional(MatchHead("Integer")),
 			),
@@ -322,7 +322,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		// Complex quantifier patterns to test NFA behavior
 		{
 			name: "one or more with complex inner pattern",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				OneOrMore(MatchOr(
 					MatchHead("Integer"),
@@ -340,7 +340,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "one or more with complex inner pattern - zero matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				OneOrMore(MatchOr(
 					MatchHead("Integer"),
@@ -355,7 +355,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional with complex inner pattern - zero matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				Optional(MatchOr(
 					MatchHead("Integer"),
@@ -370,7 +370,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional with complex inner pattern - one match",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				Optional(MatchOr(
 					MatchHead("Integer"),
@@ -386,7 +386,7 @@ func TestTrailingQuantifiers(t *testing.T) {
 		},
 		{
 			name: "optional with complex inner pattern - too many matches",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				Optional(MatchOr(
 					MatchHead("Integer"),
@@ -626,7 +626,7 @@ func TestThompsonNFA(t *testing.T) {
 		},
 		{
 			name: "sequence with or in middle (needs NFA)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				MatchOr(
 					MatchHead("Integer"),
@@ -644,7 +644,7 @@ func TestThompsonNFA(t *testing.T) {
 		},
 		{
 			name: "sequence with quantifier in middle",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
 				MatchLiteral(NewString("suffix")),
@@ -673,7 +673,7 @@ func TestThompsonNFA(t *testing.T) {
 		},
 		{
 			name: "simple named capture in NFA context",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				Named("value", MatchHead("Integer")),
 				MatchOr(
 					MatchLiteral(NewString("suffix1")),
@@ -691,7 +691,7 @@ func TestThompsonNFA(t *testing.T) {
 		},
 		{
 			name: "complex pattern: sequence with or and quantifier",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				ZeroOrMore(MatchOr(
 					MatchHead("Integer"),
@@ -914,8 +914,8 @@ func TestPredicatePatterns(t *testing.T) {
 			},
 		},
 		{
-			name: "predicate in sequence",
-			pattern: MatchSequence(
+			name: "predicate in list",
+			pattern: MatchList(
 				MatchLiteral(NewString("numbers")),
 				MatchPredicate(
 					MatchHead("Integer"),
@@ -981,8 +981,8 @@ func TestPredicatePatterns(t *testing.T) {
 		// Tests to trigger the simple predicate optimization in BuildPredicate NFA path
 		// These patterns require NFA but contain predicates with simple inner patterns
 		{
-			name: "sequence with simple predicate in NFA context (triggers simple optimization)",
-			pattern: MatchSequence(
+			name: "list with simple predicate in NFA context (triggers simple optimization)",
+			pattern: MatchList(
 				MatchLiteral(NewString("prefix")),
 				MatchPredicate(
 					MatchHead("Integer"),
@@ -1007,8 +1007,8 @@ func TestPredicatePatterns(t *testing.T) {
 			expectedBindings: map[string]Expr{},
 		},
 		{
-			name: "sequence with literal predicate in NFA context (triggers simple optimization)",
-			pattern: MatchSequence(
+			name: "list with literal predicate in NFA context (triggers simple optimization)",
+			pattern: MatchList(
 				MatchLiteral(NewString("start")),
 				MatchPredicate(
 					MatchLiteral(NewInteger(42)),
@@ -1031,7 +1031,7 @@ func TestPredicatePatterns(t *testing.T) {
 		},
 		{
 			name: "sequence with any predicate in NFA context (triggers simple optimization)",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				MatchLiteral(NewString("data")),
 				MatchPredicate(
 					MatchAny(),
@@ -1148,8 +1148,8 @@ func TestNamedCaptures(t *testing.T) {
 			strategy:         StrategyDirect,
 		},
 		{
-			name: "sequence with named captures",
-			pattern: MatchSequence(
+			name: "list with named captures",
+			pattern: MatchList(
 				Named("first", MatchHead("Integer")),
 				Named("second", MatchHead("String")),
 				Named("third", MatchAny()),
@@ -1186,7 +1186,7 @@ func TestNamedCaptures(t *testing.T) {
 		},
 		{
 			name: "named capture with quantifier",
-			pattern: MatchSequence(
+			pattern: MatchList(
 				Named("prefix", MatchLiteral(NewString("data"))),
 				ZeroOrMore(MatchHead("Integer")),
 			),

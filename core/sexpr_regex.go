@@ -54,6 +54,14 @@ func (p *SequencePattern) String() string {
 	return fmt.Sprintf("Sequence(%v)", p.Patterns)
 }
 
+type ListPattern struct {
+	Patterns []Pattern
+}
+
+func (p *ListPattern) String() string {
+	return fmt.Sprintf("List(%v)", p.Patterns)
+}
+
 type OrPattern struct {
 	Alternatives []Pattern
 }
@@ -207,6 +215,9 @@ func (dm *DirectMatcher) matchDirectWithBindings(expr Expr, pattern Pattern, bin
 	case *SequencePattern:
 		return dm.matchSequenceWithBindings(expr, p.Patterns, bindings)
 
+	case *ListPattern:
+		return dm.matchListWithBindings(expr, p.Patterns, bindings)
+
 	case *PredicatePattern:
 		// First check if inner pattern matches
 		if dm.matchDirectWithBindings(expr, p.Inner, bindings) {
@@ -230,11 +241,30 @@ func (dm *DirectMatcher) matchDirectWithBindings(expr Expr, pattern Pattern, bin
 }
 
 func (dm *DirectMatcher) matchSequenceWithBindings(expr Expr, patterns []Pattern, bindings map[string]Expr) bool {
+	// SEMANTIC FIX: MatchSequence should NOT automatically unwrap List expressions.
+	// A List is a single expression, not a sequence.
+	// Use MatchList to match against List expressions.
+	// MatchSequence should only work when we're already operating on sequences of elements.
+
+	// Reject matching List expressions with MatchSequence patterns
+	_, ok := expr.(List)
+	if ok {
+		return false
+	}
+
+	// MatchSequence doesn't make sense for non-List expressions either
+	// It should only be used within sequence contexts (handled by quantifier logic)
+	return false
+}
+
+func (dm *DirectMatcher) matchListWithBindings(expr Expr, patterns []Pattern, bindings map[string]Expr) bool {
+	// A ListPattern must match against a List expression directly
 	list, ok := expr.(List)
 	if !ok {
 		return false
 	}
 
+	// The list itself should match the pattern sequence
 	elements := list.Tail()
 	return dm.matchElementsWithBindings(elements, patterns, bindings)
 }
@@ -260,8 +290,8 @@ func (dm *DirectMatcher) matchElementsWithBindings(elements []Expr, patterns []P
 		}
 	}
 
-	// Check if any patterns are quantifiers - if so, use general quantifier matching
-	hasQuantifiers := false
+	// Check if any patterns need special handling (quantifiers or nested sequences)
+	needsSpecialHandling := false
 	for _, p := range patterns {
 		// Unwrap Named patterns to check actual pattern type
 		actualPattern := p
@@ -270,17 +300,32 @@ func (dm *DirectMatcher) matchElementsWithBindings(elements []Expr, patterns []P
 		}
 
 		switch actualPattern.(type) {
-		case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
-			hasQuantifiers = true
+		case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern, *SequencePattern:
+			needsSpecialHandling = true
 			break
 		}
 	}
 
-	if hasQuantifiers {
+	if needsSpecialHandling {
 		return dm.matchWithQuantifiers(elements, patterns, bindings)
 	}
 
 	// Simple 1:1 matching for pure sequences
+	if len(elements) != len(patterns) {
+		return false
+	}
+
+	for i, element := range elements {
+		if !dm.matchDirectWithBindings(element, patterns[i], bindings) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// matchElementsDirectly performs simple 1:1 element matching without quantifier handling
+func (dm *DirectMatcher) matchElementsDirectly(elements []Expr, patterns []Pattern, bindings map[string]Expr) bool {
 	if len(elements) != len(patterns) {
 		return false
 	}
@@ -458,6 +503,33 @@ func (dm *DirectMatcher) matchQuantifiersGreedy(elements []Expr, elemIdx int, pa
 		}
 		return false
 
+	case *SequencePattern:
+		// Nested sequence - consume multiple consecutive elements
+		seqLen := len(q.Patterns)
+
+		// Check if we have enough elements
+		if elemIdx+seqLen > len(elements) {
+			return false
+		}
+
+		// Try to match consecutive elements against nested sequence patterns
+		subElements := elements[elemIdx : elemIdx+seqLen]
+		if dm.matchElementsDirectly(subElements, q.Patterns, bindings) {
+			// Success! Continue with remaining patterns
+			if dm.matchQuantifiersGreedy(elements, elemIdx+seqLen, patterns, patIdx+1, bindings) {
+				// Record Named binding if needed
+				if namedBinding != "" {
+					if seqLen == 1 {
+						bindings[namedBinding] = subElements[0]
+					} else {
+						bindings[namedBinding] = NewList("List", subElements...)
+					}
+				}
+				return true
+			}
+		}
+		return false
+
 	default:
 		// Regular pattern - must match exactly one element
 		if dm.matchDirectWithBindings(elements[elemIdx], pattern, bindings) {
@@ -596,64 +668,6 @@ func (dm *DirectMatcher) matchTrailingZeroOrOne(elements []Expr, prefixPatterns 
 		*matchedElements = []Expr{lastElement}
 	} else {
 		*matchedElements = []Expr{} // Matched nothing
-	}
-
-	return true
-}
-
-// Optimized matching with bindings for patterns ending with quantifiers
-func (dm *DirectMatcher) matchWithTrailingZeroOrMoreBindings(elements []Expr, prefixPatterns []Pattern, quantPattern Pattern, bindings map[string]Expr) bool {
-	// Must match prefix first
-	if len(elements) < len(prefixPatterns) {
-		return false
-	}
-
-	// Match prefix patterns
-	for i, pattern := range prefixPatterns {
-		if !dm.matchDirectWithBindings(elements[i], pattern, bindings) {
-			return false
-		}
-	}
-
-	// Remaining elements must all match the quantified pattern
-	remaining := elements[len(prefixPatterns):]
-	for _, element := range remaining {
-		if !dm.matchDirectWithBindings(element, quantPattern, bindings) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (dm *DirectMatcher) matchWithTrailingOneOrMoreBindings(elements []Expr, prefixPatterns []Pattern, quantPattern Pattern, bindings map[string]Expr) bool {
-	// Need at least one element for the quantifier
-	if len(elements) <= len(prefixPatterns) {
-		return false
-	}
-
-	return dm.matchWithTrailingZeroOrMoreBindings(elements, prefixPatterns, quantPattern, bindings)
-}
-
-func (dm *DirectMatcher) matchWithTrailingZeroOrOneBindings(elements []Expr, prefixPatterns []Pattern, quantPattern Pattern, bindings map[string]Expr) bool {
-	// Can have 0 or 1 additional element
-	if len(elements) < len(prefixPatterns) || len(elements) > len(prefixPatterns)+1 {
-		return false
-	}
-
-	// Match prefix
-	for i, pattern := range prefixPatterns {
-		if !dm.matchDirectWithBindings(elements[i], pattern, bindings) {
-			return false
-		}
-	}
-
-	// If there's one more element, it must match the optional pattern
-	if len(elements) == len(prefixPatterns)+1 {
-		lastElement := elements[len(elements)-1]
-		if !dm.matchDirectWithBindings(lastElement, quantPattern, bindings) {
-			return false
-		}
 	}
 
 	return true
@@ -1077,6 +1091,25 @@ func (b *NFABuilder) BuildPattern(pattern Pattern) (NFAFragment, error) {
 		}
 		return result, nil
 
+	case *ListPattern:
+		if len(p.Patterns) == 0 {
+			return NFAFragment{}, fmt.Errorf("empty list pattern")
+		}
+
+		result, err := b.BuildPattern(p.Patterns[0])
+		if err != nil {
+			return NFAFragment{}, err
+		}
+
+		for i := 1; i < len(p.Patterns); i++ {
+			next, err := b.BuildPattern(p.Patterns[i])
+			if err != nil {
+				return NFAFragment{}, err
+			}
+			result = b.BuildConcat(result, next)
+		}
+		return result, nil
+
 	case *OrPattern:
 		if len(p.Alternatives) == 0 {
 			return NFAFragment{}, fmt.Errorf("empty or pattern")
@@ -1436,6 +1469,10 @@ func MatchSequence(patterns ...Pattern) Pattern {
 	return &SequencePattern{Patterns: patterns}
 }
 
+func MatchList(patterns ...Pattern) Pattern {
+	return &ListPattern{Patterns: patterns}
+}
+
 func ZeroOrMore(pattern Pattern) Pattern {
 	return &ZeroOrMorePattern{Inner: pattern, Greedy: true}
 }
@@ -1486,6 +1523,10 @@ func (pa *PatternAnalyzer) analyzePattern(pattern Pattern, insideQuantifier bool
 		return StrategyDirect
 
 	case *SequencePattern:
+		return pa.analyzeSequence(p.Patterns)
+
+	case *ListPattern:
+		// List patterns are similar to sequences but match actual list structures
 		return pa.analyzeSequence(p.Patterns)
 
 	case *OrPattern:
@@ -1545,6 +1586,16 @@ func (pa *PatternAnalyzer) analyzeSequence(patterns []Pattern) ExecutionStrategy
 		}
 
 		switch actualPattern.(type) {
+		case *SequencePattern:
+			// Simple nested sequences (only basic patterns) can be handled by Direct matcher
+			// as fixed-length quantifiers. Complex ones need NFA.
+		case *ListPattern:
+			// List patterns can be handled by Direct matcher - they match list structure directly
+			if seqPattern, ok := actualPattern.(*SequencePattern); ok {
+				if !pa.isSimpleNestedSequence(seqPattern) {
+					return StrategyNFA
+				}
+			}
 		case *OrPattern:
 			// Simple Or patterns can use Direct matching, complex ones need NFA
 			if orPattern, ok := actualPattern.(*OrPattern); ok {
@@ -1613,6 +1664,23 @@ func (pa *PatternAnalyzer) isSimpleInnerPattern(pattern Pattern) bool {
 	}
 }
 
+// isSimpleNestedSequence checks if a nested sequence contains only simple patterns
+func (pa *PatternAnalyzer) isSimpleNestedSequence(seqPattern *SequencePattern) bool {
+	for _, pattern := range seqPattern.Patterns {
+		// Unwrap Named patterns first
+		actualPattern := pattern
+		if named, ok := pattern.(*NamedPattern); ok {
+			actualPattern = named.Inner
+		}
+
+		// Only simple patterns are allowed in nested sequences for Direct matching
+		if !pa.isSimpleInnerPattern(actualPattern) {
+			return false
+		}
+	}
+	return true
+}
+
 // isSimpleOrPattern checks if an Or pattern contains only simple alternatives
 func (pa *PatternAnalyzer) isSimpleOrPattern(orPattern *OrPattern) bool {
 	for _, alternative := range orPattern.Alternatives {
@@ -1679,6 +1747,12 @@ func (pa *PatternAnalyzer) hasNestedNamed(pattern Pattern) bool {
 	case *NamedPattern:
 		return true
 	case *SequencePattern:
+		for _, subPattern := range p.Patterns {
+			if pa.hasNestedNamed(subPattern) {
+				return true
+			}
+		}
+	case *ListPattern:
 		for _, subPattern := range p.Patterns {
 			if pa.hasNestedNamed(subPattern) {
 				return true
