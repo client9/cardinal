@@ -215,6 +215,15 @@ func (dm *DirectMatcher) matchDirectWithBindings(expr Expr, pattern Pattern, bin
 		}
 		return false
 
+	case *OrPattern:
+		// Try each alternative in order until one matches
+		for _, alternative := range p.Alternatives {
+			if dm.matchDirectWithBindings(expr, alternative, bindings) {
+				return true
+			}
+		}
+		return false
+
 	default:
 		panic(fmt.Sprintf("DirectMatcher called on non-direct pattern: %T", pattern))
 	}
@@ -234,14 +243,41 @@ func (dm *DirectMatcher) matchElementsWithBindings(elements []Expr, patterns []P
 	// Handle trailing quantifiers specially (optimization for common case)
 	if len(patterns) > 0 {
 		lastPattern := patterns[len(patterns)-1]
-		switch q := lastPattern.(type) {
-		case *ZeroOrMorePattern:
-			return dm.matchWithTrailingZeroOrMoreBindings(elements, patterns[:len(patterns)-1], q.Inner, bindings)
-		case *OneOrMorePattern:
-			return dm.matchWithTrailingOneOrMoreBindings(elements, patterns[:len(patterns)-1], q.Inner, bindings)
-		case *ZeroOrOnePattern:
-			return dm.matchWithTrailingZeroOrOneBindings(elements, patterns[:len(patterns)-1], q.Inner, bindings)
+
+		// Unwrap Named patterns to get the actual quantifier type
+		actualLastPattern := lastPattern
+		if named, ok := lastPattern.(*NamedPattern); ok {
+			actualLastPattern = named.Inner
 		}
+
+		switch actualLastPattern.(type) {
+		case *ZeroOrMorePattern:
+			return dm.matchWithTrailingQuantifierBindings(elements, patterns, "ZeroOrMore", bindings)
+		case *OneOrMorePattern:
+			return dm.matchWithTrailingQuantifierBindings(elements, patterns, "OneOrMore", bindings)
+		case *ZeroOrOnePattern:
+			return dm.matchWithTrailingQuantifierBindings(elements, patterns, "ZeroOrOne", bindings)
+		}
+	}
+
+	// Check if any patterns are quantifiers - if so, use general quantifier matching
+	hasQuantifiers := false
+	for _, p := range patterns {
+		// Unwrap Named patterns to check actual pattern type
+		actualPattern := p
+		if named, ok := p.(*NamedPattern); ok {
+			actualPattern = named.Inner
+		}
+
+		switch actualPattern.(type) {
+		case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
+			hasQuantifiers = true
+			break
+		}
+	}
+
+	if hasQuantifiers {
+		return dm.matchWithQuantifiers(elements, patterns, bindings)
 	}
 
 	// Simple 1:1 matching for pure sequences
@@ -253,6 +289,313 @@ func (dm *DirectMatcher) matchElementsWithBindings(elements []Expr, patterns []P
 		if !dm.matchDirectWithBindings(element, patterns[i], bindings) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// General quantifier matching using greedy semantics
+// This handles quantifiers in any position, not just trailing
+func (dm *DirectMatcher) matchWithQuantifiers(elements []Expr, patterns []Pattern, bindings map[string]Expr) bool {
+	// Use greedy matching: try to match as much as possible for each quantifier
+	return dm.matchQuantifiersGreedy(elements, 0, patterns, 0, bindings)
+}
+
+// Recursive greedy matching algorithm
+func (dm *DirectMatcher) matchQuantifiersGreedy(elements []Expr, elemIdx int, patterns []Pattern, patIdx int, bindings map[string]Expr) bool {
+	// Base case: processed all patterns
+	if patIdx >= len(patterns) {
+		return elemIdx >= len(elements) // Success if consumed all elements too
+	}
+
+	// Base case: no more elements but still have patterns to match
+	if elemIdx >= len(elements) {
+		// Check if remaining patterns are all optional (ZeroOrMore, ZeroOrOne)
+		for i := patIdx; i < len(patterns); i++ {
+			switch patterns[i].(type) {
+			case *ZeroOrMorePattern, *ZeroOrOnePattern:
+				continue // These can match zero elements
+			default:
+				return false // Required pattern with no elements left
+			}
+		}
+		return true
+	}
+
+	pattern := patterns[patIdx]
+
+	// Unwrap Named patterns to get to the actual pattern type
+	actualPattern := pattern
+	var namedBinding string
+	if named, ok := pattern.(*NamedPattern); ok {
+		actualPattern = named.Inner
+		namedBinding = named.Name
+	}
+
+	switch q := actualPattern.(type) {
+	case *ZeroOrMorePattern:
+		// Try matching 0, 1, 2, ... elements greedily
+		// Start with maximum possible matches and work backwards
+		maxMatches := len(elements) - elemIdx
+
+		// Calculate minimum elements needed for remaining patterns
+		minNeeded := 0
+		for i := patIdx + 1; i < len(patterns); i++ {
+			switch patterns[i].(type) {
+			case *OneOrMorePattern:
+				minNeeded++ // At least 1 element needed
+			case *ZeroOrMorePattern, *ZeroOrOnePattern:
+				// Optional, don't count
+			default:
+				minNeeded++ // Regular pattern needs 1 element
+			}
+		}
+
+		// Try from maximum down to 0, ensuring we leave enough for remaining patterns
+		for matchCount := maxMatches - minNeeded; matchCount >= 0; matchCount-- {
+			// Check if all elements in this range match the quantifier pattern
+			allMatch := true
+			for i := 0; i < matchCount; i++ {
+				if !dm.matchDirectWithBindings(elements[elemIdx+i], q.Inner, bindings) {
+					allMatch = false
+					break
+				}
+			}
+
+			if allMatch {
+				// Try continuing with remaining patterns
+				if dm.matchQuantifiersGreedy(elements, elemIdx+matchCount, patterns, patIdx+1, bindings) {
+					// Success! Record the Named binding if needed
+					if namedBinding != "" {
+						if matchCount == 0 {
+							bindings[namedBinding] = nil // ZeroOrMore can match nothing
+						} else if matchCount == 1 {
+							bindings[namedBinding] = elements[elemIdx]
+						} else {
+							// Create a list of matched elements
+							matchedElements := make([]Expr, matchCount)
+							for i := 0; i < matchCount; i++ {
+								matchedElements[i] = elements[elemIdx+i]
+							}
+							bindings[namedBinding] = NewList("List", matchedElements...)
+						}
+					}
+					return true
+				}
+			}
+		}
+		return false
+
+	case *OneOrMorePattern:
+		// Similar to ZeroOrMore but requires at least 1 match
+		maxMatches := len(elements) - elemIdx
+
+		// Calculate minimum elements needed for remaining patterns
+		minNeeded := 0
+		for i := patIdx + 1; i < len(patterns); i++ {
+			switch patterns[i].(type) {
+			case *OneOrMorePattern:
+				minNeeded++ // At least 1 element needed
+			case *ZeroOrMorePattern, *ZeroOrOnePattern:
+				// Optional, don't count
+			default:
+				minNeeded++ // Regular pattern needs 1 element
+			}
+		}
+
+		// Try from maximum down to 1, ensuring we leave enough for remaining patterns
+		for matchCount := maxMatches - minNeeded; matchCount >= 1; matchCount-- {
+			// Check if all elements in this range match the quantifier pattern
+			allMatch := true
+			for i := 0; i < matchCount; i++ {
+				if !dm.matchDirectWithBindings(elements[elemIdx+i], q.Inner, bindings) {
+					allMatch = false
+					break
+				}
+			}
+
+			if allMatch {
+				// Try continuing with remaining patterns
+				if dm.matchQuantifiersGreedy(elements, elemIdx+matchCount, patterns, patIdx+1, bindings) {
+					// Success! Record the Named binding if needed
+					if namedBinding != "" {
+						if matchCount == 1 {
+							bindings[namedBinding] = elements[elemIdx]
+						} else {
+							// Create a list of matched elements
+							matchedElements := make([]Expr, matchCount)
+							for i := 0; i < matchCount; i++ {
+								matchedElements[i] = elements[elemIdx+i]
+							}
+							bindings[namedBinding] = NewList("List", matchedElements...)
+						}
+					}
+					return true
+				}
+			}
+		}
+		return false
+
+	case *ZeroOrOnePattern:
+		// Try matching 1 element first (greedy), then 0
+		// Try 1 element
+		if dm.matchDirectWithBindings(elements[elemIdx], q.Inner, bindings) {
+			if dm.matchQuantifiersGreedy(elements, elemIdx+1, patterns, patIdx+1, bindings) {
+				// Success! Record the Named binding if needed
+				if namedBinding != "" {
+					bindings[namedBinding] = elements[elemIdx]
+				}
+				return true
+			}
+		}
+		// Try 0 elements
+		if dm.matchQuantifiersGreedy(elements, elemIdx, patterns, patIdx+1, bindings) {
+			// Success! Record the Named binding if needed (matched nothing)
+			if namedBinding != "" {
+				bindings[namedBinding] = nil // ZeroOrOne can match nothing
+			}
+			return true
+		}
+		return false
+
+	default:
+		// Regular pattern - must match exactly one element
+		if dm.matchDirectWithBindings(elements[elemIdx], pattern, bindings) {
+			return dm.matchQuantifiersGreedy(elements, elemIdx+1, patterns, patIdx+1, bindings)
+		}
+		return false
+	}
+}
+
+// Unified trailing quantifier matching that handles Named patterns correctly
+func (dm *DirectMatcher) matchWithTrailingQuantifierBindings(elements []Expr, patterns []Pattern, quantType string, bindings map[string]Expr) bool {
+	if len(patterns) == 0 {
+		return false
+	}
+
+	prefixPatterns := patterns[:len(patterns)-1]
+	lastPattern := patterns[len(patterns)-1]
+
+	// Extract the inner quantifier pattern
+	var innerPattern Pattern
+	var namedBinding string
+
+	if named, ok := lastPattern.(*NamedPattern); ok {
+		namedBinding = named.Name
+		// Get the inner quantifier and then its inner pattern
+		switch q := named.Inner.(type) {
+		case *ZeroOrMorePattern:
+			innerPattern = q.Inner
+		case *OneOrMorePattern:
+			innerPattern = q.Inner
+		case *ZeroOrOnePattern:
+			innerPattern = q.Inner
+		default:
+			return false // Shouldn't happen
+		}
+	} else {
+		// Direct quantifier
+		switch q := lastPattern.(type) {
+		case *ZeroOrMorePattern:
+			innerPattern = q.Inner
+		case *OneOrMorePattern:
+			innerPattern = q.Inner
+		case *ZeroOrOnePattern:
+			innerPattern = q.Inner
+		default:
+			return false // Shouldn't happen
+		}
+	}
+
+	// Use the appropriate matching strategy
+	var matched bool
+	var matchedElements []Expr
+
+	switch quantType {
+	case "ZeroOrMore":
+		matched = dm.matchTrailingZeroOrMore(elements, prefixPatterns, innerPattern, &matchedElements, bindings)
+	case "OneOrMore":
+		matched = dm.matchTrailingOneOrMore(elements, prefixPatterns, innerPattern, &matchedElements, bindings)
+	case "ZeroOrOne":
+		matched = dm.matchTrailingZeroOrOne(elements, prefixPatterns, innerPattern, &matchedElements, bindings)
+	default:
+		return false
+	}
+
+	// If successful and we have a Named binding, record it
+	if matched && namedBinding != "" {
+		if len(matchedElements) == 0 {
+			if quantType == "ZeroOrMore" || quantType == "ZeroOrOne" {
+				bindings[namedBinding] = nil // Can match nothing
+			}
+		} else if len(matchedElements) == 1 {
+			bindings[namedBinding] = matchedElements[0]
+		} else {
+			bindings[namedBinding] = NewList("List", matchedElements...)
+		}
+	}
+
+	return matched
+}
+
+// Helper methods that return the matched elements for Named binding
+func (dm *DirectMatcher) matchTrailingZeroOrMore(elements []Expr, prefixPatterns []Pattern, quantPattern Pattern, matchedElements *[]Expr, bindings map[string]Expr) bool {
+	// Must match prefix first
+	if len(elements) < len(prefixPatterns) {
+		return false
+	}
+
+	// Match prefix patterns
+	for i, pattern := range prefixPatterns {
+		if !dm.matchDirectWithBindings(elements[i], pattern, bindings) {
+			return false
+		}
+	}
+
+	// Remaining elements must all match the quantified pattern
+	remaining := elements[len(prefixPatterns):]
+	*matchedElements = make([]Expr, len(remaining))
+	for i, element := range remaining {
+		if !dm.matchDirectWithBindings(element, quantPattern, bindings) {
+			return false
+		}
+		(*matchedElements)[i] = element
+	}
+
+	return true
+}
+
+func (dm *DirectMatcher) matchTrailingOneOrMore(elements []Expr, prefixPatterns []Pattern, quantPattern Pattern, matchedElements *[]Expr, bindings map[string]Expr) bool {
+	// Need at least one element for the quantifier
+	if len(elements) <= len(prefixPatterns) {
+		return false
+	}
+
+	return dm.matchTrailingZeroOrMore(elements, prefixPatterns, quantPattern, matchedElements, bindings)
+}
+
+func (dm *DirectMatcher) matchTrailingZeroOrOne(elements []Expr, prefixPatterns []Pattern, quantPattern Pattern, matchedElements *[]Expr, bindings map[string]Expr) bool {
+	// Can have 0 or 1 additional element
+	if len(elements) < len(prefixPatterns) || len(elements) > len(prefixPatterns)+1 {
+		return false
+	}
+
+	// Match prefix
+	for i, pattern := range prefixPatterns {
+		if !dm.matchDirectWithBindings(elements[i], pattern, bindings) {
+			return false
+		}
+	}
+
+	// If there's one more element, it must match the optional pattern
+	if len(elements) == len(prefixPatterns)+1 {
+		lastElement := elements[len(elements)-1]
+		if !dm.matchDirectWithBindings(lastElement, quantPattern, bindings) {
+			return false
+		}
+		*matchedElements = []Expr{lastElement}
+	} else {
+		*matchedElements = []Expr{} // Matched nothing
 	}
 
 	return true
@@ -1146,7 +1489,11 @@ func (pa *PatternAnalyzer) analyzePattern(pattern Pattern, insideQuantifier bool
 		return pa.analyzeSequence(p.Patterns)
 
 	case *OrPattern:
-		// OR always needs NFA for branching
+		// Simple OR patterns (only literals, heads, any) can use Direct matching
+		// Complex OR patterns need NFA for branching
+		if pa.isSimpleOrPattern(p) {
+			return StrategyDirect
+		}
 		return StrategyNFA
 
 	case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
@@ -1185,66 +1532,46 @@ func (pa *PatternAnalyzer) analyzePattern(pattern Pattern, insideQuantifier bool
 }
 
 func (pa *PatternAnalyzer) analyzeSequence(patterns []Pattern) ExecutionStrategy {
-	hasQuantifier := false
-	quantifierAtEnd := false
+	// New aggressive analysis: Direct matcher can handle most quantifier patterns
+	// Only consecutive quantifiers that compete for the same elements need NFA
+
+	var quantifierPositions []int
 
 	for i, p := range patterns {
-		// Helper function to check if a pattern contains a quantifier
-		// (either directly or wrapped in Named)
+		// Extract actual pattern (unwrap Named)
 		actualPattern := p
 		if named, ok := p.(*NamedPattern); ok {
 			actualPattern = named.Inner
 		}
 
 		switch actualPattern.(type) {
-		case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
-			hasQuantifier = true
-			quantifierAtEnd = (i == len(patterns)-1)
-		case *OrPattern, *NotPattern:
-			// Complex patterns always need NFA
+		case *OrPattern:
+			// Simple Or patterns can use Direct matching, complex ones need NFA
+			if orPattern, ok := actualPattern.(*OrPattern); ok {
+				if !pa.isSimpleOrPattern(orPattern) {
+					return StrategyNFA
+				}
+			}
+		case *NotPattern:
+			// Not patterns always need NFA
 			return StrategyNFA
-		}
+		case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
+			quantifierPositions = append(quantifierPositions, i)
 
-		// For quantifier patterns, check if they can be handled directly
-		switch q := actualPattern.(type) {
-		case *ZeroOrMorePattern:
-			if i == len(patterns)-1 {
-				// For trailing quantifiers, check if inner pattern is simple
-				switch q.Inner.(type) {
-				case *LiteralPattern, *HeadPattern, *AnyPattern:
-					// Simple inner patterns are fine for trailing quantifiers
-				default:
+			// Check if quantifier inner pattern is complex
+			switch q := actualPattern.(type) {
+			case *ZeroOrMorePattern:
+				if !pa.isSimpleInnerPattern(q.Inner) {
 					return StrategyNFA
 				}
-			} else {
-				// Quantifier in middle always needs NFA
-				return StrategyNFA
-			}
-		case *OneOrMorePattern:
-			if i == len(patterns)-1 {
-				// For trailing quantifiers, check if inner pattern is simple
-				switch q.Inner.(type) {
-				case *LiteralPattern, *HeadPattern, *AnyPattern:
-					// Simple inner patterns are fine for trailing quantifiers
-				default:
+			case *OneOrMorePattern:
+				if !pa.isSimpleInnerPattern(q.Inner) {
 					return StrategyNFA
 				}
-			} else {
-				// Quantifier in middle always needs NFA
-				return StrategyNFA
-			}
-		case *ZeroOrOnePattern:
-			if i == len(patterns)-1 {
-				// For trailing quantifiers, check if inner pattern is simple
-				switch q.Inner.(type) {
-				case *LiteralPattern, *HeadPattern, *AnyPattern:
-					// Simple inner patterns are fine for trailing quantifiers
-				default:
+			case *ZeroOrOnePattern:
+				if !pa.isSimpleInnerPattern(q.Inner) {
 					return StrategyNFA
 				}
-			} else {
-				// Quantifier in middle always needs NFA
-				return StrategyNFA
 			}
 		default:
 			// Check if non-quantifier patterns are complex
@@ -1254,8 +1581,16 @@ func (pa *PatternAnalyzer) analyzeSequence(patterns []Pattern) ExecutionStrategy
 		}
 	}
 
-	// Only complex Named patterns require NFA for state-tagged group boundaries
-	// Simple Named patterns in sequences can use Direct strategy
+	// Check for consecutive quantifiers that could compete
+	if pa.hasConsecutiveQuantifiers(quantifierPositions) {
+		return StrategyNFA
+	}
+
+	// Since we've already checked for consecutive quantifiers above,
+	// any remaining quantifier patterns are non-consecutive and unambiguous.
+	// The Direct matcher can handle these with proper greedy semantics.
+
+	// Check for complex Named patterns that need NFA
 	for _, p := range patterns {
 		if named, ok := p.(*NamedPattern); ok {
 			if pa.isComplexNamed(named) {
@@ -1264,18 +1599,56 @@ func (pa *PatternAnalyzer) analyzeSequence(patterns []Pattern) ExecutionStrategy
 		}
 	}
 
-	// If quantifier is only at the end, we can use direct matching
-	if hasQuantifier && quantifierAtEnd {
-		return StrategyDirect
-	}
-
-	// If quantifier anywhere else, need NFA
-	if hasQuantifier && !quantifierAtEnd {
-		return StrategyNFA
-	}
-
-	// Pure sequence of simple patterns - direct match
+	// Only trailing quantifiers or no quantifiers - Direct matcher can handle these
 	return StrategyDirect
+}
+
+// isSimpleInnerPattern checks if a pattern is simple enough for Direct matching
+func (pa *PatternAnalyzer) isSimpleInnerPattern(pattern Pattern) bool {
+	switch pattern.(type) {
+	case *LiteralPattern, *HeadPattern, *AnyPattern:
+		return true
+	default:
+		return false
+	}
+}
+
+// isSimpleOrPattern checks if an Or pattern contains only simple alternatives
+func (pa *PatternAnalyzer) isSimpleOrPattern(orPattern *OrPattern) bool {
+	for _, alternative := range orPattern.Alternatives {
+		// Unwrap Named patterns first
+		actualPattern := alternative
+		if named, ok := alternative.(*NamedPattern); ok {
+			actualPattern = named.Inner
+		}
+
+		// Check if the alternative is a simple pattern
+		switch actualPattern.(type) {
+		case *LiteralPattern, *HeadPattern, *AnyPattern:
+			continue // Simple pattern, OK
+		case *PredicatePattern:
+			// Predicates with simple inner patterns are OK
+			if predPattern, ok := actualPattern.(*PredicatePattern); ok {
+				if pa.isSimpleInnerPattern(predPattern.Inner) {
+					continue
+				}
+			}
+			return false // Complex predicate
+		default:
+			return false // Complex pattern (sequences, quantifiers, nested Or, etc.)
+		}
+	}
+	return true
+}
+
+// hasConsecutiveQuantifiers checks if there are consecutive quantifiers that could compete
+func (pa *PatternAnalyzer) hasConsecutiveQuantifiers(positions []int) bool {
+	for i := 0; i < len(positions)-1; i++ {
+		if positions[i+1] == positions[i]+1 {
+			return true // Consecutive quantifiers found
+		}
+	}
+	return false
 }
 
 // isComplexNamed determines if a Named pattern requires NFA due to complexity
@@ -1285,10 +1658,15 @@ func (pa *PatternAnalyzer) isComplexNamed(named *NamedPattern) bool {
 		return true
 	}
 
-	// Named quantifiers need NFA for proper collection semantics
-	switch named.Inner.(type) {
-	case *ZeroOrMorePattern, *OneOrMorePattern, *ZeroOrOnePattern:
-		return true
+	// Simple Named quantifiers can now use Direct matching
+	// Only complex quantifiers need NFA
+	switch inner := named.Inner.(type) {
+	case *ZeroOrMorePattern:
+		return !pa.isSimpleInnerPattern(inner.Inner)
+	case *OneOrMorePattern:
+		return !pa.isSimpleInnerPattern(inner.Inner)
+	case *ZeroOrOnePattern:
+		return !pa.isSimpleInnerPattern(inner.Inner)
 	}
 
 	// Simple Named patterns can use Direct

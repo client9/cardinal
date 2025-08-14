@@ -4,9 +4,9 @@ import (
 	"testing"
 )
 
-func compareBindings(t *testing.T,  want, got map[string]Expr) {
- 	t.Helper()
-	for k,v := range want {
+func compareBindings(t *testing.T, want, got map[string]Expr) {
+	t.Helper()
+	for k, v := range want {
 		if v == nil && got[k] == nil {
 			continue
 		}
@@ -169,6 +169,22 @@ func TestMatchTwoSequencesNoBinding(t *testing.T) {
 	if !result.Matched {
 		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
 	}
+}
+
+func TestMatchBindingSimpleOr(t *testing.T) {
+	e := MustParse("1")
+	pattern1 := Named("x", MatchOr(MatchLiteral(NewInteger(2)), MatchLiteral(NewInteger(1))))
+	want := map[string]Expr{
+		"x": MustParse("1"),
+	}
+
+	compiled1, _ := CompilePattern(pattern1)
+	result := compiled1.Match(e)
+	if !result.Matched {
+		t.Errorf("Match of expression %s with %s Failed: %v", e, pattern1, result)
+	}
+	got := result.Bindings
+	compareBindings(t, want, got)
 }
 
 func BenchmarkMatchNoBindings(b *testing.B) {
@@ -407,6 +423,30 @@ func BenchmarkMatchBindingTrailingSequenceOneOrMore(b *testing.B) {
 	)
 
 	expr1 := MustParse("[1,2,3]")
+
+	compiled1, _ := CompilePattern(pattern1)
+	counter := 0
+	for b.Loop() {
+		compiled1.Match(expr1)
+		counter++
+	}
+}
+func BenchmarkMatchSimpleOr(b *testing.B) {
+	pattern1 := MatchOr(MatchLiteral(NewInteger(2)), MatchLiteral(NewInteger(1)))
+
+	expr1 := MustParse("1")
+
+	compiled1, _ := CompilePattern(pattern1)
+	counter := 0
+	for b.Loop() {
+		compiled1.Match(expr1)
+		counter++
+	}
+}
+func BenchmarkMatchBindingSimpleOr(b *testing.B) {
+	pattern1 := Named("x", MatchOr(MatchLiteral(NewInteger(2)), MatchLiteral(NewInteger(1))))
+
+	expr1 := MustParse("1")
 
 	compiled1, _ := CompilePattern(pattern1)
 	counter := 0

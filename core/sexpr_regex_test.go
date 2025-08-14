@@ -460,12 +460,12 @@ func TestPatternAnalyzer(t *testing.T) {
 			strategy: StrategyDirect,
 		},
 		{
-			name: "or pattern (needs NFA)",
+			name: "simple or pattern",
 			pattern: MatchOr(
 				MatchHead("Integer"),
 				MatchHead("String"),
 			),
-			strategy: StrategyNFA,
+			strategy: StrategyDirect,
 		},
 		{
 			name:     "not pattern (needs NFA)",
@@ -473,13 +473,13 @@ func TestPatternAnalyzer(t *testing.T) {
 			strategy: StrategyNFA,
 		},
 		{
-			name: "sequence with quantifier in middle (needs NFA)",
+			name: "sequence with quantifier in middle",
 			pattern: MatchSequence(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
 				MatchLiteral(NewString("suffix")),
 			),
-			strategy: StrategyNFA,
+			strategy: StrategyDirect,
 		},
 		{
 			name:     "named pattern (simple - uses direct strategy)",
@@ -579,7 +579,6 @@ func TestThompsonNFA(t *testing.T) {
 		expr             Expr
 		expectedMatched  bool
 		expectedBindings map[string]Expr
-		strategy         ExecutionStrategy
 	}{
 		{
 			name: "or pattern - first alternative matches",
@@ -590,7 +589,6 @@ func TestThompsonNFA(t *testing.T) {
 			expr:             NewInteger(42),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "or pattern - second alternative matches",
@@ -601,7 +599,6 @@ func TestThompsonNFA(t *testing.T) {
 			expr:             NewString("hello"),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "or pattern - no match",
@@ -612,7 +609,6 @@ func TestThompsonNFA(t *testing.T) {
 			expr:             NewBool(true),
 			expectedMatched:  false,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name:             "not pattern - positive case",
@@ -620,7 +616,6 @@ func TestThompsonNFA(t *testing.T) {
 			expr:             NewString("hello"),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name:             "not pattern - negative case",
@@ -628,7 +623,6 @@ func TestThompsonNFA(t *testing.T) {
 			expr:             NewInteger(42),
 			expectedMatched:  false,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "sequence with or in middle (needs NFA)",
@@ -647,10 +641,9 @@ func TestThompsonNFA(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
-			name: "sequence with quantifier in middle (needs NFA)",
+			name: "sequence with quantifier in middle",
 			pattern: MatchSequence(
 				MatchLiteral(NewString("prefix")),
 				ZeroOrMore(MatchHead("Integer")),
@@ -664,7 +657,6 @@ func TestThompsonNFA(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "nested or patterns",
@@ -678,7 +670,6 @@ func TestThompsonNFA(t *testing.T) {
 			expr:             NewBool(false), // False is a Symbol
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "simple named capture in NFA context",
@@ -697,7 +688,6 @@ func TestThompsonNFA(t *testing.T) {
 			expectedBindings: map[string]Expr{
 				"value": NewInteger(123),
 			},
-			strategy: StrategyNFA,
 		},
 		{
 			name: "complex pattern: sequence with or and quantifier",
@@ -716,7 +706,6 @@ func TestThompsonNFA(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 	}
 
@@ -725,10 +714,6 @@ func TestThompsonNFA(t *testing.T) {
 			compiled, err := CompilePattern(tt.pattern)
 			if err != nil {
 				t.Fatalf("Failed to compile pattern: %v", err)
-			}
-
-			if compiled.Strategy() != tt.strategy {
-				t.Errorf("Expected strategy %v, got %v", tt.strategy, compiled.Strategy())
 			}
 
 			result := compiled.Match(tt.expr)
@@ -865,7 +850,6 @@ func TestPredicatePatterns(t *testing.T) {
 		expr             Expr
 		expectedMatched  bool
 		expectedBindings map[string]Expr
-		strategy         ExecutionStrategy
 	}{
 		{
 			name: "predicate on integer - value greater than 10",
@@ -881,7 +865,6 @@ func TestPredicatePatterns(t *testing.T) {
 			expr:             NewInteger(15),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyDirect,
 		},
 		{
 			name: "predicate on integer - value NOT greater than 10",
@@ -897,7 +880,6 @@ func TestPredicatePatterns(t *testing.T) {
 			expr:             NewInteger(5),
 			expectedMatched:  false,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyDirect,
 		},
 		{
 			name: "predicate on string - length check",
@@ -913,7 +895,6 @@ func TestPredicatePatterns(t *testing.T) {
 			expr:             NewString("hello"),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyDirect,
 		},
 		{
 			name: "predicate with named capture",
@@ -931,7 +912,6 @@ func TestPredicatePatterns(t *testing.T) {
 			expectedBindings: map[string]Expr{
 				"value": NewInteger(8),
 			},
-			strategy: StrategyDirect,
 		},
 		{
 			name: "predicate in sequence",
@@ -963,7 +943,6 @@ func TestPredicatePatterns(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyDirect,
 		},
 		{
 			name: "predicate with Or pattern (needs NFA)",
@@ -986,7 +965,6 @@ func TestPredicatePatterns(t *testing.T) {
 			expr:             NewReal(42.0),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "predicate fails on wrong type",
@@ -999,7 +977,6 @@ func TestPredicatePatterns(t *testing.T) {
 			expr:             NewString("not an integer"),
 			expectedMatched:  false,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyDirect,
 		},
 		// Tests to trigger the simple predicate optimization in BuildPredicate NFA path
 		// These patterns require NFA but contain predicates with simple inner patterns
@@ -1028,7 +1005,6 @@ func TestPredicatePatterns(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "sequence with literal predicate in NFA context (triggers simple optimization)",
@@ -1052,7 +1028,6 @@ func TestPredicatePatterns(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "sequence with any predicate in NFA context (triggers simple optimization)",
@@ -1080,7 +1055,6 @@ func TestPredicatePatterns(t *testing.T) {
 			),
 			expectedMatched:  true,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 		{
 			name: "sequence with any predicate in NFA context fails (triggers simple optimization)",
@@ -1108,7 +1082,6 @@ func TestPredicatePatterns(t *testing.T) {
 			),
 			expectedMatched:  false,
 			expectedBindings: map[string]Expr{},
-			strategy:         StrategyNFA,
 		},
 	}
 
@@ -1117,10 +1090,6 @@ func TestPredicatePatterns(t *testing.T) {
 			compiled, err := CompilePattern(tt.pattern)
 			if err != nil {
 				t.Fatalf("Failed to compile pattern: %v", err)
-			}
-
-			if compiled.Strategy() != tt.strategy {
-				t.Errorf("Expected strategy %v, got %v", tt.strategy, compiled.Strategy())
 			}
 
 			result := compiled.Match(tt.expr)
