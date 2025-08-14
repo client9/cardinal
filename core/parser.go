@@ -642,7 +642,7 @@ func (p *Parser) parseFunctionApplication(expr Expr) Expr {
 
 	// Handle empty argument list: f()
 	if p.currentToken.Type == RPAREN {
-		p.nextToken()                      // consume ')'
+		p.nextToken()                 // consume ')'
 		return NewListFromExprs(expr) // Just the function with no arguments
 	}
 
@@ -821,6 +821,3 @@ func MustParse(input string) Expr {
 	}
 	panic("Unable to parse: " + input)
 }
-
-	
-
