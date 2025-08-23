@@ -92,52 +92,77 @@ func (r *ThompsonVM) matchOne(prog Prog, expr Expr, sub *Captures) (bool, *Captu
 	r.reset(prog.Length())
 	r.gen += 1
 	pc := prog.First()
-	r.AddThread(&r.currentList, prog, pc, nil, 0, sub)
-	r.gen += 1
 
-	for _, c := range r.currentList {
-		i := c.pc
-		add := false
-		switch i.Op {
-		case InstMatchEnd:
-			// should be impossible.  Let thread die
-		case InstMatchAny:
-			add = true
-		case InstMatchHead:
-			add = expr.Head() == i.Name
-		case InstMatchLiteral:
-			add = expr.Equal(i.Val)
-		case InstMatchList:
-			if list, ok := expr.(List); ok && list.Head() == i.Name {
-				// TODO
-				// the new pc.prog has ID that conflict with outer ones
-				// technically they could be renumbered and just call recursively
-				// would need to adjust max-number of threads however.
-				proglist := i.Data.(Prog)
-				r2 := NewRegexp()
-				r2.reset(proglist.Length())
+	r.currentList = append(r.currentList, NewThread(&prog.Inst[pc], sub))
+	//r.AddThread(&r.currentList, prog, pc, nil, 0, sub)
 
-				if ok, binding := r2.matchSequence(proglist, list.Tail(), c.captures.Inc()); ok {
-					c.captures.Dec()
-					// ?? binding.Inc()
-					add = true
-					c.captures = binding
+	captureWholeInput := false
+	for {
+		if len(r.currentList) == 0 {
+			return false, nil
+		}
+		r.gen += 1
+		for _, c := range r.currentList {
+			i := c.pc
+			add := false
+			switch i.Op {
+			case InstMatchEnd:
+				if captureWholeInput {
+					c.captures.captures[0].exprs = []Expr{expr}
+					c.captures.captures[0].start = 0
+					c.captures.captures[0].end = 1
 				}
-			}
-		} // end switch
-		if add {
-			r.AddThread(&r.nextList, prog, i.Next, nil, 0, c.captures)
-		}
-		r.currentList, r.nextList = r.nextList, r.currentList
-		r.nextList = r.nextList[:0]
-	}
-	for _, c := range r.currentList {
-		switch c.pc.Op {
-		case InstMatchEnd:
-			return true, c.captures
-		}
-	}
+				return true, c.captures
+			case InstMatchAny:
+				add = true
+			case InstMatchHead:
+				add = expr.Head() == i.Name
+			case InstMatchLiteral:
+				add = expr.Equal(i.Val)
+			case InstCaptureStart:
+				add = true
+				captureWholeInput = true
+			case InstMatchList:
+				if list, ok := expr.(List); ok && list.Head() == i.Name {
+					// TODO
+					// the new pc.prog has ID that conflict with outer ones
+					// technically they could be renumbered and just call recursively
+					// would need to adjust max-number of threads however.
+					proglist := i.Data.(Prog)
+					r2 := NewRegexp()
+					r2.reset(proglist.Length())
 
+					if ok, binding := r2.matchSequence(proglist, list.Tail(), c.captures.Inc()); ok {
+						c.captures.Dec()
+						// ?? binding.Inc()
+						add = true
+						c.captures = binding
+					}
+				}
+			} // end switch
+			if add {
+				r.AddThread(&r.nextList, prog, i.Next, nil, 0, c.captures)
+			}
+			r.currentList, r.nextList = r.nextList, r.currentList
+			r.nextList = r.nextList[:0]
+		}
+	}
+	/*
+		for _, c := range r.currentList {
+			switch c.pc.Op {
+			case InstMatchEnd:
+				if captureWholeInput {
+					fmt.Printf("GOT WHOLE INPUT\n")
+					c.captures.refs = 1
+					c.captures.AddStart(0, []Expr{expr}, 0)
+					c.captures.AddStart(0, []Expr{expr}, 1)
+				}
+				return true, c.captures
+			default:
+				fmt.Printf("GOT EXTRA OF %v\n", c.pc)
+			}
+		}
+	*/
 	return false, nil
 
 }
@@ -323,7 +348,7 @@ func (r *ThompsonVM) MatchM3(prog Prog, e Expr) (bool, *Captures) {
 	sub := NewCaptures(len(prog.Groups()))
 	return r.matchM3(prog, e, sub)
 }
-func (r *ThompsonVM) matchM3(prog Prog, e Expr, sub *Captures) (bool, *Captures) {
+func (r *ThompsonVM) matchM3(prog Prog, expr Expr, sub *Captures) (bool, *Captures) {
 	n := len(prog.Groups())
 	if sub.Length() < n {
 		sub = NewCaptures(n)
@@ -332,7 +357,9 @@ func (r *ThompsonVM) matchM3(prog Prog, e Expr, sub *Captures) (bool, *Captures)
 	}
 
 	pc := prog.First()
+	capture0 := false
 
+	e := expr
 	consume := false
 	for {
 		i := &prog.Inst[pc]
@@ -346,6 +373,10 @@ func (r *ThompsonVM) matchM3(prog Prog, e Expr, sub *Captures) (bool, *Captures)
 				}
 			}
 		case InstMatchEnd:
+			if e == nil && capture0 {
+				sub.AddStart(0, []Expr{expr}, 0)
+				sub.AddStart(0, []Expr{expr}, 1)
+			}
 			return e == nil, sub
 		case InstFail:
 			return false, nil
@@ -357,7 +388,8 @@ func (r *ThompsonVM) matchM3(prog Prog, e Expr, sub *Captures) (bool, *Captures)
 			consume = e != nil && e.Equal(i.Val)
 		case InstCaptureStart:
 			consume = false
-			sub = sub.AddStart(i.Alt, []Expr{e}, 0)
+			capture0 = true
+			//sub = sub.AddStart(i.Alt, []Expr{e}, 0)
 			pc = i.Next
 			continue // continue for loop
 		} // end switch
@@ -456,7 +488,7 @@ func (r *ThompsonVM) MatchSequenceM4(prog Prog, args []Expr) (bool, *Captures) {
 	return r.matchSequenceM4(prog, args, sub)
 }
 
-func (r *ThompsonVM) matchM4(prog Prog, e Expr, sub *Captures) (bool, *Captures) {
+func (r *ThompsonVM) matchM4(prog Prog, expr Expr, sub *Captures) (bool, *Captures) {
 
 	n := len(prog.Groups())
 	if sub.Length() < n {
@@ -465,8 +497,10 @@ func (r *ThompsonVM) matchM4(prog Prog, e Expr, sub *Captures) (bool, *Captures)
 		sub.Clear()
 	}
 
-	pc := prog.First()
+	captureWholeInput := false
 
+	pc := prog.First()
+	e := expr
 	consume := false
 	for {
 		i := &prog.Inst[pc]
@@ -480,6 +514,10 @@ func (r *ThompsonVM) matchM4(prog Prog, e Expr, sub *Captures) (bool, *Captures)
 				}
 			}
 		case InstMatchEnd:
+			if e == nil && captureWholeInput {
+				sub.AddStart(0, []Expr{expr}, 0)
+				sub.AddStart(0, []Expr{expr}, 1)
+			}
 			return e == nil, sub
 		case InstFail:
 			return false, nil
@@ -491,7 +529,8 @@ func (r *ThompsonVM) matchM4(prog Prog, e Expr, sub *Captures) (bool, *Captures)
 			consume = e != nil && e.Equal(i.Val)
 		case InstCaptureStart:
 			consume = false
-			sub = sub.AddStart(i.Alt, []Expr{e}, 0)
+			captureWholeInput = true
+			//sub = sub.AddStart(i.Alt, []Expr{e}, 0)
 			pc = i.Next
 			continue // continue for loop
 		} // end switch

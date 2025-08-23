@@ -310,6 +310,20 @@ var cases = []tc{
 		match:   true,
 	},
 	{
+		name:    "MatchSingle,binding,alt",
+		expr:    "a",
+		pattern: "Pattern(x, MatchAny())",
+		binding: "[ x:a ]",
+		match:   true,
+	},
+	{
+		name:    "MatchExponential,binding,alt",
+		expr:    "[a,a,a]",
+		pattern: "Pattern(x, [MatchQuest(a),MatchQuest(a),MatchQuest(a),a,a,a])",
+		binding: "[ x:[a,a,a] ]",
+		match:   true,
+	},
+	{
 		name:    "MatchAny,sublist,integer",
 		expr:    "[ [ 1, 2 ] ]",
 		pattern: "[ [ MatchHead(Integer), MatchHead(Integer) ] ]",
@@ -513,7 +527,7 @@ func TestSREM4(t *testing.T) {
 			blist := MustParse(tt.binding)
 			rlist := bind.AsRules(prog.Groups())
 			if !blist.Equal(rlist) {
-				t.Errorf("Bindings: expected %s, got %s", blist, rlist)
+				t.Errorf("Bindings: expected %s, got %v", blist, rlist)
 			}
 		}
 	}
