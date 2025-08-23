@@ -141,3 +141,12 @@ func CanonicalCompare(expr1, expr2 Expr) bool {
 	// If lengths are equal, compare by string representation for deterministic ordering
 	return expr1.String() < expr2.String()
 }
+
+// ListFirstArg returns the first element in a list expression or
+// nil if not a list or if list has zero length
+func ListFirstArg(e Expr) Expr {
+	if list, ok := e.(List); ok && list.Length() > 0 {
+		return list.Tail()[0]
+	}
+	return nil
+}
