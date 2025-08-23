@@ -85,7 +85,7 @@ func (c *Compile) GetSlot(name string) int32 {
 
 func (c *Compile) Groups(e Expr, names []string) []string {
 	switch e.Head() {
-	case "Named":
+	case "Pattern":
 		list, _ := e.(List)
 		args := list.Tail()
 		// args[0] is the binding name
@@ -93,7 +93,7 @@ func (c *Compile) Groups(e Expr, names []string) []string {
 		names = append(names, args[0].String())
 		names = c.Groups(args[1], names)
 		return names
-	case "MatchSequence", "List":
+	case "PatternSequence", "List":
 		list, _ := e.(List)
 		return c.GroupsList(list.Tail(), names)
 	default:
@@ -111,7 +111,7 @@ func (c *Compile) GroupsList(exprs []Expr, names []string) []string {
 // for a single atomic Expr
 func (c *Compile) Simple(e Expr) bool {
 	switch e.Head() {
-	case "Named":
+	case "Pattern":
 		list, _ := e.(List)
 		args := list.Tail()
 		// args[0] is the binding name
@@ -123,7 +123,7 @@ func (c *Compile) Simple(e Expr) bool {
 		return c.Simple(args[0])
 	case "MatchHead", "MatchAny":
 		return true
-	case "MatchSequence", "List":
+	case "PatternSequence", "List":
 		list, _ := e.(List)
 		return c.SimpleList(list.Tail())
 	default:
@@ -190,8 +190,14 @@ func (c *Compile) SimpleList(e []Expr) bool {
 func (c *Compile) IsZeroPattern(e Expr) bool {
 
 	switch e.Head() {
+
 	case "MatchStar", "MatchQuest":
 		return true
+
+	// MMA compatible
+	case "BlankNullSequence", "Optional":
+		return true
+
 	}
 	return false
 }
@@ -200,7 +206,12 @@ func (c *Compile) IsSequencePattern(e Expr) bool {
 	switch e.Head() {
 	case "MatchStar", "MatchPlus", "MatchQuest":
 		return true
-	case "Named", "MatchSequence", "List":
+
+	// MMA compatible
+	case "BlankNullSequence", "BlankSequence", "Optional":
+		return true
+
+	case "Pattern", "PatternSequence", "List":
 		list, _ := e.(List)
 		for _, a := range list.Tail() {
 			if c.IsSequencePattern(a) {
@@ -268,9 +279,20 @@ func (c *Compile) CompileListOneStep(exprs []Expr) Prog {
 func (c *Compile) IsLiteral(e Expr) bool {
 	head := e.Head()
 	switch head {
-	case "MatchOr", "Named",
-		"MatchStar", "MatchPlus", "MatchQuest",
-		"MatchSequence", "MatchAny", "MatchHead", "MatchLiteral":
+	case "Pattern", "PatternSequence":
+		return false
+
+	// mma primitives
+	case "Blank", "BlankSequence", "BlankNullSequence", "Optional":
+		return false
+
+	// low level primitives
+	case "MatchStar", "MatchPlus", "MatchQuest",
+		"MatchAny", "MatchHead", "MatchLiteral":
+		return false
+
+	// TBD
+	case "MatchOr":
 		return false
 	}
 
@@ -286,11 +308,50 @@ func (c *Compile) IsLiteral(e Expr) bool {
 	}
 	return true
 }
+
 func (c *Compile) EmitOneStep(e Expr) {
 
 	switch e.Head() {
-	case "Named":
-		// Named("x", expression)
+
+	case "Blank":
+		// Blank[]       --> MatchAny()
+		// Blank[symbol] --> MatchHead(symbol)
+
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.EmitOneStep(arg)
+	case "BlankSequence":
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.EmitOneStep(NewList("MatchPlus", arg))
+	case "BlankNullSequence":
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.EmitOneStep(NewList("MatchStar", arg))
+	case "Optional":
+		// TODO default value
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.EmitOneStep(NewList("MatchQuest", arg))
+
+	case "Pattern":
+		// Pattern("x", expression)
 		list, _ := e.(List)
 		args := list.Tail()
 		name := args[0]
@@ -307,12 +368,13 @@ func (c *Compile) EmitOneStep(e Expr) {
 			Alt: slot,
 		})
 		c.AddLink(cend, c.pc)
-	case "MatchSequence":
+	case "PatternSequence":
 		list, _ := e.(List)
 		args := list.Tail()
 		for _, arg := range args {
 			c.EmitOneStep(arg)
 		}
+
 	case "MatchHead":
 		list, _ := e.(List)
 		val := list.Tail()[0]
@@ -329,8 +391,7 @@ func (c *Compile) EmitOneStep(e Expr) {
 		c.AddLink(op, c.pc)
 		c.AddAlt(op, -1)
 	case "MatchPlus":
-		list, _ := e.(List)
-		arg := list.Tail()[0]
+		arg := ListFirstArg(e)
 		// only has a single argument
 		c.EmitOneStep(arg)
 
@@ -393,8 +454,47 @@ func (c *Compile) EmitOneStep(e Expr) {
 }
 func (c *Compile) Emit(e Expr) {
 	switch e.Head() {
-	case "Named":
-		// Named("x", expression)
+
+	// MMA
+	case "Blank":
+		// Blank[]       --> MatchAny()
+		// Blank[symbol] --> MatchHead(symbol)
+
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.Emit(arg)
+	case "BlankSequence":
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.Emit(NewList("MatchPlus", arg))
+	case "BlankNullSequence":
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.Emit(NewList("MatchStar", arg))
+	case "Optional":
+		// TODO default value
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = NewList("MatchAny")
+		} else {
+			arg = NewList("MatchHead", arg)
+		}
+		c.Emit(NewList("MatchQuest", arg))
+
+	case "Pattern":
+		// Pattern("x", expression)
 		list, _ := e.(List)
 		args := list.Tail()
 		name := args[0]
@@ -412,7 +512,7 @@ func (c *Compile) Emit(e Expr) {
 			Alt: slot,
 		})
 		c.AddLink(cend, c.pc)
-	case "MatchSequence":
+	case "PatternSequence":
 		list, _ := e.(List)
 		args := list.Tail()
 		for _, arg := range args {

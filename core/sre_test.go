@@ -81,35 +81,35 @@ var cases = []tc{
 	{
 		name:    "MatchAny,sequence3,many,binding",
 		expr:    "[a, b, c]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()), Named(z, MatchAny()) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()), Pattern(z, MatchAny()) ]",
 		binding: "[ x:a, y:b, z:c ]",
 		match:   true,
 	},
 	{
 		name:    "MatchAny,sequence3,matchany2",
 		expr:    "[a, b]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()), Named(z, MatchAny()) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()), Pattern(z, MatchAny()) ]",
 		binding: "",
 		match:   false,
 	},
 	{
 		name:    "MatchAny,sequence3,matchany2,matchstar",
 		expr:    "[a, b]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()), Named(z, MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()), Pattern(z, MatchStar(MatchAny())) ]",
 		binding: "[ x:a, y:b ]",
 		match:   true,
 	},
 	{
 		name:    "MatchAny,sequence3,matchany2,matchplus",
 		expr:    "[a, b]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()), Named(z, MatchPlus(MatchAny())) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()), Pattern(z, MatchPlus(MatchAny())) ]",
 		binding: "",
 		match:   false,
 	},
 	{
 		name:    "MatchAny,sequence3,matchany2,matchstar",
 		expr:    "[a]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchStar(MatchAny())), Named(z, MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchStar(MatchAny())), Pattern(z, MatchStar(MatchAny())) ]",
 		binding: "[ x:a ]",
 		match:   true,
 	},
@@ -123,7 +123,7 @@ var cases = []tc{
 	{
 		name:    "MatchAny,sublist,binding",
 		expr:    "[ [ 1, 2 ], 10 ]",
-		pattern: "[ [ Named(x,MatchAny()), Named(y,MatchAny()) ], Named(n,MatchAny()) ]",
+		pattern: "[ [ Pattern(x,MatchAny()), Pattern(y,MatchAny()) ], Pattern(n,MatchAny()) ]",
 		binding: "[x:1,y:2,n:10]",
 		match:   true,
 	},
@@ -137,7 +137,7 @@ var cases = []tc{
 	{
 		name:    "MatchAny,sequence,single,binding",
 		expr:    "[ a ]",
-		pattern: "[ Named(x, MatchAny()) ]",
+		pattern: "[ Pattern(x, MatchAny()) ]",
 		binding: "[ x:a ]",
 		match:   true,
 	},
@@ -165,14 +165,14 @@ var cases = []tc{
 	{
 		name:    "MatchAny,sequence2,many,binding",
 		expr:    "[a, b]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()) ]",
 		binding: "[ x:a, y:b ]",
 		match:   true,
 	},
 	{
 		name:    "MatchAny,sequence3,many,binding",
 		expr:    "[a, b, c]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()), Named(z, MatchAny()) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()), Pattern(z, MatchAny()) ]",
 		binding: "[ x:a, y:b, z:c ]",
 		match:   true,
 	},
@@ -193,7 +193,7 @@ var cases = []tc{
 	{
 		name:    "MatchStar,sequence,many,binding",
 		expr:    "[a, b, c]",
-		pattern: "[ Named(x,MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x,MatchStar(MatchAny())) ]",
 		binding: "[ x:[a, b, c] ]",
 		match:   true,
 	},
@@ -207,14 +207,14 @@ var cases = []tc{
 	{
 		name:    "MatchStar,sequence,single,binding",
 		expr:    "[ a ]",
-		pattern: "[ Named(x,MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x,MatchStar(MatchAny())) ]",
 		binding: "[ x:a ]",
 		match:   true,
 	},
 	{
 		name:    "MatchStar,MatchStar,binding",
 		expr:    "[ a,b,c ]",
-		pattern: "[ Named(x,MatchStar(MatchAny())), Named(y, MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x,MatchStar(MatchAny())), Pattern(y, MatchStar(MatchAny())) ]",
 		binding: "[ x:[a,b,c] ]",
 		match:   true,
 	},
@@ -228,7 +228,7 @@ var cases = []tc{
 	{
 		name:    "MatchPlus,MatchStar,binding",
 		expr:    "[ a,b,c ]",
-		pattern: "[ Named(x,MatchPlus(MatchAny())), Named(y, MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x,MatchPlus(MatchAny())), Pattern(y, MatchStar(MatchAny())) ]",
 		binding: "[ x:[a,b,c] ]",
 		match:   true,
 	},
@@ -242,56 +242,56 @@ var cases = []tc{
 	{
 		name:    "MatchStar,MatchPlus,binding",
 		expr:    "[ a,b,c ]",
-		pattern: "[ Named(x,MatchStar(MatchAny())), Named(y, MatchPlus(MatchAny())) ]",
+		pattern: "[ Pattern(x,MatchStar(MatchAny())), Pattern(y, MatchPlus(MatchAny())) ]",
 		binding: "[ x:[a,b], y: c ]",
 		match:   true,
 	},
 	{
 		name:    "MatchHead,",
 		expr:    `[ 1, "a" ]`,
-		pattern: "[ Named(x,MatchHead(Integer)), Named(y, MatchHead(String)) ]",
+		pattern: "[ Pattern(x,MatchHead(Integer)), Pattern(y, MatchHead(String)) ]",
 		binding: `[ x:1, y:"a"]`,
 		match:   true,
 	},
 	{
 		name:    "MatchHead,negative",
 		expr:    `[ 1, 1 ]`,
-		pattern: "[ Named(x,MatchHead(Integer)), Named(y, MatchHead(String)) ]",
+		pattern: "[ Pattern(x,MatchHead(Integer)), Pattern(y, MatchHead(String)) ]",
 		binding: "",
 		match:   false,
 	},
 	{
 		name:    "MatchLiteral,",
 		expr:    `[ 1, "a", b ]`,
-		pattern: `[ Named(x,1), Named(y, "a"), Named(z, b) ]`,
+		pattern: `[ Pattern(x,1), Pattern(y, "a"), Pattern(z, b) ]`,
 		binding: `[ x:1, y:"a", z:b]`,
 		match:   true,
 	},
 	{
 		name:    "MatchHead,negative",
 		expr:    `[ 1, 1 ]`,
-		pattern: "[ Named(x,2), Named(y, 1) ]",
+		pattern: "[ Pattern(x,2), Pattern(y, 1) ]",
 		binding: "",
 		match:   false,
 	},
 	{
-		name:    "MatchSequence,",
+		name:    "PatternSequence,",
 		expr:    `[ a, b ]`,
-		pattern: `[ MatchSequence(a, b) ]`,
+		pattern: `[ PatternSequence(a, b) ]`,
 		binding: "",
 		match:   true,
 	},
 	{
-		name:    "MatchSequence,binding",
+		name:    "PatternSequence,binding",
 		expr:    `[ a, b ]`,
-		pattern: `[ Named(x, MatchSequence(a, b)) ]`,
+		pattern: `[ Pattern(x, PatternSequence(a, b)) ]`,
 		binding: "[ x:[a,b] ]",
 		match:   true,
 	},
 	{
 		name:    "MatchAny,sequence3,matchany2,matchstar",
 		expr:    "[a]",
-		pattern: "[ Named(x, MatchAny()), Named(y, MatchStar(MatchAny())), Named(z, MatchStar(MatchAny())) ]",
+		pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchStar(MatchAny())), Pattern(z, MatchStar(MatchAny())) ]",
 		binding: "[ x:a ]",
 		match:   true,
 	},
@@ -305,7 +305,7 @@ var cases = []tc{
 	{
 		name:    "MatchExponential,binding",
 		expr:    "[a,a,a]",
-		pattern: "[ Named(x, MatchSequence(MatchQuest(a),MatchQuest(a),MatchQuest(a),a,a,a))]",
+		pattern: "[ Pattern(x, PatternSequence(MatchQuest(a),MatchQuest(a),MatchQuest(a),a,a,a))]",
 		binding: "[ x:[a,a,a] ]",
 		match:   true,
 	},
@@ -319,7 +319,7 @@ var cases = []tc{
 	{
 		name:    "MatchAny,sublist,integer,binding",
 		expr:    "[ [ 1, 2 ] ]",
-		pattern: "[ [ Named(x,MatchHead(Integer)), Named(y,MatchHead(Integer)) ] ]",
+		pattern: "[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ] ]",
 		binding: "[ x:1, y:2 ]",
 		match:   true,
 	},
@@ -333,7 +333,7 @@ var cases = []tc{
 	{
 		name:    "MatchHead,sublist,nested,binding",
 		expr:    "[ [ 1, 2 ], 10 ]",
-		pattern: "[ [ Named(x,MatchHead(Integer)), Named(y,MatchHead(Integer)) ], Named(n,MatchHead(Integer)) ]",
+		pattern: "[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]",
 		binding: "[x:1,y:2,n:10]",
 		match:   true,
 	},
@@ -533,7 +533,7 @@ func BenchmarkSRE(b *testing.B) {
 		{
 			name:    "Match1,binding",
 			expr:    "[a]",
-			pattern: "[ Named(x, MatchAny()) ]",
+			pattern: "[ Pattern(x, MatchAny()) ]",
 			binding: "[ x:a ]",
 			match:   true,
 		},
@@ -547,7 +547,7 @@ func BenchmarkSRE(b *testing.B) {
 		{
 			name:    "Match3,binding",
 			expr:    "[a, b, c]",
-			pattern: "[ Named(x, MatchAny()), Named(y, MatchAny()), Named(z, MatchAny()) ]",
+			pattern: "[ Pattern(x, MatchAny()), Pattern(y, MatchAny()), Pattern(z, MatchAny()) ]",
 			binding: "[ x:a, y:b, z:c ]",
 			match:   true,
 		},
@@ -561,7 +561,7 @@ func BenchmarkSRE(b *testing.B) {
 		{
 			name:    "MatchStar3,binding",
 			expr:    "[a, b, c]",
-			pattern: "[ Named(x,MatchStar(MatchAny())) ]",
+			pattern: "[ Pattern(x,MatchStar(MatchAny())) ]",
 			binding: "[ x:[a, b, c] ]",
 			match:   true,
 		},
@@ -575,7 +575,7 @@ func BenchmarkSRE(b *testing.B) {
 		{
 			name:    "MatchSublist2,binding",
 			expr:    "[ [ 1, 2 ] ]",
-			pattern: "[ [ Named(x,MatchHead(Integer)), Named(y,MatchHead(Integer)) ] ]",
+			pattern: "[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ] ]",
 			binding: "[ x:1, y:2 ]",
 			match:   true,
 		},
@@ -589,7 +589,7 @@ func BenchmarkSRE(b *testing.B) {
 		{
 			name:    "Match3Sublist2,binding",
 			expr:    "[ [ 1, 2 ], 10 ]",
-			pattern: "[ [ Named(x,MatchHead(Integer)), Named(y,MatchHead(Integer)) ], Named(n,MatchHead(Integer)) ]",
+			pattern: "[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]",
 			binding: "[ x:1, y:2, n:10 ]",
 			match:   true,
 		},
@@ -707,7 +707,7 @@ func BenchmarkSREProfile(b *testing.B) {
 	tt := tc{
 		name:    "Match3Sublist2,binding",
 		expr:    "[ [ 1, 2 ], 10 ]",
-		pattern: "[ [ Named(x,MatchHead(Integer)), Named(y,MatchHead(Integer)) ], Named(n,MatchHead(Integer)) ]",
+		pattern: "[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]",
 		binding: "[ x:1, y:2, n:10 ]",
 		match:   true,
 	}
@@ -752,7 +752,7 @@ func BenchmarkSRECrazy(b *testing.B) {
 				parts = append(parts, "1")
 			}
 			//p := MustParse("[" + strings.Join(parts, ",") +"]")
-			p := MustParse("[Named(x,MatchSequence(" + strings.Join(parts, ",") + "))]")
+			p := MustParse("[Pattern(x,PatternSequence(" + strings.Join(parts, ",") + "))]")
 			list := p.(List)
 
 			c := NewCompiler()

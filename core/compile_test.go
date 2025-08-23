@@ -19,7 +19,7 @@ func TestCompileCheck(t *testing.T) {
 
 func TestCompileGroups(t *testing.T) {
 	c := NewCompiler()
-	e := MustParse("[ [ Named(x,MatchHead(Integer)), Named(y,MatchHead(Integer)) ], Named(n,MatchHead(Integer)) ]")
+	e := MustParse("[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]")
 	elist := e.(List)
 	p := c.CompileList(elist.Tail())
 	g := p.Groups()
@@ -36,7 +36,7 @@ func TestCompileSimplePositive(t *testing.T) {
 		"[1,2,3]",
 		"MatchAny()",
 		"MatchHead(Integer)",
-		"MatchSequence(1,2,3)",
+		"PatternSequence(1,2,3)",
 		"MatchStar(1)",
 		"MatchPlus(1)",
 		"MatchQuest(1)",
@@ -48,7 +48,7 @@ func TestCompileSimplePositive(t *testing.T) {
 		"MatchQuest(MatchAny(Integer))",
 		"[ MatchAny() ]",
 		"[ MatchAny(), MatchAny() ]",
-		"[ Named(x,MatchAny()), Named(y,MatchAny()) ]",
+		"[ Pattern(x,MatchAny()), Pattern(y,MatchAny()) ]",
 		"[ MatchStar(MatchAny()) ]",
 		"[ 1, MatchStar(MatchAny()) ]",
 		"[ 1, MatchStar(MatchAny()), MatchStar(MatchAny()) ]",
