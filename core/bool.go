@@ -35,4 +35,3 @@ func ExtractBool(expr Expr) (bool, bool) {
 	}
 	return false, false
 }
-

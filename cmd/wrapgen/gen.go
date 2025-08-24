@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-
-
 //go:generate go run gen.go
 //go:generate go run gen.go -test
 
@@ -27,7 +25,6 @@ func getSymbols() []string {
 	}
 	return out
 }
-
 
 // identifier converts s to a Go exported identifier.
 // It converts "div" to "Div" and "accept-charset" to "AcceptCharset".

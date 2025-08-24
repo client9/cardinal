@@ -70,7 +70,6 @@ func IsNumeric(expr Expr) bool {
 	return ok
 }
 
-
 // IsSymbol checks if an expression is a symbol
 func IsSymbol(expr Expr) bool {
 	// Check new Symbol type first

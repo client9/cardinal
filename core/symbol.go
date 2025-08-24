@@ -18,26 +18,23 @@ func init() {
 	atomFalse := atom.Lookup([]byte("False"))
 	atomNull := atom.Lookup([]byte("Null"))
 
-	symbolTrue = Symbol{atom: atomTrue, name: atomTrue.String() }
-	symbolFalse = Symbol{atom: atomFalse, name: atomFalse.String() }
-	symbolNull = Symbol{atom: atomNull, name: atomNull.String() }
+	symbolTrue = Symbol{atom: atomTrue, name: atomTrue.String()}
+	symbolFalse = Symbol{atom: atomFalse, name: atomFalse.String()}
+	symbolNull = Symbol{atom: atomNull, name: atomNull.String()}
 }
 
-
 func NewSymbol(s string) Symbol {
- return Symbol{
-	atom: 0,
-	name: s}
- }
-
-
+	return Symbol{
+		atom: 0,
+		name: s}
+}
 
 // NewSymbolNull creates the Null symbol
 func NewSymbolNull() Symbol { return symbolNull }
 
 // Symbol type implementation
 func (s Symbol) String() string {
-	return s.name 
+	return s.name
 }
 
 func (s Symbol) InputForm() string {
