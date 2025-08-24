@@ -10,6 +10,9 @@ testre:
 
 benchre:
 	go test  -test.run=SRE -bench=SRE
+benchcompile:
+	go test  -test.run=Compile -bench=Compile
+
 benchmemre:
 	go test  -test.run=SRE -bench=SRE -benchmem
 

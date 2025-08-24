@@ -390,7 +390,8 @@ func TestSREM1(t *testing.T) {
 			c := NewCompiler()
 			re := NewRegexp()
 			prog := c.Compile(p)
-			matched, bind := re.Match(prog, e)
+			sub := NewCaptures(len(prog.Groups()))
+			matched, bind := re.matchNfa(prog, e, sub)
 
 			if matched != tt.match {
 				t.Errorf("Expression %q with pattern %q was %v, expected %v",
@@ -466,8 +467,8 @@ func TestSREM3(t *testing.T) {
 		}
 
 		prog := c.CompileOneStep(p)
-		if !prog.IsSimple() {
-			t.Errorf("%s: M3 program is not simple!", tt.name)
+		if !prog.IsOneStep() {
+			t.Errorf("%s: M3 program is not one step!", tt.name)
 		}
 		matched, bind := re.MatchM3(prog, e)
 		if matched != tt.match {
@@ -505,8 +506,8 @@ func TestSREM4(t *testing.T) {
 
 		prog := c.CompileOneStep(p)
 
-		if !prog.IsSimple() {
-			t.Errorf("%s: M4 program is not simple!", tt.name)
+		if !prog.IsOneStep() {
+			t.Errorf("%s: M4 program is not one step !", tt.name)
 		}
 
 		matched, bind := re.MatchM4(prog, e)
@@ -626,7 +627,7 @@ func BenchmarkSRE(b *testing.B) {
 				re := NewRegexp()
 				prog := c.CompileList(list.Tail())
 				for b.Loop() {
-					re.matchSequence(prog, e.(List).Tail(), g)
+					re.matchNfaSequence(prog, e.(List).Tail(), g)
 				}
 			})
 		}

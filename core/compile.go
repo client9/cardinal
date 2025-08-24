@@ -48,9 +48,9 @@ func (c *Compile) Compile(e Expr) Prog {
 	})
 
 	return Prog{
-		Inst:   c.ops,
-		simple: c.Simple(e),
-		groups: c.groups,
+		Inst:    c.ops,
+		onestep: c.Simple(e),
+		groups:  c.groups,
 	}
 }
 
@@ -67,9 +67,9 @@ func (c *Compile) CompileList(exprs []Expr) Prog {
 	})
 
 	return Prog{
-		Inst:   c.ops,
-		simple: c.SimpleList(exprs),
-		groups: c.GroupsList(exprs, nil),
+		Inst:    c.ops,
+		onestep: c.SimpleList(exprs),
+		groups:  c.GroupsList(exprs, nil),
 	}
 }
 
@@ -244,9 +244,9 @@ func (c *Compile) CompileOneStep(e Expr) Prog {
 	}
 
 	return Prog{
-		Inst:   c.ops,
-		simple: c.Simple(e),
-		groups: c.groups,
+		Inst:    c.ops,
+		onestep: c.Simple(e),
+		groups:  c.groups,
 	}
 }
 func (c *Compile) CompileListOneStep(exprs []Expr) Prog {
@@ -271,9 +271,9 @@ func (c *Compile) CompileListOneStep(exprs []Expr) Prog {
 	}
 
 	return Prog{
-		Inst:   c.ops,
-		simple: c.SimpleList(exprs),
-		groups: c.GroupsList(exprs, nil),
+		Inst:    c.ops,
+		onestep: c.SimpleList(exprs),
+		groups:  c.GroupsList(exprs, nil),
 	}
 }
 func (c *Compile) IsLiteral(e Expr) bool {
@@ -651,13 +651,13 @@ func (i Inst) String() string {
 
 // a "Program" is a list of a Instructions
 type Prog struct {
-	Inst   []Inst
-	groups []string
-	simple bool
+	Inst    []Inst
+	groups  []string
+	onestep bool
 }
 
-func (p Prog) IsSimple() bool {
-	return p.simple
+func (p Prog) IsOneStep() bool {
+	return p.onestep
 }
 
 func (p Prog) Groups() []string {

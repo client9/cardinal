@@ -34,12 +34,26 @@ func NewRegexp() *ThompsonVM {
 
 func (r *ThompsonVM) Match(prog Prog, expr Expr) (bool, *Captures) {
 	sub := NewCaptures(len(prog.Groups()))
-	return r.matchOne(prog, expr, sub)
+	return r.match(prog, expr, sub)
+}
+
+func (r *ThompsonVM) match(prog Prog, expr Expr, sub *Captures) (bool, *Captures) {
+	if prog.IsOneStep() {
+		return r.matchM4(prog, expr, sub)
+	}
+	return r.matchNfa(prog, expr, sub)
 }
 
 func (r *ThompsonVM) MatchList(prog Prog, exprs []Expr) (bool, *Captures) {
 	sub := NewCaptures(len(prog.Groups()))
-	return r.matchSequence(prog, exprs, sub)
+	return r.matchList(prog, exprs, sub)
+}
+
+func (r *ThompsonVM) matchList(prog Prog, exprs []Expr, sub *Captures) (bool, *Captures) {
+	if prog.IsOneStep() {
+		return r.matchSequenceM4(prog, exprs, sub)
+	}
+	return r.matchNfaSequence(prog, exprs, sub)
 }
 
 // the rest is internal functions
@@ -88,7 +102,7 @@ func (r *ThompsonVM) AddThread(tlist *[]Thread, prog Prog, pc int32, exprs []Exp
 	}
 }
 
-func (r *ThompsonVM) matchOne(prog Prog, expr Expr, sub *Captures) (bool, *Captures) {
+func (r *ThompsonVM) matchNfa(prog Prog, expr Expr, sub *Captures) (bool, *Captures) {
 	r.reset(prog.Length())
 	r.gen += 1
 	pc := prog.First()
@@ -132,7 +146,7 @@ func (r *ThompsonVM) matchOne(prog Prog, expr Expr, sub *Captures) (bool, *Captu
 					r2 := NewRegexp()
 					r2.reset(proglist.Length())
 
-					if ok, binding := r2.matchSequence(proglist, list.Tail(), c.captures.Inc()); ok {
+					if ok, binding := r2.matchNfaSequence(proglist, list.Tail(), c.captures.Inc()); ok {
 						c.captures.Dec()
 						// ?? binding.Inc()
 						add = true
@@ -167,7 +181,7 @@ func (r *ThompsonVM) matchOne(prog Prog, expr Expr, sub *Captures) (bool, *Captu
 
 }
 
-func (r *ThompsonVM) matchSequence(prog Prog, exprs []Expr, sub *Captures) (bool, *Captures) {
+func (r *ThompsonVM) matchNfaSequence(prog Prog, exprs []Expr, sub *Captures) (bool, *Captures) {
 	r.reset(prog.Length())
 	r.gen += 1
 	r.AddThread(&r.currentList, prog, prog.First(), exprs, 0, sub)
@@ -195,7 +209,7 @@ func (r *ThompsonVM) matchSequence(prog Prog, exprs []Expr, sub *Captures) (bool
 					listprog := i.Data.(Prog)
 					r2 := NewRegexp()
 					r2.reset(listprog.Length())
-					if ok, binding := r2.matchSequence(listprog, lst.Tail(), c.captures.Inc()); ok {
+					if ok, binding := r2.matchNfaSequence(listprog, lst.Tail(), c.captures.Inc()); ok {
 						c.captures.Dec()
 						//??binding.Inc()
 						add = true
