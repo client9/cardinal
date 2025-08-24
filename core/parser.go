@@ -144,9 +144,6 @@ func (p *Parser) ParseAtom() Expr {
 	case STRING:
 		expr = p.parseString()
 		p.nextToken()
-	case BOOLEAN:
-		expr = p.parseBoolean()
-		p.nextToken()
 	case LBRACKET:
 		expr = p.parseListLiteral()
 	case LBRACE:
@@ -352,11 +349,6 @@ func (p *Parser) parseFloat() Expr {
 func (p *Parser) parseString() Expr {
 	value := p.unescapeString(p.currentToken.Value)
 	return NewString(value)
-}
-
-func (p *Parser) parseBoolean() Expr {
-	value := p.currentToken.Value == "True"
-	return NewBool(value)
 }
 
 func (p *Parser) unescapeString(s string) string {

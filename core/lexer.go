@@ -12,7 +12,6 @@ const (
 	INTEGER
 	FLOAT
 	STRING
-	BOOLEAN
 	LBRACKET
 	RBRACKET
 	LBRACE
@@ -66,8 +65,6 @@ func (t Token) String() string {
 		return fmt.Sprintf("FLOAT(%s)", t.Value)
 	case STRING:
 		return fmt.Sprintf("STRING(%s)", t.Value)
-	case BOOLEAN:
-		return fmt.Sprintf("BOOLEAN(%s)", t.Value)
 	case LBRACKET:
 		return "LBRACKET"
 	case RBRACKET:

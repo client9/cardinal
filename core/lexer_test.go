@@ -441,11 +441,6 @@ func TestToken_String(t *testing.T) {
 			expected: "STRING(hello)",
 		},
 		{
-			name:     "boolean token",
-			token:    Token{Type: BOOLEAN, Value: "True"},
-			expected: "BOOLEAN(True)",
-		},
-		{
 			name:     "left bracket",
 			token:    Token{Type: LBRACKET, Value: "["},
 			expected: "LBRACKET",
