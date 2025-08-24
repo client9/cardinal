@@ -29,21 +29,6 @@ func ExtractString(expr Expr) (string, bool) {
 	return "", false
 }
 
-// ExtractBool safely extracts a boolean value from an Expr
-// Note: NewBool returns symbols "True"/"False", so we check for those
-func ExtractBool(expr Expr) (bool, bool) {
-	// Check new Symbol type first
-	if s, ok := expr.(Symbol); ok {
-		symbolName := string(s)
-		if symbolName == "True" {
-			return true, true
-		} else if symbolName == "False" {
-			return false, true
-		}
-	}
-	return false, false
-}
-
 // ExtractByteArray safely extracts an ByteArray value from an Expr
 func ExtractByteArray(expr Expr) (ByteArray, bool) {
 	if ba, ok := expr.(ByteArray); ok {
@@ -85,15 +70,6 @@ func IsNumeric(expr Expr) bool {
 	return ok
 }
 
-// IsBool checks if an expression is a boolean value (True/False symbol)
-func IsBool(expr Expr) bool {
-	// Check new Symbol type first
-	if s, ok := expr.(Symbol); ok {
-		val := string(s)
-		return val == "True" || val == "False"
-	}
-	return false
-}
 
 // IsSymbol checks if an expression is a symbol
 func IsSymbol(expr Expr) bool {
@@ -108,7 +84,7 @@ func IsSymbol(expr Expr) bool {
 func ExtractSymbol(expr Expr) (string, bool) {
 	// Check new Symbol type first
 	if s, ok := expr.(Symbol); ok {
-		return string(s), true
+		return s.String(), true
 	}
 	return "", false
 }

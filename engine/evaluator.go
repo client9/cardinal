@@ -62,7 +62,7 @@ func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr
 func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 	switch ex := expr.(type) {
 	case core.Symbol:
-		symbolName := string(ex)
+		symbolName := ex.String()
 		// Check for variable binding first
 		if value, ok := ctx.Get(symbolName); ok {
 			return value
