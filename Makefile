@@ -1,7 +1,7 @@
 
 
 build: 
-	go run cmd/wrapgen/main.go cmd/wrapgen/reflect.go cmd/wrapgen/symbols.go
+	go run ./cmd/wrapgen
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
 
@@ -19,7 +19,7 @@ test: build
 
 
 prof:
-	go test -cpuprofile cpu.prof -memprofile mem.prof -bench=DoLoop ./tests/performance/...
+	go test -cpuprofile cpu.prof -memprofile mem.prof -test.run=SRE -bench=SRE2b/MatchAny3,binding ./core/...
 
 # Coverage report
 # Go default is crap

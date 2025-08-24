@@ -55,6 +55,15 @@ var symbolSpecs = []SymbolSpec{
 		},
 	},
 	{
+		Name: "True",
+	},
+	{
+		Name: "False",
+	},
+	{
+		Name: "Null",
+	},
+	{
 		Name: "Blank",
 	},
 	{

@@ -75,6 +75,8 @@ func main() {
 	)
 	flag.Parse()
 
+	genAtoms()
+
 	// Create output directory
 	if err := os.MkdirAll(*outputDir, 0755); err != nil {
 		log.Fatalf("Error creating output directory %s: %v", *outputDir, err)
