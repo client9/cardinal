@@ -79,7 +79,7 @@ func (r *FunctionRegistry) RegisterPatternBuiltins(patterns []PatternRule) error
 
 // RegisterPatternBuiltin registers a built-in function with a pattern from Go code
 func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl PatternFunc) error {
-	// Parse the pattern stringp
+	// Parse the pattern string
 	// 'RReal(max_Number)' -> RReal(Pattern(max, Blank(Number)))
 	pattern, err := core.ParseString(patternStr)
 	if err != nil {
