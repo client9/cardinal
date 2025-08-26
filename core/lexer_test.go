@@ -423,7 +423,7 @@ func TestToken_String(t *testing.T) {
 		{
 			name:     "symbol token",
 			token:    Token{Type: SYMBOL, Value: "Plus"},
-			expected: "SYMBOL(Plus)",
+			expected: "SYMBOL(Plus 0)",
 		},
 		{
 			name:     "integer token",

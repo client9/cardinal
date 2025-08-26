@@ -3,11 +3,28 @@ package core
 import (
 	"fmt"
 	"strings"
+
+	"github.com/client9/sexpr/core/atom"
 )
 
 // List represents compound expressions
 type List struct {
 	elements []Expr
+}
+
+// ListExpr creates a list with head "List"
+func ListExpr(args ...Expr) List {
+	elements := make([]Expr, len(args)+1)
+	elements[0] = symbolList
+	copy(elements[1:], args)
+	return List{elements: elements}
+}
+
+func ListFrom(atom atom.Atom, args ...Expr) List {
+	elements := make([]Expr, len(args)+1)
+	elements[0] = SymbolFor(atom)
+	copy(elements[1:], args)
+	return List{elements: elements}
 }
 
 func NewList(head string, args ...Expr) List {

@@ -1,7 +1,7 @@
 
 
 build: 
-	go run ./cmd/wrapgen
+	go run ./cmd/geninit > init.go
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
 

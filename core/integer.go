@@ -14,6 +14,10 @@ func (i Integer) String() string {
 	return strconv.FormatInt(int64(i), 10)
 }
 
+func MustInt64(e Expr) int64 {
+	return int64(e.(Integer))
+}
+
 func (i Integer) InputForm() string {
 	return i.String()
 }

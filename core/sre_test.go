@@ -379,6 +379,31 @@ var cases = []tc{
 		binding: "",
 		match:   false,
 	},
+	/*
+		{
+			name:    "List with any head",
+			expr:    "RGBColor(1,2,3)",
+			pattern: "MatchAny(MatchStar(MatchAny()))",
+			binding: "",
+			match:   true,
+		},
+
+		{
+			name:    "List with any head, 2 elements",
+			expr:    "RGBColor(1,2)",
+			pattern: "MatchAny(MatchAny(), MatchAny())",
+			binding: "",
+			match:   true,
+		},
+
+		{
+			name:    "List with any head, 2 elements",
+			expr:    "RGBColor(1)",
+			pattern: "MatchAny(MatchAny(), MatchAny())",
+			binding: "",
+			match:   false,
+		},
+	*/
 }
 
 func TestSREM1(t *testing.T) {

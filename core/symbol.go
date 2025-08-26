@@ -12,21 +12,34 @@ type Symbol struct {
 var symbolTrue Symbol
 var symbolFalse Symbol
 var symbolNull Symbol
+var symbolList Symbol
 
 func init() {
-	atomTrue := atom.Lookup([]byte("True"))
-	atomFalse := atom.Lookup([]byte("False"))
-	atomNull := atom.Lookup([]byte("Null"))
-
+	atomTrue := atom.Lookup("True")
+	atomFalse := atom.Lookup("False")
+	atomNull := atom.Lookup("Null")
+	atomList := atom.Lookup("List")
 	symbolTrue = Symbol{atom: atomTrue, name: atomTrue.String()}
 	symbolFalse = Symbol{atom: atomFalse, name: atomFalse.String()}
 	symbolNull = Symbol{atom: atomNull, name: atomNull.String()}
+	symbolList = Symbol{atom: atomList, name: atomList.String()}
+}
+
+// SymbolFor makes a symbol with the given atom "SymbolFor(atom.Xyz)"
+func SymbolFor(a atom.Atom) Symbol {
+	// TODO -- why even bother with the name/string?
+	return Symbol{
+		atom: a,
+		name: a.String(),
+	}
 }
 
 func NewSymbol(s string) Symbol {
-	return Symbol{
-		atom: 0,
-		name: s}
+	a := atom.Lookup(s)
+	if a == 0 {
+		return Symbol{atom: 0, name: s}
+	}
+	return Symbol{atom: a, name: a.String()}
 }
 
 // NewSymbolNull creates the Null symbol

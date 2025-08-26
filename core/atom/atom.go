@@ -34,9 +34,54 @@ func (a Atom) string() string {
 	return atomText[a>>8 : a>>8+a&0xff]
 }
 
+type byteOrString interface {
+	~[]byte | ~string // This constraint allows either []byte or string
+}
+
+func fnv[T byteOrString](h uint32, s T) uint32 {
+
+	for i := 0; i < len(s); i++ {
+		h ^= uint32(s[i])
+		h *= 16777619
+	}
+	return h
+}
+
+func match[T byteOrString](s string, t T) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] != t[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func Lookup[T byteOrString](s T) Atom {
+	if len(s) == 0 || len(s) > maxAtomLen {
+		return 0
+	}
+	h := fnv(hash0, s)
+	if a := table[h&uint32(len(table)-1)]; int(a&0xff) == len(s) && match(a.string(), s) {
+		return a
+	}
+	if a := table[(h>>16)&uint32(len(table)-1)]; int(a&0xff) == len(s) && match(a.string(), s) {
+		return a
+	}
+	return 0
+}
+
+/*
 // fnv computes the FNV hash with an arbitrary starting value h.
 func fnv(h uint32, s []byte) uint32 {
 	for i := range s {
+		h ^= uint32(s[i])
+		h *= 16777619
+	}
+	return h
+}
+
+func fnvString(h uint32, s string) uint32 {
+	for i:=0; i < len(s); i++ {
 		h ^= uint32(s[i])
 		h *= 16777619
 	}
@@ -51,7 +96,6 @@ func match(s string, t []byte) bool {
 	}
 	return true
 }
-
 // Lookup returns the atom whose name is s. It returns zero if there is no
 // such atom. The lookup is case sensitive.
 func Lookup(s []byte) Atom {
@@ -67,10 +111,11 @@ func Lookup(s []byte) Atom {
 	}
 	return 0
 }
+*/
 
 // String returns a string whose contents are equal to s. In that sense, it is
 // equivalent to string(s) but may be more efficient.
-func String(s []byte) string {
+func LookupString(s []byte) string {
 	if a := Lookup(s); a != 0 {
 		return a.String()
 	}

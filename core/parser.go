@@ -424,7 +424,7 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 
 	// Special case for semicolon: if no right operand, use Null
 	if operator.Type == SEMICOLON && right == nil {
-		right = NewSymbol("Null")
+		right = NewSymbolNull()
 	}
 
 	return p.createInfixExpr(operator.Type, left, right)

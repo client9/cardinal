@@ -9,6 +9,10 @@ type Real float64
 
 func NewReal(f float64) Real { return Real(f) }
 
+func MustFloat64(e Expr) float64 {
+	return float64(e.(Real))
+}
+
 // Real type implementation
 func (r Real) String() string {
 	str := strconv.FormatFloat(float64(r), 'f', -1, 64)

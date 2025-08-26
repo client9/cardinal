@@ -34,9 +34,9 @@ go.work.sum
 coverage.html
 coverage.out
 *.bak*
-cmd/wrapgen/wrapgen
-wrapped
-builtin_setup.go
+cmd/geninit/wrapgen
+init.go
+core/atom/table.go
 ./repl
 attribute_string.go
 cpu.prof

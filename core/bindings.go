@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+
+	"github.com/client9/sexpr/core/atom"
 )
 
 type CaptureIndex struct {
@@ -101,7 +103,7 @@ func (c *Captures) AsRules(names []string) Expr {
 
 	if c.Length() == 0 {
 		//fmt.Printf("Capture had nothing\n")
-		return NewList("List")
+		return ListExpr()
 	}
 	rules := make([]Expr, 0, len(c.captures))
 	for i, cap := range c.captures {
@@ -119,14 +121,14 @@ func (c *Captures) AsRules(names []string) Expr {
 			target = cap.exprs[cap.start]
 		} else {
 			// mutliple elements go in a list`
-			target = NewList("List", cap.exprs[cap.start:cap.end]...)
+			target = ListExpr(cap.exprs[cap.start:cap.end]...)
 		}
 		if names != nil {
 			name = names[i]
 		} else {
 			name = fmt.Sprintf("$%d", i+1)
 		}
-		rules = append(rules, NewList("Rule", NewSymbol(name), target))
+		rules = append(rules, ListFrom(atom.Rule, NewSymbol(name), target))
 	}
-	return NewList("List", rules...)
+	return ListExpr(rules...)
 }
