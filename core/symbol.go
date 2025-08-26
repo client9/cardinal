@@ -54,6 +54,10 @@ func (s Symbol) InputForm() string {
 	return s.String()
 }
 
+func (s Symbol) Atom() atom.Atom {
+	return s.atom
+}
+
 func (s Symbol) Head() string {
 	return "Symbol"
 }

@@ -35,8 +35,3 @@ func EvaluateString(input string) (core.Expr, error) {
 	e := NewEvaluator()
 	return e.Evaluate(expr), nil
 }
-
-// AttributesToString converts attributes to a string representation
-func AttributesToString(attrs []engine.Attribute) string {
-	return engine.AttributesToString(attrs)
-}

@@ -97,9 +97,9 @@ import (
 // SetupBuiltinAttributes sets up standard attributes for built-in functions
 func SetupBuiltinAttributes(symbolTable *engine.SymbolTable) {	
 {{- range $sym := $ }}
-    symbolTable.SetAttributes("{{ $sym.Name }}",  []engine.Attribute{ 
-        {{- range $sym.Attributes }}engine.{{.}},{{ end -}}
-    })
+    symbolTable.SetAttributes("{{ $sym.Name }}", 
+        {{- range $i,$attr :=  $sym.Attributes }}{{ if $i }} | {{ end }}engine.{{ $attr }}{{ end -}}
+    )
 {{- end }}
 }
 

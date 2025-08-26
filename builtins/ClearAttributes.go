@@ -13,19 +13,14 @@ import (
 // @ExprPattern (_Symbol, _Symbol)
 func ClearAttributesSingle(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 
-	symbol := args[0]
-	attrName := args[1]
+	symbol := args[0].(core.Symbol)
+	attrName := args[1].(core.Symbol)
 
 	symbolTable := c.GetSymbolTable()
 
-	symbolName, _ := core.ExtractSymbol(symbol)
+	symbolName := symbol.String()
 
-	// Handle single attribute
-	if attrName, ok := core.ExtractSymbol(attrName); ok {
-		if attr, ok := engine.StringToAttribute(attrName); ok {
-			symbolTable.ClearAttributes(symbolName, []engine.Attribute{attr})
-		}
-	}
+	symbolTable.ClearAttributes(symbolName, engine.SymbolToAttribute(attrName))
 	return core.NewSymbol("Null")
 }
 
@@ -40,24 +35,14 @@ func ClearAttributesList(e *engine.Evaluator, c *engine.Context, args []core.Exp
 
 	symbolName, _ := core.ExtractSymbol(symbol)
 
-	var attributes []engine.Attribute
+	var attributes engine.Attribute
 	for _, arg := range attrList.Tail() {
-		if attrName, ok := core.ExtractSymbol(arg); ok {
-			if attr, ok := engine.StringToAttribute(attrName); ok {
-				attributes = append(attributes, attr)
-			}
-		}
+		attrName := arg.(core.Symbol)
+		attributes |= engine.SymbolToAttribute(attrName)
 	}
-	if len(attributes) > 0 {
+	if attributes != 0 {
 		symbolTable.ClearAttributes(symbolName, attributes)
 	}
 
 	return core.NewSymbol("Null")
 }
-
-/*
-// Helper function to parse attribute names to engine.Attribute objects
-func parseAttribute(name string) (engine.Attribute, bool) {
-	return engine.StringToAttribute(name)
-}
-*/

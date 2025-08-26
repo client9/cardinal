@@ -3,158 +3,140 @@ package engine
 //go:generate stringer -type=Attribute
 
 import (
-	"fmt"
-	"slices"
 	"sort"
-	"strings"
+
+	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 )
 
 // Attribute represents a symbol attribute in Mathematica-style
 type Attribute int
 
+// in alphabetical order
 const (
-	HoldAll Attribute = iota
+	Constant Attribute = 1 << iota
+	Flat
+	HoldAll
 	HoldFirst
 	HoldRest
-	Flat
-	Orderless
-	OneIdentity
 	Listable
-	Constant
+	Locked
 	NumericFunction
+	OneIdentity
+	Orderless
 	Protected
 	ReadProtected
-	Locked
 	Temporary
+	AttributeLast
 )
+
+var symbolToAttribute map[atom.Atom]Attribute
 
 // stringToAttribute provides reverse lookup from string to Attribute
 // This map is automatically populated using the stringer-generated String() method
-var stringToAttribute map[string]Attribute
-
-// StringToAttribute converts a string name to an attribute
-func StringToAttribute(name string) (Attribute, bool) {
-	if stringToAttribute == nil {
-		initStringToAttributeMap()
-	}
-	attr, ok := stringToAttribute[name]
-	return attr, ok
+var atomToAttribute = map[atom.Atom]Attribute{
+	atom.HoldAll:         HoldAll,
+	atom.HoldFirst:       HoldFirst,
+	atom.HoldRest:        HoldRest,
+	atom.Flat:            Flat,
+	atom.OneIdentity:     OneIdentity,
+	atom.Orderless:       Orderless,
+	atom.Listable:        Listable,
+	atom.Constant:        Constant,
+	atom.NumericFunction: NumericFunction,
+	atom.Protected:       Protected,
+	atom.ReadProtected:   ReadProtected,
+	atom.Locked:          Locked,
+	atom.Temporary:       Temporary,
 }
 
-// initStringToAttributeMap initializes the reverse lookup map using stringer output
-func initStringToAttributeMap() {
-	stringToAttribute = make(map[string]Attribute)
-	// Iterate through all possible attribute values
-	for i := HoldAll; i <= Temporary; i++ {
-		stringToAttribute[i.String()] = i
+func SymbolToAttribute(e core.Expr) Attribute {
+	if s, ok := e.(core.Symbol); ok {
+		return atomToAttribute[s.Atom()]
 	}
+	return 0
+}
+
+func attributeToSymbol(a Attribute) core.Expr {
+	for k, v := range atomToAttribute {
+		if v == a {
+			return core.SymbolFor(k)
+		}
+	}
+	return nil
+}
+
+func AttributeToSymbols(a Attribute) []core.Expr {
+	out := []core.Expr{}
+	if a == 0 {
+		return out
+	}
+	for i := Attribute(1); i < AttributeLast; i = i << 1 {
+		if a&i == i {
+			out = append(out, attributeToSymbol(Attribute(i)))
+		}
+	}
+	return out
 }
 
 // SymbolTable manages attributes for symbols
 type SymbolTable struct {
-	attributes map[string][]Attribute
+	attributes map[string]Attribute
 }
 
 // NewSymbolTable creates a new symbol table instance
 func NewSymbolTable() *SymbolTable {
 	return &SymbolTable{
-		attributes: make(map[string][]Attribute),
+		attributes: make(map[string]Attribute),
 	}
 }
 
 // Reset clears all attributes from the symbol table (useful for testing)
 func (st *SymbolTable) Reset() {
-	st.attributes = make(map[string][]Attribute)
+	st.attributes = make(map[string]Attribute)
 }
 
 // SetAttributes sets one or more attributes for a symbol
-func (st *SymbolTable) SetAttributes(symbol string, attrs []Attribute) {
-
+func (st *SymbolTable) SetAttributes(symbol string, attrs Attribute) {
 	alist := st.attributes[symbol]
-
-	// if doesn't exist, just set directly
-	if alist == nil {
-		st.attributes[symbol] = attrs
-		return
-	}
-
-	dirty := false
-	for _, attr := range attrs {
-		if !slices.Contains(alist, attr) {
-			alist = append(alist, attr)
-			dirty = true
-		}
-	}
-	if dirty {
-		st.attributes[symbol] = alist
-	}
+	st.attributes[symbol] = alist | attrs
 }
 
 // ClearAttributes removes one or more attributes from a symbol
-func (st *SymbolTable) ClearAttributes(symbol string, attrs []Attribute) {
+func (st *SymbolTable) ClearAttributes(symbol string, attrs Attribute) {
 	alist := st.attributes[symbol]
-	if alist == nil {
+	if alist == 0 {
 		return
 	}
-
-	for _, attr := range attrs {
-		if idx := slices.Index(alist, attr); idx != -1 {
-			alist = slices.Delete(alist, idx, idx+1)
-		}
-	}
-	if len(alist) == 0 {
+	alist &^= attrs
+	if alist == 0 {
 		delete(st.attributes, symbol)
+		return
 	}
+	st.attributes[symbol] = alist
 }
 
 // Attributes returns all attributes for a symbol
-func (st *SymbolTable) Attributes(symbol string) []Attribute {
-	alist := st.attributes[symbol]
-
-	// Sort for consistent output (alphabetically by name)
-	sort.Slice(alist, func(i, j int) bool {
-		return alist[i].String() < alist[j].String()
-	})
-
-	return alist
+func (st *SymbolTable) Attributes(symbol string) Attribute {
+	return st.attributes[symbol]
 }
 
 // HasAttribute checks if a symbol has a specific attribute
 func (st *SymbolTable) HasAttribute(symbol string, attr Attribute) bool {
-
 	alist := st.attributes[symbol]
-
-	if alist == nil {
-		return false
-	}
-	return slices.Contains(alist, attr)
+	return alist&attr == attr
 }
 
 // ClearAllAttributes removes all attributes from a symbol
 func (st *SymbolTable) ClearAllAttributes(symbol string) {
-
 	delete(st.attributes, symbol)
-}
-
-// AttributesToString returns a formatted string representation of attributes
-func AttributesToString(attrs []Attribute) string {
-	if len(attrs) == 0 {
-		return "{}"
-	}
-
-	var names []string
-	for _, attr := range attrs {
-		names = append(names, attr.String())
-	}
-
-	return fmt.Sprintf("{%s}", strings.Join(names, ", "))
 }
 
 // AllSymbolsWithAttributes returns all symbols that have attributes
 func (st *SymbolTable) AllSymbolsWithAttributes() []string {
 	var symbols []string
 	for symbol := range st.attributes {
-		if len(st.attributes[symbol]) > 0 {
+		if st.attributes[symbol] != 0 {
 			symbols = append(symbols, symbol)
 		}
 	}

@@ -292,9 +292,6 @@ func (r *REPL) handleSpecialCommands(line string) bool {
 	case "clear":
 		r.clearContext()
 		return true
-	case "attributes":
-		r.printAttributes()
-		return true
 	default:
 		return false
 	}
@@ -370,24 +367,6 @@ func (r *REPL) clearContext() {
 	r.evaluator = sexpr.NewEvaluator()
 	r.ctx = r.evaluator.GetContext()
 	sexpr.SetupBuiltinAttributes(r.ctx.GetSymbolTable())
-}
-
-// printAttributes prints all symbols with their attributes
-func (r *REPL) printAttributes() {
-	_, _ = fmt.Fprintf(r.output, "\nSymbols with attributes:\n")
-	_, _ = fmt.Fprintf(r.output, "=======================\n")
-
-	symbols := r.evaluator.GetContext().GetSymbolTable().AllSymbolsWithAttributes()
-	if len(symbols) == 0 {
-		_, _ = fmt.Fprintf(r.output, "No symbols with attributes found.\n")
-		return
-	}
-
-	for _, symbol := range symbols {
-		attrs := r.evaluator.GetContext().GetSymbolTable().Attributes(symbol)
-		_, _ = fmt.Fprintf(r.output, "%-15s: %s\n", symbol, sexpr.AttributesToString(attrs))
-	}
-	_, _ = fmt.Fprintf(r.output, "\n")
 }
 
 // exprInfo represents a parsed expression with its location information
