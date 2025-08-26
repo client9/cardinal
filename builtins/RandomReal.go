@@ -1,9 +1,11 @@
 package builtins
 
 import (
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/engine"
 	"math/rand/v2"
+
+	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/engine"
 )
 
 func rand01() float64 {
@@ -53,7 +55,7 @@ func RandomReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 	}
 
 	out := make([]core.Expr, count+1)
-	out[0] = core.NewSymbol("List")
+	out[0] = core.SymbolFor(atom.List)
 	for i := 1; i <= count; i++ {
 		out[i] = core.NewReal(rand01()*(max-min) + min)
 	}

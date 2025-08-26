@@ -29,7 +29,7 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 				return core.NewError("DefinitionError", err.Error())
 			}
 
-			return core.NewSymbol("Null")
+			return core.NewSymbolNull()
 		}
 	}
 
@@ -39,7 +39,7 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 		if err := c.Set(symbolName, rhs); err != nil {
 			return core.NewError("Protected", err.Error())
 		}
-		return core.NewSymbol("Null")
+		return core.NewSymbolNull()
 	}
 
 	return core.NewError("SetDelayedError", "Invalid assignment target")

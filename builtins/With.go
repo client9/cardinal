@@ -31,7 +31,7 @@ func With(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 		}
 		// TODO: DANGER
 		r.SetHead("Rule")
-		//(*r.Elements)[0] = core.NewSymbol("Rule")
+		//(*r.Elements)[0] = core.SymbolFor(atom.Rule)
 	}
 
 	modified := core.ReplaceAllWithRules(body, rules)

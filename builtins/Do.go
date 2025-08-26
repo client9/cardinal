@@ -1,10 +1,10 @@
 package builtins
 
 import (
+	"fmt"
+
 	"github.com/client9/sexpr/core"
 	"github.com/client9/sexpr/engine"
-
-	"fmt"
 )
 
 // @ExprSymbol Do
@@ -59,7 +59,7 @@ func doSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64) c
 		// Discard result - Do is for side effects only
 	}
 
-	return core.NewSymbol("Null")
+	return core.NewSymbolNull()
 }
 
 // evaluateDoIterator handles Do with iterator specification core.List(i, start, end, increment)
@@ -94,7 +94,7 @@ func doIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterSpec
 		}
 	}
 
-	return core.NewSymbol("Null")
+	return core.NewSymbolNull()
 }
 
 /*
@@ -106,7 +106,7 @@ func DoExpr(e *engine.Evaluator, ctx *engine.Context, expr core.Expr, iterator c
 		for i := 0; i < count; i++ {
 			e.Evaluate(ctx, expr)
 		}
-		return core.NewSymbol("Null")
+		return core.NewSymbolNull()
 	}
 
 	// Handle iterator: List(i, n) or List(i, start, end)
@@ -175,6 +175,6 @@ func DoExpr(e *engine.Evaluator, ctx *engine.Context, expr core.Expr, iterator c
 		}
 	}
 
-	return core.NewSymbol("Null")
+	return core.NewSymbolNull()
 }
 */

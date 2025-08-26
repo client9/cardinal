@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -42,7 +43,7 @@ func TimesExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Ex
 
 	// Build result elements
 	var resultElements []core.Expr
-	resultElements = append(resultElements, core.NewSymbol("Times"))
+	resultElements = append(resultElements, core.SymbolFor(atom.Times))
 
 	// Add combined numeric value
 	if hasIntegers && hasReals {

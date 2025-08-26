@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -48,7 +49,7 @@ func RRealMinMaxCount(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 
 func minMaxCount(min, max float64, n int64) core.Expr {
 	out := make([]core.Expr, n+1)
-	out[0] = core.NewSymbol("List")
+	out[0] = core.SymbolFor(atom.List)
 	for i := int64(1); i <= n; i++ {
 		out[i] = core.NewReal(rand01()*(max-min) + min)
 	}

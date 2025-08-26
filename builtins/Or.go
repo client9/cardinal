@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -19,7 +20,7 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 
 		// Check if it's explicitly True - short-circuit
 		if symbolName, ok := core.ExtractSymbol(result); ok && symbolName == "True" {
-			return core.NewSymbol("True")
+			return core.NewBool(true)
 		}
 
 		// Skip False values
@@ -33,7 +34,7 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 
 	// If no non-False args remain, all were False
 	if len(nonFalseArgs) == 0 {
-		return core.NewSymbol("False")
+		return core.NewBool(false)
 	}
 
 	// If only one non-False arg, return it directly
@@ -43,7 +44,7 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 
 	// Return Or expression with remaining non-False args
 	elements := make([]core.Expr, len(nonFalseArgs)+1)
-	elements[0] = core.NewSymbol("Or")
+	elements[0] = core.SymbolFor(atom.Or)
 	copy(elements[1:], nonFalseArgs)
 	return core.NewListFromExprs(elements...)
 }

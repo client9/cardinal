@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -20,7 +21,7 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 
 		// Check if it's explicitly False
 		if symbolName, ok := core.ExtractSymbol(result); ok && symbolName == "False" {
-			return core.NewSymbol("False")
+			return core.NewBool(false)
 		}
 
 		// Check if it's explicitly True - continue without adding to unevaluated
@@ -34,7 +35,7 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 
 	// If no unevaluated args remain, all were True
 	if len(unevaluatedArgs) == 0 {
-		return core.NewSymbol("True")
+		return core.NewBool(true)
 	}
 
 	// If only one arg remains, return it directly
@@ -44,7 +45,7 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 
 	// Return And expression with remaining args
 	elements := make([]core.Expr, len(unevaluatedArgs)+1)
-	elements[0] = core.NewSymbol("And")
+	elements[0] = core.SymbolFor(atom.And)
 	copy(elements[1:], unevaluatedArgs)
 	return core.NewListFromExprs(elements...)
 }

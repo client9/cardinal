@@ -12,16 +12,12 @@ import (
 //
 // @ExprPattern (_Symbol, _Symbol)
 func ClearAttributesSingle(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-
 	symbol := args[0].(core.Symbol)
 	attrName := args[1].(core.Symbol)
-
 	symbolTable := c.GetSymbolTable()
-
 	symbolName := symbol.String()
-
 	symbolTable.ClearAttributes(symbolName, engine.SymbolToAttribute(attrName))
-	return core.NewSymbol("Null")
+	return core.NewSymbolNull()
 }
 
 // TODO: no error handling
@@ -30,11 +26,8 @@ func ClearAttributesSingle(e *engine.Evaluator, c *engine.Context, args []core.E
 func ClearAttributesList(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	symbol := args[0]
 	attrList := args[1].(core.List)
-
 	symbolTable := c.GetSymbolTable()
-
 	symbolName, _ := core.ExtractSymbol(symbol)
-
 	var attributes engine.Attribute
 	for _, arg := range attrList.Tail() {
 		attrName := arg.(core.Symbol)
@@ -44,5 +37,5 @@ func ClearAttributesList(e *engine.Evaluator, c *engine.Context, args []core.Exp
 		symbolTable.ClearAttributes(symbolName, attributes)
 	}
 
-	return core.NewSymbol("Null")
+	return core.NewSymbolNull()
 }

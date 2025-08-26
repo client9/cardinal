@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 
 	"fmt"
@@ -26,7 +27,7 @@ func ShowPatterns(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 
 		// Create a list of pattern information
 		elements := make([]core.Expr, len(definitions)+1)
-		elements[0] = core.NewSymbol("List")
+		elements[0] = core.SymbolFor(atom.List)
 
 		for i, def := range definitions {
 			// Create a rule showing pattern -> specificity
@@ -34,7 +35,7 @@ func ShowPatterns(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 			specificityStr := fmt.Sprintf("%d", def.Specificity)
 
 			ruleElements := []core.Expr{
-				core.NewSymbol("Rule"),
+				core.SymbolFor(atom.Rule),
 				core.NewString(patternStr),
 				core.NewString(specificityStr),
 			}
