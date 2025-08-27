@@ -120,10 +120,10 @@ func (c *Compile) Simple(e Expr) bool {
 			// args[0] is the binding name
 			// args[1] is the pattern
 			return c.Simple(args[1])
-		case atom.MatchStar, atom.MatchPlus, atom.MatchQuest:
+		case atom.MatchStar, atom.MatchPlus, atom.MatchQuest, atom.BlankSequence, atom.BlankNullSequence, atom.Optional:
 			args := list.Tail()
 			return c.Simple(args[0])
-		case atom.MatchHead, atom.MatchAny:
+		case atom.MatchHead, atom.MatchAny, atom.Blank:
 			return true
 		case atom.PatternSequence, atom.List:
 			return c.SimpleList(list.Tail())
@@ -279,33 +279,32 @@ func (c *Compile) CompileListOneStep(exprs []Expr) Prog {
 		groups:  c.GroupsList(exprs, nil),
 	}
 }
-func (c *Compile) IsLiteral(e Expr) bool {
-	list, ok := e.(List)
-	if !ok {
-		return true
-	}
-
-	switch list.HeadAtom() {
-	case atom.Pattern, atom.PatternSequence:
-		return false
-
-	// mma primitives
-	case atom.Blank, atom.BlankSequence, atom.BlankNullSequence, atom.Optional:
-		return false
-
-	// low level primitives
-	case atom.MatchStar, atom.MatchPlus, atom.MatchQuest,
-		atom.MatchAny, atom.MatchHead, atom.MatchLiteral:
-		return false
-
-	// TBD
-	case atom.MatchOr:
-		return false
-	}
+func (c *Compile) IsListLiteral(list List) bool {
+	// TODO: if head is a pattern
 
 	for _, a := range list.Tail() {
-		if !c.IsLiteral(a) {
-			return false
+		if alist, ok := a.(List); ok {
+			switch alist.HeadAtom() {
+			case atom.Pattern, atom.PatternSequence:
+				return false
+
+			// mma primitives
+			case atom.Blank, atom.BlankSequence, atom.BlankNullSequence, atom.Optional:
+				return false
+
+			// low level primitives
+			case atom.MatchStar, atom.MatchPlus, atom.MatchQuest,
+				atom.MatchAny, atom.MatchHead, atom.MatchLiteral:
+				return false
+
+			// TBD
+			case atom.MatchOr:
+				return false
+			default:
+				if !c.IsListLiteral(alist) {
+					return false
+				}
+			}
 		}
 	}
 	return true
@@ -313,7 +312,11 @@ func (c *Compile) IsLiteral(e Expr) bool {
 
 func (c *Compile) EmitOneStep(e Expr) {
 
-	if c.IsLiteral(e) {
+	list, ok := e.(List)
+
+	// not a list, some other primitive literal
+	if !ok {
+		// some literal
 		op := c.Add(Inst{
 			Op:  InstMatchLiteral,
 			Val: e,
@@ -323,132 +326,144 @@ func (c *Compile) EmitOneStep(e Expr) {
 		return
 	}
 
-	if list, ok := e.(List); ok {
-		switch list.HeadAtom() {
+	switch list.HeadAtom() {
 
-		case atom.Blank:
-			// Blank[]       --> MatchAny()
-			// Blank[symbol] --> MatchHead(symbol)
+	case atom.Blank:
+		// Blank[]       --> MatchAny()
+		// Blank[symbol] --> MatchHead(symbol)
 
-			arg := ListFirstArg(e)
-			if arg == nil {
-				arg = ListFrom(atom.MatchAny)
-			} else {
-				arg = ListFrom(atom.MatchHead, arg)
-			}
-			c.EmitOneStep(arg)
-		case atom.BlankSequence:
-			arg := ListFirstArg(e)
-			if arg == nil {
-				arg = ListFrom(atom.MatchAny)
-			} else {
-				arg = ListFrom(atom.MatchHead, arg)
-			}
-			c.EmitOneStep(ListFrom(atom.MatchPlus, arg))
-		case atom.BlankNullSequence:
-			arg := ListFirstArg(e)
-			if arg == nil {
-				arg = ListFrom(atom.MatchAny)
-			} else {
-				arg = ListFrom(atom.MatchHead, arg)
-			}
-			c.EmitOneStep(ListFrom(atom.MatchStar, arg))
-		case atom.Optional:
-			// TODO default value
-			arg := ListFirstArg(e)
-			if arg == nil {
-				arg = ListFrom(atom.MatchAny)
-			} else {
-				arg = ListFrom(atom.MatchHead, arg)
-			}
-			c.EmitOneStep(ListFrom(atom.MatchQuest, arg))
-
-		case atom.Pattern:
-			// Pattern("x", expression)
-			args := list.Tail()
-			name := args[0]
-			slot := c.GetSlot(name.String())
-			expr := args[1]
-			cstart := c.Add(Inst{
-				Op:  InstCaptureStart,
-				Alt: slot,
-			})
-			c.AddLink(cstart, c.pc)
-			c.EmitOneStep(expr)
-			cend := c.Add(Inst{
-				Op:  InstCaptureStart,
-				Alt: slot,
-			})
-			c.AddLink(cend, c.pc)
-		case atom.PatternSequence:
-			args := list.Tail()
-			for _, arg := range args {
-				c.EmitOneStep(arg)
-			}
-
-		case atom.MatchHead:
-			val := list.Tail()[0]
-			op := c.Add(Inst{
-				Op:   InstMatchHead,
-				Name: val.String(),
-			})
-			c.AddLink(op, c.pc)
-			c.AddAlt(op, -1)
-		case atom.MatchAny:
-			op := c.Add(Inst{
-				Op: InstMatchAny,
-			})
-			c.AddLink(op, c.pc)
-			c.AddAlt(op, -1)
-		case atom.MatchPlus:
-			arg := ListFirstArg(e)
-			// only has a single argument
-			c.EmitOneStep(arg)
-
-			L1 := c.pc
-			c.EmitOneStep(arg)
-			op := c.pc - 1
-			L3 := c.pc
-			c.AddLink(op, L1)
-			c.AddAlt(op, L3)
-		case atom.MatchQuest:
-			arg := list.Tail()[0]
-			// only has a single argument
-			c.EmitOneStep(arg)
-			op := c.pc - 1
-			L1 := c.pc
-			c.AddLink(op, L1)
-			c.AddAlt(op, L1)
-		case atom.MatchStar:
-			L1 := c.pc
-
-			// only has a single argument
-			c.EmitOneStep(list.Tail()[0])
-			op := c.pc - 1
-			L3 := c.pc
-			c.AddLink(op, L1)
-			c.AddAlt(op, L3)
-		default:
-			// list-like object that contains pattern primitives
-			//
-			// figure out next program for list
-			nc := NewCompiler()
-			newprog := nc.CompileListOneStep(list.Tail())
-
-			op := c.Add(Inst{
-				Op:   InstMatchList,
-				Data: newprog,
-				Name: list.Head(),
-			})
-			c.AddLink(op, c.pc)
-			c.AddAlt(op, -1)
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = ListFrom(atom.MatchAny)
+		} else {
+			arg = ListFrom(atom.MatchHead, arg)
 		}
+		c.EmitOneStep(arg)
+	case atom.BlankSequence:
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = ListFrom(atom.MatchAny)
+		} else {
+			arg = ListFrom(atom.MatchHead, arg)
+		}
+		c.EmitOneStep(ListFrom(atom.MatchPlus, arg))
+	case atom.BlankNullSequence:
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = ListFrom(atom.MatchAny)
+		} else {
+			arg = ListFrom(atom.MatchHead, arg)
+		}
+		c.EmitOneStep(ListFrom(atom.MatchStar, arg))
+	case atom.Optional:
+		// TODO default value
+		arg := ListFirstArg(e)
+		if arg == nil {
+			arg = ListFrom(atom.MatchAny)
+		} else {
+			arg = ListFrom(atom.MatchHead, arg)
+		}
+		c.EmitOneStep(ListFrom(atom.MatchQuest, arg))
+
+	case atom.Pattern:
+		// Pattern("x", expression)
+		args := list.Tail()
+		name := args[0]
+		slot := c.GetSlot(name.String())
+		expr := args[1]
+		cstart := c.Add(Inst{
+			Op:  InstCaptureStart,
+			Alt: slot,
+		})
+		c.AddLink(cstart, c.pc)
+		c.EmitOneStep(expr)
+		cend := c.Add(Inst{
+			Op:  InstCaptureStart,
+			Alt: slot,
+		})
+		c.AddLink(cend, c.pc)
+	case atom.PatternSequence:
+		args := list.Tail()
+		for _, arg := range args {
+			c.EmitOneStep(arg)
+		}
+
+	case atom.MatchHead:
+		val := list.Tail()[0]
+		op := c.Add(Inst{
+			Op:   InstMatchHead,
+			Name: val.String(),
+		})
+		c.AddLink(op, c.pc)
+		c.AddAlt(op, -1)
+	case atom.MatchAny:
+		op := c.Add(Inst{
+			Op: InstMatchAny,
+		})
+		c.AddLink(op, c.pc)
+		c.AddAlt(op, -1)
+	case atom.MatchPlus:
+		arg := ListFirstArg(e)
+		// only has a single argument
+		c.EmitOneStep(arg)
+
+		L1 := c.pc
+		c.EmitOneStep(arg)
+		op := c.pc - 1
+		L3 := c.pc
+		c.AddLink(op, L1)
+		c.AddAlt(op, L3)
+	case atom.MatchQuest:
+		arg := list.Tail()[0]
+		// only has a single argument
+		c.EmitOneStep(arg)
+		op := c.pc - 1
+		L1 := c.pc
+		c.AddLink(op, L1)
+		c.AddAlt(op, L1)
+	case atom.MatchStar:
+		L1 := c.pc
+
+		// only has a single argument
+		c.EmitOneStep(list.Tail()[0])
+		op := c.pc - 1
+		L3 := c.pc
+		c.AddLink(op, L1)
+		c.AddAlt(op, L3)
+	default:
+		if c.IsListLiteral(list) {
+			op := c.Add(Inst{
+				Op:  InstMatchLiteral,
+				Val: e,
+			})
+			c.AddLink(op, c.pc)
+			c.AddAlt(op, -1)
+			return
+		}
+
+		// list-like object that contains pattern primitives
+		//
+		// figure out next program for list
+		nc := NewCompiler()
+		newprog := nc.CompileListOneStep(list.Tail())
+
+		op := c.Add(Inst{
+			Op:   InstMatchList,
+			Data: newprog,
+			Name: list.Head(),
+		})
+		c.AddLink(op, c.pc)
+		c.AddAlt(op, -1)
 	}
 }
 
 func (c *Compile) Emit(e Expr) {
-	if c.IsLiteral(e) {
-		// Not a pattern operator, match as literal
+
+	list, ok := e.(List)
+
+	// not a list, some other primitive literal
+	if !ok {
+		// some literal
 		op := c.Add(Inst{
 			Op:  InstMatchLiteral,
 			Val: e,
@@ -458,7 +473,6 @@ func (c *Compile) Emit(e Expr) {
 		return
 	}
 
-	list := e.(List)
 	switch list.HeadAtom() {
 
 	// MMA
@@ -575,6 +589,19 @@ func (c *Compile) Emit(e Expr) {
 		c.AddLink(op, L2)
 		c.AddAlt(op, L3)
 	default:
+		if c.IsListLiteral(list) {
+			// has no pattern operators, match as literal
+			op := c.Add(Inst{
+				Op:  InstMatchLiteral,
+				Val: e,
+			})
+			c.AddLink(op, c.pc)
+			c.AddAlt(op, -1)
+			return
+		}
+
+		// Some other list that has pattern operators in it
+		//
 		// figure out next program for list
 		nc := NewCompiler()
 		newprog := nc.CompileList(list.Tail())
