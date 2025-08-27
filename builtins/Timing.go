@@ -15,5 +15,5 @@ func Timing(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	start := time.Now()
 	result := EvaluateExpr(e, c, args)
 	elapsed := time.Since(start)
-	return core.NewList("List", result, core.NewReal(float64(elapsed)/1.0e9))
+	return core.ListExpr(result, core.NewReal(float64(elapsed)/1.0e9))
 }

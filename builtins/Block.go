@@ -2,9 +2,11 @@ package builtins
 
 import (
 	"fmt"
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/engine"
 	"log"
+
+	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/engine"
 )
 
 // @ExprSymbol Block
@@ -68,7 +70,7 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 		}
 
 		setvar, ok := arg.(core.List)
-		if !ok || setvar.Length() != 2 || setvar.Head() != "Set" {
+		if !ok || setvar.Length() != 2 || setvar.HeadAtom() != atom.Set {
 			return nil, fmt.Errorf("variable not a symbol or assignment. %s, len=%d, head=%s", setvar.String(), setvar.Length(), setvar.Head())
 			// ERROR
 		}

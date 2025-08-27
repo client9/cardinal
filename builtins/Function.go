@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -47,17 +48,19 @@ func FunctionNamed(e *engine.Evaluator, c *engine.Context, vars, body core.Expr)
 
 // partiallyEvaluateForFunction evaluates nested Function calls but preserves slot variables
 func partiallyEvaluateForFunction(e *engine.Evaluator, c *engine.Context, expr core.Expr) core.Expr {
-	if expr.Head() == "Function" {
-		return Function(e, c, expr.(core.List).Tail())
+	list, ok := expr.(core.List)
+	if !ok {
+		return expr
+	}
 
+	if list.HeadAtom() == atom.Function {
+		return Function(e, c, list.Tail())
 	}
-	if list, ok := expr.(core.List); ok {
-		largs := list.AsSlice()
-		newElements := make([]core.Expr, len(largs))
-		for i, elem := range largs {
-			newElements[i] = partiallyEvaluateForFunction(e, c, elem)
-		}
-		return core.NewListFromExprs(newElements...)
+
+	largs := list.AsSlice()
+	newElements := make([]core.Expr, len(largs))
+	for i, elem := range largs {
+		newElements[i] = partiallyEvaluateForFunction(e, c, elem)
 	}
-	return expr
+	return core.NewListFromExprs(newElements...)
 }

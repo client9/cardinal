@@ -3,6 +3,7 @@ package builtins
 import (
 	"fmt"
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -16,8 +17,8 @@ func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	spec := args[1] // Don't evaluate spec yet
 
 	// if list, assume iterator spec
-	if spec.Head() == "List" {
-		return tableIterator(e, c, expr, spec.(core.List))
+	if list, ok := spec.(core.List); ok && list.HeadAtom() == atom.List {
+		return tableIterator(e, c, expr, list)
 	}
 
 	// it's something else, evaluate it.
@@ -42,7 +43,7 @@ func tableSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64
 	}
 
 	if n == 0 {
-		return core.NewList("List")
+		return core.ListExpr()
 	}
 
 	// Create result list with proper capacity
@@ -59,7 +60,7 @@ func tableSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64
 		elements[i] = evaluated
 	}
 
-	return core.NewList("List", elements...)
+	return core.ListExpr(elements...)
 }
 
 // evaluateTableIterator implements Table(expr, core.List(i, start, end, increment))
@@ -97,7 +98,7 @@ func tableIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterS
 		}
 	}
 
-	return core.NewList("List", results...)
+	return core.ListExpr(results...)
 }
 
 // parseTableIteratorSpec parses iterator specifications and normalizes them

@@ -92,6 +92,10 @@ func (l List) InputForm() string {
 	return l.inputFormWithPrecedence(PrecedenceLowest)
 }
 
+func (l List) HeadAtom() atom.Atom {
+	return l.HeadExpr().(Symbol).atom
+}
+
 func (l List) HeadExpr() Expr {
 	return (l.elements)[0]
 }

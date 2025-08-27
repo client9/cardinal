@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -24,8 +25,8 @@ func Do(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	spec := args[1] // Don't evaluate spec yet
 
 	// if list, assume iterator spec
-	if spec.Head() == "List" {
-		return doIterator(e, c, expr, spec.(core.List))
+	if list, ok := spec.(core.List); ok && list.HeadAtom() == atom.List {
+		return doIterator(e, c, expr, list)
 	}
 
 	// it's something else, evaluate it.

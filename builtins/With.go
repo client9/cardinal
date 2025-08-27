@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -26,7 +27,7 @@ func With(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	rules := list.Copy()
 	for _, arg := range rules.Tail() {
 		r, ok := arg.(core.List)
-		if !ok || r.Head() != "Set" || r.Length() != 2 {
+		if !ok || r.HeadAtom() != atom.Set || r.Length() != 2 {
 			return core.NewError("ArgumentError", "With expected list of set assignments")
 		}
 		// TODO: DANGER

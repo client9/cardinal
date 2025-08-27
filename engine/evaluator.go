@@ -6,6 +6,7 @@ import (
 	//	"log"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/atom"
 )
 
 // Evaluator represents the expression evaluator
@@ -288,11 +289,11 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 		// Anonymous
 		for i := 0; i < len(args); i++ {
 			name := core.NewSymbol(fmt.Sprintf("$%d", i+1))
-			rules[i] = core.NewList("Rule", name, evaluatedArgs[i])
+			rules[i] = core.ListFrom(atom.Rule, name, evaluatedArgs[i])
 		}
 		if len(args) > 0 {
 			name := core.NewSymbol("$")
-			rules = append(rules, core.NewList("Rule", name, evaluatedArgs[0]))
+			rules = append(rules, core.ListFrom(atom.Rule, name, evaluatedArgs[0]))
 		}
 	} else {
 		// Named - Check argument count
@@ -303,13 +304,13 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 					len(funcExpr.Parameters), len(args)))
 		}
 		for i := 0; i < len(args); i++ {
-			rules[i] = core.NewList("Rule", funcExpr.Parameters[i], evaluatedArgs[i])
+			rules[i] = core.ListFrom(atom.Rule, funcExpr.Parameters[i], evaluatedArgs[i])
 		}
 	}
 
 	// create a rules list
 
-	rlist := core.NewList("List", rules...)
+	rlist := core.ListExpr(rules...)
 
 	modified := functionReplaceAll(e, c, funcExpr.Body, rlist)
 

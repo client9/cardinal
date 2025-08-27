@@ -20,8 +20,9 @@ func TestCompileCheck(t *testing.T) {
 
 func BenchmarkCompileNFA(b *testing.B) {
 
-	//e := MustParse("[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]")
-	e := MustParse("Pattern(x, MatchAny())")
+	e := MustParse("[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]")
+	//e := MustParse("Pattern(x, MatchAny())")
+	//e := MustParse("Pattern(x, Blank())")
 	c := NewCompiler()
 	for b.Loop() {
 		c.Compile(e)
@@ -30,6 +31,7 @@ func BenchmarkCompileNFA(b *testing.B) {
 
 func BenchmarkCompileOneStep(b *testing.B) {
 	e := MustParse("[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]")
+	//e := MustParse("Pattern(x, MatchAny())")
 	c := NewCompiler()
 	for b.Loop() {
 		c.CompileOneStep(e)
