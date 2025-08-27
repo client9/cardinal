@@ -16,67 +16,80 @@ type Compile struct {
 func NewCompiler() *Compile {
 	return &Compile{}
 }
-func (c *Compile) reset() {
-	c.pc = 0
-	c.ops = nil
-	c.groups = nil
+func (c *Compile) Compile(e Expr) Prog {
+	if c.Simple(e) {
+		return c.compileOneStep(e)
+	}
+	return c.compileNFA(e)
 }
 
-func (c *Compile) AddLink(origin int32, next int32) {
+func (c *Compile) CompileList(exprs []Expr) Prog {
+
+	if c.SimpleList(exprs) {
+		return c.compileListOneStep(exprs)
+	}
+	return c.compileNFAList(exprs)
+}
+
+func (c *Compile) reset() {
+	c.pc = 0
+	c.ops = c.ops[:0]
+	c.groups = c.groups[:0]
+}
+
+func (c *Compile) addLink(origin int32, next int32) {
 	i := &c.ops[origin]
 	i.Next = next
 }
 
-func (c *Compile) AddAlt(origin int32, alt int32) {
+func (c *Compile) addAlt(origin int32, alt int32) {
 	i := &c.ops[origin]
 	i.Alt = alt
 }
 
-func (c *Compile) Add(x Inst) int32 {
+func (c *Compile) add(x Inst) int32 {
 	x.Id = c.pc
 	c.ops = append(c.ops, x)
 	c.pc += 1
 	return x.Id
 }
 
-func (c *Compile) Compile(e Expr) Prog {
+func (c *Compile) compileNFA(e Expr) Prog {
 	c.reset()
 
-	c.groups = c.Groups(e, nil)
+	c.groups = c.getGroups(e, nil)
 
-	c.Emit(e)
-	c.Add(Inst{
+	c.emit(e)
+	c.add(Inst{
 		Op: InstMatchEnd,
 	})
 
 	return Prog{
-		Inst:    c.ops,
-		onestep: c.Simple(e),
-		groups:  c.groups,
+		Inst:   c.ops,
+		groups: c.groups,
 	}
 }
 
-func (c *Compile) CompileList(exprs []Expr) Prog {
+func (c *Compile) compileNFAList(exprs []Expr) Prog {
 	c.reset()
 
-	c.groups = c.GroupsList(exprs, nil)
+	c.groups = c.getGroupsList(exprs, nil)
 
 	for _, e := range exprs {
-		c.Emit(e)
+		c.emit(e)
 	}
-	c.Add(Inst{
+	c.add(Inst{
 		Op: InstMatchEnd,
 	})
 
 	return Prog{
-		Inst:    c.ops,
-		onestep: c.SimpleList(exprs),
-		groups:  c.GroupsList(exprs, nil),
+		Inst:   c.ops,
+		groups: c.getGroupsList(exprs, nil),
 	}
 }
 
 // Hack until we can do this in the instruction
-func (c *Compile) GetSlot(name string) int32 {
+func (c *Compile) getSlot(name string) int32 {
 	for i, s := range c.groups {
 		if s == name {
 			return int32(i)
@@ -85,7 +98,7 @@ func (c *Compile) GetSlot(name string) int32 {
 	return -1
 }
 
-func (c *Compile) Groups(e Expr, names []string) []string {
+func (c *Compile) getGroups(e Expr, names []string) []string {
 	if list, ok := e.(List); ok {
 		switch list.HeadAtom() {
 		case atom.Pattern:
@@ -93,10 +106,10 @@ func (c *Compile) Groups(e Expr, names []string) []string {
 			// args[0] is the binding name
 			// args[1] is the pattern
 			names = append(names, args[0].String())
-			names = c.Groups(args[1], names)
+			names = c.getGroups(args[1], names)
 			return names
 		case atom.PatternSequence, atom.List:
-			return c.GroupsList(list.Tail(), names)
+			return c.getGroupsList(list.Tail(), names)
 		}
 	}
 
@@ -104,9 +117,9 @@ func (c *Compile) Groups(e Expr, names []string) []string {
 
 }
 
-func (c *Compile) GroupsList(exprs []Expr, names []string) []string {
+func (c *Compile) getGroupsList(exprs []Expr, names []string) []string {
 	for _, arg := range exprs {
-		names = c.Groups(arg, names)
+		names = c.getGroups(arg, names)
 	}
 	return names
 }
@@ -148,7 +161,7 @@ func (c *Compile) SimpleList(e []Expr) bool {
 	i := 0
 
 	for i = 0; i < len(e)-1; i++ {
-		if c.IsSequencePattern(e[i]) {
+		if c.isSequencePattern(e[i]) {
 			s = false
 			break
 		}
@@ -159,12 +172,12 @@ func (c *Compile) SimpleList(e []Expr) bool {
 
 	s = true
 	for i = 0; i < len(e); i++ {
-		if c.IsSequencePattern(e[i]) {
+		if c.isSequencePattern(e[i]) {
 			break
 		}
 	}
 	for ; i < len(e); i++ {
-		if !c.IsZeroPattern(e[i]) {
+		if !c.isZeroPattern(e[i]) {
 			s = false
 			break
 		}
@@ -188,7 +201,7 @@ func (c *Compile) SimpleList(e []Expr) bool {
 	return false
 }
 
-func (c *Compile) IsZeroPattern(e Expr) bool {
+func (c *Compile) isZeroPattern(e Expr) bool {
 	if list, ok := e.(List); ok {
 		switch list.HeadAtom() {
 
@@ -204,7 +217,7 @@ func (c *Compile) IsZeroPattern(e Expr) bool {
 	return false
 }
 
-func (c *Compile) IsSequencePattern(e Expr) bool {
+func (c *Compile) isSequencePattern(e Expr) bool {
 	if list, ok := e.(List); ok {
 
 		switch list.HeadAtom() {
@@ -217,7 +230,7 @@ func (c *Compile) IsSequencePattern(e Expr) bool {
 
 		case atom.Pattern, atom.PatternSequence, atom.List:
 			for _, a := range list.Tail() {
-				if c.IsSequencePattern(a) {
+				if c.isSequencePattern(a) {
 					return true
 				}
 			}
@@ -227,14 +240,14 @@ func (c *Compile) IsSequencePattern(e Expr) bool {
 	return false
 }
 
-func (c *Compile) CompileOneStep(e Expr) Prog {
+func (c *Compile) compileOneStep(e Expr) Prog {
 	c.reset()
-	c.groups = c.Groups(e, nil)
-	c.EmitOneStep(e)
-	c.Add(Inst{
+	c.groups = c.getGroups(e, nil)
+	c.emitOneStep(e)
+	c.add(Inst{
 		Op: InstMatchEnd,
 	})
-	eof := c.Add(Inst{
+	eof := c.add(Inst{
 		Op: InstFail,
 	})
 
@@ -248,20 +261,20 @@ func (c *Compile) CompileOneStep(e Expr) Prog {
 
 	return Prog{
 		Inst:    c.ops,
-		onestep: c.Simple(e),
+		onestep: true,
 		groups:  c.groups,
 	}
 }
-func (c *Compile) CompileListOneStep(exprs []Expr) Prog {
+func (c *Compile) compileListOneStep(exprs []Expr) Prog {
 	c.reset()
-	c.groups = c.GroupsList(exprs, nil)
+	c.groups = c.getGroupsList(exprs, nil)
 	for _, e := range exprs {
-		c.EmitOneStep(e)
+		c.emitOneStep(e)
 	}
-	c.Add(Inst{
+	c.add(Inst{
 		Op: InstMatchEnd,
 	})
-	eof := c.Add(Inst{
+	eof := c.add(Inst{
 		Op: InstFail,
 	})
 
@@ -275,8 +288,8 @@ func (c *Compile) CompileListOneStep(exprs []Expr) Prog {
 
 	return Prog{
 		Inst:    c.ops,
-		onestep: c.SimpleList(exprs),
-		groups:  c.GroupsList(exprs, nil),
+		onestep: true,
+		groups:  c.getGroupsList(exprs, nil),
 	}
 }
 func (c *Compile) IsListLiteral(list List) bool {
@@ -310,19 +323,19 @@ func (c *Compile) IsListLiteral(list List) bool {
 	return true
 }
 
-func (c *Compile) EmitOneStep(e Expr) {
+func (c *Compile) emitOneStep(e Expr) {
 
 	list, ok := e.(List)
 
 	// not a list, some other primitive literal
 	if !ok {
 		// some literal
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op:  InstMatchLiteral,
 			Val: e,
 		})
-		c.AddLink(op, c.pc)
-		c.AddAlt(op, -1)
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
 		return
 	}
 
@@ -338,7 +351,7 @@ func (c *Compile) EmitOneStep(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, arg)
 		}
-		c.EmitOneStep(arg)
+		c.emitOneStep(arg)
 	case atom.BlankSequence:
 		arg := ListFirstArg(e)
 		if arg == nil {
@@ -346,7 +359,7 @@ func (c *Compile) EmitOneStep(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, arg)
 		}
-		c.EmitOneStep(ListFrom(atom.MatchPlus, arg))
+		c.emitOneStep(ListFrom(atom.MatchPlus, arg))
 	case atom.BlankNullSequence:
 		arg := ListFirstArg(e)
 		if arg == nil {
@@ -354,7 +367,7 @@ func (c *Compile) EmitOneStep(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, arg)
 		}
-		c.EmitOneStep(ListFrom(atom.MatchStar, arg))
+		c.emitOneStep(ListFrom(atom.MatchStar, arg))
 	case atom.Optional:
 		// TODO default value
 		arg := ListFirstArg(e)
@@ -363,81 +376,81 @@ func (c *Compile) EmitOneStep(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, arg)
 		}
-		c.EmitOneStep(ListFrom(atom.MatchQuest, arg))
+		c.emitOneStep(ListFrom(atom.MatchQuest, arg))
 
 	case atom.Pattern:
 		// Pattern("x", expression)
 		args := list.Tail()
 		name := args[0]
-		slot := c.GetSlot(name.String())
+		slot := c.getSlot(name.String())
 		expr := args[1]
-		cstart := c.Add(Inst{
+		cstart := c.add(Inst{
 			Op:  InstCaptureStart,
 			Alt: slot,
 		})
-		c.AddLink(cstart, c.pc)
-		c.EmitOneStep(expr)
-		cend := c.Add(Inst{
+		c.addLink(cstart, c.pc)
+		c.emitOneStep(expr)
+		cend := c.add(Inst{
 			Op:  InstCaptureStart,
 			Alt: slot,
 		})
-		c.AddLink(cend, c.pc)
+		c.addLink(cend, c.pc)
 	case atom.PatternSequence:
 		args := list.Tail()
 		for _, arg := range args {
-			c.EmitOneStep(arg)
+			c.emitOneStep(arg)
 		}
 
 	case atom.MatchHead:
 		val := list.Tail()[0]
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op:   InstMatchHead,
 			Name: val.String(),
 		})
-		c.AddLink(op, c.pc)
-		c.AddAlt(op, -1)
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
 	case atom.MatchAny:
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op: InstMatchAny,
 		})
-		c.AddLink(op, c.pc)
-		c.AddAlt(op, -1)
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
 	case atom.MatchPlus:
 		arg := ListFirstArg(e)
 		// only has a single argument
-		c.EmitOneStep(arg)
+		c.emitOneStep(arg)
 
 		L1 := c.pc
-		c.EmitOneStep(arg)
+		c.emitOneStep(arg)
 		op := c.pc - 1
 		L3 := c.pc
-		c.AddLink(op, L1)
-		c.AddAlt(op, L3)
+		c.addLink(op, L1)
+		c.addAlt(op, L3)
 	case atom.MatchQuest:
 		arg := list.Tail()[0]
 		// only has a single argument
-		c.EmitOneStep(arg)
+		c.emitOneStep(arg)
 		op := c.pc - 1
 		L1 := c.pc
-		c.AddLink(op, L1)
-		c.AddAlt(op, L1)
+		c.addLink(op, L1)
+		c.addAlt(op, L1)
 	case atom.MatchStar:
 		L1 := c.pc
 
 		// only has a single argument
-		c.EmitOneStep(list.Tail()[0])
+		c.emitOneStep(list.Tail()[0])
 		op := c.pc - 1
 		L3 := c.pc
-		c.AddLink(op, L1)
-		c.AddAlt(op, L3)
+		c.addLink(op, L1)
+		c.addAlt(op, L3)
 	default:
 		if c.IsListLiteral(list) {
-			op := c.Add(Inst{
+			op := c.add(Inst{
 				Op:  InstMatchLiteral,
 				Val: e,
 			})
-			c.AddLink(op, c.pc)
-			c.AddAlt(op, -1)
+			c.addLink(op, c.pc)
+			c.addAlt(op, -1)
 			return
 		}
 
@@ -445,31 +458,31 @@ func (c *Compile) EmitOneStep(e Expr) {
 		//
 		// figure out next program for list
 		nc := NewCompiler()
-		newprog := nc.CompileListOneStep(list.Tail())
+		newprog := nc.compileListOneStep(list.Tail())
 
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
 			Name: list.Head(),
 		})
-		c.AddLink(op, c.pc)
-		c.AddAlt(op, -1)
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
 	}
 }
 
-func (c *Compile) Emit(e Expr) {
+func (c *Compile) emit(e Expr) {
 
 	list, ok := e.(List)
 
 	// not a list, some other primitive literal
 	if !ok {
 		// some literal
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op:  InstMatchLiteral,
 			Val: e,
 		})
-		c.AddLink(op, c.pc)
-		c.AddAlt(op, -1)
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
 		return
 	}
 
@@ -486,7 +499,7 @@ func (c *Compile) Emit(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, list.Tail()[0])
 		}
-		c.Emit(arg)
+		c.emit(arg)
 	case atom.BlankSequence:
 		var arg Expr
 		if list.Length() == 0 {
@@ -494,7 +507,7 @@ func (c *Compile) Emit(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, list.Tail()[0])
 		}
-		c.Emit(ListFrom(atom.MatchPlus, arg))
+		c.emit(ListFrom(atom.MatchPlus, arg))
 	case atom.BlankNullSequence:
 		var arg Expr
 		if list.Length() == 0 {
@@ -502,7 +515,7 @@ func (c *Compile) Emit(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, list.Tail()[0])
 		}
-		c.Emit(ListFrom(atom.MatchStar, arg))
+		c.emit(ListFrom(atom.MatchStar, arg))
 	case atom.Optional:
 		// TODO default value
 		var arg Expr
@@ -511,92 +524,92 @@ func (c *Compile) Emit(e Expr) {
 		} else {
 			arg = ListFrom(atom.MatchHead, list.Tail()[0])
 		}
-		c.Emit(ListFrom(atom.MatchQuest, arg))
+		c.emit(ListFrom(atom.MatchQuest, arg))
 
 	case atom.Pattern:
 		// Pattern("x", expression)
 		args := list.Tail()
 		name := args[0]
-		slot := c.GetSlot(name.String())
+		slot := c.getSlot(name.String())
 		expr := args[1]
-		cstart := c.Add(Inst{
+		cstart := c.add(Inst{
 			Op: InstCaptureStart,
 			//Name: name.String(),
 			Alt: slot,
 		})
-		c.AddLink(cstart, c.pc)
-		c.Emit(expr)
-		cend := c.Add(Inst{
+		c.addLink(cstart, c.pc)
+		c.emit(expr)
+		cend := c.add(Inst{
 			Op:  InstCaptureStart,
 			Alt: slot,
 		})
-		c.AddLink(cend, c.pc)
+		c.addLink(cend, c.pc)
 	case atom.PatternSequence:
 		args := list.Tail()
 		for _, arg := range args {
-			c.Emit(arg)
+			c.emit(arg)
 		}
 	case atom.MatchHead:
 		val := list.Tail()[0]
 
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op: InstMatchHead,
 			// head: val.String(),
 			Name: val.String(),
 		})
-		c.AddLink(op, c.pc)
+		c.addLink(op, c.pc)
 	case atom.MatchAny:
 		// this has a dangling pointer
 		// it will be fixed at the end
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op: InstMatchAny,
 		})
-		c.AddLink(op, c.pc)
+		c.addLink(op, c.pc)
 	case atom.MatchPlus:
 		current := c.pc
 		list, _ := e.(List)
 		// only has a single argument
-		c.Emit(list.Tail()[0])
+		c.emit(list.Tail()[0])
 
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op: InstSplit,
 		})
-		c.AddLink(op, current)
-		c.AddAlt(op, c.pc)
+		c.addLink(op, current)
+		c.addAlt(op, c.pc)
 	case atom.MatchQuest:
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op: InstSplit,
 		})
 		L1 := c.pc
 		list, _ := e.(List)
-		c.Emit(list.Tail()[0])
+		c.emit(list.Tail()[0])
 		L2 := c.pc
-		c.AddLink(op, L1)
-		c.AddAlt(op, L2)
+		c.addLink(op, L1)
+		c.addAlt(op, L2)
 	case atom.MatchStar:
 		//L1 := c.pc
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op: InstSplit,
 		})
 		L2 := c.pc
 		list, _ := e.(List)
-		c.Emit(list.Tail()[0])
-		op2 := c.Add(Inst{
+		c.emit(list.Tail()[0])
+		op2 := c.add(Inst{
 			Op: InstJump,
 		})
 		L3 := c.pc
-		c.AddLink(op2, op)
-		c.AddLink(op, L2)
-		c.AddAlt(op, L3)
+		c.addLink(op2, op)
+		c.addLink(op, L2)
+		c.addAlt(op, L3)
 	default:
 		if c.IsListLiteral(list) {
 			// has no pattern operators, match as literal
-			op := c.Add(Inst{
+			op := c.add(Inst{
 				Op:  InstMatchLiteral,
 				Val: e,
 			})
-			c.AddLink(op, c.pc)
-			c.AddAlt(op, -1)
+			c.addLink(op, c.pc)
+			c.addAlt(op, -1)
 			return
 		}
 
@@ -604,15 +617,15 @@ func (c *Compile) Emit(e Expr) {
 		//
 		// figure out next program for list
 		nc := NewCompiler()
-		newprog := nc.CompileList(list.Tail())
+		newprog := nc.compileNFAList(list.Tail())
 
-		op := c.Add(Inst{
+		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
 			Name: list.Head(),
 		})
-		c.AddLink(op, c.pc)
-		c.AddAlt(op, -1)
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
 		return
 	}
 }
@@ -682,7 +695,7 @@ func (p Prog) Groups() []string {
 }
 
 // Hack until we can do this in the instruction
-func (p Prog) GetSlot(name string) int32 {
+func (p Prog) getSlot(name string) int32 {
 	for i, s := range p.groups {
 		if s == name {
 			return int32(i)

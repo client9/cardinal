@@ -414,7 +414,7 @@ func TestSREM1(t *testing.T) {
 			p := MustParse(tt.pattern)
 			c := NewCompiler()
 			re := NewRegexp()
-			prog := c.Compile(p)
+			prog := c.compileNFA(p)
 			sub := NewCaptures(len(prog.Groups()))
 			matched, bind := re.matchNfa(prog, e, sub)
 
@@ -455,7 +455,7 @@ func TestSREM2(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			prog := c.Compile(p)
+			prog := c.compileNFA(p)
 			matched, bind := re.MatchM2(prog, e)
 
 			if matched != tt.match {
@@ -491,7 +491,7 @@ func TestSREM3(t *testing.T) {
 			continue
 		}
 
-		prog := c.CompileOneStep(p)
+		prog := c.compileOneStep(p)
 		if !prog.IsOneStep() {
 			t.Errorf("%s: M3 program is not one step!", tt.name)
 		}
@@ -529,7 +529,7 @@ func TestSREM4(t *testing.T) {
 			continue
 		}
 
-		prog := c.CompileOneStep(p)
+		prog := c.compileOneStep(p)
 
 		if !prog.IsOneStep() {
 			t.Errorf("%s: M4 program is not one step !", tt.name)
@@ -650,7 +650,7 @@ func BenchmarkSRE(b *testing.B) {
 			b.Run("M1,"+tt.name, func(b *testing.B) {
 				c := NewCompiler()
 				re := NewRegexp()
-				prog := c.CompileList(list.Tail())
+				prog := c.compileNFAList(list.Tail())
 				for b.Loop() {
 					re.matchNfaSequence(prog, e.(List).Tail(), g)
 				}
@@ -660,7 +660,7 @@ func BenchmarkSRE(b *testing.B) {
 			b.Run("M2a,"+tt.name, func(b *testing.B) {
 				c := NewCompiler()
 				re := NewRegexp()
-				prog := c.Compile(p)
+				prog := c.compileNFA(p)
 				for b.Loop() {
 					re.matchM2(prog, e, g)
 				}
@@ -670,7 +670,7 @@ func BenchmarkSRE(b *testing.B) {
 			b.Run("M2b,"+tt.name, func(b *testing.B) {
 				c := NewCompiler()
 				re := NewRegexp()
-				prog := c.CompileList(list.Tail())
+				prog := c.compileNFAList(list.Tail())
 				for b.Loop() {
 					re.matchSequenceM2(prog, e.(List).Tail(), g)
 				}
@@ -681,7 +681,7 @@ func BenchmarkSRE(b *testing.B) {
 				b.Run("M3a,"+tt.name, func(b *testing.B) {
 					c := NewCompiler()
 					re := NewRegexp()
-					prog := c.CompileOneStep(p)
+					prog := c.compileOneStep(p)
 					for b.Loop() {
 						re.matchM3(prog, e, g)
 					}
@@ -691,7 +691,7 @@ func BenchmarkSRE(b *testing.B) {
 				b.Run("M3b,"+tt.name, func(b *testing.B) {
 					c := NewCompiler()
 					re := NewRegexp()
-					prog := c.CompileListOneStep(list.Tail())
+					prog := c.compileListOneStep(list.Tail())
 					for b.Loop() {
 						re.matchSequenceM3(prog, e.(List).Tail(), g)
 					}
@@ -702,7 +702,7 @@ func BenchmarkSRE(b *testing.B) {
 			b.Run("M4a,"+tt.name, func(b *testing.B) {
 				c := NewCompiler()
 				re := NewRegexp()
-				prog := c.CompileOneStep(p)
+				prog := c.compileOneStep(p)
 				for b.Loop() {
 					re.matchM4(prog, e, g)
 				}
@@ -713,7 +713,7 @@ func BenchmarkSRE(b *testing.B) {
 			b.Run("M4b,"+tt.name, func(b *testing.B) {
 				c := NewCompiler()
 				re := NewRegexp()
-				prog := c.CompileListOneStep(p.(List).Tail())
+				prog := c.compileListOneStep(p.(List).Tail())
 				for b.Loop() {
 					re.matchListM4(prog, e, g)
 				}
@@ -735,7 +735,7 @@ func TestSREHack(t *testing.T) {
 	c := NewCompiler()
 	re := NewRegexp()
 
-	prog := c.Compile(p)
+	prog := c.compileNFA(p)
 	matched, _ := re.MatchM2(prog, e)
 	if matched != tt.match {
 		t.Error("Hack failed")
@@ -761,7 +761,7 @@ func BenchmarkSREProfile(b *testing.B) {
 	c := NewCompiler()
 	re := NewRegexp()
 	groups := NewCaptures(3)
-	prog := c.CompileListOneStep(list.Tail())
+	prog := c.compileListOneStep(list.Tail())
 	for b.Loop() {
 		re.matchSequenceM4(prog, args, groups)
 		//re.matchSequenceM3(prog, args, groups)
@@ -796,7 +796,7 @@ func BenchmarkSRECrazy(b *testing.B) {
 			list := p.(List)
 
 			c := NewCompiler()
-			prog := c.CompileList(list.Tail())
+			prog := c.compileNFAList(list.Tail())
 
 			re := NewRegexp()
 			for b.Loop() {

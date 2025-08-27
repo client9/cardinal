@@ -101,9 +101,12 @@ func (l List) HeadExpr() Expr {
 }
 
 func (l List) Head() string {
-	if name, ok := ExtractSymbol(l.HeadExpr()); ok {
-		return name
-	}
+	return l.elements[0].String()
+	/*
+		if name, ok := ExtractSymbol(l.HeadExpr()); ok {
+			return name
+		}
+	*/
 	panic("Head of List is not a symbol")
 }
 

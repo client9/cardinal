@@ -11,10 +11,10 @@ func TestCompileCheck(t *testing.T) {
 	e := MustParse("Pattern(x, MatchAny())")
 	//, MatchStar(MatchAny()), MatchStar(MatchAny()) ]")
 	//e := MustParse("[MatchPlus(MatchAny(Integer)), MatchStar(MatchHead(Integer))]")
-	p := c.Compile(e)
+	p := c.compileNFA(e)
 	p.Dump()
 	fmt.Printf("----\n")
-	p2 := c.CompileOneStep(e)
+	p2 := c.compileOneStep(e)
 	p2.Dump()
 }
 
@@ -25,7 +25,7 @@ func BenchmarkCompileNFA(b *testing.B) {
 	//e := MustParse("Pattern(x, Blank())")
 	c := NewCompiler()
 	for b.Loop() {
-		c.Compile(e)
+		c.compileNFA(e)
 	}
 }
 
@@ -34,7 +34,7 @@ func BenchmarkCompileOneStep(b *testing.B) {
 	//e := MustParse("Pattern(x, MatchAny())")
 	c := NewCompiler()
 	for b.Loop() {
-		c.CompileOneStep(e)
+		c.compileOneStep(e)
 	}
 }
 
@@ -42,7 +42,7 @@ func TestCompileGroups(t *testing.T) {
 	c := NewCompiler()
 	e := MustParse("[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]")
 	elist := e.(List)
-	p := c.CompileList(elist.Tail())
+	p := c.compileNFAList(elist.Tail())
 	g := p.Groups()
 	if len(g) != 3 {
 		t.Errorf("Expected 3 groups, got %v", g)
