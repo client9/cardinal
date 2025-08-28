@@ -28,9 +28,19 @@ func DivideIntegers(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 // Returns (float64, error) for clear type safety
 //
 // @ExprPattern (_Real, _Real)
-func DivideNumbers(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+func DivideReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	x, _ := core.ExtractFloat64(args[0])
 	y, _ := core.ExtractFloat64(args[1])
+	if y == 0 {
+		return core.NewInteger(0) // 0, fmt.Errorf("DivisionByZero")
+	}
+
+	return core.NewReal(x / y)
+}
+// @ExprPattern (_Number, _Number)
+func DivideNumber(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	x, _ := core.GetNumericValue(args[0])
+	y, _ := core.GetNumericValue(args[1])
 	if y == 0 {
 		return core.NewInteger(0) // 0, fmt.Errorf("DivisionByZero")
 	}
