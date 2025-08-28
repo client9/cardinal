@@ -37,6 +37,7 @@ func DivideReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 
 	return core.NewReal(x / y)
 }
+
 // @ExprPattern (_Number, _Number)
 func DivideNumber(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	x, _ := core.GetNumericValue(args[0])
