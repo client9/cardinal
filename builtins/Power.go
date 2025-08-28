@@ -41,10 +41,10 @@ func PowerInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 // Returns (float64, error) for clear type safety
 // TODO: Error handling
 //
-// @ExprPattern (_Real, _Real)
+// @ExprPattern (_Number, _Number)
 func PowerNumbers(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	base, _ := core.ExtractFloat64(args[0])
-	exp, _ := core.ExtractFloat64(args[1])
+	base, _ := core.GetNumericValue(args[0])
+	exp, _ := core.GetNumericValue(args[1])
 
 	result, err := powerFloat64(base, exp)
 	if err != nil {
