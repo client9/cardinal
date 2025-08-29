@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -32,7 +32,7 @@ func BlockExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Ex
 	return result
 }
 
-func restoreBlockVars(e *engine.Evaluator, ctx *engine.Context, saved map[string]core.Expr) error {
+func restoreBlockVars(e *engine.Evaluator, ctx *engine.Context, saved map[core.Symbol]core.Expr) error {
 
 	// Restore original values
 	for varName, oldValue := range saved {
@@ -48,9 +48,9 @@ func restoreBlockVars(e *engine.Evaluator, ctx *engine.Context, saved map[string
 	return nil
 }
 
-func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[string]core.Expr, error) {
+func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[core.Symbol]core.Expr, error) {
 	// Store original variable values to restore later
-	savedVars := make(map[string]core.Expr)
+	savedVars := make(map[core.Symbol]core.Expr)
 
 	varList, ok := vars.(core.List)
 	if !ok || varList.Length() == 0 {
@@ -59,7 +59,7 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 	// Expect List(Set(x, value), Set(y, value), ...)
 	for _, arg := range varList.Tail() {
 		// can be a single symbol name
-		if varName, ok := core.ExtractSymbol(arg); ok {
+		if varName, ok := arg.(core.Symbol); ok {
 			// Save current value
 			if oldValue, exists := c.Get(varName); exists {
 				savedVars[varName] = oldValue
@@ -70,13 +70,13 @@ func saveBlockVars(e *engine.Evaluator, c *engine.Context, vars core.Expr) (map[
 		}
 
 		setvar, ok := arg.(core.List)
-		if !ok || setvar.Length() != 2 || setvar.HeadAtom() != atom.Set {
-			return nil, fmt.Errorf("variable not a symbol or assignment. %s, len=%d, head=%s", setvar.String(), setvar.Length(), setvar.Head())
+		if !ok || setvar.Length() != 2 || setvar.HeadExpr() != symbol.Set {
+			return nil, fmt.Errorf("variable not a symbol or assignment. %s, len=%d, head=%s", setvar.String(), setvar.Length(), setvar.String())
 			// ERROR
 		}
 		setvarArgs := setvar.Tail()
 
-		varName, ok := core.ExtractSymbol(setvarArgs[0])
+		varName, ok := setvarArgs[0].(core.Symbol)
 		if !ok {
 			return nil, fmt.Errorf("Set malformed")
 		}

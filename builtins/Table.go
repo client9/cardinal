@@ -3,7 +3,7 @@ package builtins
 import (
 	"fmt"
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -17,7 +17,7 @@ func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	spec := args[1] // Don't evaluate spec yet
 
 	// if list, assume iterator spec
-	if list, ok := spec.(core.List); ok && list.HeadAtom() == atom.List {
+	if list, ok := spec.(core.List); ok && list.HeadExpr() == symbol.List {
 		return tableIterator(e, c, expr, list)
 	}
 

@@ -75,8 +75,8 @@ func TestMatchesType(t *testing.T) {
 		{NewSymbol("x"), "Symbol", true},
 		{NewList("List"), "List", true},
 		{NewInteger(42), "", true}, // No constraint
-		{NewObjectExpr("CustomType", NewInteger(1)), "CustomType", true},
-		{NewObjectExpr("CustomType", NewInteger(1)), "OtherType", false},
+		{NewObjectExpr(NewSymbol("CustomType"), NewInteger(1)), "CustomType", true},
+		{NewObjectExpr(NewSymbol("CustomType"), NewInteger(1)), "OtherType", false},
 	}
 
 	for _, test := range tests {

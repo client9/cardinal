@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -13,7 +14,7 @@ import (
 //
 // @ExprPattern (___)
 func CompoundExpression(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	var result core.Expr = core.NewSymbolNull()
+	var result core.Expr = symbol.Null
 
 	for _, arg := range args {
 		result = e.Evaluate(arg)

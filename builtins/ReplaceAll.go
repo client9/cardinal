@@ -2,7 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -33,7 +33,7 @@ func ReplaceAll(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 	}
 
 	// If no changes were made and rule is a list with non-rules, return unevaluated ReplaceAll
-	if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 && rulesList.HeadAtom() == atom.List {
+	if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 && rulesList.HeadExpr() == symbol.List {
 		for _, r := range rulesList.Tail() {
 			if !isRuleOrRuleDelayed(r) {
 				return core.NewError("ArgumentError", "Input was not a list of rules")
@@ -57,7 +57,7 @@ func replaceAllRecursive(expr core.Expr, rule core.Expr) core.Expr {
 			// Rule matched at this level, return the result (don't recurse into replacement)
 			return result
 		}
-	} else if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 && rulesList.HeadAtom() == atom.List {
+	} else if rulesList, ok := rule.(core.List); ok && rulesList.Length() > 0 && rulesList.HeadExpr() == symbol.List {
 		// Handle List of rules
 		// First, check if ALL elements (except head) are Rules or RuleDelayed
 		allAreRules := true

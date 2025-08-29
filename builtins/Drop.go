@@ -46,7 +46,7 @@ func dropListSingle(list core.List, index int64) core.Expr {
 	listLength := list.Length()
 
 	if listLength == 0 {
-		return core.NewList(list.Head())
+		return core.ListFrom(list.HeadExpr())
 	}
 
 	// Validate index
@@ -70,7 +70,7 @@ func dropListSingle(list core.List, index int64) core.Expr {
 	if actualIndex == 1 {
 		// Dropping first element
 		if listLength == 1 {
-			return core.NewList(list.Head())
+			return core.ListFrom(list.HeadExpr())
 		}
 		return list.Slice(2, listLength)
 	} else if actualIndex == listLength {
@@ -91,7 +91,7 @@ func dropListSingle(list core.List, index int64) core.Expr {
 func dropListRange(list core.List, start, end int64) core.Expr {
 	listLength := list.Length()
 	if listLength == 0 {
-		return core.NewList(list.Head())
+		return core.ListFrom(list.HeadExpr())
 	}
 
 	// Validate indices
@@ -120,7 +120,7 @@ func dropListRange(list core.List, start, end int64) core.Expr {
 	// Use modern Slice and Join methods to exclude the range
 	if actualStart == 1 && actualEnd == listLength {
 		// Dropping everything
-		return core.NewList(list.Head())
+		return core.ListFrom(list.HeadExpr())
 	} else if actualStart == 1 {
 		// Dropping from beginning
 		return list.Slice(actualEnd+1, listLength)

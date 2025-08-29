@@ -43,7 +43,7 @@ func (s *EvaluationStack) Depth() int {
 
 // Context represents the evaluation context with variable bindings and symbol attributes
 type Context struct {
-	variables        map[string]core.Expr
+	variables        map[core.Symbol]core.Expr
 	symbolTable      *SymbolTable
 	functionRegistry *FunctionRegistry // Unified pattern-based function system
 	stack            *EvaluationStack
@@ -52,7 +52,7 @@ type Context struct {
 // NewContext creates a new evaluation context
 func NewContext() *Context {
 	ctx := &Context{
-		variables:        make(map[string]core.Expr),
+		variables:        make(map[core.Symbol]core.Expr),
 		symbolTable:      NewSymbolTable(),
 		functionRegistry: NewFunctionRegistry(),
 		stack:            NewEvaluationStack(1000), // Default max depth of 1000
@@ -61,16 +61,21 @@ func NewContext() *Context {
 	return ctx
 }
 
+func (c *Context) Clear(name core.Symbol) {
+	delete(c.variables, name)
+	c.functionRegistry.Clear(name)
+}
+
 // GetFunctionDefinitions returns a list of patterns registered to the given symbol
 // exposed for debugging.
-func (c *Context) GetFunctionDefinitions(name string) []FunctionDef {
+func (c *Context) GetFunctionDefinitions(name core.Symbol) []FunctionDef {
 	return c.functionRegistry.GetFunctionDefinitions(name)
 }
 
 // Set sets a variable in the context
 // If this is a child context and the variable is not in scopedVars, set it in the parent
 // Returns an error if the symbol is Protected
-func (c *Context) Set(name string, value core.Expr) error {
+func (c *Context) Set(name core.Symbol, value core.Expr) error {
 	// Check if symbol is protected
 	if c.symbolTable.HasAttribute(name, Protected) {
 		return fmt.Errorf("symbol %s is Protected", name)
@@ -81,7 +86,7 @@ func (c *Context) Set(name string, value core.Expr) error {
 }
 
 // Get retrieves a variable from the context (searches up the parent chain)
-func (c *Context) Get(name string) (core.Expr, bool) {
+func (c *Context) Get(name core.Symbol) (core.Expr, bool) {
 	if value, ok := c.variables[name]; ok {
 		return value, true
 	}
@@ -89,7 +94,7 @@ func (c *Context) Get(name string) (core.Expr, bool) {
 }
 
 // Delete removes a variable from the context
-func (c *Context) Delete(name string) error {
+func (c *Context) Delete(name core.Symbol) error {
 	if c.symbolTable.HasAttribute(name, Protected) {
 		return fmt.Errorf("symbol %s is Protected", name)
 	}

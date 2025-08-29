@@ -2,7 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -40,7 +40,7 @@ func PlusExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Exp
 	// Build result elements
 
 	var resultElements = make([]core.Expr, 0, 4+len(nonNumeric))
-	resultElements = append(resultElements, core.SymbolFor(atom.Plus))
+	resultElements = append(resultElements, symbol.Plus)
 
 	// Add combined numeric value
 	if hasIntegers && hasReals {

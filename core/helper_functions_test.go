@@ -302,9 +302,9 @@ func TestCopyExprList(t *testing.T) {
 			}
 
 			// Verify head
-			if result.Head() != tt.head {
+			if result.HeadExpr().String() != tt.head {
 				t.Errorf("CopyExprList head = %s, want %s",
-					result.Head(), tt.head)
+					result.HeadExpr().String(), tt.head)
 			}
 
 			// Verify args (should be copies of references, not deep copies)

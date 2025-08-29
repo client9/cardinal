@@ -22,8 +22,8 @@ func (i Integer) InputForm() string {
 	return i.String()
 }
 
-func (i Integer) Head() string {
-	return "Integer"
+func (i Integer) HeadExpr() Symbol {
+	return symbolInteger
 }
 
 func (i Integer) Length() int64 {

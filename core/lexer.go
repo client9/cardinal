@@ -2,8 +2,6 @@ package core
 
 import (
 	"fmt"
-
-	"github.com/client9/sexpr/core/atom"
 )
 
 type TokenType int
@@ -52,7 +50,7 @@ const (
 type Token struct {
 	Type     TokenType
 	Value    string
-	Atom     atom.Atom
+	Symbol   Symbol
 	Position int
 }
 
@@ -61,7 +59,7 @@ func (t Token) String() string {
 	case EOF:
 		return "EOF"
 	case SYMBOL:
-		return fmt.Sprintf("SYMBOL(%s %d)", t.Value, t.Atom)
+		return fmt.Sprintf("SYMBOL(%s)", t.Value)
 	case INTEGER:
 		return fmt.Sprintf("INTEGER(%s)", t.Value)
 	case FLOAT:
@@ -422,15 +420,8 @@ func (l *Lexer) NextToken() Token {
 	case '$':
 		tok.Position = l.position - 1
 		tok.Type = SYMBOL
-		val := l.readDollarSymbol()
-		tok.Atom = atom.Lookup(tok.Value)
-		if tok.Atom == 0 {
-			tok.Value = val
-		} else {
-			tok.Value = tok.Atom.String()
-		}
-		//tok.Value = l.readDollarSymbol()
-		//tok.Atom = atom.Lookup(tok.Value)
+		tok.Symbol = NewSymbol(l.readDollarSymbol())
+		tok.Value = tok.Symbol.String()
 		return tok
 	case 0:
 		tok.Type = EOF
@@ -441,13 +432,8 @@ func (l *Lexer) NextToken() Token {
 		if isLetter(l.ch) {
 			tok.Position = l.position - 1
 			tok.Type = SYMBOL
-			val := l.readIdentifier()
-			tok.Atom = atom.Lookup(tok.Value)
-			if tok.Atom == 0 {
-				tok.Value = val
-			} else {
-				tok.Value = tok.Atom.String()
-			}
+			tok.Symbol = NewSymbol(l.readIdentifier())
+			tok.Value = tok.Symbol.String()
 			return tok
 		} else if isDigit(l.ch) {
 			tok.Position = l.position - 1

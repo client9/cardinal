@@ -177,9 +177,8 @@ func (a Association) InputForm() string {
 	return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
 }
 
-// Type implements Expr interface
-func (a Association) Head() string {
-	return "Association"
+func (a Association) HeadExpr() Symbol {
+	return symbolAssociation
 }
 
 func (a Association) IsAtom() bool {

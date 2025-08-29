@@ -3,8 +3,6 @@ package core
 import (
 	"fmt"
 	"strings"
-
-	"github.com/client9/sexpr/core/atom"
 )
 
 // List represents compound expressions
@@ -14,24 +12,18 @@ type List struct {
 
 // ListExpr creates a list with head "List"
 func ListExpr(args ...Expr) List {
-	elements := make([]Expr, len(args)+1)
-	elements[0] = symbolList
-	copy(elements[1:], args)
-	return List{elements: elements}
+	return ListFrom(symbolList, args...)
 }
 
-func ListFrom(atom atom.Atom, args ...Expr) List {
+func ListFrom(head Symbol, args ...Expr) List {
 	elements := make([]Expr, len(args)+1)
-	elements[0] = SymbolFor(atom)
+	elements[0] = head
 	copy(elements[1:], args)
 	return List{elements: elements}
 }
 
 func NewList(head string, args ...Expr) List {
-	elements := make([]Expr, len(args)+1)
-	elements[0] = NewSymbol(head)
-	copy(elements[1:], args)
-	return List{elements: elements}
+	return ListFrom(NewSymbol(head), args...)
 }
 
 // NewListFromExprs creates a List directly from expressions (for special cases)
@@ -67,7 +59,7 @@ func (l List) String() string {
 		isListLiteral := false
 
 		// Check new Symbol type first
-		if l.Head() == "List" {
+		if l.HeadExpr() == symbolList {
 			isListLiteral = true
 		}
 
@@ -86,28 +78,14 @@ func (l List) String() string {
 	for _, elem := range l.AsSlice() {
 		elements = append(elements, elem.String())
 	}
-	return fmt.Sprintf("%s(%s)", l.Head(), strings.Join(elements[1:], ", "))
+	return fmt.Sprintf("%s(%s)", l.HeadExpr().String(), strings.Join(elements[1:], ", "))
 }
 func (l List) InputForm() string {
 	return l.inputFormWithPrecedence(PrecedenceLowest)
 }
 
-func (l List) HeadAtom() atom.Atom {
-	return l.HeadExpr().(Symbol).atom
-}
-
-func (l List) HeadExpr() Expr {
-	return (l.elements)[0]
-}
-
-func (l List) Head() string {
-	return l.elements[0].String()
-	/*
-		if name, ok := ExtractSymbol(l.HeadExpr()); ok {
-			return name
-		}
-	*/
-	panic("Head of List is not a symbol")
+func (l List) HeadExpr() Symbol {
+	return (l.elements)[0].(Symbol)
 }
 
 // TODO DANGER
@@ -193,10 +171,10 @@ func (l List) Join(other Sliceable) Expr {
 		return l // Return this list if the other one is empty
 	}
 
-	if l.Head() != otherList.Head() {
+	if l.HeadExpr() != otherList.HeadExpr() {
 		return NewError("TypeError",
 			fmt.Sprintf("Cannot join lists with different heads: %s and %s",
-				l.Head(), otherList.Head()))
+				l.HeadExpr(), otherList.HeadExpr()))
 	}
 
 	// Create new list with combined elements

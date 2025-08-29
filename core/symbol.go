@@ -1,65 +1,26 @@
 package core
 
 import (
-	"github.com/client9/sexpr/core/atom"
+	"unique"
 )
 
-type Symbol struct {
-	atom atom.Atom
-	name string
-}
-
-var symbolTrue Symbol
-var symbolFalse Symbol
-var symbolNull Symbol
-var symbolList Symbol
-
-func init() {
-	atomTrue := atom.Lookup("True")
-	atomFalse := atom.Lookup("False")
-	atomNull := atom.Lookup("Null")
-	atomList := atom.Lookup("List")
-	symbolTrue = Symbol{atom: atomTrue, name: atomTrue.String()}
-	symbolFalse = Symbol{atom: atomFalse, name: atomFalse.String()}
-	symbolNull = Symbol{atom: atomNull, name: atomNull.String()}
-	symbolList = Symbol{atom: atomList, name: atomList.String()}
-}
-
-// SymbolFor makes a symbol with the given atom "SymbolFor(atom.Xyz)"
-func SymbolFor(a atom.Atom) Symbol {
-	// TODO -- why even bother with the name/string?
-	return Symbol{
-		atom: a,
-		name: a.String(),
-	}
-}
+// basically a pointer to string
+type Symbol unique.Handle[string]
 
 func NewSymbol(s string) Symbol {
-	a := atom.Lookup(s)
-	if a == 0 {
-		return Symbol{atom: 0, name: s}
-	}
-	return Symbol{atom: a, name: a.String()}
+	return Symbol(unique.Make(s))
 }
 
-// NewSymbolNull creates the Null symbol
-func NewSymbolNull() Symbol { return symbolNull }
-
-// Symbol type implementation
 func (s Symbol) String() string {
-	return s.name
+	return unique.Handle[string](s).Value()
 }
 
 func (s Symbol) InputForm() string {
 	return s.String()
 }
 
-func (s Symbol) Atom() atom.Atom {
-	return s.atom
-}
-
-func (s Symbol) Head() string {
-	return "Symbol"
+func (s Symbol) HeadExpr() Symbol {
+	return symbolSymbol
 }
 
 func (s Symbol) Length() int64 {
@@ -67,14 +28,15 @@ func (s Symbol) Length() int64 {
 }
 
 func (s Symbol) Equal(rhs Expr) bool {
-	other, ok := rhs.(Symbol)
-	if !ok || other.atom != s.atom {
-		return false
-	}
-	if other.atom == 0 {
-		return other.name == s.name
-	}
-	return true
+	return s == rhs
+
+	/*
+	   	if other, ok := rhs.(Symbol); ok && s == other  {
+	   		return true
+	   	}
+
+	   return false
+	*/
 }
 
 func (s Symbol) IsAtom() bool {

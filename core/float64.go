@@ -26,8 +26,8 @@ func (r Real) InputForm() string {
 	return r.String()
 }
 
-func (r Real) Head() string {
-	return "Real"
+func (r Real) HeadExpr() Symbol {
+	return symbolReal
 }
 
 func (r Real) Length() int64 {

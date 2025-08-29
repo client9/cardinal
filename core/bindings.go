@@ -2,8 +2,6 @@ package core
 
 import (
 	"fmt"
-
-	"github.com/client9/sexpr/core/atom"
 )
 
 type CaptureIndex struct {
@@ -97,9 +95,9 @@ func (c *Captures) String() string {
 	return c.AsRules(nil).String()
 }
 
-func (c *Captures) AsRules(names []string) Expr {
+func (c *Captures) AsRules(names []Symbol) Expr {
 
-	var name string
+	var name Symbol
 
 	if c.Length() == 0 {
 		//fmt.Printf("Capture had nothing\n")
@@ -126,9 +124,9 @@ func (c *Captures) AsRules(names []string) Expr {
 		if names != nil {
 			name = names[i]
 		} else {
-			name = fmt.Sprintf("$%d", i+1)
+			name = NewSymbol(fmt.Sprintf("$%d", i+1))
 		}
-		rules = append(rules, ListFrom(atom.Rule, NewSymbol(name), target))
+		rules = append(rules, ListFrom(symbolRule, name, target))
 	}
 	return ListExpr(rules...)
 }

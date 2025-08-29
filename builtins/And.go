@@ -2,7 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -45,7 +45,7 @@ func AndExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 
 	// Return And expression with remaining args
 	elements := make([]core.Expr, len(unevaluatedArgs)+1)
-	elements[0] = core.SymbolFor(atom.And)
+	elements[0] = symbol.And
 	copy(elements[1:], unevaluatedArgs)
 	return core.NewListFromExprs(elements...)
 }

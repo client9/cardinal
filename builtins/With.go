@@ -2,7 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -27,12 +27,12 @@ func With(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	rules := list.Copy()
 	for _, arg := range rules.Tail() {
 		r, ok := arg.(core.List)
-		if !ok || r.HeadAtom() != atom.Set || r.Length() != 2 {
+		if !ok || r.HeadExpr() != symbol.Set || r.Length() != 2 {
 			return core.NewError("ArgumentError", "With expected list of set assignments")
 		}
 		// TODO: DANGER
 		r.SetHead("Rule")
-		//(*r.Elements)[0] = core.SymbolFor(atom.Rule)
+		//(*r.Elements)[0] = symbol.Rule)
 	}
 
 	modified := core.ReplaceAllWithRules(body, rules)

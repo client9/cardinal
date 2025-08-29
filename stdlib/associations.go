@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // Association functions - all work with ObjectExpr of type "Association"
@@ -33,7 +34,7 @@ func AssociationRules(rules ...core.Expr) core.Expr {
 
 	// Process each Rule expression
 	for _, rule := range rules {
-		if ruleList, ok := rule.(core.List); ok && ruleList.Length() == 2 && ruleList.Head() == "Rule" {
+		if ruleList, ok := rule.(core.List); ok && ruleList.Length() == 2 && ruleList.HeadExpr() == symbol.Rule {
 			args := ruleList.Tail()
 			assoc = assoc.Set(args[0], args[1]) // Returns new association (immutable)
 			continue

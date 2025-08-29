@@ -13,9 +13,6 @@ func (s SliceFloat64) Length() int64 {
 }
 
 func (s SliceFloat64) String() string {
-	if len(s) == 0 {
-		return "List()"
-	}
 	parts := make([]string, len(s))
 	for i, val := range s {
 		parts[i] = fmt.Sprintf("%g", val)
@@ -27,8 +24,8 @@ func (s SliceFloat64) InputForm() string {
 	return s.String()
 }
 
-func (s SliceFloat64) Head() string {
-	return "List"
+func (s SliceFloat64) HeadExpr() Symbol {
+	return symbolList
 }
 
 func (s SliceFloat64) IsAtom() bool {

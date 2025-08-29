@@ -18,8 +18,8 @@ func (s String) InputForm() string {
 	return s.String()
 }
 
-func (s String) Head() string {
-	return "String"
+func (s String) HeadExpr() Symbol {
+	return symbolString
 }
 
 func (s String) Length() int64 {

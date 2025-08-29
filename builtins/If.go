@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -33,7 +34,7 @@ func IfExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 		if len(args) == 3 {
 			return e.Evaluate(args[2])
 		}
-		return core.NewSymbolNull()
+		return symbol.Null
 	}
 
 	// Condition is not a boolean, return an error

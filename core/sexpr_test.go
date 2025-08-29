@@ -112,7 +112,7 @@ func TestAtom_Type(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.atom.Head()
+			result := tt.atom.HeadExpr().String()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
@@ -188,7 +188,7 @@ func TestList_Type(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.list.Head()
+			result := tt.list.HeadExpr().String()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
@@ -245,8 +245,8 @@ func TestConstructorFunctions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expr := tt.constructor()
 
-			if expr.Head() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Head())
+			if expr.HeadExpr().String() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, expr.HeadExpr().String())
 			}
 
 			// Check value based on the expected type
@@ -313,8 +313,8 @@ func TestNewList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.list.Head() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.Head())
+			if tt.list.HeadExpr().String() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.HeadExpr().String())
 			}
 
 			if len(tt.list.Tail()) != tt.expectedLength {

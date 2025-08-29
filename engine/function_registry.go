@@ -22,43 +22,26 @@ type FunctionDef struct {
 	Body        core.Expr   // The body expression for user-defined functions (nil for Go implementations)
 	GoImpl      PatternFunc // Go implementation for built-in functions (nil for user-defined)
 	Specificity int         // Auto-calculated pattern specificity for ordering
-	IsBuiltin   bool        // Whether this definition came from system registration
+	IsBuiltin   bool        // Whether this definition came from system registrationa
+	prog        core.Prog
 }
 
 // FunctionRegistry manages all function definitions (user-defined and built-in) with pattern-based dispatch
 type FunctionRegistry struct {
-	functions map[string][]FunctionDef // function name -> ordered list of patterns
+	functions map[core.Symbol][]FunctionDef // function name -> ordered list of patterns
+	re        *core.ThompsonVM
 }
 
 // NewFunctionRegistry creates a new function registry
 func NewFunctionRegistry() *FunctionRegistry {
 	return &FunctionRegistry{
-		functions: make(map[string][]FunctionDef),
+		functions: make(map[core.Symbol][]FunctionDef),
+		re:        core.NewRegexp(),
 	}
 }
 
-// calculatePatternSpecificity calculates specificity for compound patterns
-func calculatePatternSpecificity(pattern core.Expr) int {
-	// For compound patterns (List), use compound specificity calculation
-	if list, ok := pattern.(core.List); ok {
-		cs := core.CalculateCompoundSpecificity(list)
-		return cs.TotalScore
-	}
-
-	// For simple patterns, use the regular specificity (cast to int)
-	return int(core.GetPatternSpecificity(pattern))
-}
-
-func sortBySpec(v []FunctionDef) {
-	sort.Slice(v, func(i, j int) bool {
-		// Higher specificity comes first
-		if v[i].Specificity != v[j].Specificity {
-			return v[i].Specificity > v[j].Specificity
-		}
-		// Tie-breaker: use lexicographic order of pattern strings for stability
-		// This ensures Integer patterns come before Number patterns when specificity is equal
-		return v[i].Pattern.String() < v[j].Pattern.String()
-	})
+func (r *FunctionRegistry) Clear(sym core.Symbol) {
+	delete(r.functions, sym)
 }
 
 // RegisterPatternBuiltins registers multiple built-in functions from a map
@@ -86,7 +69,13 @@ func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl Patter
 		return fmt.Errorf("invalid pattern syntax: %v", err)
 	}
 
-	functionName := pattern.Head()
+	list := pattern.(core.List)
+	functionName := list.HeadExpr()
+	args := list.Tail()
+
+	c := core.NewCompiler()
+	prog := c.CompileList(args)
+
 	specificity := calculatePatternSpecificity(pattern)
 	funcDef := FunctionDef{
 		Pattern:     pattern,
@@ -94,6 +83,7 @@ func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl Patter
 		GoImpl:      impl,
 		Specificity: specificity,
 		IsBuiltin:   true,
+		prog:        prog,
 	}
 
 	definitions := r.functions[functionName]
@@ -104,7 +94,7 @@ func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl Patter
 }
 
 // registerFunctionDef adds or replaces a function definition
-func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef FunctionDef) {
+func (r *FunctionRegistry) registerFunctionDef(functionName core.Symbol, newDef FunctionDef) {
 	definitions := r.functions[functionName]
 
 	// Check if we need to replace an existing equivalent pattern
@@ -145,7 +135,7 @@ func (r *FunctionRegistry) registerFunctionDef(functionName string, newDef Funct
 
 // RegisterUserFunction registers a user-defined function with pattern and body
 func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Expr) error {
-	functionName := pattern.Head()
+	functionName := pattern.HeadExpr()
 
 	funcDef := FunctionDef{
 		Pattern:     pattern,
@@ -160,13 +150,15 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Exp
 }
 
 func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, core.PatternBindings) {
-	fname := fn.Head()
+
+	list := fn.(core.List)
+	fname := list.HeadExpr()
+	args := list.Tail()
 
 	definitions, exists := r.functions[fname]
 	if !exists {
 		return nil, nil
 	}
-
 	for _, def := range definitions {
 		// If a pattern is longer than the function
 		// then it can't match (Maybe.. need to think about this more)
@@ -178,6 +170,14 @@ func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, co
 				continue
 			}
 		*/
+		if !def.prog.IsZero() {
+			//fmt.Printf("Got Prog: pattern: %v, args: %v\n", def.Pattern, args)
+			//def.prog.Dump()
+			if matches, _ := r.re.MatchList(def.prog, args); matches {
+				return &def, nil
+			}
+			continue
+		}
 		if matches, bindings := core.MatchWithBindings(fn, def.Pattern); matches {
 			return &def, bindings
 		}
@@ -187,7 +187,7 @@ func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, co
 }
 
 // GetFunctionDefinitions returns all definitions for a function name (for debugging/introspection)
-func (r *FunctionRegistry) GetFunctionDefinitions(functionName string) []FunctionDef {
+func (r *FunctionRegistry) GetFunctionDefinitions(functionName core.Symbol) []FunctionDef {
 	if definitions, exists := r.functions[functionName]; exists {
 		// Return a copy to prevent external modification
 		result := make([]FunctionDef, len(definitions))
@@ -198,12 +198,13 @@ func (r *FunctionRegistry) GetFunctionDefinitions(functionName string) []Functio
 }
 
 // GetAllFunctionNames returns all registered function names
-func (r *FunctionRegistry) GetAllFunctionNames() []string {
-	names := make([]string, 0, len(r.functions))
+func (r *FunctionRegistry) GetAllFunctionNames() []core.Symbol {
+	names := make([]core.Symbol, 0, len(r.functions))
 	for name := range r.functions {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	// TODO SORT -- how is this even used?
+	//sort.Strings(names)
 	return names
 }
 
@@ -317,4 +318,28 @@ func typesCouldOverlap(type1, type2 string) bool {
 	// Different concrete types don't overlap
 	// Integer vs String, Integer vs Real, String vs Real, etc.
 	return false
+}
+
+// calculatePatternSpecificity calculates specificity for compound patterns
+func calculatePatternSpecificity(pattern core.Expr) int {
+	// For compound patterns (List), use compound specificity calculation
+	if list, ok := pattern.(core.List); ok {
+		cs := core.CalculateCompoundSpecificity(list)
+		return cs.TotalScore
+	}
+
+	// For simple patterns, use the regular specificity (cast to int)
+	return int(core.GetPatternSpecificity(pattern))
+}
+
+func sortBySpec(v []FunctionDef) {
+	sort.Slice(v, func(i, j int) bool {
+		// Higher specificity comes first
+		if v[i].Specificity != v[j].Specificity {
+			return v[i].Specificity > v[j].Specificity
+		}
+		// Tie-breaker: use lexicographic order of pattern strings for stability
+		// This ensures Integer patterns come before Number patterns when specificity is equal
+		return v[i].Pattern.String() < v[j].Pattern.String()
+	})
 }

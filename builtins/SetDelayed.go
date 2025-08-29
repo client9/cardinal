@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -29,17 +30,17 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 				return core.NewError("DefinitionError", err.Error())
 			}
 
-			return core.NewSymbolNull()
+			return symbol.Null
 		}
 	}
 
 	// Handle simple variable assignment: x := value
-	if symbolName, ok := core.ExtractSymbol(lhs); ok {
+	if symbolName, ok := lhs.(core.Symbol); ok {
 		// Store the right-hand side without evaluation (delayed)
 		if err := c.Set(symbolName, rhs); err != nil {
 			return core.NewError("Protected", err.Error())
 		}
-		return core.NewSymbolNull()
+		return symbol.Null
 	}
 
 	return core.NewError("SetDelayedError", "Invalid assignment target")

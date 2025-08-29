@@ -5,7 +5,7 @@ func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings)
 	// Check if original element is a symbol that was bound to a List
 	if elemSym, ok := originalElem.(Symbol); ok {
 		if val := bindings.HasBinding(elemSym.String()); val != nil {
-			return val.Head() == "List"
+			return val.HeadExpr() == symbolList
 		}
 	}
 	return false

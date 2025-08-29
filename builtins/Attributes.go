@@ -16,7 +16,7 @@ func AttributesExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 
 	symbolTable := c.GetSymbolTable()
 
-	symbolName := args[0].String()
+	symbolName := args[0].(core.Symbol)
 
 	attrs := symbolTable.Attributes(symbolName)
 

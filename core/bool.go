@@ -1,9 +1,5 @@
 package core
 
-import (
-	"github.com/client9/sexpr/core/atom"
-)
-
 func NewBool(value bool) Symbol {
 	if value {
 		return symbolTrue
@@ -16,7 +12,7 @@ func NewBool(value bool) Symbol {
 func IsBool(expr Expr) bool {
 	// Check new Symbol type first
 	if s, ok := expr.(Symbol); ok {
-		return s.atom == atom.True || s.atom == atom.False
+		return s == symbolTrue || s == symbolFalse
 	}
 	return false
 }
@@ -26,10 +22,10 @@ func IsBool(expr Expr) bool {
 func ExtractBool(expr Expr) (bool, bool) {
 	// Check new Symbol type first
 	if s, ok := expr.(Symbol); ok {
-		if s.atom == atom.True {
+		if s == symbolTrue {
 			return true, true
 		}
-		if s.atom == atom.False {
+		if s == symbolFalse {
 			return false, true
 		}
 	}

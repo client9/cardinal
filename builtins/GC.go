@@ -4,6 +4,7 @@ import (
 	"runtime"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -15,5 +16,5 @@ import (
 // @ExprPattern ()
 func GC(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	runtime.GC()
-	return core.NewSymbolNull()
+	return symbol.Null
 }

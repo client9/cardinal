@@ -77,12 +77,12 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 	}
 
 	var ptype PatternType
-	switch list.Head() {
-	case "Blank":
+	switch list.HeadExpr() {
+	case symbolBlank:
 		ptype = BlankPattern
-	case "BlankSequence":
+	case symbolBlankSequence:
 		ptype = BlankSequencePattern
-	case "BlankNullSequence":
+	case symbolBlankNullSequence:
 		ptype = BlankNullSequencePattern
 	default:
 		return false, PatternUnknown, nil
@@ -98,7 +98,7 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 
 // IsSymbolicPattern checks if an expression is a symbolic Pattern[name, blank]
 func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
-	if list, ok := expr.(List); ok && list.Length() == 2 && list.Head() == "Pattern" {
+	if list, ok := expr.(List); ok && list.Length() == 2 && list.HeadExpr() == symbolPattern {
 		args := list.Tail()
 		return true, args[0], args[1]
 	}
@@ -145,7 +145,7 @@ func MatchesType(expr Expr, typeName string) bool {
 		_, ok := GetNumericValue(expr)
 		return ok
 	}
-	return expr.Head() == typeName
+	return expr.HeadExpr().String() == typeName
 }
 
 // IsBuiltinType checks if a type name is a built-in type
@@ -313,7 +313,7 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 		return pattern1.Equal(pattern2)
 	case List:
 		if p2, ok := pattern2.(List); ok {
-			if p1.Head() != p2.Head() {
+			if p1.HeadExpr() != p2.HeadExpr() {
 				return false
 			}
 			s1 := p1.Tail()

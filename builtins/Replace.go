@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -12,8 +13,8 @@ func asRule(expr core.Expr) (a, b core.Expr, ok bool) {
 	if !ok {
 		return nil, nil, false
 	}
-	head := list.Head()
-	if head != "Rule" && head != "RuleDelayed" {
+	head := list.HeadExpr()
+	if head != symbol.Rule && head != symbol.RuleDelayed {
 		return nil, nil, false
 	}
 	args := list.Tail()
@@ -25,8 +26,8 @@ func isRuleOrRuleDelayed(expr core.Expr) bool {
 	if expr.Length() != 2 {
 		return false
 	}
-	head := expr.Head()
-	return head == "Rule" || head == "RuleDelayed"
+	head := expr.HeadExpr()
+	return head == symbol.Rule || head == symbol.RuleDelayed
 }
 
 func isRuleList(expr core.Expr) bool {

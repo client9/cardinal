@@ -247,6 +247,20 @@ var cases = []tc{
 		match:   true,
 	},
 	{
+		name:    "MatchHead String",
+		expr:    `[ 1 ]`,
+		pattern: "[ Pattern(x, MatchHead(Integer)) ]",
+		binding: `[ x:1]`,
+		match:   true,
+	},
+	{
+		name:    "MatchHead String",
+		expr:    `[ "a" ]`,
+		pattern: "[ Pattern(y, MatchHead(String)) ]",
+		binding: `[ y:"a"]`,
+		match:   true,
+	},
+	{
 		name:    "MatchHead,",
 		expr:    `[ 1, "a" ]`,
 		pattern: "[ Pattern(x,MatchHead(Integer)), Pattern(y, MatchHead(String)) ]",
@@ -637,7 +651,7 @@ func BenchmarkSRE(b *testing.B) {
 
 	for _, tt := range cases {
 		typeNFA := true
-		typeA := false
+		typeA := true
 		typeB := true
 
 		e := MustParse(tt.expr)
@@ -745,9 +759,10 @@ func TestSREHack(t *testing.T) {
 func BenchmarkSREProfile(b *testing.B) {
 
 	tt := tc{
-		name:    "Match3Sublist2,binding",
-		expr:    "[ [ 1, 2 ], 10 ]",
-		pattern: "[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]",
+		name: "Match3Sublist2,binding",
+		expr: "[ [ 1, 2 ], 10 ]",
+		//pattern: "[ [ Pattern(x,MatchHead(Number)), Pattern(y,MatchHead(Number)) ], Pattern(n,MatchHead(Integer)) ]",
+		pattern: "[ [MatchHead(Number), MatchHead(Number) ], MatchHead(Integer) ]",
 		binding: "[ x:1, y:2, n:10 ]",
 		match:   true,
 	}

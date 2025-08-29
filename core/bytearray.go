@@ -86,8 +86,8 @@ func (b ByteArray) InputForm() string {
 	return b.String()
 }
 
-func (b ByteArray) Head() string {
-	return "ByteArray"
+func (b ByteArray) HeadExpr() Symbol {
+	return symbolByteArray
 }
 
 func (b ByteArray) IsAtom() bool {

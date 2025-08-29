@@ -6,7 +6,7 @@ import (
 	//	"log"
 
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // Evaluator represents the expression evaluator
@@ -63,9 +63,8 @@ func (e *Evaluator) evaluateToFixedPoint(ctx *Context, expr core.Expr) core.Expr
 func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 	switch ex := expr.(type) {
 	case core.Symbol:
-		symbolName := ex.String()
 		// Check for variable binding first
-		if value, ok := ctx.Get(symbolName); ok {
+		if value, ok := ctx.Get(ex); ok {
 			return value
 		}
 		// Return the symbol itself if not bound
@@ -106,7 +105,7 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 	}
 
 	// Extract function name from evaluated head
-	headName, ok := core.ExtractSymbol(evaluatedHead)
+	headName, ok := evaluatedHead.(core.Symbol)
 	if !ok {
 		// Head is not a symbol, return unevaluated
 		return list
@@ -136,7 +135,7 @@ func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 }
 
 // evaluatePatternFunction evaluates a function using pattern-based dispatch
-func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, ctx *Context) core.Expr {
+func (e *Evaluator) evaluatePatternFunction(headName core.Symbol, args []core.Expr, ctx *Context) core.Expr {
 
 	// Evaluate arguments based on hold attributes
 	evaluatedArgs := e.evaluateArguments(headName, args, ctx)
@@ -149,7 +148,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 	}
 
 	// Create the function call expression for pattern matching
-	callExpr := core.NewList(headName, evaluatedArgs...)
+	callExpr := core.ListFrom(headName, evaluatedArgs...)
 
 	// Try to find a matching pattern in the function registry
 	if result, found := ctx.functionRegistry.CallFunction(callExpr, ctx, e); found {
@@ -161,7 +160,7 @@ func (e *Evaluator) evaluatePatternFunction(headName string, args []core.Expr, c
 }
 
 // evaluateArguments evaluates arguments based on hold attributes
-func (e *Evaluator) evaluateArguments(headName string, args []core.Expr, ctx *Context) []core.Expr {
+func (e *Evaluator) evaluateArguments(headName core.Symbol, args []core.Expr, ctx *Context) []core.Expr {
 	evaluatedArgs := make([]core.Expr, len(args))
 
 	// TODO -- one lookup
@@ -181,7 +180,7 @@ func (e *Evaluator) evaluateArguments(headName string, args []core.Expr, ctx *Co
 }
 
 // applyAttributeTransformations applies attribute-based transformations
-func (e *Evaluator) applyAttributeTransformations(headName string, list core.List, ctx *Context) core.List {
+func (e *Evaluator) applyAttributeTransformations(headName core.Symbol, list core.List, ctx *Context) core.List {
 	result := list
 
 	// Apply Flat attribute (associativity)
@@ -203,12 +202,12 @@ func (e *Evaluator) applyAttributeTransformations(headName string, list core.Lis
 }
 
 // applyFlat implements the Flat attribute (associativity)
-func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
+func (e *Evaluator) applyFlat(headName core.Symbol, list core.List) core.List {
 	if list.Length() == 0 {
 		return list
 	}
 
-	head := list.Head()
+	head := list.HeadExpr()
 	args := list.Tail()
 
 	newArgs := []core.Expr{}
@@ -216,7 +215,7 @@ func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
 	for _, arg := range args {
 		// If the argument is the same function, flatten it
 		if argList, ok := arg.(core.List); ok {
-			if argList.Head() == headName {
+			if argList.HeadExpr() == headName {
 				// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
 				newArgs = append(newArgs, argList.Tail()...)
 				continue
@@ -225,7 +224,7 @@ func (e *Evaluator) applyFlat(headName string, list core.List) core.List {
 		newArgs = append(newArgs, arg)
 	}
 
-	return core.NewList(head, newArgs...)
+	return core.ListFrom(head, newArgs...)
 }
 
 // applyOrderless implements the Orderless attribute (commutativity)
@@ -260,8 +259,9 @@ func (e *Evaluator) applyOneIdentity(list core.List) core.List {
 }
 
 // evaluateSpecialForm handles special forms that don't follow normal evaluation rules
-func (e *Evaluator) evaluateSpecialForm(headName string, args []core.Expr, ctx *Context) core.Expr {
-	switch headName {
+// TODO
+func (e *Evaluator) evaluateSpecialForm(headName core.Symbol, args []core.Expr, ctx *Context) core.Expr {
+	switch headName.String() {
 	// Special forms that are not yet moved to builtins (complex implementation)
 	case "PartSet":
 		return e.evaluatePartSet(args, ctx)
@@ -289,11 +289,11 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 		// Anonymous
 		for i := 0; i < len(args); i++ {
 			name := core.NewSymbol(fmt.Sprintf("$%d", i+1))
-			rules[i] = core.ListFrom(atom.Rule, name, evaluatedArgs[i])
+			rules[i] = core.ListFrom(symbol.Rule, name, evaluatedArgs[i])
 		}
 		if len(args) > 0 {
 			name := core.NewSymbol("$")
-			rules = append(rules, core.ListFrom(atom.Rule, name, evaluatedArgs[0]))
+			rules = append(rules, core.ListFrom(symbol.Rule, name, evaluatedArgs[0]))
 		}
 	} else {
 		// Named - Check argument count
@@ -304,7 +304,7 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 					len(funcExpr.Parameters), len(args)))
 		}
 		for i := 0; i < len(args); i++ {
-			rules[i] = core.ListFrom(atom.Rule, funcExpr.Parameters[i], evaluatedArgs[i])
+			rules[i] = core.ListFrom(symbol.Rule, funcExpr.Parameters[i], evaluatedArgs[i])
 		}
 	}
 
@@ -335,7 +335,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
 		return core.NewError("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()))
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.String()))
 	}
 
 	// Evaluate index
@@ -348,7 +348,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 	index, ok := core.ExtractInt64(indexExpr)
 	if !ok {
 		return core.NewError("TypeError",
-			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.Head()))
+			fmt.Sprintf("Part index must be an integer, got %s", indexExpr.String()))
 	}
 
 	// Evaluate value
@@ -362,7 +362,7 @@ func (e *Evaluator) evaluatePartSet(args []core.Expr, ctx *Context) core.Expr {
 
 	// is this variable?  i.e. a[2] = 100
 	// then we need to update the variable
-	if name, ok := core.ExtractSymbol(args[0]); ok {
+	if name, ok := args[0].(core.Symbol); ok {
 		ctx.Set(name, mlist)
 
 		// TODO right value
@@ -389,7 +389,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	sliceable := core.AsSliceable(expr)
 	if sliceable == nil {
 		return core.NewError("TypeError",
-			fmt.Sprintf("Expression of type %s is not sliceable", expr.Head()))
+			fmt.Sprintf("Expression of type %s is not sliceable", expr.String()))
 	}
 
 	// Evaluate start index
@@ -402,7 +402,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 	start, ok := core.ExtractInt64(startExpr)
 	if !ok {
 		return core.NewError("TypeError",
-			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.Head()))
+			fmt.Sprintf("Slice start index must be an integer, got %s", startExpr.String()))
 	}
 
 	// Evaluate end index
@@ -420,7 +420,7 @@ func (e *Evaluator) evaluateSliceSet(args []core.Expr, ctx *Context) core.Expr {
 		end = endValue
 	} else {
 		return core.NewError("TypeError",
-			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.Head()))
+			fmt.Sprintf("Slice end index must be an integer, got %s", endExpr.String()))
 	}
 
 	// Evaluate value

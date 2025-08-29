@@ -1,7 +1,7 @@
 
 
 build: 
-	go run ./cmd/geninit > init.go
+	go run ./cmd/geninit 
 	go build ./...
 	(cd cmd/repl; go build .; mv repl ../..)
 
@@ -34,9 +34,7 @@ cover:
 clean:
 	rm -f cpu.prof mem.prof
 	rm -f repl cmd/repl/repl
-	rm -f main wrapgen
 	find . -name '*.bak*' | xargs rm -f
-	rm -rf wrapped
 	rm -f builtin_setup.go
 	rm -f engine/attribute_string.go
 

@@ -27,7 +27,7 @@ func TakeListSingle(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 	element := core.Part(expr, n)
 
 	// Wrap the element in a list with the same head as the original list
-	return core.NewList(expr.Head(), element)
+	return core.ListFrom(expr.HeadExpr(), element)
 }
 
 // TakeListRange takes a range of elements from a list

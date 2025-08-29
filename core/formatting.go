@@ -28,8 +28,8 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 	}
 
 	// Check if this is a special function that has infix/shortcut representation
-	switch l.Head() {
-	case "List":
+	switch l.HeadExpr() {
+	case symbolList:
 		// List(...) -> [...]
 		if l.Length() == 0 {
 			return "[]"
@@ -40,14 +40,14 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 		}
 		return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
 
-	case "Association":
+	case symbolAssociation:
 		// Association(Rule(a,b), Rule(c,d)) -> {a: b, c: d}
 		if l.Length() == 1 {
 			return "{}"
 		}
 		var pairs []string
 		for _, elem := range l.Tail() {
-			if ruleList, ok := elem.(List); ok && ruleList.Length() == 2 && ruleList.Head() == "Rule" {
+			if ruleList, ok := elem.(List); ok && ruleList.Length() == 2 && ruleList.HeadExpr() == symbolRule {
 				args := ruleList.Tail()
 				key := args[0].InputForm()
 				value := args[1].InputForm()
@@ -59,111 +59,111 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 		}
 		return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 
-	case "Rule":
+	case symbolRule:
 		// Rule(a, b) -> a: b
 		if l.Length() == 2 {
 			e := l.Tail()
 			return fmt.Sprintf("%s: %s", e[0].InputForm(), e[1].InputForm())
 		}
 
-	case "RuleDelayed":
+	case symbolRuleDelayed:
 		// RuleDelayed(a, b) -> a => b
 		if l.Length() == 2 {
 			e := l.Tail()
 			return fmt.Sprintf("%s => %s", e[0].InputForm(), e[1].InputForm())
 		}
 
-	case "Set":
+	case symbolSet:
 		// Set(a, b) -> a = b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("=", PrecedenceAssign, parentPrecedence)
 		}
 
-	case "SetDelayed":
+	case symbolSetDelayed:
 		// SetDelayed(a, b) -> a := b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens(":=", PrecedenceAssign, parentPrecedence)
 		}
 
-	case "Plus":
+	case symbolPlus:
 		// Plus(a, b, ...) -> a + b + ...
 		if l.Length() > 1 {
 			return l.formatLeftAssociativeInfix("+", PrecedenceSum, parentPrecedence)
 		}
 
-	case "Times":
+	case symbolTimes:
 		// Times(a, b, ...) -> a * b * ...
 		if l.Length() > 1 {
 			return l.formatLeftAssociativeInfix("*", PrecedenceProduct, parentPrecedence)
 		}
 
-	case "Subtract":
+	case symbolSubtract:
 		// Subtract(a, b) -> a - b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("-", PrecedenceSum, parentPrecedence)
 		}
 
-	case "Divide":
+	case symbolDivide:
 		// Divide(a, b) -> a / b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("/", PrecedenceProduct, parentPrecedence)
 		}
 
-	case "Equal":
+	case symbolEqual:
 		// Equal(a, b) -> a == b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("==", PrecedenceEquality, parentPrecedence)
 		}
 
-	case "Unequal":
+	case symbolUnequal:
 		// Unequal(a, b) -> a != b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("!=", PrecedenceEquality, parentPrecedence)
 		}
 
-	case "SameQ":
+	case symbolSameQ:
 		// SameQ(a, b) -> a === b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("===", PrecedenceEquality, parentPrecedence)
 		}
 
-	case "UnsameQ":
+	case symbolUnsameQ:
 		// UnsameQ(a, b) -> a =!= b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("=!=", PrecedenceEquality, parentPrecedence)
 		}
 
-	case "Less":
+	case symbolLess:
 		// Less(a, b) -> a < b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("<", PrecedenceComparison, parentPrecedence)
 		}
 
-	case "Greater":
+	case symbolGreater:
 		// Greater(a, b) -> a > b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens(">", PrecedenceComparison, parentPrecedence)
 		}
 
-	case "LessEqual":
+	case symbolLessEqual:
 		// LessEqual(a, b) -> a <= b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens("<=", PrecedenceComparison, parentPrecedence)
 		}
 
-	case "GreaterEqual":
+	case symbolGreaterEqual:
 		// GreaterEqual(a, b) -> a >= b
 		if l.Length() == 2 {
 			return l.formatInfixWithParens(">=", PrecedenceComparison, parentPrecedence)
 		}
 
-	case "And":
+	case symbolAnd:
 		// And(a, b, ...) -> a && b && ...
 		if l.Length() > 1 {
 			return l.formatLeftAssociativeInfix("&&", PrecedenceLogicalAnd, parentPrecedence)
 		}
 
-	case "Or":
+	case symbolOr:
 		// Or(a, b, ...) -> a || b || ...
 		if l.Length() > 1 {
 			return l.formatLeftAssociativeInfix("||", PrecedenceLogicalOr, parentPrecedence)
@@ -175,7 +175,7 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 	for _, elem := range l.Tail() {
 		elements = append(elements, elem.InputForm())
 	}
-	return fmt.Sprintf("%s(%s)", l.Head(), strings.Join(elements, ", "))
+	return fmt.Sprintf("%s(%s)", l.HeadExpr().String(), strings.Join(elements, ", "))
 }
 
 // formatInfixWithParens formats a binary infix operation with parentheses if needed

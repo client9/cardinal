@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -12,16 +13,16 @@ import (
 // SetAttributesExpr sets attributes for a symbol: SetAttributes(symbol, attr) or SetAttributes(symbol, {attr1, attr2})
 // @ExprPattern (_Symbol, _Symbol)
 func SetAttributesSingle(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	symbol := args[0].String()
+	sym := args[0].(core.Symbol)
 	attr := engine.SymbolToAttribute(args[1].(core.Symbol))
 	symbolTable := c.GetSymbolTable()
-	symbolTable.SetAttributes(symbol, attr)
-	return core.NewSymbolNull()
+	symbolTable.SetAttributes(sym, attr)
+	return symbol.Null
 }
 
 // @ExprPattern (_Symbol, List(___Symbol))
 func SetAttributesList(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	symbol := args[0].String()
+	sym := args[0].(core.Symbol)
 	attrs := args[1].(core.List).Tail()
 
 	var attribute engine.Attribute
@@ -30,6 +31,6 @@ func SetAttributesList(e *engine.Evaluator, c *engine.Context, args []core.Expr)
 	}
 
 	symbolTable := c.GetSymbolTable()
-	symbolTable.SetAttributes(symbol, attribute)
-	return core.NewSymbolNull()
+	symbolTable.SetAttributes(sym, attribute)
+	return symbol.Null
 }

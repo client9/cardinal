@@ -80,8 +80,8 @@ func (e ErrorExpr) InputForm() string {
 	return e.String()
 }
 
-func (e ErrorExpr) Head() string {
-	return "Error"
+func (e ErrorExpr) HeadExpr() Symbol {
+	return symbolError
 }
 
 func (e ErrorExpr) IsAtom() bool {

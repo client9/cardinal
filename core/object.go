@@ -4,8 +4,15 @@ package core
 // This allows users to register custom Go types that implement Expr
 // and use them with pattern matching (e.g., x_Uint64)
 type ObjectExpr struct {
-	TypeName string // e.g., "Uint64", "BigInt", "Matrix"
+	TypeName Symbol // e.g., "Uint64", "BigInt", "Matrix"
 	Value    Expr   // User-defined type that implements Expr interface
+}
+
+// Constructor functions for core types
+
+// NewObjectExpr creates a new ObjectExpr with the given type name and value
+func NewObjectExpr(typeName Symbol, value Expr) ObjectExpr {
+	return ObjectExpr{TypeName: typeName, Value: value}
 }
 
 func (o ObjectExpr) String() string {
@@ -22,8 +29,8 @@ func (o ObjectExpr) Length() int64 {
 	return o.Value.Length() // Delegate to wrapper Expr
 }
 
-func (o ObjectExpr) Head() string {
-	return o.TypeName // Return the registered type name
+func (o ObjectExpr) HeadExpr() Symbol {
+	return o.TypeName
 }
 
 func (o ObjectExpr) IsAtom() bool {

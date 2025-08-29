@@ -36,8 +36,9 @@ coverage.out
 *.bak*
 cmd/geninit/wrapgen
 init.go
-core/atom/table.go
 ./repl
 attribute_string.go
 cpu.prof
 mem.prof
+./core/localsymbols.go
+

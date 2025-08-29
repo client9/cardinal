@@ -20,3 +20,5 @@ benchmemre:
 profilere:
 	go test -cpuprofile cpu.prof -memprofile mem.prof -test.run=SRE -bench=SREProfile
 
+clean:
+	rm -f *.prof

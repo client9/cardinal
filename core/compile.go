@@ -3,14 +3,12 @@ package core
 import (
 	"fmt"
 	"strings"
-
-	"github.com/client9/sexpr/core/atom"
 )
 
 type Compile struct {
 	pc     int32 // program counter
 	ops    []Inst
-	groups []string
+	groups []Symbol
 }
 
 func NewCompiler() *Compile {
@@ -89,7 +87,7 @@ func (c *Compile) compileNFAList(exprs []Expr) Prog {
 }
 
 // Hack until we can do this in the instruction
-func (c *Compile) getSlot(name string) int32 {
+func (c *Compile) getSlot(name Symbol) int32 {
 	for i, s := range c.groups {
 		if s == name {
 			return int32(i)
@@ -98,17 +96,17 @@ func (c *Compile) getSlot(name string) int32 {
 	return -1
 }
 
-func (c *Compile) getGroups(e Expr, names []string) []string {
+func (c *Compile) getGroups(e Expr, names []Symbol) []Symbol {
 	if list, ok := e.(List); ok {
-		switch list.HeadAtom() {
-		case atom.Pattern:
+		switch list.HeadExpr() {
+		case symbolPattern:
 			args := list.Tail()
 			// args[0] is the binding name
 			// args[1] is the pattern
-			names = append(names, args[0].String())
+			names = append(names, args[0].(Symbol))
 			names = c.getGroups(args[1], names)
 			return names
-		case atom.PatternSequence, atom.List:
+		case symbolPatternSequence, symbolList:
 			return c.getGroupsList(list.Tail(), names)
 		}
 	}
@@ -117,7 +115,7 @@ func (c *Compile) getGroups(e Expr, names []string) []string {
 
 }
 
-func (c *Compile) getGroupsList(exprs []Expr, names []string) []string {
+func (c *Compile) getGroupsList(exprs []Expr, names []Symbol) []Symbol {
 	for _, arg := range exprs {
 		names = c.getGroups(arg, names)
 	}
@@ -127,18 +125,22 @@ func (c *Compile) getGroupsList(exprs []Expr, names []string) []string {
 // for a single atomic Expr
 func (c *Compile) Simple(e Expr) bool {
 	if list, ok := e.(List); ok {
-		switch list.HeadAtom() {
-		case atom.Pattern:
+		switch list.HeadExpr() {
+		case symbolPattern:
 			args := list.Tail()
 			// args[0] is the binding name
 			// args[1] is the pattern
 			return c.Simple(args[1])
-		case atom.MatchStar, atom.MatchPlus, atom.MatchQuest, atom.BlankSequence, atom.BlankNullSequence, atom.Optional:
+		case symbolMatchStar, symbolMatchPlus, symbolMatchQuest,
+			symbolBlankSequence, symbolBlankNullSequence, symbolOptional:
 			args := list.Tail()
+			if len(args) == 0 {
+				return true
+			}
 			return c.Simple(args[0])
-		case atom.MatchHead, atom.MatchAny, atom.Blank:
+		case symbolMatchHead, symbolMatchAny, symbolBlank:
 			return true
-		case atom.PatternSequence, atom.List:
+		case symbolPatternSequence, symbolList:
 			return c.SimpleList(list.Tail())
 		}
 	}
@@ -203,13 +205,13 @@ func (c *Compile) SimpleList(e []Expr) bool {
 
 func (c *Compile) isZeroPattern(e Expr) bool {
 	if list, ok := e.(List); ok {
-		switch list.HeadAtom() {
+		switch list.HeadExpr() {
 
-		case atom.MatchStar, atom.MatchQuest:
+		case symbolMatchStar, symbolMatchQuest:
 			return true
 
 		// MMA compatible
-		case atom.BlankNullSequence, atom.Optional:
+		case symbolBlankNullSequence, symbolOptional:
 			return true
 
 		}
@@ -220,15 +222,15 @@ func (c *Compile) isZeroPattern(e Expr) bool {
 func (c *Compile) isSequencePattern(e Expr) bool {
 	if list, ok := e.(List); ok {
 
-		switch list.HeadAtom() {
-		case atom.MatchStar, atom.MatchPlus, atom.MatchQuest:
+		switch list.HeadExpr() {
+		case symbolMatchStar, symbolMatchPlus, symbolMatchQuest:
 			return true
 
 		// MMA compatible
-		case atom.BlankNullSequence, atom.BlankSequence, atom.Optional:
+		case symbolBlankNullSequence, symbolBlankSequence, symbolOptional:
 			return true
 
-		case atom.Pattern, atom.PatternSequence, atom.List:
+		case symbolPattern, symbolPatternSequence, symbolList:
 			for _, a := range list.Tail() {
 				if c.isSequencePattern(a) {
 					return true
@@ -297,21 +299,21 @@ func (c *Compile) IsListLiteral(list List) bool {
 
 	for _, a := range list.Tail() {
 		if alist, ok := a.(List); ok {
-			switch alist.HeadAtom() {
-			case atom.Pattern, atom.PatternSequence:
+			switch alist.HeadExpr() {
+			case symbolPattern, symbolPatternSequence:
 				return false
 
 			// mma primitives
-			case atom.Blank, atom.BlankSequence, atom.BlankNullSequence, atom.Optional:
+			case symbolBlank, symbolBlankSequence, symbolBlankNullSequence, symbolOptional:
 				return false
 
 			// low level primitives
-			case atom.MatchStar, atom.MatchPlus, atom.MatchQuest,
-				atom.MatchAny, atom.MatchHead, atom.MatchLiteral:
+			case symbolMatchStar, symbolMatchPlus, symbolMatchQuest,
+				symbolMatchAny, symbolMatchHead, symbolMatchLiteral:
 				return false
 
 			// TBD
-			case atom.MatchOr:
+			case symbolMatchOr:
 				return false
 			default:
 				if !c.IsListLiteral(alist) {
@@ -339,50 +341,50 @@ func (c *Compile) emitOneStep(e Expr) {
 		return
 	}
 
-	switch list.HeadAtom() {
+	switch list.HeadExpr() {
 
-	case atom.Blank:
+	case symbolBlank:
 		// Blank[]       --> MatchAny()
 		// Blank[symbol] --> MatchHead(symbol)
 
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, arg)
+			arg = ListFrom(symbolMatchHead, arg)
 		}
 		c.emitOneStep(arg)
-	case atom.BlankSequence:
+	case symbolBlankSequence:
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, arg)
+			arg = ListFrom(symbolMatchHead, arg)
 		}
-		c.emitOneStep(ListFrom(atom.MatchPlus, arg))
-	case atom.BlankNullSequence:
+		c.emitOneStep(ListFrom(symbolMatchPlus, arg))
+	case symbolBlankNullSequence:
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, arg)
+			arg = ListFrom(symbolMatchHead, arg)
 		}
-		c.emitOneStep(ListFrom(atom.MatchStar, arg))
-	case atom.Optional:
+		c.emitOneStep(ListFrom(symbolMatchStar, arg))
+	case symbolOptional:
 		// TODO default value
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, arg)
+			arg = ListFrom(symbolMatchHead, arg)
 		}
-		c.emitOneStep(ListFrom(atom.MatchQuest, arg))
+		c.emitOneStep(ListFrom(symbolMatchQuest, arg))
 
-	case atom.Pattern:
+	case symbolPattern:
 		// Pattern("x", expression)
 		args := list.Tail()
-		name := args[0]
-		slot := c.getSlot(name.String())
+		name := args[0].(Symbol)
+		slot := c.getSlot(name)
 		expr := args[1]
 		cstart := c.add(Inst{
 			Op:  InstCaptureStart,
@@ -395,27 +397,26 @@ func (c *Compile) emitOneStep(e Expr) {
 			Alt: slot,
 		})
 		c.addLink(cend, c.pc)
-	case atom.PatternSequence:
+	case symbolPatternSequence:
 		args := list.Tail()
 		for _, arg := range args {
 			c.emitOneStep(arg)
 		}
 
-	case atom.MatchHead:
-		val := list.Tail()[0]
+	case symbolMatchHead:
 		op := c.add(Inst{
-			Op:   InstMatchHead,
-			Name: val.String(),
+			Op:  InstMatchHead,
+			Val: list.Tail()[0],
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
-	case atom.MatchAny:
+	case symbolMatchAny:
 		op := c.add(Inst{
 			Op: InstMatchAny,
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
-	case atom.MatchPlus:
+	case symbolMatchPlus:
 		arg := ListFirstArg(e)
 		// only has a single argument
 		c.emitOneStep(arg)
@@ -426,7 +427,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		L3 := c.pc
 		c.addLink(op, L1)
 		c.addAlt(op, L3)
-	case atom.MatchQuest:
+	case symbolMatchQuest:
 		arg := list.Tail()[0]
 		// only has a single argument
 		c.emitOneStep(arg)
@@ -434,7 +435,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		L1 := c.pc
 		c.addLink(op, L1)
 		c.addAlt(op, L1)
-	case atom.MatchStar:
+	case symbolMatchStar:
 		L1 := c.pc
 
 		// only has a single argument
@@ -463,7 +464,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
-			Name: list.Head(),
+			Val:  list.HeadExpr(),
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
@@ -486,51 +487,51 @@ func (c *Compile) emit(e Expr) {
 		return
 	}
 
-	switch list.HeadAtom() {
+	switch list.HeadExpr() {
 
 	// MMA
-	case atom.Blank:
+	case symbolBlank:
 		// Blank[]       --> MatchAny()
 		// Blank[symbol] --> MatchHead(symbol)
 
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, list.Tail()[0])
+			arg = ListFrom(symbolMatchHead, list.Tail()[0])
 		}
 		c.emit(arg)
-	case atom.BlankSequence:
+	case symbolBlankSequence:
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, list.Tail()[0])
+			arg = ListFrom(symbolMatchHead, list.Tail()[0])
 		}
-		c.emit(ListFrom(atom.MatchPlus, arg))
-	case atom.BlankNullSequence:
+		c.emit(ListFrom(symbolMatchPlus, arg))
+	case symbolBlankNullSequence:
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, list.Tail()[0])
+			arg = ListFrom(symbolMatchHead, list.Tail()[0])
 		}
-		c.emit(ListFrom(atom.MatchStar, arg))
-	case atom.Optional:
+		c.emit(ListFrom(symbolMatchStar, arg))
+	case symbolOptional:
 		// TODO default value
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(atom.MatchAny)
+			arg = ListFrom(symbolMatchAny)
 		} else {
-			arg = ListFrom(atom.MatchHead, list.Tail()[0])
+			arg = ListFrom(symbolMatchHead, list.Tail()[0])
 		}
-		c.emit(ListFrom(atom.MatchQuest, arg))
+		c.emit(ListFrom(symbolMatchQuest, arg))
 
-	case atom.Pattern:
+	case symbolPattern:
 		// Pattern("x", expression)
 		args := list.Tail()
 		name := args[0]
-		slot := c.getSlot(name.String())
+		slot := c.getSlot(name.(Symbol))
 		expr := args[1]
 		cstart := c.add(Inst{
 			Op: InstCaptureStart,
@@ -544,28 +545,25 @@ func (c *Compile) emit(e Expr) {
 			Alt: slot,
 		})
 		c.addLink(cend, c.pc)
-	case atom.PatternSequence:
+	case symbolPatternSequence:
 		args := list.Tail()
 		for _, arg := range args {
 			c.emit(arg)
 		}
-	case atom.MatchHead:
-		val := list.Tail()[0]
-
+	case symbolMatchHead:
 		op := c.add(Inst{
-			Op: InstMatchHead,
-			// head: val.String(),
-			Name: val.String(),
+			Op:  InstMatchHead,
+			Val: list.Tail()[0],
 		})
 		c.addLink(op, c.pc)
-	case atom.MatchAny:
+	case symbolMatchAny:
 		// this has a dangling pointer
 		// it will be fixed at the end
 		op := c.add(Inst{
 			Op: InstMatchAny,
 		})
 		c.addLink(op, c.pc)
-	case atom.MatchPlus:
+	case symbolMatchPlus:
 		current := c.pc
 		list, _ := e.(List)
 		// only has a single argument
@@ -576,7 +574,7 @@ func (c *Compile) emit(e Expr) {
 		})
 		c.addLink(op, current)
 		c.addAlt(op, c.pc)
-	case atom.MatchQuest:
+	case symbolMatchQuest:
 		op := c.add(Inst{
 			Op: InstSplit,
 		})
@@ -586,7 +584,7 @@ func (c *Compile) emit(e Expr) {
 		L2 := c.pc
 		c.addLink(op, L1)
 		c.addAlt(op, L2)
-	case atom.MatchStar:
+	case symbolMatchStar:
 		//L1 := c.pc
 		op := c.add(Inst{
 			Op: InstSplit,
@@ -622,7 +620,7 @@ func (c *Compile) emit(e Expr) {
 		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
-			Name: list.Head(),
+			Val:  list.HeadExpr(),
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
@@ -667,12 +665,11 @@ func (i InstOp) String() string {
 
 type Inst struct {
 	Op   InstOp
-	Id   int32  // More for debugging
-	Next int32  // Everyone
-	Alt  int32  // Split, Capture
-	Val  Expr   // use in MatchLiteral only?
-	Name string // MatchHead only
-	Data any    // Predictates, MatchList
+	Id   int32 // More for debugging
+	Next int32 // Everyone
+	Alt  int32 // Split, Capture
+	Val  Expr  // use in MatchLiteral (anything), MatchHead, MatchList (Symbol)
+	Data any   // Predictates, MatchList
 }
 
 func (i Inst) String() string {
@@ -682,20 +679,24 @@ func (i Inst) String() string {
 // a "Program" is a list of a Instructions
 type Prog struct {
 	Inst    []Inst
-	groups  []string
+	groups  []Symbol
 	onestep bool
+}
+
+func (p Prog) IsZero() bool {
+	return len(p.Inst) == 0
 }
 
 func (p Prog) IsOneStep() bool {
 	return p.onestep
 }
 
-func (p Prog) Groups() []string {
+func (p Prog) Groups() []Symbol {
 	return p.groups
 }
 
 // Hack until we can do this in the instruction
-func (p Prog) getSlot(name string) int32 {
+func (p Prog) getSlot(name Symbol) int32 {
 	for i, s := range p.groups {
 		if s == name {
 			return int32(i)
@@ -724,9 +725,10 @@ func (p Prog) String() string {
 }
 
 func (p Prog) dump(n int) {
+	fmt.Printf("One Step: %v\n", p.onestep)
 	indent := strings.Repeat(" ", n)
 	for _, inst := range p.Inst {
-		fmt.Printf("%s%d: %s\n", indent, inst.Id, inst)
+		fmt.Printf("%s%d: %s %s\n", indent, inst.Id, inst, inst.Val)
 		if inst.Op == InstMatchList {
 			p2 := inst.Data.(Prog)
 			p2.dump(n + 1)

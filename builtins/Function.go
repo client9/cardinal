@@ -2,7 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -53,7 +53,7 @@ func partiallyEvaluateForFunction(e *engine.Evaluator, c *engine.Context, expr c
 		return expr
 	}
 
-	if list.HeadAtom() == atom.Function {
+	if list.HeadExpr() == symbol.Function {
 		return Function(e, c, list.Tail())
 	}
 

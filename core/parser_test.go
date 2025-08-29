@@ -480,8 +480,8 @@ func TestParser_ParseAtoms(t *testing.T) {
 				return
 			}
 
-			if expr.Head() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Head())
+			if expr.HeadExpr().String() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, expr.HeadExpr().String())
 			}
 
 			// Check value based on the expected type

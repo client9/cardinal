@@ -2,7 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/atom"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -44,7 +44,7 @@ func OrExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 
 	// Return Or expression with remaining non-False args
 	elements := make([]core.Expr, len(nonFalseArgs)+1)
-	elements[0] = core.SymbolFor(atom.Or)
+	elements[0] = symbol.Or
 	copy(elements[1:], nonFalseArgs)
 	return core.NewListFromExprs(elements...)
 }

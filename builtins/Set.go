@@ -17,7 +17,8 @@ func SetExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 	evalRhs := e.Evaluate(rhs)
 
 	// Handle assignment to symbol
-	if symbolName, ok := core.ExtractSymbol(lhs); ok {
+
+	if symbolName, ok := lhs.(core.Symbol); ok {
 		if err := c.Set(symbolName, evalRhs); err != nil {
 			return core.NewError("Protected", err.Error())
 		}

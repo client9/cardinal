@@ -37,9 +37,8 @@ func (f FunctionExpr) InputForm() string {
 	return f.String() // Same as String for now
 }
 
-// Head returns the head of the expression
-func (f FunctionExpr) Head() string {
-	return "Function"
+func (f FunctionExpr) HeadExpr() Symbol {
+	return symbolFunction
 }
 
 // Length returns the length (number of parameters + 1 for body)

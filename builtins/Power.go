@@ -5,6 +5,8 @@ import (
 	"math"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
+
 	"github.com/client9/sexpr/engine"
 )
 
@@ -25,14 +27,14 @@ func PowerInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 		val, err := powerFloat64(float64(base), float64(exp))
 		if err != nil {
 			// TODO ERRORS
-			return core.NewSymbolNull()
+			return symbol.Null
 		}
 		return core.NewReal(val)
 	}
 	val, err := powerFloat64(float64(base), float64(exp))
 	if err != nil {
 		// TODO ERROR
-		return core.NewSymbolNull()
+		return symbol.Null
 	}
 	return core.NewInteger(int64(val))
 }
@@ -49,7 +51,7 @@ func PowerNumbers(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 	result, err := powerFloat64(base, exp)
 	if err != nil {
 		// TODO ERROR
-		return core.NewSymbolNull()
+		return symbol.Null
 	}
 	return core.NewReal(result)
 }
