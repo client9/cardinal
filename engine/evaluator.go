@@ -90,7 +90,7 @@ func (e *Evaluator) evaluateExpr(ctx *Context, expr core.Expr) core.Expr {
 // evaluateList evaluates a list expression
 func (e *Evaluator) evaluateList(c *Context, list core.List) core.Expr {
 	// Get the head (function name)
-	head := list.HeadExpr()
+	head := list.Head()
 	args := list.Tail()
 
 	// Evaluate the head to get the function name

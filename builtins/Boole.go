@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -18,5 +19,5 @@ func Boole(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	}
 
 	// Return unchanged expression if not boolean (symbolic behavior)
-	return core.NewList("Boole", arg)
+	return core.ListFrom(symbol.Boole, arg)
 }

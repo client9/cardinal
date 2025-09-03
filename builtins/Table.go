@@ -161,7 +161,7 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 
 	// Validate that arithmetic and comparison operations can be evaluated
 	// Test if Plus(start, increment) evaluates to something different (not unevaluated)
-	testPlus := core.NewList("Plus", start, increment)
+	testPlus := core.ListFrom(symbol.Plus, start, increment)
 	plusResult := e.Evaluate(testPlus)
 	if core.IsError(plusResult) {
 		return "", nil, nil, nil, core.NewError("ArgumentError",
@@ -173,7 +173,7 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 	}
 
 	// Test if comparison operation evaluates
-	testLessEqual := core.NewList("LessEqual", start, end)
+	testLessEqual := core.ListFrom(symbol.LessEqual, start, end)
 	compareResult := e.Evaluate(testLessEqual)
 	if core.IsError(compareResult) {
 		return "", nil, nil, nil, core.NewError("ArgumentError",
@@ -191,16 +191,16 @@ func parseTableIteratorSpec(e *engine.Evaluator, c *engine.Context, iterSpec cor
 // Uses expression-based comparison with proper handling of increment direction
 func evaluateIteratorCondition(e *engine.Evaluator, c *engine.Context, current, end, increment core.Expr) bool {
 	// Determine comparison operator based on increment sign
-	var compSymbol string
+	var compSymbol core.Symbol
 	isNegative := isNegativeIncrement(e, c, increment)
 	if isNegative {
-		compSymbol = "GreaterEqual" // For negative increment, continue while current >= end
+		compSymbol = symbol.GreaterEqual // For negative increment, continue while current >= end
 	} else {
-		compSymbol = "LessEqual" // For positive increment, continue while current <= end
+		compSymbol = symbol.LessEqual // For positive increment, continue while current <= end
 	}
 
 	// Create and evaluate comparison expression
-	compExpr := core.NewList(compSymbol, current, end)
+	compExpr := core.ListFrom(compSymbol, current, end)
 	result := e.Evaluate(compExpr)
 
 	// Extract boolean result
@@ -222,7 +222,7 @@ func evaluateIteratorCondition(e *engine.Evaluator, c *engine.Context, current, 
 
 // evaluateIteratorIncrement adds increment to current value using expression arithmetic
 func evaluateIteratorIncrement(e *engine.Evaluator, c *engine.Context, current, increment core.Expr) core.Expr {
-	plusExpr := core.NewList("Plus", current, increment)
+	plusExpr := core.ListFrom(symbol.Plus, current, increment)
 	return e.Evaluate(plusExpr)
 }
 
@@ -230,7 +230,7 @@ func evaluateIteratorIncrement(e *engine.Evaluator, c *engine.Context, current, 
 func isNegativeIncrement(e *engine.Evaluator, c *engine.Context, increment core.Expr) bool {
 	// Create comparison: increment < 0
 	zeroExpr := core.NewInteger(0)
-	lessExpr := core.NewList("Less", increment, zeroExpr)
+	lessExpr := core.ListFrom(symbol.Less, increment, zeroExpr)
 	result := e.Evaluate(lessExpr)
 
 	if boolVal, ok := core.ExtractBool(result); ok {
@@ -245,8 +245,8 @@ func isNegativeIncrement(e *engine.Evaluator, c *engine.Context, increment core.
 func evaluateWithIteratorBinding(e *engine.Evaluator, c *engine.Context, expr core.Expr, variable string, value core.Expr) core.Expr {
 
 	// Create Block(List(Set(variable, value)), expr)
-	setExpr := core.NewList("Set", core.NewSymbol(variable), value)
-	blockVars := core.NewList("List", setExpr)
+	setExpr := core.ListFrom(symbol.Set, core.NewSymbol(variable), value)
+	blockVars := core.ListFrom(symbol.List, setExpr)
 	blockArgs := []core.Expr{blockVars, expr}
 	return BlockExpr(e, c, blockArgs)
 }

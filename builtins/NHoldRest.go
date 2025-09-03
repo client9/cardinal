@@ -1,4 +1,6 @@
 package builtins
 
-// @ExprSymbol Integer
+// @ExprSymbol NHoldRest
 // @ExprAttributes Protected
+//
+//

@@ -1,42 +1,41 @@
 package core
 
 import (
+	"math/big"
 	"strconv"
 )
 
-type Integer int64
+type Integer interface {
+	Expr
 
-// New constructor functions for atomic types
-func NewInteger(i int64) Integer { return Integer(i) }
+	IsInt64() bool
+	Int64() int64
+	asBigInt() bigInt
 
-// Integer type implementation
-func (i Integer) String() string {
-	return strconv.FormatInt(int64(i), 10)
+	Sign() int
+
+	// Inv returns the reciprocal or Power(x,-1) of the value
+	// // TODO zero
+	Inv() Expr
+
+	// TBD if actually needed
+	Neg() Integer
+
+	// TBD
+	Float64() float64
 }
 
-func MustInt64(e Expr) int64 {
-	return int64(e.(Integer))
-}
-
-func (i Integer) InputForm() string {
-	return i.String()
-}
-
-func (i Integer) HeadExpr() Symbol {
-	return symbolInteger
-}
-
-func (i Integer) Length() int64 {
-	return 0
-}
-
-func (i Integer) Equal(rhs Expr) bool {
-	if other, ok := rhs.(Integer); ok {
-		return i == other
+func NewIntegerFromString(s string) (Integer, bool) {
+	if len(s) < 19 {
+		value, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return newMachineInt(0), false
+		}
+		return newMachineInt(value), true
 	}
-	return false
-}
-
-func (i Integer) IsAtom() bool {
-	return true
+	z, ok := new(big.Int).SetString(s, 0)
+	if !ok {
+		return newMachineInt(0), false
+	}
+	return bigInt{val: z}, true
 }

@@ -6,7 +6,7 @@ package core
 func ExtractInt64(expr Expr) (int64, bool) {
 	// Check new Integer type first
 	if i, ok := expr.(Integer); ok {
-		return int64(i), true
+		return i.Int64(), true
 	}
 	return 0, false
 }
@@ -56,7 +56,7 @@ func IsError(expr Expr) bool {
 func GetNumericValue(expr Expr) (float64, bool) {
 	// Check new atomic types first
 	if i, ok := expr.(Integer); ok {
-		return float64(i), true
+		return float64(i.Int64()), true
 	}
 	if r, ok := expr.(Real); ok {
 		return float64(r), true

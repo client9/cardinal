@@ -628,11 +628,6 @@ func TestParser_ErrorHandling(t *testing.T) {
 			expectedError: "unexpected EOF, expected ']'",
 		},
 		{
-			name:          "invalid integer",
-			input:         "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-			expectedError: "invalid integer",
-		},
-		{
 			name:          "unexpected token at start",
 			input:         "@invalid",
 			expectedError: "unexpected token",

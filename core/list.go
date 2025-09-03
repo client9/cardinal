@@ -59,7 +59,7 @@ func (l List) String() string {
 		isListLiteral := false
 
 		// Check new Symbol type first
-		if l.HeadExpr() == symbolList {
+		if l.Head() == symbolList {
 			isListLiteral = true
 		}
 
@@ -78,7 +78,7 @@ func (l List) String() string {
 	for _, elem := range l.AsSlice() {
 		elements = append(elements, elem.String())
 	}
-	return fmt.Sprintf("%s(%s)", l.HeadExpr().String(), strings.Join(elements[1:], ", "))
+	return fmt.Sprintf("%s(%s)", l.Head().String(), strings.Join(elements[1:], ", "))
 }
 func (l List) InputForm() string {
 	return l.inputFormWithPrecedence(PrecedenceLowest)
@@ -86,6 +86,9 @@ func (l List) InputForm() string {
 
 func (l List) HeadExpr() Symbol {
 	return (l.elements)[0].(Symbol)
+}
+func (l List) Head() Expr {
+	return l.elements[0]
 }
 
 // TODO DANGER

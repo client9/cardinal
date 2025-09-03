@@ -22,6 +22,10 @@ func (r Real) String() string {
 	return str
 }
 
+func (r Real) Neg() Real {
+	return -r
+}
+
 func (r Real) InputForm() string {
 	return r.String()
 }

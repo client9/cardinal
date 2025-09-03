@@ -13,10 +13,10 @@ func TestIsSymbolicBlank(t *testing.T) {
 		expectType     PatternType
 		expectTypeExpr Expr
 	}{
-		{CreateBlankExpr(nil), true, BlankPattern, nil},
-		{CreateBlankExpr(NewSymbol("Integer")), true, BlankPattern, NewSymbol("Integer")},
-		{CreateBlankSequenceExpr(nil), true, BlankSequencePattern, nil},
-		{CreateBlankNullSequenceExpr(NewSymbol("String")), true, BlankNullSequencePattern, NewSymbol("String")},
+		{ListFrom(symbolBlank), true, BlankPattern, nil},
+		{ListFrom(symbolBlank, symbolInteger), true, BlankPattern, symbolInteger},
+		{ListFrom(symbolBlankSequence), true, BlankSequencePattern, nil},
+		{ListFrom(symbolBlankNullSequence, symbolString), true, BlankNullSequencePattern, symbolString},
 		{NewSymbol("x"), false, PatternUnknown, nil},
 		{NewInteger(42), false, PatternUnknown, nil},
 	}
@@ -37,8 +37,8 @@ func TestIsSymbolicBlank(t *testing.T) {
 
 func TestIsSymbolicPattern(t *testing.T) {
 	nameExpr := NewSymbol("x")
-	blankExpr := CreateBlankExpr(nil)
-	pattern := CreatePatternExpr(nameExpr, blankExpr)
+	blankExpr := ListFrom(symbolBlank)
+	pattern := ListFrom(symbolPattern, nameExpr, blankExpr)
 
 	// Test valid pattern
 	isPattern, gotName, gotBlank := IsSymbolicPattern(pattern)
@@ -111,10 +111,10 @@ func TestGetPatternSpecificity(t *testing.T) {
 	}{
 		{NewInteger(42), SpecificityLiteral * 100},
 		{NewSymbol("x"), SpecificityLiteral * 100},
-		{CreateBlankExpr(nil), SpecificityGeneral*10 + 2},
-		{CreateBlankExpr(NewSymbol("Integer")), SpecificityBuiltinType*10 + 2},
-		{CreateBlankExpr(NewSymbol("CustomType")), SpecificityUserType*10 + 2},
-		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)), SpecificityGeneral*10 + 2},
+		{ListFrom(symbolBlank), SpecificityGeneral*10 + 2},
+		{ListFrom(symbolBlank, symbolInteger), SpecificityBuiltinType*10 + 2},
+		{ListFrom(symbolBlank, NewSymbol("Foo")), SpecificityUserType*10 + 2},
+		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank)), SpecificityGeneral*10 + 2},
 	}
 
 	for _, test := range tests {
@@ -166,62 +166,62 @@ func TestPatternMatcher(t *testing.T) {
 		{NewSymbol("x"), NewSymbol("y"), false},
 
 		// Blank patterns
-		{CreateBlankExpr(nil), NewInteger(42), true},
-		{CreateBlankExpr(nil), NewString("hello"), true},
-		{CreateBlankExpr(NewSymbol("Integer")), NewInteger(42), true},
-		{CreateBlankExpr(NewSymbol("Integer")), NewString("hello"), false},
+		{ListFrom(symbolBlank), NewInteger(42), true},
+		{ListFrom(symbolBlank), NewString("hello"), true},
+		{ListFrom(symbolBlank, symbolInteger), NewInteger(42), true},
+		{ListFrom(symbolBlank, symbolInteger), NewString("hello"), false},
 
 		// Pattern expressions
-		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(nil)), NewInteger(42), true},
-		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewString("hello"), true},
-		{CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("String"))), NewInteger(42), false},
+		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank)), NewInteger(42), true},
+		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolString)), NewString("hello"), true},
+		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolString)), NewInteger(42), false},
 
 		// Empty List patterns
-		{NewList("List"), NewList("List"), true},
-		{NewList("Foo"), NewList("Foo"), true},
-		{NewList("List"), NewList("Foo"), false},
+		{ListFrom(symbolList), ListFrom(symbolList), true},
+		{ListFrom(NewSymbol("Foo")), ListFrom(NewSymbol("Foo")), true},
+		{ListFrom(symbolList), ListFrom(NewSymbol("Foo")), false},
 
 		// List patterns
-		{NewList("Plus", CreateBlankExpr(nil), CreateBlankExpr(nil)),
-			NewList("Plus", NewInteger(1), NewInteger(2)), true},
-		{NewList("Plus", CreateBlankExpr(nil), CreateBlankExpr(nil)),
-			NewList("Times", NewInteger(1), NewInteger(2)), false},
+		{ListFrom(symbolPlus, ListFrom(symbolBlank), ListFrom(symbolBlank)),
+			ListFrom(symbolPlus, NewInteger(1), NewInteger(2)), true},
+		{ListFrom(symbolPlus, ListFrom(symbolBlank), ListFrom(symbolBlank)),
+			ListFrom(symbolTimes, NewInteger(1), NewInteger(2)), false},
 
 		// Alternatives, single
-		{NewList("Alternatives", CreateBlankExpr(NewSymbol("Integer")), CreateBlankExpr(NewSymbol("Real"))),
+		{ListFrom(symbolAlternatives, ListFrom(symbolBlank, symbolInteger), ListFrom(symbolBlank, symbolReal)),
 			NewInteger(2), true},
-		{NewList("Alternatives", CreateBlankExpr(NewSymbol("Real")), CreateBlankExpr(NewSymbol("Integer"))),
+		{ListFrom(symbolAlternatives, ListFrom(symbolBlank, symbolReal), ListFrom(symbolBlank, symbolInteger)),
 			NewInteger(2), true},
-		{NewList("Alternatives", CreateBlankExpr(NewSymbol("Real")), CreateBlankExpr(NewSymbol("Integer"))),
+		{ListFrom(symbolAlternatives, ListFrom(symbolBlank, symbolReal), ListFrom(symbolBlank, symbolReal)),
 			NewString("2"), false},
 
 		// Alternatives with Binding, single
-		{NewList("Alternatives",
-			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer"))),
-			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Real")))),
+		{ListFrom(symbolAlternatives,
+			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolInteger)),
+			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolReal))),
 			NewInteger(2), true},
-		{NewList("Alternatives",
-			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Real"))),
-			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer")))),
+		{ListFrom(symbolAlternatives,
+			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolReal)),
+			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolInteger))),
 			NewInteger(2), true},
-		{NewList("Alternatives",
-			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Real"))),
-			CreatePatternExpr(NewSymbol("x"), CreateBlankExpr(NewSymbol("Integer")))),
+		{ListFrom(symbolAlternatives,
+			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolReal)),
+			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolInteger))),
 			NewString("2"), false},
 
 		// List
-		{NewList("List",
-			NewList("Alternatives",
-				CreateBlankExpr(NewSymbol("Integer")),
-				CreateBlankExpr(NewSymbol("Real"))),
+		{ListFrom(symbolList,
+			ListFrom(symbolAlternatives,
+				ListFrom(symbolBlank, symbolInteger),
+				ListFrom(symbolBlank, symbolReal)),
 			NewString("foo")),
-			NewList("List", NewInteger(2), NewString("foo")), true},
-		{NewList("List",
-			NewList("Alternatives",
-				CreateBlankExpr(NewSymbol("Integer")),
-				CreateBlankExpr(NewSymbol("Real"))),
+			ListFrom(symbolList, NewInteger(2), NewString("foo")), true},
+		{ListFrom(symbolList,
+			ListFrom(symbolAlternatives,
+				ListFrom(symbolBlank, symbolInteger),
+				ListFrom(symbolBlank, symbolReal)),
 			NewString("junk")),
-			NewList("List", NewInteger(2), NewString("foo")), false},
+			ListFrom(symbolList, NewInteger(2), NewString("foo")), false},
 	}
 
 	for _, test := range tests {

@@ -147,8 +147,7 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings *Patte
 			if vn := pinfo.VarName; vn != "" && bindings != nil {
 				// Bind null sequence patterns to empty list
 				// Create a proper List with "List" as the first element (like the old system)
-				//bindings[vn] = NewList("List")
-				bindings.Add(vn, NewList("List"))
+				bindings.Add(vn, ListFrom(symbolList))
 			}
 		}
 		return true
@@ -221,21 +220,12 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings *Patt
 			}
 		}
 
-		// Bind the sequence variable if we have a name
-		//if varName != "" {
-		// Create a copy of bindings for this attempt
-		//testBindings = bindings.Copy()
-		//testBindings.Add(varName, NewList("List", seqElements...))
-		// Create a proper List with "List" as the first element (consistent with old system)
-
-		//}
-
 		// Try to match remaining patterns
 		if matchListWithBindingsSequential(patternList, exprList, bindings, patternIdx+1, exprIdx+consume) {
 			// Success - copy bindings back
 			//*bindings = *testBindings
 			if varName != "" && bindings != nil {
-				bindings.Add(varName, NewList("List", seqElements...))
+				bindings.Add(varName, ListFrom(symbolList, seqElements...))
 			}
 			return true
 		}

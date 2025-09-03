@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -29,7 +30,7 @@ func DropListSingle(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 	list := args[1].(core.List)
 	n := list.Tail()[0]
 	//n,_ := core.ExtractInt64(list.Tail()[0])
-	return core.DropRange(expr, core.NewList("List", n))
+	return core.DropRange(expr, core.ListFrom(symbol.List, n))
 }
 
 // DropListRange drops a range of elements from a list and returns the remainder

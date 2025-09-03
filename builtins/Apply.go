@@ -14,9 +14,9 @@ import (
 //
 // @ExprPattern (_,_List)
 func ApplyExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	//function core.Expr, list core.Expr) core.Expr {
-
+	// TODO: restrict to list types
 	fn := args[0]
+
 	elements := args[1].(core.List).Tail()
 
 	// Create function application: function(element1, element2, ...)

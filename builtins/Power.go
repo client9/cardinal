@@ -9,34 +9,71 @@ import (
 
 	"github.com/client9/sexpr/engine"
 )
+// Power(_Integer, _Rational) simplification is non-obvious
+//  4^(1/2) --> (2^2)^(1/2) --> 2^1 --> 2
+//  4^(3/5) --> (2^2)^(3/5) --> 2^(6/5) --> 2 * 2^(1/5)
+// 12^(3/5) --> (2^2 * 3)^(3/5) --> 2*2^(1/5) * 3^(3/5)
+//
+
 
 // @ExprSymbol Power
 // @ExprAttributes  OneIdentity NumericFunction
 // TODO: Error handling
 //
-// PowerInteger - if exp >= 0, then it returns an integer, if exp < 0 returns the float value or error
-//
+
+// @ExprPattern (_, 1)
+func PowerXOne(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	return args[0]
+}
+
+// @ExprPattern (1, _)
+func PowerOneX(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	return args[0]
+}
+
+// @ExprPattern (1.0,_)
+func PowerOneRealX(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	return args[0]
+}
+
+// @ExprPattern (_Integer, -1)
+func PowerIntegerInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	arg := args[0].(core.Integer)
+	return arg.Inv()
+}
+
+// @ExprPattern (_Rational, -1)
+func PowerRationalInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	arg := args[0].(core.Rational)
+	return arg.Inv()
+}
+
 // @ExprPattern (_Integer, _Integer)
 func PowerInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	base, _ := core.ExtractInt64(args[0])
-	exp, _ := core.ExtractInt64(args[1])
-	if exp == 0 {
+	x := args[0].(core.Integer)
+	y := args[1].(core.Integer)
+	switch y.Sign() {
+	case 0:
 		return core.NewInteger(1)
+	case -1:
+		// x ^ -y == 1/ (x^y)
+		return core.PowerInteger(x, y.Neg()).Inv()
+	default:
+		return core.PowerInteger(x, y)
 	}
-	if exp < 0 {
-		val, err := powerFloat64(float64(base), float64(exp))
-		if err != nil {
-			// TODO ERRORS
-			return symbol.Null
-		}
-		return core.NewReal(val)
-	}
-	val, err := powerFloat64(float64(base), float64(exp))
-	if err != nil {
-		// TODO ERROR
-		return symbol.Null
-	}
-	return core.NewInteger(int64(val))
+}
+
+// @ExprPattern (_Rational, _Integer)
+func PowerRatInt(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	x := args[0].(core.Rational)
+	n := args[1].(core.Integer)
+
+	// (x/y)^n = x^n/y^n = x^n * y^-n
+	return core.ListFrom(symbol.Times,
+		core.ListFrom(symbol.Power, x.Numerator(), n),
+		core.ListFrom(symbol.Power, x.Denominator(), n.Neg()),
+	)
+
 }
 
 // PowerNumbers performs power operation on numeric arguments
@@ -65,4 +102,17 @@ func powerFloat64(base, exp float64) (float64, error) {
 	}
 
 	return result, nil
+}
+
+// (a^(x))^(y) = a^(x*y) if y is an integer only
+// unclear on restriction
+// but (x ^2.0) ^ 3.0 does not simplify in MMA
+//
+// @ExprPattern (Power(_, _), _Integer)
+func PowerPowerInt(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	pow := args[0].(core.List).Tail()
+	a := pow[0]
+	x := pow[1]
+	y := args[1]
+	return core.ListFrom(symbol.Power, a, core.ListFrom(symbol.Times, x, y))
 }

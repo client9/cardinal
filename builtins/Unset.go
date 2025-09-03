@@ -10,7 +10,7 @@ import (
 // @ExprAttributes HoldFirst
 
 // Unset implements the Unset special form
-// @ExprPattern (_)
+// @ExprPattern (_Symbol)
 func Unset(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	if err := c.Delete(args[0].(core.Symbol)); err != nil {
 		return core.NewError("Protected", "unable to under protected symbol")

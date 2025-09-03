@@ -10,37 +10,6 @@ const (
 	BlankNullSequencePattern
 )
 
-// Pattern constructors
-
-// CreateBlankExpr creates a symbolic Blank[] expression
-func CreateBlankExpr(typeExpr Expr) Expr {
-	if typeExpr == nil {
-		return NewList("Blank")
-	}
-	return NewList("Blank", typeExpr)
-}
-
-// CreateBlankSequenceExpr creates a symbolic BlankSequence[] expression
-func CreateBlankSequenceExpr(typeExpr Expr) Expr {
-	if typeExpr == nil {
-		return NewList("BlankSequence")
-	}
-	return NewList("BlankSequence", typeExpr)
-}
-
-// CreateBlankNullSequenceExpr creates a symbolic BlankNullSequence[] expression
-func CreateBlankNullSequenceExpr(typeExpr Expr) Expr {
-	if typeExpr == nil {
-		return NewList("BlankNullSequence")
-	}
-	return NewList("BlankNullSequence", typeExpr)
-}
-
-// CreatePatternExpr creates a symbolic Pattern[name, blank] expression
-func CreatePatternExpr(nameExpr, blankExpr Expr) Expr {
-	return NewList("Pattern", nameExpr, blankExpr)
-}
-
 // PatternInfo represents complete information about a pattern variable
 type PatternInfo struct {
 	Type     PatternType
@@ -333,4 +302,20 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 	default:
 		return false
 	}
+}
+
+// checks to see if an expression has a "Pattern" symbol
+func ExprHasNamedPattern(e Expr) bool {
+	if e.HeadExpr() == symbolPattern {
+		return true
+	}
+	if list, ok := e.(List); ok {
+		for _, arg := range list.Tail() {
+			if ExprHasNamedPattern(arg) {
+				return true
+			}
+		}
+		return false
+	}
+	return false
 }

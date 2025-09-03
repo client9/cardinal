@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -13,8 +14,7 @@ import (
 //
 // @ExprPattern (_,_)
 func RuleDelayed(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-
 	// Create a RuleDelayed expression - the actual rule application happens elsewhere
-	return core.NewList("RuleDelayed", args[0], args[1])
+	return core.ListFrom(symbol.RuleDelayed, args[0], args[1])
 
 }

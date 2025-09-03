@@ -110,7 +110,7 @@ func (b ByteArray) ElementAt(n int64) Expr {
 	if err != nil {
 		return NewError(err.Error(), "")
 	}
-	return NewInteger(int64(r))
+	return newMachineInt(int64(r))
 }
 
 // Slice returns a new ByteArray containing bytes from start to stop (inclusive, 1-indexed)
@@ -163,12 +163,12 @@ func (b ByteArray) Join(other Sliceable) Expr {
 // Returns an error Expr if index is out of bounds or value is not a valid byte
 func (b ByteArray) SetElementAt(n int64, value Expr) Expr {
 	// Validate that value is an integer representing a valid byte (0-255)
-	byteValue, ok := value.(Integer)
+	i, ok := value.(Integer)
 	if !ok {
 		return NewError("TypeError",
 			"ByteArray assignment requires integer value (0-255)")
 	}
-
+	byteValue := i.Int64()
 	if byteValue < 0 || byteValue > 255 {
 		return NewError("ValueError",
 			fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue))
@@ -297,7 +297,8 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 	}
 
 	// Handle single integer (representing a byte)
-	if byteValue, ok := values.(Integer); ok {
+	if iValue, ok := values.(Integer); ok {
+		byteValue := iValue.Int64()
 		if byteValue < 0 || byteValue > 255 {
 			return nil, NewError("ValueError",
 				fmt.Sprintf("Byte value %d is out of range (0-255)", byteValue))
@@ -312,7 +313,8 @@ func (b ByteArray) convertToByteSlice(values Expr) ([]byte, Expr) {
 		bytes := make([]byte, len(elements))
 
 		for i, elem := range elements {
-			if byteValue, ok := elem.(Integer); ok {
+			if iValue, ok := elem.(Integer); ok {
+				byteValue := iValue.Int64()
 				if byteValue < 0 || byteValue > 255 {
 					return nil, NewError("ValueError",
 						fmt.Sprintf("Byte value %d at position %d is out of range (0-255)", byteValue, i+1))

@@ -19,6 +19,8 @@ const (
 	HoldRest
 	Listable
 	Locked
+	NHoldFirst
+	NHoldRest
 	NumericFunction
 	OneIdentity
 	Orderless
@@ -44,6 +46,8 @@ var symbolToAttribute = map[core.Symbol]Attribute{
 	symbol.ReadProtected:   ReadProtected,
 	symbol.Locked:          Locked,
 	symbol.Temporary:       Temporary,
+	symbol.NHoldFirst:      NHoldFirst,
+	symbol.NHoldRest:       NHoldRest,
 }
 
 func SymbolToAttribute(e core.Expr) Attribute {

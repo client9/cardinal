@@ -2,7 +2,6 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
 )
 
@@ -18,61 +17,74 @@ func PlusExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Exp
 		return core.NewInteger(0) // Plus() = 0
 	}
 
-	var intSum int64 = 0
-	var realSum float64 = 0.0
-	var hasIntegers bool = false
-	var hasReals bool = false
-	var nonNumeric []core.Expr
+	return core.PlusList(args)
+	/*
+	   intSum := core.PlusInteger{}
+	   ratSum := core.PlusRational{}
+	   floatSum := core.PlusReal{}
 
-	// Separate numeric and non-numeric arguments
-	for _, arg := range args {
-		if intVal, ok := core.ExtractInt64(arg); ok {
-			intSum += intVal
-			hasIntegers = true
-		} else if realVal, ok := core.ExtractFloat64(arg); ok {
-			realSum += realVal
-			hasReals = true
-		} else {
-			nonNumeric = append(nonNumeric, arg)
-		}
-	}
+	   var realSum float64 = 0.0
+	   var hasIntegers bool = false
+	   var hasReals bool = false
+	   var nonNumeric []core.Expr
 
-	// Build result elements
+	   // Separate numeric and non-numeric arguments
 
-	var resultElements = make([]core.Expr, 0, 4+len(nonNumeric))
-	resultElements = append(resultElements, symbol.Plus)
+	   	for _, a := range args {
+	   		switch arg := a.(type) {
+	   		if intVal, ok := arg.(core.Integer); ok {
+	   			intSum.Update(intVal)
+	   			hasIntegers = true
+	   		} else if realVal, ok := core.ExtractFloat64(arg); ok {
+	   			realSum += realVal
+	   			hasReals = true
+	   		} else {
+	   			nonNumeric = append(nonNumeric, arg)
+	   		}
+	   	}
 
-	// Add combined numeric value
-	if hasIntegers && hasReals {
-		// Mixed: convert to float64
-		totalSum := float64(intSum) + realSum
-		if totalSum != 0.0 || len(nonNumeric) == 0 {
-			resultElements = append(resultElements, core.NewReal(totalSum))
-		}
-	} else if hasIntegers {
-		// All integers: keep as integer
-		if intSum != 0 || len(nonNumeric) == 0 {
-			resultElements = append(resultElements, core.NewInteger(intSum))
-		}
-	} else if hasReals {
-		// All reals: keep as float64
-		if realSum != 0.0 || len(nonNumeric) == 0 {
-			resultElements = append(resultElements, core.NewReal(realSum))
-		}
-	}
+	   // Build result elements
 
-	// Add non-numeric terms
-	resultElements = append(resultElements, nonNumeric...)
+	   var resultElements = make([]core.Expr, 0, 4+len(nonNumeric))
+	   resultElements = append(resultElements, symbol.Plus)
 
-	// Apply OneIdentity-like behavior: if only one element (plus head), return it
-	if len(resultElements) == 2 {
-		return resultElements[1]
-	}
+	   // Add combined numeric value
 
-	// If no elements besides head, return 0
-	if len(resultElements) == 1 {
-		return core.NewInteger(0)
-	}
+	   	if hasIntegers && hasReals {
+	   		// Mixed: convert to float64
+	   		totalSum := intSum.Integer().Float64() + realSum
+	   		if totalSum != 0.0 || len(nonNumeric) == 0 {
+	   			resultElements = append(resultElements, core.NewReal(totalSum))
+	   		}
+	   	} else if hasIntegers {
 
-	return core.NewListFromExprs(resultElements...)
+	   		sum := intSum.Integer()
+	   		// All integers: keep as integer
+	   		if (sum.IsInt64() && sum.Int64() != 0) || len(nonNumeric) == 0 {
+	   			resultElements = append(resultElements, sum)
+	   		}
+	   	} else if hasReals {
+
+	   		// All reals: keep as float64
+	   		if realSum != 0.0 || len(nonNumeric) == 0 {
+	   			resultElements = append(resultElements, core.NewReal(realSum))
+	   		}
+	   	}
+
+	   // Add non-numeric terms
+	   resultElements = append(resultElements, nonNumeric...)
+	   // Apply OneIdentity-like behavior: if only one element (plus head), return it
+
+	   	if len(resultElements) == 2 {
+	   		return resultElements[1]
+	   	}
+
+	   // If no elements besides head, return 0
+
+	   	if len(resultElements) == 1 {
+	   		return core.NewInteger(0)
+	   	}
+
+	   return core.NewListFromExprs(resultElements...)
+	*/
 }

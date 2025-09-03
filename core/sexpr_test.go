@@ -261,8 +261,8 @@ func TestConstructorFunctions(t *testing.T) {
 				}
 			case "Integer":
 				if integer, ok := expr.(Integer); ok {
-					if int64(integer) != int64(tt.expectedValue.(int)) {
-						t.Errorf("expected value %v, got %v", tt.expectedValue, int64(integer))
+					if integer.Int64() != int64(tt.expectedValue.(int)) {
+						t.Errorf("expected value %v, got %v", tt.expectedValue, integer.Int64())
 					}
 				} else {
 					t.Errorf("expected Integer, got %T", expr)

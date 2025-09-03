@@ -1,4 +1,4 @@
 package builtins
 
-// @ExprSymbol Integer
+// @ExprSymbol Complex
 // @ExprAttributes Protected
