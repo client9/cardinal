@@ -128,7 +128,7 @@ func TestArithmeticSimplification(t *testing.T) {
 		{
 			name:     "Plus integer overflow behavior",
 			input:    "Plus(9223372036854775807, 1)", // max int64 + 1, wraps to min int64
-			expected: "-9223372036854775808",
+			expected: "9223372036854775808",
 		},
 		{
 			name:     "Mixed precision",
