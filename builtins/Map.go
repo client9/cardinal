@@ -13,7 +13,7 @@ import (
 // MapExpr applies a function to each element of a list using EngineFunc signature
 // Map(f, {a, b, c}) -> {f(a), f(b), f(c)}
 //
-// @ExprPattern (_,_List)
+// @ExprPattern (_,_(___))
 func MapExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 
 	fn := args[0]
