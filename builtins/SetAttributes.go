@@ -15,6 +15,9 @@ import (
 func SetAttributesSingle(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	sym := args[0].(core.Symbol)
 	attr := engine.SymbolToAttribute(args[1].(core.Symbol))
+	if attr == 0 {
+		return core.NewError("UnknownAttribute", "unknown attribute")
+	}
 	symbolTable := c.GetSymbolTable()
 	symbolTable.SetAttributes(sym, attr)
 	return symbol.Null
@@ -27,7 +30,11 @@ func SetAttributesList(e *engine.Evaluator, c *engine.Context, args []core.Expr)
 
 	var attribute engine.Attribute
 	for _, a := range attrs {
-		attribute |= engine.SymbolToAttribute(a)
+		attr := engine.SymbolToAttribute(a)
+		if attr == 0 {
+			return core.NewError("UnknownAttribute", "unknown attribute")
+		}
+		attribute |= attr
 	}
 
 	symbolTable := c.GetSymbolTable()

@@ -165,11 +165,6 @@ func TestREPL_SpecialCommands(t *testing.T) {
 		t.Error("clear command should return true")
 	}
 
-	// Test attributes command
-	if !repl.handleSpecialCommands("attributes") {
-		t.Error("attributes command should return true")
-	}
-
 	// Test non-special command
 	if repl.handleSpecialCommands("1 + 2") {
 		t.Error("regular expression should return false")

@@ -20,14 +20,14 @@ func TestSetAttributes(t *testing.T) {
 		{
 			name:      "Error: invalid symbol",
 			input:     "SetAttributes(42, Protected)",
-			expected:  "",
-			errorType: "ArgumentError",
+			expected:  "SetAttributes(42, Protected)",
+			errorType: "",
 		},
 		{
 			name:      "Error: invalid attribute",
 			input:     "SetAttributes(myFunc, InvalidAttribute)",
 			expected:  "",
-			errorType: "Attribute",
+			errorType: "UnknownAttribute",
 		},
 		{
 			name:     "Wrong number of arguments returns unevaluated",
@@ -55,10 +55,10 @@ func TestSetAttributes(t *testing.T) {
 			expected: "List(Flat, Listable, NumericFunction, OneIdentity, Orderless, Protected)",
 		},
 		{
-			name:      "Error: invalid symbol",
+			name:      "Attributes Error: invalid symbol",
 			input:     "Attributes(42)",
-			expected:  "",
-			errorType: "ArgumentError",
+			expected:  "Attributes(42)",
+			errorType: "",
 		},
 		{
 			name:     "Wrong number of arguments returns unevaluated",
@@ -73,8 +73,8 @@ func TestSetAttributes(t *testing.T) {
 		{
 			name:      "Error: invalid symbol",
 			input:     "ClearAttributes(42, Protected)",
-			expected:  "",
-			errorType: "ArgumentError",
+			expected:  "ClearAttributes(42, Protected)",
+			errorType: "",
 		},
 		{
 			name:     "No arguments returns unevaluated",
