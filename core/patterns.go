@@ -1,5 +1,9 @@
 package core
 
+import (
+	"github.com/client9/sexpr/core/symbol"
+)
+
 // Pattern types and enums
 type PatternType int
 
@@ -38,7 +42,7 @@ type CompoundSpecificity struct {
 
 // Pattern analysis functions
 
-// IsSymbolicBlank checks if an expression is a symbolic blank pattern
+// IsSymbolicBlank checks if an expression is a symbol.ic blank pattern
 func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 	list, ok := expr.(List)
 	if !ok {
@@ -52,11 +56,11 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 	}
 	var ptype PatternType
 	switch sym {
-	case symbolBlank:
+	case symbol.Blank:
 		ptype = BlankPattern
-	case symbolBlankSequence:
+	case symbol.BlankSequence:
 		ptype = BlankSequencePattern
-	case symbolBlankNullSequence:
+	case symbol.BlankNullSequence:
 		ptype = BlankNullSequencePattern
 	default:
 		return false, PatternUnknown, nil
@@ -70,16 +74,16 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 
 }
 
-// IsSymbolicPattern checks if an expression is a symbolic Pattern[name, blank]
+// IsSymbolicPattern checks if an expression is a symbol.ic Pattern[name, blank]
 func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
-	if list, ok := expr.(List); ok && list.Length() == 2 && list.Head() == symbolPattern {
+	if list, ok := expr.(List); ok && list.Length() == 2 && list.Head() == symbol.Pattern {
 		args := list.Tail()
 		return true, args[0], args[1]
 	}
 	return false, nil, nil
 }
 
-// GetSymbolicPatternInfo extracts pattern information from a symbolic pattern
+// GetSymbolicPatternInfo extracts pattern information from a symbol.ic pattern
 func GetSymbolicPatternInfo(expr Expr) PatternInfo {
 	info := PatternInfo{}
 	blankExpr := expr
@@ -138,7 +142,7 @@ func IsBuiltinType(typeName string) bool {
 
 // GetPatternSpecificity calculates the specificity of a pattern for ordering
 func GetPatternSpecificity(pattern Expr) PatternSpecificity {
-	// Check if it's a symbolic pattern
+	// Check if it's a symbol.ic pattern
 	if isPattern, _, blankExpr := IsSymbolicPattern(pattern); isPattern {
 		return GetBlankExprSpecificity(blankExpr)
 	}
@@ -309,9 +313,9 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 	}
 }
 
-// checks to see if an expression has a "Pattern" symbol
+// checks to see if an expression has a "Pattern" symbol.
 func ExprHasNamedPattern(e Expr) bool {
-	if e.Head() == symbolPattern {
+	if e.Head() == symbol.Pattern {
 		return true
 	}
 	if list, ok := e.(List); ok {

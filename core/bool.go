@@ -1,31 +1,35 @@
 package core
 
+import (
+	"github.com/client9/sexpr/core/symbol"
+)
+
 func NewBool(value bool) Symbol {
 	if value {
-		return symbolTrue
+		return symbol.True
 	} else {
-		return symbolFalse
+		return symbol.False
 	}
 }
 
-// IsBool checks if an expression is a boolean value (True/False symbol)
+// IsBool checks if an expression is a boolean value (True/False symbol.)
 func IsBool(expr Expr) bool {
 	// Check new Symbol type first
 	if s, ok := expr.(Symbol); ok {
-		return s == symbolTrue || s == symbolFalse
+		return s == symbol.True || s == symbol.False
 	}
 	return false
 }
 
 // ExtractBool safely extracts a boolean value from an Expr
-// Note: NewBool returns symbols "True"/"False", so we check for those
+// Note: NewBool returns symbol.s "True"/"False", so we check for those
 func ExtractBool(expr Expr) (bool, bool) {
 	// Check new Symbol type first
 	if s, ok := expr.(Symbol); ok {
-		if s == symbolTrue {
+		if s == symbol.True {
 			return true, true
 		}
-		if s == symbolFalse {
+		if s == symbol.False {
 			return false, true
 		}
 	}

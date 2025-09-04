@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // ByteArray represents an array of bytes as a first-class expression type
@@ -87,7 +89,7 @@ func (b ByteArray) InputForm() string {
 }
 
 func (b ByteArray) Head() Expr {
-	return symbolByteArray
+	return symbol.ByteArray
 }
 
 func (b ByteArray) IsAtom() bool {

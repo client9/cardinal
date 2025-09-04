@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type CaptureIndex struct {
@@ -101,7 +103,7 @@ func (c *Captures) AsRules(names []Symbol) Expr {
 
 	if c.Length() == 0 {
 		//fmt.Printf("Capture had nothing\n")
-		return ListFrom(symbolList)
+		return ListFrom(symbol.List)
 	}
 	rules := make([]Expr, 0, len(c.captures))
 	for i, cap := range c.captures {
@@ -119,14 +121,14 @@ func (c *Captures) AsRules(names []Symbol) Expr {
 			target = cap.exprs[cap.start]
 		} else {
 			// mutliple elements go in a list`
-			target = ListFrom(symbolList, cap.exprs[cap.start:cap.end]...)
+			target = ListFrom(symbol.List, cap.exprs[cap.start:cap.end]...)
 		}
 		if names != nil {
 			name = names[i]
 		} else {
 			name = NewSymbol(fmt.Sprintf("$%d", i+1))
 		}
-		rules = append(rules, ListFrom(symbolRule, name, target))
+		rules = append(rules, ListFrom(symbol.Rule, name, target))
 	}
-	return ListFrom(symbolList, rules...)
+	return ListFrom(symbol.List, rules...)
 }

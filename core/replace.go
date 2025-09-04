@@ -1,11 +1,15 @@
 package core
 
+import (
+	"github.com/client9/sexpr/core/symbol"
+)
+
 // needsSequenceSplicing determines if a substitution should be spliced (for sequence patterns)
 func needsSequenceSplicing(originalElem, newElem Expr, bindings PatternBindings) bool {
 	// Check if original element is a symbol that was bound to a List
 	if elemSym, ok := originalElem.(Symbol); ok {
 		if val := bindings.HasBinding(elemSym.String()); val != nil {
-			return val.Head() == symbolList
+			return val.Head() == symbol.List
 		}
 	}
 	return false

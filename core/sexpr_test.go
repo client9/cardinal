@@ -2,6 +2,8 @@ package core
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 func TestAtom_String(t *testing.T) {
@@ -36,7 +38,7 @@ func TestAtom_String(t *testing.T) {
 			expected: "False",
 		},
 		{
-			name:     "symbol atom",
+			name:     "symbol. atom",
 			atom:     NewSymbol("mySymbol"),
 			expected: "mySymbol",
 		},
@@ -104,7 +106,7 @@ func TestAtom_Type(t *testing.T) {
 			expected: "Symbol",
 		},
 		{
-			name:     "symbol atom type",
+			name:     "symbol. atom type",
 			atom:     NewSymbol("x"),
 			expected: "Symbol",
 		},
@@ -128,27 +130,27 @@ func TestList_String(t *testing.T) {
 	}{
 		{
 			name:     "empty list",
-			list:     NewList(symbolList),
+			list:     NewList(symbol.List),
 			expected: "List()",
 		},
 		{
 			name:     "single element list",
-			list:     NewList(symbolPlus),
+			list:     NewList(symbol.Plus),
 			expected: "Plus()",
 		},
 		{
 			name:     "simple function call",
-			list:     NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			list:     NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "mixed types",
-			list:     NewList(symbolList, NewInteger(1), NewReal(2.5), NewString("hello"), NewBool(true)),
+			list:     NewList(symbol.List, NewInteger(1), NewReal(2.5), NewString("hello"), NewBool(true)),
 			expected: `List(1, 2.5, "hello", True)`,
 		},
 		{
 			name:     "nested list",
-			list:     NewList(symbolPlus, NewInteger(1), NewList(symbolTimes, NewInteger(2), NewInteger(3))),
+			list:     NewList(symbol.Plus, NewInteger(1), NewList(symbol.Times, NewInteger(2), NewInteger(3))),
 			expected: "Plus(1, Times(2, 3))",
 		},
 		{
@@ -176,12 +178,12 @@ func TestList_Type(t *testing.T) {
 	}{
 		{
 			name:     "empty list type",
-			list:     NewList(symbolList),
+			list:     NewList(symbol.List),
 			expected: "List",
 		},
 		{
 			name:     "non-empty list type",
-			list:     NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			list:     NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expected: "Plus",
 		},
 	}
@@ -299,7 +301,7 @@ func TestNewList(t *testing.T) {
 	}{
 		{
 			name:           "multiple elements",
-			list:           NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			list:           NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expectedLength: 2,
 			expectedType:   "Plus",
 		},
@@ -332,8 +334,8 @@ func TestComplexExpressions(t *testing.T) {
 	}{
 		{
 			name: "mathematical expression",
-			expr: NewList(symbolPlus,
-				NewList(symbolTimes, NewInteger(2), NewSymbol("x")),
+			expr: NewList(symbol.Plus,
+				NewList(symbol.Times, NewInteger(2), NewSymbol("x")),
 				NewInteger(5),
 			),
 			expected: "Plus(Times(2, x), 5)",
@@ -341,26 +343,26 @@ func TestComplexExpressions(t *testing.T) {
 		{
 			name: "function definition",
 			expr: NewList(
-				symbolFunction,
+				symbol.Function,
 				NewString("x"),
-				NewList(symbolPower, NewSymbol("x"), NewInteger(2)),
+				NewList(symbol.Power, NewSymbol("x"), NewInteger(2)),
 			),
 			expected: `Function("x", Power(x, 2))`,
 		},
 		{
 			name: "conditional expression",
 			expr: NewList(
-				symbolIf,
-				NewList(symbolGreater, NewSymbol("x"), NewInteger(0)),
+				symbol.If,
+				NewList(symbol.Greater, NewSymbol("x"), NewInteger(0)),
 				NewSymbol("x"),
-				NewList(symbolMinus, NewSymbol("x")),
+				NewList(symbol.Minus, NewSymbol("x")),
 			),
 			expected: "If(Greater(x, 0), x, Minus(x))",
 		},
 		{
 			name: "list with mixed types",
 			expr: NewList(
-				symbolList,
+				symbol.List,
 				NewInteger(1),
 				NewReal(2.5),
 				NewString("hello"),

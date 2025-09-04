@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"unicode/utf8"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type String string
@@ -19,7 +21,7 @@ func (s String) InputForm() string {
 }
 
 func (s String) Head() Expr {
-	return symbolString
+	return symbol.String
 }
 
 func (s String) Length() int64 {

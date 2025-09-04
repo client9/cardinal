@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/client9/sexpr/core/symbol"
 	"math/big"
 )
 
@@ -36,7 +37,7 @@ func (i bigRat) InputForm() string {
 }
 
 func (i bigRat) Head() Expr {
-	return symbolRational
+	return symbol.Rational
 }
 
 func (i bigRat) Length() int64 {

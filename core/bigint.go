@@ -2,6 +2,8 @@ package core
 
 import (
 	"math/big"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type bigInt struct {
@@ -40,7 +42,7 @@ func (i bigInt) InputForm() string {
 }
 
 func (i bigInt) Head() Expr {
-	return symbolInteger
+	return symbol.Integer
 }
 
 func (i bigInt) Length() int64 {

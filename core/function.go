@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // FunctionExpr represents a pure/lambda function created by Function(args, body)
@@ -38,7 +40,7 @@ func (f FunctionExpr) InputForm() string {
 }
 
 func (f FunctionExpr) Head() Expr {
-	return symbolFunction
+	return symbol.Function
 }
 
 // Length returns the length (number of parameters + 1 for body)

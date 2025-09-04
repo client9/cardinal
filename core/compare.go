@@ -30,4 +30,3 @@ func CanonicalCompare(expr1, expr2 Expr) bool {
 	// If lengths are equal, compare by string representation for deterministic ordering
 	return expr1.String() < expr2.String()
 }
-

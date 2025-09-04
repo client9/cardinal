@@ -3,6 +3,8 @@ package core
 import (
 	"strconv"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type Real float64
@@ -31,7 +33,7 @@ func (r Real) InputForm() string {
 }
 
 func (r Real) Head() Expr {
-	return symbolReal
+	return symbol.Real
 }
 
 func (r Real) Length() int64 {

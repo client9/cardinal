@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // List represents compound expressions
@@ -54,7 +56,7 @@ func (l List) String() string {
 		isListLiteral := false
 
 		// Check new Symbol type first
-		if l.Head() == symbolList {
+		if l.Head() == symbol.List {
 			isListLiteral = true
 		}
 

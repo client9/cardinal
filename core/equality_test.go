@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/client9/sexpr/core/symbol"
 	"testing"
 )
 
@@ -87,7 +88,7 @@ func TestAtomEqual(t *testing.T) {
 		{
 			name:     "atom vs list",
 			atom1:    NewInteger(42),
-			atom2:    NewList(symbolList, NewInteger(42)),
+			atom2:    NewList(symbol.List, NewInteger(42)),
 			expected: false,
 		},
 	}
@@ -112,40 +113,40 @@ func TestListEqual(t *testing.T) {
 		// Empty lists
 		{
 			name:     "empty lists",
-			list1:    NewList(symbolList),
-			list2:    NewList(symbolList),
+			list1:    NewList(symbol.List),
+			list2:    NewList(symbol.List),
 			expected: true,
 		},
 
 		// Empty lists
 		{
 			name:     "empty lists different heads",
-			list1:    NewList(symbolList),
-			list2:    NewList(symbolPlus),
+			list1:    NewList(symbol.List),
+			list2:    NewList(symbol.Plus),
 			expected: false,
 		},
 
 		// Same multi-element lists
 		{
 			name:     "same multi-element",
-			list1:    NewList(symbolPlus, NewInteger(1), NewInteger(2)),
-			list2:    NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			list1:    NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
+			list2:    NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expected: true,
 		},
 
 		// Different lengths
 		{
 			name:     "different lengths",
-			list1:    NewList(symbolPlus, NewInteger(1)),
-			list2:    NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			list1:    NewList(symbol.Plus, NewInteger(1)),
+			list2:    NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expected: false,
 		},
 
 		// Different elements
 		{
 			name:     "different elements",
-			list1:    NewList(symbolList, NewInteger(1), NewInteger(2)),
-			list2:    NewList(symbolList, NewInteger(1), NewInteger(3)),
+			list1:    NewList(symbol.List, NewInteger(1), NewInteger(2)),
+			list2:    NewList(symbol.List, NewInteger(1), NewInteger(3)),
 			expected: false,
 		},
 
@@ -153,11 +154,11 @@ func TestListEqual(t *testing.T) {
 		{
 			name: "nested lists same",
 			list1: NewList(NewSymbol("f"),
-				NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+				NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 				NewInteger(3),
 			),
 			list2: NewList(NewSymbol("f"),
-				NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+				NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 				NewInteger(3),
 			),
 			expected: true,
@@ -167,11 +168,11 @@ func TestListEqual(t *testing.T) {
 		{
 			name: "nested lists different",
 			list1: NewList(NewSymbol("f"),
-				NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+				NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 				NewInteger(3),
 			),
 			list2: NewList(NewSymbol("f"),
-				NewList(symbolTimes, NewInteger(1), NewInteger(2)),
+				NewList(symbol.Times, NewInteger(1), NewInteger(2)),
 				NewInteger(3),
 			),
 			expected: false,
@@ -180,7 +181,7 @@ func TestListEqual(t *testing.T) {
 		// List vs non-list
 		{
 			name:     "list vs atom",
-			list1:    NewList(symbolList, NewInteger(42)),
+			list1:    NewList(symbol.List, NewInteger(42)),
 			list2:    NewInteger(42),
 			expected: false,
 		},
@@ -271,14 +272,14 @@ func TestListEqualMethod(t *testing.T) {
 	}{
 		{
 			name:     "same lists",
-			list1:    NewList(symbolPlus, NewInteger(1), NewInteger(2)),
-			list2:    NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			list1:    NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
+			list2:    NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expected: true,
 		},
 		{
 			name:     "different lists",
-			list1:    NewList(symbolPlus, NewInteger(1), NewInteger(2)),
-			list2:    NewList(symbolTimes, NewInteger(1), NewInteger(2)),
+			list1:    NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
+			list2:    NewList(symbol.Times, NewInteger(1), NewInteger(2)),
 			expected: false,
 		},
 	}

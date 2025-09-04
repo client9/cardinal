@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type SliceFloat64 []float64
@@ -25,7 +27,7 @@ func (s SliceFloat64) InputForm() string {
 }
 
 func (s SliceFloat64) Head() Expr {
-	return symbolList
+	return symbol.List
 }
 
 func (s SliceFloat64) IsAtom() bool {

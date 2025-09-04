@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"slices"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // ErrorExpr represents an error that occurred during evaluation
@@ -81,7 +83,7 @@ func (e ErrorExpr) InputForm() string {
 }
 
 func (e ErrorExpr) Head() Expr {
-	return symbolError
+	return symbol.Error
 }
 
 func (e ErrorExpr) IsAtom() bool {

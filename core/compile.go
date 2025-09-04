@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type Compile struct {
@@ -102,7 +104,7 @@ func (c *Compile) getGroups(e Expr, names []Symbol) []Symbol {
 		return names
 	}
 
-	// Head need not be a symbol
+	// Head need not be a symbol.
 	head := list.Head()
 	sym, ok := head.(Symbol)
 	if !ok {
@@ -114,14 +116,14 @@ func (c *Compile) getGroups(e Expr, names []Symbol) []Symbol {
 
 	}
 	switch sym {
-	case symbolPattern:
+	case symbol.Pattern:
 		args := list.Tail()
 		// args[0] is the binding name
 		// args[1] is the pattern
 		names = append(names, args[0].(Symbol))
 		names = c.getGroups(args[1], names)
 		return names
-	case symbolPatternSequence, symbolList:
+	case symbol.PatternSequence, symbol.List:
 		return c.getGroupsList(list.Tail(), names)
 	}
 
@@ -149,23 +151,23 @@ func (c *Compile) Simple(e Expr) bool {
 		return c.SimpleList(list.Tail())
 	}
 
-	// normal list with symbol head
+	// normal list with symbol. head
 	switch sym {
-	case symbolPattern:
+	case symbol.Pattern:
 		args := list.Tail()
 		// args[0] is the binding name
 		// args[1] is the pattern
 		return c.Simple(args[1])
-	case symbolMatchStar, symbolMatchPlus, symbolMatchQuest,
-		symbolBlankSequence, symbolBlankNullSequence, symbolOptional:
+	case symbol.MatchStar, symbol.MatchPlus, symbol.MatchQuest,
+		symbol.BlankSequence, symbol.BlankNullSequence, symbol.Optional:
 		args := list.Tail()
 		if len(args) == 0 {
 			return true
 		}
 		return c.Simple(args[0])
-	case symbolMatchHead, symbolMatchAny, symbolBlank:
+	case symbol.MatchHead, symbol.MatchAny, symbol.Blank:
 		return true
-	case symbolPatternSequence, symbolList:
+	case symbol.PatternSequence, symbol.List:
 		return c.SimpleList(list.Tail())
 	}
 	return true
@@ -231,11 +233,11 @@ func (c *Compile) isZeroPattern(e Expr) bool {
 	if list, ok := e.(List); ok {
 		switch list.Head() {
 
-		case symbolMatchStar, symbolMatchQuest:
+		case symbol.MatchStar, symbol.MatchQuest:
 			return true
 
 		// MMA compatible
-		case symbolBlankNullSequence, symbolOptional:
+		case symbol.BlankNullSequence, symbol.Optional:
 			return true
 
 		}
@@ -247,14 +249,14 @@ func (c *Compile) isSequencePattern(e Expr) bool {
 	if list, ok := e.(List); ok {
 
 		switch list.Head() {
-		case symbolMatchStar, symbolMatchPlus, symbolMatchQuest:
+		case symbol.MatchStar, symbol.MatchPlus, symbol.MatchQuest:
 			return true
 
 		// MMA compatible
-		case symbolBlankNullSequence, symbolBlankSequence, symbolOptional:
+		case symbol.BlankNullSequence, symbol.BlankSequence, symbol.Optional:
 			return true
 
-		case symbolPattern, symbolPatternSequence, symbolList:
+		case symbol.Pattern, symbol.PatternSequence, symbol.List:
 			for _, a := range list.Tail() {
 				if c.isSequencePattern(a) {
 					return true
@@ -324,20 +326,20 @@ func (c *Compile) IsListLiteral(list List) bool {
 	for _, a := range list.Tail() {
 		if alist, ok := a.(List); ok {
 			switch alist.Head() {
-			case symbolPattern, symbolPatternSequence:
+			case symbol.Pattern, symbol.PatternSequence:
 				return false
 
 			// mma primitives
-			case symbolBlank, symbolBlankSequence, symbolBlankNullSequence, symbolOptional:
+			case symbol.Blank, symbol.BlankSequence, symbol.BlankNullSequence, symbol.Optional:
 				return false
 
 			// low level primitives
-			case symbolMatchStar, symbolMatchPlus, symbolMatchQuest,
-				symbolMatchAny, symbolMatchHead, symbolMatchLiteral:
+			case symbol.MatchStar, symbol.MatchPlus, symbol.MatchQuest,
+				symbol.MatchAny, symbol.MatchHead, symbol.MatchLiteral:
 				return false
 
 			// TBD
-			case symbolMatchOr:
+			case symbol.MatchOr:
 				return false
 			default:
 				if !c.IsListLiteral(alist) {
@@ -377,7 +379,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
-			Val:  symbolNull,
+			Val:  symbol.Null,
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
@@ -386,44 +388,44 @@ func (c *Compile) emitOneStep(e Expr) {
 
 	switch sym {
 
-	case symbolBlank:
+	case symbol.Blank:
 		// Blank[]       --> MatchAny()
-		// Blank[symbol] --> MatchHead(symbol)
+		// Blank[symbol.] --> MatchHead(symbol.)
 
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, arg)
+			arg = ListFrom(symbol.MatchHead, arg)
 		}
 		c.emitOneStep(arg)
-	case symbolBlankSequence:
+	case symbol.BlankSequence:
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, arg)
+			arg = ListFrom(symbol.MatchHead, arg)
 		}
-		c.emitOneStep(ListFrom(symbolMatchPlus, arg))
-	case symbolBlankNullSequence:
+		c.emitOneStep(ListFrom(symbol.MatchPlus, arg))
+	case symbol.BlankNullSequence:
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, arg)
+			arg = ListFrom(symbol.MatchHead, arg)
 		}
-		c.emitOneStep(ListFrom(symbolMatchStar, arg))
-	case symbolOptional:
+		c.emitOneStep(ListFrom(symbol.MatchStar, arg))
+	case symbol.Optional:
 		// TODO default value
 		arg := ListFirstArg(e)
 		if arg == nil {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, arg)
+			arg = ListFrom(symbol.MatchHead, arg)
 		}
-		c.emitOneStep(ListFrom(symbolMatchQuest, arg))
+		c.emitOneStep(ListFrom(symbol.MatchQuest, arg))
 
-	case symbolPattern:
+	case symbol.Pattern:
 		// Pattern("x", expression)
 		args := list.Tail()
 		name := args[0].(Symbol)
@@ -440,26 +442,26 @@ func (c *Compile) emitOneStep(e Expr) {
 			Alt: slot,
 		})
 		c.addLink(cend, c.pc)
-	case symbolPatternSequence:
+	case symbol.PatternSequence:
 		args := list.Tail()
 		for _, arg := range args {
 			c.emitOneStep(arg)
 		}
 
-	case symbolMatchHead:
+	case symbol.MatchHead:
 		op := c.add(Inst{
 			Op:  InstMatchHead,
 			Val: list.Tail()[0],
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
-	case symbolMatchAny:
+	case symbol.MatchAny:
 		op := c.add(Inst{
 			Op: InstMatchAny,
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
-	case symbolMatchPlus:
+	case symbol.MatchPlus:
 		arg := ListFirstArg(e)
 		// only has a single argument
 		c.emitOneStep(arg)
@@ -470,7 +472,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		L3 := c.pc
 		c.addLink(op, L1)
 		c.addAlt(op, L3)
-	case symbolMatchQuest:
+	case symbol.MatchQuest:
 		arg := list.Tail()[0]
 		// only has a single argument
 		c.emitOneStep(arg)
@@ -478,7 +480,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		L1 := c.pc
 		c.addLink(op, L1)
 		c.addAlt(op, L1)
-	case symbolMatchStar:
+	case symbol.MatchStar:
 		L1 := c.pc
 
 		// only has a single argument
@@ -534,11 +536,11 @@ func (c *Compile) emit(e Expr) {
 	head := list.Head()
 	sym, ok := head.(Symbol)
 	if !ok {
-		// head is not symbol
+		// head is not symbol.
 		// likely _[...]  "list of any head"
 		// so it better be a Blank() or MatchAny()
 		fn := head.Head()
-		if fn == symbolBlank || fn == symbolMatchAny {
+		if fn == symbol.Blank || fn == symbol.MatchAny {
 
 			nc := NewCompiler()
 			newprog := nc.compileNFAList(list.Tail())
@@ -546,7 +548,7 @@ func (c *Compile) emit(e Expr) {
 			op := c.add(Inst{
 				Op:   InstMatchList,
 				Data: newprog,
-				Val:  symbolNull,
+				Val:  symbol.Null,
 			})
 			c.addLink(op, c.pc)
 			c.addAlt(op, -1)
@@ -560,44 +562,44 @@ func (c *Compile) emit(e Expr) {
 	switch sym {
 
 	// MMA
-	case symbolBlank:
+	case symbol.Blank:
 		// Blank[]       --> MatchAny()
-		// Blank[symbol] --> MatchHead(symbol)
+		// Blank[symbol.] --> MatchHead(symbol.)
 
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, list.Tail()[0])
+			arg = ListFrom(symbol.MatchHead, list.Tail()[0])
 		}
 		c.emit(arg)
-	case symbolBlankSequence:
+	case symbol.BlankSequence:
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, list.Tail()[0])
+			arg = ListFrom(symbol.MatchHead, list.Tail()[0])
 		}
-		c.emit(ListFrom(symbolMatchPlus, arg))
-	case symbolBlankNullSequence:
+		c.emit(ListFrom(symbol.MatchPlus, arg))
+	case symbol.BlankNullSequence:
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, list.Tail()[0])
+			arg = ListFrom(symbol.MatchHead, list.Tail()[0])
 		}
-		c.emit(ListFrom(symbolMatchStar, arg))
-	case symbolOptional:
+		c.emit(ListFrom(symbol.MatchStar, arg))
+	case symbol.Optional:
 		// TODO default value
 		var arg Expr
 		if list.Length() == 0 {
-			arg = ListFrom(symbolMatchAny)
+			arg = ListFrom(symbol.MatchAny)
 		} else {
-			arg = ListFrom(symbolMatchHead, list.Tail()[0])
+			arg = ListFrom(symbol.MatchHead, list.Tail()[0])
 		}
-		c.emit(ListFrom(symbolMatchQuest, arg))
+		c.emit(ListFrom(symbol.MatchQuest, arg))
 
-	case symbolPattern:
+	case symbol.Pattern:
 		// Pattern("x", expression)
 		args := list.Tail()
 		name := args[0]
@@ -615,25 +617,25 @@ func (c *Compile) emit(e Expr) {
 			Alt: slot,
 		})
 		c.addLink(cend, c.pc)
-	case symbolPatternSequence:
+	case symbol.PatternSequence:
 		args := list.Tail()
 		for _, arg := range args {
 			c.emit(arg)
 		}
-	case symbolMatchHead:
+	case symbol.MatchHead:
 		op := c.add(Inst{
 			Op:  InstMatchHead,
 			Val: list.Tail()[0],
 		})
 		c.addLink(op, c.pc)
-	case symbolMatchAny:
+	case symbol.MatchAny:
 		// this has a dangling pointer
 		// it will be fixed at the end
 		op := c.add(Inst{
 			Op: InstMatchAny,
 		})
 		c.addLink(op, c.pc)
-	case symbolMatchPlus:
+	case symbol.MatchPlus:
 		current := c.pc
 		list, _ := e.(List)
 		// only has a single argument
@@ -644,7 +646,7 @@ func (c *Compile) emit(e Expr) {
 		})
 		c.addLink(op, current)
 		c.addAlt(op, c.pc)
-	case symbolMatchQuest:
+	case symbol.MatchQuest:
 		op := c.add(Inst{
 			Op: InstSplit,
 		})
@@ -654,7 +656,7 @@ func (c *Compile) emit(e Expr) {
 		L2 := c.pc
 		c.addLink(op, L1)
 		c.addAlt(op, L2)
-	case symbolMatchStar:
+	case symbol.MatchStar:
 		//L1 := c.pc
 		op := c.add(Inst{
 			Op: InstSplit,

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type Precedence int
@@ -93,7 +95,7 @@ func (p *Parser) Parse() (Expr, error) {
 	}
 	if expr == nil {
 		// triggered when input is nothing
-		return symbolNull, nil
+		return symbol.Null, nil
 	}
 	return expr, nil
 }
@@ -159,7 +161,7 @@ func (p *Parser) ParseAtom() Expr {
 		expr = p.parseGroupedExpression()
 	case SEMICOLON, EOF:
 		// Empty expression - return Null without consuming token
-		return symbolNull
+		return symbol.Null
 	default:
 		p.addError(fmt.Sprintf("unexpected token: %s", p.currentToken.String()))
 		return nil
@@ -231,7 +233,7 @@ func (p *Parser) parseListLiteral() Expr {
 	// Handle empty list []
 	if p.currentToken.Type == RBRACKET {
 		p.nextToken() // consume ']'
-		return ListFrom(symbolList, elements...)
+		return ListFrom(symbol.List, elements...)
 	}
 
 	// Parse list elements
@@ -270,7 +272,7 @@ func (p *Parser) parseListLiteral() Expr {
 		p.nextToken()
 	}
 
-	return ListFrom(symbolList, elements...)
+	return ListFrom(symbol.List, elements...)
 }
 
 func (p *Parser) parseAssociationLiteral() Expr {
@@ -283,7 +285,7 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	if p.currentToken.Type == RBRACE {
 		p.nextToken() // consume '}'
 		// Create Association function call with no arguments for empty association
-		return ListFrom(symbolAssociation)
+		return ListFrom(symbol.Association)
 	}
 
 	// Parse expressions (expecting Rule expressions from key:value infix parsing)
@@ -324,7 +326,7 @@ func (p *Parser) parseAssociationLiteral() Expr {
 	}
 
 	// Create Association function call with Rule expressions
-	return ListFrom(symbolAssociation, rules...)
+	return ListFrom(symbol.Association, rules...)
 }
 
 func (p *Parser) parseInteger() Expr {
@@ -424,7 +426,7 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 
 	// Special case for semicolon: if no right operand, use Null
 	if operator.Type == SEMICOLON && right == nil {
-		right = symbolNull
+		right = symbol.Null
 	}
 
 	return p.createInfixExpr(operator.Type, left, right)
@@ -443,7 +445,7 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 	case SEMICOLON:
 		// Flatten nested CompoundExpressions into a single flat list
 		if leftList, ok := left.(List); ok {
-			if leftList.Head() == symbolCompoundExpression {
+			if leftList.Head() == symbol.CompoundExpression {
 				// Left is already a CompoundExpression, append right to it
 				elements := make([]Expr, leftList.Length()+2)
 				copy(elements, leftList.AsSlice())
@@ -451,41 +453,41 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 				return NewListFromExprs(elements...)
 			}
 		}
-		return ListFrom(symbolCompoundExpression, left, right)
+		return ListFrom(symbol.CompoundExpression, left, right)
 	case SET:
-		return ListFrom(symbolSet, left, right)
+		return ListFrom(symbol.Set, left, right)
 	case SETDELAYED:
-		return ListFrom(symbolSetDelayed, left, right)
+		return ListFrom(symbol.SetDelayed, left, right)
 	case UNSET:
-		return ListFrom(symbolUnset, left)
+		return ListFrom(symbol.Unset, left)
 	case COLON:
-		return ListFrom(symbolRule, left, right)
+		return ListFrom(symbol.Rule, left, right)
 	case RULEDELAYED:
-		return ListFrom(symbolRuleDelayed, left, right)
+		return ListFrom(symbol.RuleDelayed, left, right)
 	case OR:
-		return ListFrom(symbolOr, left, right)
+		return ListFrom(symbol.Or, left, right)
 	case AND:
-		return ListFrom(symbolAnd, left, right)
+		return ListFrom(symbol.And, left, right)
 	case EQUAL:
-		return ListFrom(symbolEqual, left, right)
+		return ListFrom(symbol.Equal, left, right)
 	case UNEQUAL:
-		return ListFrom(symbolUnequal, left, right)
+		return ListFrom(symbol.Unequal, left, right)
 	case SAMEQ:
-		return ListFrom(symbolSameQ, left, right)
+		return ListFrom(symbol.SameQ, left, right)
 	case UNSAMEQ:
-		return ListFrom(symbolUnsameQ, left, right)
+		return ListFrom(symbol.UnsameQ, left, right)
 	case LESS:
-		return ListFrom(symbolLess, left, right)
+		return ListFrom(symbol.Less, left, right)
 	case GREATER:
-		return ListFrom(symbolGreater, left, right)
+		return ListFrom(symbol.Greater, left, right)
 	case LESSEQUAL:
-		return ListFrom(symbolLessEqual, left, right)
+		return ListFrom(symbol.LessEqual, left, right)
 	case GREATEREQUAL:
-		return ListFrom(symbolGreaterEqual, left, right)
+		return ListFrom(symbol.GreaterEqual, left, right)
 	case PLUS:
 		// Flatten nested Plus expressions into a single flat list
 		if leftList, ok := left.(List); ok {
-			if leftList.Head() == symbolPlus {
+			if leftList.Head() == symbol.Plus {
 				// Left is already a Plus, append right to it
 				elements := make([]Expr, leftList.Length()+2)
 				copy(elements, leftList.AsSlice())
@@ -493,13 +495,13 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 				return NewListFromExprs(elements...)
 			}
 		}
-		return ListFrom(symbolPlus, left, right)
+		return ListFrom(symbol.Plus, left, right)
 	case MINUS:
-		return ListFrom(symbolSubtract, left, right)
+		return ListFrom(symbol.Subtract, left, right)
 	case MULTIPLY:
 		// Flatten nested Times expressions into a single flat list
 		if leftList, ok := left.(List); ok {
-			if leftList.Head() == symbolTimes {
+			if leftList.Head() == symbol.Times {
 				// Left is already a Times, append right to it
 				elements := make([]Expr, leftList.Length()+2)
 				copy(elements, leftList.AsSlice())
@@ -507,11 +509,11 @@ func (p *Parser) createInfixExpr(operator TokenType, left, right Expr) Expr {
 				return NewListFromExprs(elements...)
 			}
 		}
-		return ListFrom(symbolTimes, left, right)
+		return ListFrom(symbol.Times, left, right)
 	case DIVIDE:
-		return ListFrom(symbolDivide, left, right)
+		return ListFrom(symbol.Divide, left, right)
 	case CARET:
-		return ListFrom(symbolPower, left, right)
+		return ListFrom(symbol.Power, left, right)
 	default:
 		p.addError(fmt.Sprintf("unknown infix operator: %d", operator))
 		return nil
@@ -526,7 +528,7 @@ func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 	case PLUS:
 		return operand // unary plus is identity
 	case NOT:
-		return ListFrom(symbolNot, operand)
+		return ListFrom(symbol.Not, operand)
 	default:
 		p.addError(fmt.Sprintf("unknown prefix operator: %d", operator))
 		return nil
@@ -539,14 +541,14 @@ func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 // Possible this could be handled earlier in the lexer or parser.
 func (p *Parser) createMinusExpr(e Expr) Expr {
 	switch e.Head() {
-	case symbolInteger:
+	case symbol.Integer:
 		return e.(Integer).Neg()
-	case symbolRational:
+	case symbol.Rational:
 		return e.(Rational).Neg()
-	case symbolReal:
+	case symbol.Real:
 		return e.(Real).Neg()
 	default:
-		return ListFrom(symbolTimes, newMachineInt(-1), e)
+		return ListFrom(symbol.Times, newMachineInt(-1), e)
 	}
 }
 
@@ -595,7 +597,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			return expr
 		}
 		p.nextToken() // consume ']'
-		return ListFrom(symbolPart, expr, firstExpr)
+		return ListFrom(symbol.Part, expr, firstExpr)
 
 	} else if p.currentToken.Type == COLON {
 		// Slice syntax: expr[start:end] or expr[:end] or expr[start:]
@@ -619,7 +621,7 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			if startExpr == nil {
 				return expr
 			}
-			return ListFrom(symbolTake, expr, ListFrom(symbolList, startExpr, newMachineInt(-1)))
+			return ListFrom(symbol.Take, expr, ListFrom(symbol.List, startExpr, newMachineInt(-1)))
 		} else {
 			// Parse end expression
 			endExpr = p.parseSliceExpression()
@@ -632,10 +634,10 @@ func (p *Parser) parseIndexOrSlice(expr Expr) Expr {
 			// Generate appropriate slice expression
 			if startExpr == nil {
 				// [:end] syntax - Take first n elements
-				return ListFrom(symbolTake, expr, endExpr)
+				return ListFrom(symbol.Take, expr, endExpr)
 			} else {
 				// [start:end] syntax - Slice operation
-				return ListFrom(symbolTake, expr, ListFrom(symbolList, startExpr, endExpr))
+				return ListFrom(symbol.Take, expr, ListFrom(symbol.List, startExpr, endExpr))
 			}
 		}
 	} else {
@@ -695,7 +697,7 @@ func (p *Parser) isSliceExpression(expr Expr) bool {
 		return false
 	}
 	headName := list.Head()
-	return headName == symbolPart || headName == symbolTake
+	return headName == symbol.Part || headName == symbol.Take
 }
 
 // createSliceAssignment creates the appropriate slice assignment AST node
@@ -704,7 +706,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 	headName := list.Head()
 
 	switch headName {
-	case symbolPart:
+	case symbol.Part:
 		// Part(expr, index) = value -> PartSet(expr, index, value)
 		if list.Length() != 2 {
 			p.addError("Part expression must have exactly 2 arguments for assignment")
@@ -712,7 +714,7 @@ func (p *Parser) createSliceAssignment(sliceExpr Expr, value Expr) Expr {
 		}
 		args := list.Tail()
 		return NewList(NewSymbol("PartSet"), args[0], args[1], value)
-	case symbolTake:
+	case symbol.Take:
 		// Take(expr, n) = value -> SliceSet(expr, 1, n, value)
 		// Take(expr, [n, m]) = value --> SliceSet(expr, n, m, value)
 		if list.Length() != 2 {
@@ -750,21 +752,21 @@ func (p *Parser) parseUnderscorePattern() Expr {
 	var blankExpr Expr
 	if underscoreCount >= 3 {
 		if typeName != "" {
-			blankExpr = ListFrom(symbolBlankNullSequence, NewSymbol(typeName))
+			blankExpr = ListFrom(symbol.BlankNullSequence, NewSymbol(typeName))
 		} else {
-			blankExpr = ListFrom(symbolBlankNullSequence)
+			blankExpr = ListFrom(symbol.BlankNullSequence)
 		}
 	} else if underscoreCount == 2 {
 		if typeName != "" {
-			blankExpr = ListFrom(symbolBlankSequence, NewSymbol(typeName))
+			blankExpr = ListFrom(symbol.BlankSequence, NewSymbol(typeName))
 		} else {
-			blankExpr = ListFrom(symbolBlankSequence)
+			blankExpr = ListFrom(symbol.BlankSequence)
 		}
 	} else {
 		if typeName != "" {
-			blankExpr = ListFrom(symbolBlank, NewSymbol(typeName))
+			blankExpr = ListFrom(symbol.Blank, NewSymbol(typeName))
 		} else {
-			blankExpr = ListFrom(symbolBlank)
+			blankExpr = ListFrom(symbol.Blank)
 		}
 	}
 
@@ -790,32 +792,32 @@ func (p *Parser) parsePatternFromSymbol(varName string) Expr {
 	var blankExpr Expr
 	if underscoreCount >= 3 {
 		if typeName != "" {
-			blankExpr = ListFrom(symbolBlankNullSequence, NewSymbol(typeName))
+			blankExpr = ListFrom(symbol.BlankNullSequence, NewSymbol(typeName))
 		} else {
-			blankExpr = ListFrom(symbolBlankNullSequence)
+			blankExpr = ListFrom(symbol.BlankNullSequence)
 		}
 	} else if underscoreCount == 2 {
 		if typeName != "" {
-			blankExpr = ListFrom(symbolBlankSequence, NewSymbol(typeName))
+			blankExpr = ListFrom(symbol.BlankSequence, NewSymbol(typeName))
 		} else {
-			blankExpr = ListFrom(symbolBlankSequence)
+			blankExpr = ListFrom(symbol.BlankSequence)
 		}
 	} else {
 		if typeName != "" {
-			blankExpr = ListFrom(symbolBlank, NewSymbol(typeName))
+			blankExpr = ListFrom(symbol.Blank, NewSymbol(typeName))
 		} else {
-			blankExpr = ListFrom(symbolBlank)
+			blankExpr = ListFrom(symbol.Blank)
 		}
 	}
 
 	// Named pattern - wrap in Pattern(varName, blankExpr)
-	return ListFrom(symbolPattern, NewSymbol(varName), blankExpr)
+	return ListFrom(symbol.Pattern, NewSymbol(varName), blankExpr)
 }
 
 // parseFunctionShorthand handles the & postfix operator: expr & -> Function(expr)
 func (p *Parser) parseFunctionShorthand(expr Expr) Expr {
 	p.nextToken() // consume '&'
-	return ListFrom(symbolFunction, expr)
+	return ListFrom(symbol.Function, expr)
 }
 
 func ParseString(input string) (Expr, error) {

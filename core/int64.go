@@ -3,6 +3,8 @@ package core
 import (
 	"math/big"
 	"strconv"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 // MachineInteger
@@ -30,7 +32,7 @@ func (i machineInt) InputForm() string {
 }
 
 func (i machineInt) Head() Expr {
-	return symbolInteger
+	return symbol.Integer
 }
 
 func (i machineInt) Length() int64 {

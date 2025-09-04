@@ -35,8 +35,8 @@ clean:
 	rm -f cpu.prof mem.prof
 	rm -f repl cmd/repl/repl
 	find . -name '*.bak*' | xargs rm -f
-	rm -f builtin_setup.go
 	rm -f engine/attribute_string.go
+	rm -f core/symbol/symbols.go
 
 setup:
 	go get golang.org/x/tools/cmd/stringer

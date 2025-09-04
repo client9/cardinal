@@ -1,9 +1,13 @@
 package core
 
+import (
+	"github.com/client9/sexpr/core/symbol"
+)
+
 // Pure pattern matching (no variable binding)
 
 func IsExcept(pattern Expr) Expr {
-	if pattern.Head() != symbolExcept {
+	if pattern.Head() != symbol.Except {
 		return nil
 	}
 	plist, _ := pattern.(List)
@@ -11,7 +15,7 @@ func IsExcept(pattern Expr) Expr {
 }
 
 func IsAlternatives(pattern Expr) []Expr {
-	if pattern.Head() != symbolAlternatives {
+	if pattern.Head() != symbol.Alternatives {
 		return nil
 	}
 	plist, _ := pattern.(List)
@@ -147,7 +151,7 @@ func matchListWithBindingsSequential(patternList, exprList List, bindings *Patte
 			if vn := pinfo.VarName; vn != "" && bindings != nil {
 				// Bind null sequence patterns to empty list
 				// Create a proper List with "List" as the first element (like the old system)
-				bindings.Add(vn, ListFrom(symbolList))
+				bindings.Add(vn, ListFrom(symbol.List))
 			}
 		}
 		return true
@@ -225,7 +229,7 @@ func matchSequencePatternWithBindings(patternList, exprList List, bindings *Patt
 			// Success - copy bindings back
 			//*bindings = *testBindings
 			if varName != "" && bindings != nil {
-				bindings.Add(varName, ListFrom(symbolList, seqElements...))
+				bindings.Add(varName, ListFrom(symbol.List, seqElements...))
 			}
 			return true
 		}

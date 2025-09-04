@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/client9/sexpr/core/symbol"
 	"testing"
 )
 
@@ -49,7 +50,7 @@ func TestExtractInt64(t *testing.T) {
 		},
 		{
 			name:     "list",
-			expr:     NewList(symbolPlus, NewInteger(1), NewInteger(2)),
+			expr:     NewList(symbol.Plus, NewInteger(1), NewInteger(2)),
 			expected: 0,
 			ok:       false,
 		},
@@ -322,8 +323,8 @@ func TestCopyExprList(t *testing.T) {
 func TestHelperFunctionsWithRealExpressions(t *testing.T) {
 	// Test helper functions with more complex expressions
 	// Create complex expressions for testing
-	plusExpr := NewList(symbolPlus, NewInteger(1), NewInteger(2))
-	timesExpr := NewList(symbolTimes, NewReal(2.5), NewReal(4.0))
+	plusExpr := NewList(symbol.Plus, NewInteger(1), NewInteger(2))
+	timesExpr := NewList(symbol.Times, NewReal(2.5), NewReal(4.0))
 
 	// Test that helper functions work correctly with real expressions
 	if val, ok := ExtractInt64(NewInteger(42)); !ok || val != 42 {

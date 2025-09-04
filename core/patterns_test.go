@@ -3,6 +3,8 @@ package core
 import (
 	"reflect"
 	"testing"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 func TestIsSymbolicPattern(t *testing.T) {
@@ -15,7 +17,7 @@ func TestIsSymbolicPattern(t *testing.T) {
 	p = MustParse("Just(x, 1)")
 	ok, _, _ = IsSymbolicPattern(p)
 	if ok {
-		t.Errorf("Did not expected symbolic pattern")
+		t.Errorf("Did not expected symbol.ic pattern")
 	}
 
 }
@@ -28,10 +30,10 @@ func TestIsSymbolicBlank(t *testing.T) {
 		expectType     PatternType
 		expectTypeExpr Expr
 	}{
-		{ListFrom(symbolBlank), true, BlankPattern, nil},
-		{ListFrom(symbolBlank, symbolInteger), true, BlankPattern, symbolInteger},
-		{ListFrom(symbolBlankSequence), true, BlankSequencePattern, nil},
-		{ListFrom(symbolBlankNullSequence, symbolString), true, BlankNullSequencePattern, symbolString},
+		{ListFrom(symbol.Blank), true, BlankPattern, nil},
+		{ListFrom(symbol.Blank, symbol.Integer), true, BlankPattern, symbol.Integer},
+		{ListFrom(symbol.BlankSequence), true, BlankSequencePattern, nil},
+		{ListFrom(symbol.BlankNullSequence, symbol.String), true, BlankNullSequencePattern, symbol.String},
 		{NewSymbol("x"), false, PatternUnknown, nil},
 		{NewInteger(42), false, PatternUnknown, nil},
 	}
@@ -64,7 +66,7 @@ func TestMatchesType(t *testing.T) {
 		{NewReal(3.14), "Number", true},
 		{NewString("hello"), "String", true},
 		{NewSymbol("x"), "Symbol", true},
-		{NewList(symbolList), "List", true},
+		{NewList(symbol.List), "List", true},
 		{NewInteger(42), "", true}, // No constraint
 		{NewObjectExpr(NewSymbol("CustomType"), NewInteger(1)), "CustomType", true},
 		{NewObjectExpr(NewSymbol("CustomType"), NewInteger(1)), "OtherType", false},
@@ -102,10 +104,10 @@ func TestGetPatternSpecificity(t *testing.T) {
 	}{
 		{NewInteger(42), SpecificityLiteral * 100},
 		{NewSymbol("x"), SpecificityLiteral * 100},
-		{ListFrom(symbolBlank), SpecificityGeneral*10 + 2},
-		{ListFrom(symbolBlank, symbolInteger), SpecificityBuiltinType*10 + 2},
-		{ListFrom(symbolBlank, NewSymbol("Foo")), SpecificityUserType*10 + 2},
-		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank)), SpecificityGeneral*10 + 2},
+		{ListFrom(symbol.Blank), SpecificityGeneral*10 + 2},
+		{ListFrom(symbol.Blank, symbol.Integer), SpecificityBuiltinType*10 + 2},
+		{ListFrom(symbol.Blank, NewSymbol("Foo")), SpecificityUserType*10 + 2},
+		{ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank)), SpecificityGeneral*10 + 2},
 	}
 
 	for _, test := range tests {
@@ -116,18 +118,18 @@ func TestGetPatternSpecificity(t *testing.T) {
 	}
 }
 
-// Test literal symbol pattern distinction
+// Test literal symbol. pattern distinction
 func TestLiteralSymbolPatterns(t *testing.T) {
 	matcher := NewPatternMatcher()
 
 	// These should match exactly
 	if !matcher.TestMatch(NewSymbol("s1"), NewSymbol("s1")) {
-		t.Error("s1 pattern should match s1 symbol")
+		t.Error("s1 pattern should match s1 symbol.")
 	}
 
 	// These should NOT match
 	if matcher.TestMatch(NewSymbol("s1"), NewSymbol("s2")) {
-		t.Error("s1 pattern should NOT match s2 symbol")
+		t.Error("s1 pattern should NOT match s2 symbol.")
 	}
 
 	// Symbol pattern should NOT match integer
@@ -137,7 +139,7 @@ func TestLiteralSymbolPatterns(t *testing.T) {
 
 	// Symbol pattern should NOT match different types
 	if matcher.TestMatch(NewSymbol("True"), NewSymbol("False")) {
-		t.Error("True pattern should NOT match False symbol")
+		t.Error("True pattern should NOT match False symbol.")
 	}
 }
 
@@ -157,62 +159,62 @@ func TestPatternMatcher(t *testing.T) {
 		{NewSymbol("x"), NewSymbol("y"), false},
 
 		// Blank patterns
-		{ListFrom(symbolBlank), NewInteger(42), true},
-		{ListFrom(symbolBlank), NewString("hello"), true},
-		{ListFrom(symbolBlank, symbolInteger), NewInteger(42), true},
-		{ListFrom(symbolBlank, symbolInteger), NewString("hello"), false},
+		{ListFrom(symbol.Blank), NewInteger(42), true},
+		{ListFrom(symbol.Blank), NewString("hello"), true},
+		{ListFrom(symbol.Blank, symbol.Integer), NewInteger(42), true},
+		{ListFrom(symbol.Blank, symbol.Integer), NewString("hello"), false},
 
 		// Pattern expressions
-		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank)), NewInteger(42), true},
-		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolString)), NewString("hello"), true},
-		{ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolString)), NewInteger(42), false},
+		{ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank)), NewInteger(42), true},
+		{ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.String)), NewString("hello"), true},
+		{ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.String)), NewInteger(42), false},
 
 		// Empty List patterns
-		{ListFrom(symbolList), ListFrom(symbolList), true},
+		{ListFrom(symbol.List), ListFrom(symbol.List), true},
 		{ListFrom(NewSymbol("Foo")), ListFrom(NewSymbol("Foo")), true},
-		{ListFrom(symbolList), ListFrom(NewSymbol("Foo")), false},
+		{ListFrom(symbol.List), ListFrom(NewSymbol("Foo")), false},
 
 		// List patterns
-		{ListFrom(symbolPlus, ListFrom(symbolBlank), ListFrom(symbolBlank)),
-			ListFrom(symbolPlus, NewInteger(1), NewInteger(2)), true},
-		{ListFrom(symbolPlus, ListFrom(symbolBlank), ListFrom(symbolBlank)),
-			ListFrom(symbolTimes, NewInteger(1), NewInteger(2)), false},
+		{ListFrom(symbol.Plus, ListFrom(symbol.Blank), ListFrom(symbol.Blank)),
+			ListFrom(symbol.Plus, NewInteger(1), NewInteger(2)), true},
+		{ListFrom(symbol.Plus, ListFrom(symbol.Blank), ListFrom(symbol.Blank)),
+			ListFrom(symbol.Times, NewInteger(1), NewInteger(2)), false},
 
 		// Alternatives, single
-		{ListFrom(symbolAlternatives, ListFrom(symbolBlank, symbolInteger), ListFrom(symbolBlank, symbolReal)),
+		{ListFrom(symbol.Alternatives, ListFrom(symbol.Blank, symbol.Integer), ListFrom(symbol.Blank, symbol.Real)),
 			NewInteger(2), true},
-		{ListFrom(symbolAlternatives, ListFrom(symbolBlank, symbolReal), ListFrom(symbolBlank, symbolInteger)),
+		{ListFrom(symbol.Alternatives, ListFrom(symbol.Blank, symbol.Real), ListFrom(symbol.Blank, symbol.Integer)),
 			NewInteger(2), true},
-		{ListFrom(symbolAlternatives, ListFrom(symbolBlank, symbolReal), ListFrom(symbolBlank, symbolReal)),
+		{ListFrom(symbol.Alternatives, ListFrom(symbol.Blank, symbol.Real), ListFrom(symbol.Blank, symbol.Real)),
 			NewString("2"), false},
 
 		// Alternatives with Binding, single
-		{ListFrom(symbolAlternatives,
-			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolInteger)),
-			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolReal))),
+		{ListFrom(symbol.Alternatives,
+			ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.Integer)),
+			ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.Real))),
 			NewInteger(2), true},
-		{ListFrom(symbolAlternatives,
-			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolReal)),
-			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolInteger))),
+		{ListFrom(symbol.Alternatives,
+			ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.Real)),
+			ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.Integer))),
 			NewInteger(2), true},
-		{ListFrom(symbolAlternatives,
-			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolReal)),
-			ListFrom(symbolPattern, NewSymbol("x"), ListFrom(symbolBlank, symbolInteger))),
+		{ListFrom(symbol.Alternatives,
+			ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.Real)),
+			ListFrom(symbol.Pattern, NewSymbol("x"), ListFrom(symbol.Blank, symbol.Integer))),
 			NewString("2"), false},
 
 		// List
-		{ListFrom(symbolList,
-			ListFrom(symbolAlternatives,
-				ListFrom(symbolBlank, symbolInteger),
-				ListFrom(symbolBlank, symbolReal)),
+		{ListFrom(symbol.List,
+			ListFrom(symbol.Alternatives,
+				ListFrom(symbol.Blank, symbol.Integer),
+				ListFrom(symbol.Blank, symbol.Real)),
 			NewString("foo")),
-			ListFrom(symbolList, NewInteger(2), NewString("foo")), true},
-		{ListFrom(symbolList,
-			ListFrom(symbolAlternatives,
-				ListFrom(symbolBlank, symbolInteger),
-				ListFrom(symbolBlank, symbolReal)),
+			ListFrom(symbol.List, NewInteger(2), NewString("foo")), true},
+		{ListFrom(symbol.List,
+			ListFrom(symbol.Alternatives,
+				ListFrom(symbol.Blank, symbol.Integer),
+				ListFrom(symbol.Blank, symbol.Real)),
 			NewString("junk")),
-			ListFrom(symbolList, NewInteger(2), NewString("foo")), false},
+			ListFrom(symbol.List, NewInteger(2), NewString("foo")), false},
 	}
 
 	for _, test := range tests {

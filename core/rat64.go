@@ -3,6 +3,8 @@ package core
 import (
 	"math/big"
 	"strconv"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 type rat64 struct {
@@ -73,7 +75,7 @@ func (m rat64) InputForm() string {
 }
 
 func (m rat64) Head() Expr {
-	return symbolRational
+	return symbol.Rational
 }
 
 func (m rat64) asBigRat() bigRat {

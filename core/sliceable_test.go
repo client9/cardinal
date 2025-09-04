@@ -2,11 +2,13 @@ package core
 
 import (
 	"testing"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 func TestSliceableInterface(t *testing.T) {
 	// Test List implements Sliceable
-	list := NewList(symbolList, NewInteger(1), NewInteger(2), NewInteger(3))
+	list := NewList(symbol.List, NewInteger(1), NewInteger(2), NewInteger(3))
 
 	if !IsSliceable(list) {
 		t.Error("List should be sliceable")
@@ -25,7 +27,7 @@ func TestSliceableInterface(t *testing.T) {
 
 	// Test Slice
 	slice := sliceable.Slice(1, 2)
-	expectedSlice := NewList(symbolList, NewInteger(1), NewInteger(2))
+	expectedSlice := NewList(symbol.List, NewInteger(1), NewInteger(2))
 	if !slice.Equal(expectedSlice) {
 		t.Errorf("Slice(1,2) expected %v, got %v", expectedSlice, slice)
 	}

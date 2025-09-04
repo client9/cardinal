@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/client9/sexpr/core/symbol"
 	"strings"
 )
 
@@ -178,7 +179,7 @@ func (a Association) InputForm() string {
 }
 
 func (a Association) Head() Expr {
-	return symbolAssociation
+	return symbol.Association
 }
 
 func (a Association) IsAtom() bool {

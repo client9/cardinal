@@ -2,6 +2,8 @@ package core
 
 import (
 	"math/big"
+
+	"github.com/client9/sexpr/core/symbol"
 )
 
 func PlusList(args []Expr) Expr {
@@ -30,7 +32,7 @@ func PlusList(args []Expr) Expr {
 	}
 
 	resultElements := make([]Expr, 0, 2+len(nonnum))
-	resultElements = append(resultElements, symbolPlus)
+	resultElements = append(resultElements, symbol.Plus)
 
 	// ints get turned into rationals
 	if intsum.exists() && ratsum.exists() {
@@ -245,7 +247,7 @@ func TimesList(args []Expr) Expr {
 	}
 
 	resultElements := make([]Expr, 0, 2+len(nonnum))
-	resultElements = append(resultElements, symbolTimes)
+	resultElements = append(resultElements, symbol.Times)
 
 	// ints get turned into rationals
 	if intprod.exists() && ratprod.exists() {
