@@ -15,3 +15,10 @@ func Append(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr 
 	element := args[1]
 	return list.Append(element)
 }
+
+// @ExprPattern (_String, _String)
+func AppendString(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	a := args[0].(core.String)
+	b := args[1].(core.String)
+	return core.NewString(string(a) + string(b))
+}
