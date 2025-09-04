@@ -39,12 +39,20 @@ func PowerOneRealX(e *engine.Evaluator, c *engine.Context, args []core.Expr) cor
 // @ExprPattern (_Integer, -1)
 func PowerIntegerInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	arg := args[0].(core.Integer)
+	if arg.Sign() == 0 {
+
+		return core.NewError("DivisionByZero", "Division by zero")
+	}
 	return arg.Inv()
 }
 
 // @ExprPattern (_Rational, -1)
 func PowerRationalInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	arg := args[0].(core.Rational)
+	if arg.Sign() == 0 {
+
+		return core.NewError("DivisionByZero", "Division by zero")
+	}
 	return arg.Inv()
 }
 
@@ -52,6 +60,11 @@ func PowerRationalInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 func PowerInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	x := args[0].(core.Integer)
 	y := args[1].(core.Integer)
+
+	if x.Sign() == 0 && y.Sign() == -1 {
+		return core.NewError("DivisionByZero", "Division by zero")
+	}
+
 	switch y.Sign() {
 	case 0:
 		return core.NewInteger(1)
@@ -67,6 +80,10 @@ func PowerInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 func PowerRatInt(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	x := args[0].(core.Rational)
 	n := args[1].(core.Integer)
+
+	if x.Sign() == 0 && n.Sign() == -1 {
+		return core.NewError("DivisionByZero", "Division by zero")
+	}
 
 	// (x/y)^n = x^n/y^n = x^n * y^-n
 	return core.ListFrom(symbol.Times,
@@ -87,8 +104,7 @@ func PowerNumbers(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 
 	result, err := powerFloat64(base, exp)
 	if err != nil {
-		// TODO ERROR
-		return symbol.Null
+		return core.NewError("DivisionByZero", "Division by zero")
 	}
 	return core.NewReal(result)
 }

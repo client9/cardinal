@@ -19,8 +19,7 @@ func DivideIntegers(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 	x, _ := core.ExtractInt64(args[0])
 	y, _ := core.ExtractInt64(args[1])
 	if y == 0 {
-		// TODO ERROR
-		return core.NewInteger(0) //, fmt.Errorf("DivisionByZero")
+		return NewError("DivisionByZero", "Division by zero"),
 	}
 
 	return core.NewRational(x,y) //Integer(x / y)
@@ -34,7 +33,7 @@ func DivideReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 	x, _ := core.ExtractFloat64(args[0])
 	y, _ := core.ExtractFloat64(args[1])
 	if y == 0 {
-		return core.NewInteger(0) // 0, fmt.Errorf("DivisionByZero")
+		return NewError("DivisionByZero", "Division by zero"),
 	}
 
 	return core.NewReal(x / y)
@@ -45,7 +44,7 @@ func DivideNumber(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 	x, _ := core.GetNumericValue(args[0])
 	y, _ := core.GetNumericValue(args[1])
 	if y == 0 {
-		return core.NewInteger(0) // 0, fmt.Errorf("DivisionByZero")
+		return NewError("DivisionByZero", "Division by zero"),
 	}
 
 	return core.NewReal(x / y)
