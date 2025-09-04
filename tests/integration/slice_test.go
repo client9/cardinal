@@ -136,7 +136,7 @@ func TestSliceSyntaxSliceableTypes(t *testing.T) {
 		{
 			name:     "ByteArray creation and slicing",
 			input:    `ByteArray("hello")[2:4]`,
-			expected: "ByteArray(101, 108, 108)",
+			expected: "ByteArray(101, 108, 108)", // "ell"
 		},
 		{
 			name:     "ByteArray indexing",

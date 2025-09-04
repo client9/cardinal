@@ -31,11 +31,6 @@ func ByteArrayFromInts(src []int64) core.Expr {
 	return core.NewByteArray(dest)
 }
 
-// ByteArrayFromString creates a ByteArray from a string for byte-level operations
-func ByteArrayFromString(s string) core.Expr {
-	return core.NewByteArray([]byte(s))
-}
-
 // ByteArrayToString converts a ByteArray to a string (assuming UTF-8 encoding)
 func ByteArrayToString(ba core.ByteArray) core.Expr {
 	return ba.ToStringAtom()
