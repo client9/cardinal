@@ -30,10 +30,5 @@ func Sort(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 		return core.CanonicalCompare(elements[i], elements[j])
 	})
 
-	// Reconstruct the list with sorted arguments
-	resultElements := make([]core.Expr, list.Length()+1)
-	resultElements[0] = head
-	copy(resultElements[1:], elements)
-
-	return core.NewListFromExprs(resultElements...)
+	return core.NewList(head, elements...)
 }
