@@ -40,5 +40,5 @@ init.go
 attribute_string.go
 cpu.prof
 mem.prof
-./core/localsymbols.go
+symbols.go
 
