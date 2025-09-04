@@ -229,16 +229,12 @@ func TimesList(args []Expr) Expr {
 		switch num := arg.(type) {
 		case machineInt:
 			intprod.Update(num)
-			/*
-				case bigInt:
-					intprod.UpdateBig(num)
-			*/
+		case bigInt:
+			intprod.UpdateBig(num)
 		case rat64:
 			ratprod.UpdateRat64(num)
-			/*
-				case bigRat:
-					ratprod.UpdateBigRat(num)
-			*/
+		case bigRat:
+			ratprod.UpdateBig(num)
 		case Real:
 			realprod.Update(num)
 		default:
@@ -251,12 +247,11 @@ func TimesList(args []Expr) Expr {
 
 	// ints get turned into rationals
 	if intprod.exists() && ratprod.exists() {
+		// * small
 		ratprod.UpdateInt64(intprod.prod)
-		/*
-			if intprod.bigsum.Sign() != 0 {
-				ratprod.UpdateBigInt(intprod.bigsum)
-			}
-		*/
+		if intprod.bigprod.Sign() != 0 {
+			ratprod.UpdateBigInt(intprod.bigprod)
+		}
 	} else if intprod.exists() {
 		total := intprod.Total()
 		if total.Sign() == 0 {
@@ -390,6 +385,17 @@ func (a *TimesRational) UpdateBig(b bigRat) {
 	}
 	a.count += 1
 	a.bigprod.times(b)
+}
+
+func (a *TimesRational) UpdateBigInt(b bigInt) {
+	if a.bigprod.val == nil {
+		a.bigprod.val = big.NewRat(1, 1)
+	}
+	a.count += 1
+
+	// turn bigInt into big.Rat
+	r := newBigRat(new(big.Rat).SetFrac(b.val, big.NewInt(1)))
+	a.bigprod.times(r)
 }
 
 func (a *TimesRational) Total() Rational {
