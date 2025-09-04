@@ -53,7 +53,7 @@ func partiallyEvaluateForFunction(e *engine.Evaluator, c *engine.Context, expr c
 		return expr
 	}
 
-	if list.HeadExpr() == symbol.Function {
+	if list.Head() == symbol.Function {
 		return Function(e, c, list.Tail())
 	}
 

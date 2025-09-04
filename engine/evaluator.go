@@ -202,12 +202,12 @@ func (e *Evaluator) applyAttributeTransformations(headName core.Symbol, list cor
 }
 
 // applyFlat implements the Flat attribute (associativity)
-func (e *Evaluator) applyFlat(headName core.Symbol, list core.List) core.List {
+func (e *Evaluator) applyFlat(head core.Symbol, list core.List) core.List {
 	if list.Length() == 0 {
 		return list
 	}
 
-	head := list.HeadExpr()
+	listhead := list.Head()
 	args := list.Tail()
 
 	newArgs := []core.Expr{}
@@ -215,7 +215,7 @@ func (e *Evaluator) applyFlat(headName core.Symbol, list core.List) core.List {
 	for _, arg := range args {
 		// If the argument is the same function, flatten it
 		if argList, ok := arg.(core.List); ok {
-			if argList.HeadExpr() == headName {
+			if argList.Head() == listhead {
 				// Flatten: f(a, f(b, c), d) → f(a, b, c, d)
 				newArgs = append(newArgs, argList.Tail()...)
 				continue
@@ -234,7 +234,7 @@ func (e *Evaluator) applyOrderless(list core.List) core.List {
 		return list
 	}
 
-	head := list.HeadExpr()
+	head := list.Head()
 	args := make([]core.Expr, list.Length())
 	copy(args, list.Tail())
 
@@ -310,7 +310,7 @@ func (e *Evaluator) applyFunction(c *Context, funcExpr core.FunctionExpr, args [
 
 	// create a rules list
 
-	rlist := core.ListExpr(rules...)
+	rlist := core.NewList(symbol.List, rules...)
 
 	modified := functionReplaceAll(e, c, funcExpr.Body, rlist)
 

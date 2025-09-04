@@ -97,22 +97,35 @@ func (c *Compile) getSlot(name Symbol) int32 {
 }
 
 func (c *Compile) getGroups(e Expr, names []Symbol) []Symbol {
-	if list, ok := e.(List); ok {
-		switch list.HeadExpr() {
-		case symbolPattern:
-			args := list.Tail()
-			// args[0] is the binding name
-			// args[1] is the pattern
-			names = append(names, args[0].(Symbol))
-			names = c.getGroups(args[1], names)
-			return names
-		case symbolPatternSequence, symbolList:
-			return c.getGroupsList(list.Tail(), names)
-		}
+	list, ok := e.(List)
+	if !ok {
+		return names
+	}
+
+	// Head need not be a symbol
+	head := list.Head()
+	sym, ok := head.(Symbol)
+	if !ok {
+		// it's a list-like thing, but has functional head
+		// MatchAny()(1,2,3)
+
+		// ignore the head, and go into the tail
+		return c.getGroupsList(list.Tail(), names)
+
+	}
+	switch sym {
+	case symbolPattern:
+		args := list.Tail()
+		// args[0] is the binding name
+		// args[1] is the pattern
+		names = append(names, args[0].(Symbol))
+		names = c.getGroups(args[1], names)
+		return names
+	case symbolPatternSequence, symbolList:
+		return c.getGroupsList(list.Tail(), names)
 	}
 
 	return names
-
 }
 
 func (c *Compile) getGroupsList(exprs []Expr, names []Symbol) []Symbol {
@@ -124,25 +137,36 @@ func (c *Compile) getGroupsList(exprs []Expr, names []Symbol) []Symbol {
 
 // for a single atomic Expr
 func (c *Compile) Simple(e Expr) bool {
-	if list, ok := e.(List); ok {
-		switch list.HeadExpr() {
-		case symbolPattern:
-			args := list.Tail()
-			// args[0] is the binding name
-			// args[1] is the pattern
-			return c.Simple(args[1])
-		case symbolMatchStar, symbolMatchPlus, symbolMatchQuest,
-			symbolBlankSequence, symbolBlankNullSequence, symbolOptional:
-			args := list.Tail()
-			if len(args) == 0 {
-				return true
-			}
-			return c.Simple(args[0])
-		case symbolMatchHead, symbolMatchAny, symbolBlank:
+	list, ok := e.(List)
+	if !ok {
+		return true
+	}
+
+	head := list.Head()
+	sym, ok := head.(Symbol)
+	if !ok {
+		// we'll assume this is Blank or MatchAny
+		return c.SimpleList(list.Tail())
+	}
+
+	// normal list with symbol head
+	switch sym {
+	case symbolPattern:
+		args := list.Tail()
+		// args[0] is the binding name
+		// args[1] is the pattern
+		return c.Simple(args[1])
+	case symbolMatchStar, symbolMatchPlus, symbolMatchQuest,
+		symbolBlankSequence, symbolBlankNullSequence, symbolOptional:
+		args := list.Tail()
+		if len(args) == 0 {
 			return true
-		case symbolPatternSequence, symbolList:
-			return c.SimpleList(list.Tail())
 		}
+		return c.Simple(args[0])
+	case symbolMatchHead, symbolMatchAny, symbolBlank:
+		return true
+	case symbolPatternSequence, symbolList:
+		return c.SimpleList(list.Tail())
 	}
 	return true
 }
@@ -205,7 +229,7 @@ func (c *Compile) SimpleList(e []Expr) bool {
 
 func (c *Compile) isZeroPattern(e Expr) bool {
 	if list, ok := e.(List); ok {
-		switch list.HeadExpr() {
+		switch list.Head() {
 
 		case symbolMatchStar, symbolMatchQuest:
 			return true
@@ -222,7 +246,7 @@ func (c *Compile) isZeroPattern(e Expr) bool {
 func (c *Compile) isSequencePattern(e Expr) bool {
 	if list, ok := e.(List); ok {
 
-		switch list.HeadExpr() {
+		switch list.Head() {
 		case symbolMatchStar, symbolMatchPlus, symbolMatchQuest:
 			return true
 
@@ -299,7 +323,7 @@ func (c *Compile) IsListLiteral(list List) bool {
 
 	for _, a := range list.Tail() {
 		if alist, ok := a.(List); ok {
-			switch alist.HeadExpr() {
+			switch alist.Head() {
 			case symbolPattern, symbolPatternSequence:
 				return false
 
@@ -341,7 +365,26 @@ func (c *Compile) emitOneStep(e Expr) {
 		return
 	}
 
-	switch list.HeadExpr() {
+	head := list.Head()
+	sym, ok := head.(Symbol)
+
+	if !ok {
+		// assume it's a Blank() or MatchAny()
+
+		nc := NewCompiler()
+		newprog := nc.compileListOneStep(list.Tail())
+
+		op := c.add(Inst{
+			Op:   InstMatchList,
+			Data: newprog,
+			Val:  symbolNull,
+		})
+		c.addLink(op, c.pc)
+		c.addAlt(op, -1)
+		return
+	}
+
+	switch sym {
 
 	case symbolBlank:
 		// Blank[]       --> MatchAny()
@@ -464,7 +507,7 @@ func (c *Compile) emitOneStep(e Expr) {
 		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
-			Val:  list.HeadExpr(),
+			Val:  list.Head(),
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)
@@ -487,7 +530,34 @@ func (c *Compile) emit(e Expr) {
 		return
 	}
 
-	switch list.HeadExpr() {
+	//
+	head := list.Head()
+	sym, ok := head.(Symbol)
+	if !ok {
+		// head is not symbol
+		// likely _[...]  "list of any head"
+		// so it better be a Blank() or MatchAny()
+		fn := head.Head()
+		if fn == symbolBlank || fn == symbolMatchAny {
+
+			nc := NewCompiler()
+			newprog := nc.compileNFAList(list.Tail())
+
+			op := c.add(Inst{
+				Op:   InstMatchList,
+				Data: newprog,
+				Val:  symbolNull,
+			})
+			c.addLink(op, c.pc)
+			c.addAlt(op, -1)
+			return
+
+		}
+		panic("Unknown pattern type")
+
+	}
+
+	switch sym {
 
 	// MMA
 	case symbolBlank:
@@ -620,7 +690,7 @@ func (c *Compile) emit(e Expr) {
 		op := c.add(Inst{
 			Op:   InstMatchList,
 			Data: newprog,
-			Val:  list.HeadExpr(),
+			Val:  list.Head(),
 		})
 		c.addLink(op, c.pc)
 		c.addAlt(op, -1)

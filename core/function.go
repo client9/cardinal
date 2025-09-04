@@ -37,7 +37,7 @@ func (f FunctionExpr) InputForm() string {
 	return f.String() // Same as String for now
 }
 
-func (f FunctionExpr) HeadExpr() Symbol {
+func (f FunctionExpr) Head() Expr {
 	return symbolFunction
 }
 

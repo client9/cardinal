@@ -10,20 +10,15 @@ type List struct {
 	elements []Expr
 }
 
-// ListExpr creates a list with head "List"
-func ListExpr(args ...Expr) List {
-	return ListFrom(symbolList, args...)
+func NewList(head Expr, args ...Expr) List {
+	return ListFrom(head, args...)
 }
 
-func ListFrom(head Symbol, args ...Expr) List {
+func ListFrom(head Expr, args ...Expr) List {
 	elements := make([]Expr, len(args)+1)
 	elements[0] = head
 	copy(elements[1:], args)
 	return List{elements: elements}
-}
-
-func NewList(head string, args ...Expr) List {
-	return ListFrom(NewSymbol(head), args...)
 }
 
 // NewListFromExprs creates a List directly from expressions (for special cases)
@@ -84,9 +79,6 @@ func (l List) InputForm() string {
 	return l.inputFormWithPrecedence(PrecedenceLowest)
 }
 
-func (l List) HeadExpr() Symbol {
-	return (l.elements)[0].(Symbol)
-}
 func (l List) Head() Expr {
 	return l.elements[0]
 }
@@ -151,7 +143,7 @@ func (l List) Slice(start, stop int64) Expr {
 		return NewError(err.Error(), "")
 	}
 	newelements := make([]Expr, len(e)+1)
-	newelements[0] = l.HeadExpr()
+	newelements[0] = l.Head()
 	copy(newelements[1:], e)
 	return List{elements: newelements}
 }
@@ -174,16 +166,16 @@ func (l List) Join(other Sliceable) Expr {
 		return l // Return this list if the other one is empty
 	}
 
-	if l.HeadExpr() != otherList.HeadExpr() {
+	if l.Head() != otherList.Head() {
 		return NewError("TypeError",
 			fmt.Sprintf("Cannot join lists with different heads: %s and %s",
-				l.HeadExpr(), otherList.HeadExpr()))
+				l.Head(), otherList.Head()))
 	}
 
 	// Create new list with combined elements
 	// newelements = [head, l.elements[1:], otherList.elements[1:]]
 	newelements := make([]Expr, 1+l.Length()+otherList.Length())
-	newelements[0] = l.HeadExpr()
+	newelements[0] = l.Head()
 
 	// Copy elements from first list (excluding head)
 	copy(newelements[1:], l.Tail())
@@ -298,7 +290,7 @@ func (l List) SetSlice(start, stop int64, values Expr) Expr {
 	newelements := make([]Expr, newSize)
 
 	// Copy head
-	newelements[0] = l.HeadExpr()
+	newelements[0] = l.Head()
 
 	// Copy elements before the range
 	if start > 1 {
@@ -334,7 +326,7 @@ func (l List) insertValues(pos int64, values Expr) Expr {
 	newelements := make([]Expr, newSize)
 
 	// Copy head
-	newelements[0] = l.HeadExpr()
+	newelements[0] = l.Head()
 
 	// Copy elements before insertion point
 	if pos > 1 {

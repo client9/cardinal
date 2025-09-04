@@ -11,7 +11,9 @@ import (
 // Flatten(List(1, 2, List(3, 4))) -> List(1, 2, 3, 4)
 // For now, flattens all levels (no level specification)
 //
-// @ExprPattern (_List)
+//	Takes any list like object
+//
+// @ExprPattern (_(___))
 func FlattenExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	list, _ := args[0].(core.List)
 
@@ -27,7 +29,7 @@ func flatten(list core.List) core.Expr {
 	}
 
 	// Extract the head (List, Zoo, etc.)
-	head := list.HeadExpr()
+	head := list.Head()
 
 	// Get the head name to determine if we should flatten sublists with the same head
 	headName := head.String()
@@ -40,7 +42,7 @@ func flatten(list core.List) core.Expr {
 
 		// Check if this element is a list with the same head
 		if elementList, ok := element.(core.List); ok {
-			if elementHeadName, ok := core.ExtractSymbol(elementList.HeadExpr()); ok && elementHeadName == headName {
+			if elementHeadName, ok := core.ExtractSymbol(elementList.Head()); ok && elementHeadName == headName {
 				// Same head - flatten this sublist's elements
 				// First recursively flatten the sublist
 				flattened := flatten(elementList)

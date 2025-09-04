@@ -13,7 +13,7 @@ func asRule(expr core.Expr) (a, b core.Expr, ok bool) {
 	if !ok {
 		return nil, nil, false
 	}
-	head := list.HeadExpr()
+	head := list.Head()
 	if head != symbol.Rule && head != symbol.RuleDelayed {
 		return nil, nil, false
 	}
@@ -26,7 +26,7 @@ func isRuleOrRuleDelayed(expr core.Expr) bool {
 	if expr.Length() != 2 {
 		return false
 	}
-	head := expr.HeadExpr()
+	head := expr.Head()
 	return head == symbol.Rule || head == symbol.RuleDelayed
 }
 

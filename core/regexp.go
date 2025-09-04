@@ -130,7 +130,7 @@ func (r *ThompsonVM) matchNfa(prog Prog, expr Expr, sub *Captures) (bool, *Captu
 			case InstMatchAny:
 				add = true
 			case InstMatchHead:
-				head := expr.HeadExpr()
+				head := expr.Head()
 				add = (i.Val == head) || (i.Val == symbolNumber && (head == symbolInteger || head == symbolReal))
 			case InstMatchLiteral:
 				add = expr.Equal(i.Val)
@@ -138,7 +138,7 @@ func (r *ThompsonVM) matchNfa(prog Prog, expr Expr, sub *Captures) (bool, *Captu
 				add = true
 				captureWholeInput = true
 			case InstMatchList:
-				if list, ok := expr.(List); ok && list.HeadExpr() == i.Val {
+				if list, ok := expr.(List); ok && (i.Val == symbolNull || list.Head() == i.Val) {
 					// TODO
 					// the new pc.prog has ID that conflict with outer ones
 					// technically they could be renumbered and just call recursively
@@ -200,12 +200,12 @@ func (r *ThompsonVM) matchNfaSequence(prog Prog, exprs []Expr, sub *Captures) (b
 			case InstMatchAny:
 				add = true
 			case InstMatchHead:
-				head := elem.HeadExpr()
+				head := elem.Head()
 				add = (head == i.Val) || (i.Val == symbolNumber && (head == symbolInteger || head == symbolReal))
 			case InstMatchLiteral:
 				add = elem.Equal(i.Val)
 			case InstMatchList:
-				if lst, ok := elem.(List); ok && lst.HeadExpr() == i.Val {
+				if lst, ok := elem.(List); ok && (i.Val == symbolNull || lst.Head() == i.Val) {
 					// loop detection issue
 					// program ids conflict
 					listprog := i.Data.(Prog)
@@ -303,12 +303,12 @@ func (r *ThompsonVM) matchSequenceM2(prog Prog, expr []Expr, sub *Captures) (boo
 		case InstMatchAny:
 			last = true
 		case InstMatchHead:
-			last = e.HeadExpr() == i.Val
+			last = e.Head() == i.Val
 		case InstMatchLiteral:
 			last = e.Equal(i.Val)
 		case InstMatchList:
 			last = false
-			if list, ok := e.(List); ok && list.HeadExpr() == i.Val {
+			if list, ok := e.(List); ok && (i.Val == symbolNull || list.Head() == i.Val) {
 				if ok, nsub := r.matchSequenceM2(i.Data.(Prog), list.Tail(), sub); ok {
 					sub = nsub
 					last = true
@@ -382,7 +382,7 @@ func (r *ThompsonVM) matchM3(prog Prog, expr Expr, sub *Captures) (bool, *Captur
 		switch i.Op {
 		case InstMatchList:
 			consume = false
-			if list, ok := e.(List); ok && list.HeadExpr() == i.Val {
+			if list, ok := e.(List); ok && (i.Val == symbolNull || list.Head() == i.Val) {
 				if ok, nsub := r.matchSequenceM3(i.Data.(Prog), list.Tail(), sub); ok {
 					sub = nsub
 					consume = true
@@ -399,7 +399,7 @@ func (r *ThompsonVM) matchM3(prog Prog, expr Expr, sub *Captures) (bool, *Captur
 		case InstMatchAny:
 			consume = e != nil
 		case InstMatchHead:
-			consume = e != nil && e.HeadExpr() == i.Val
+			consume = e != nil && e.Head() == i.Val
 		case InstMatchLiteral:
 			consume = e != nil && e.Equal(i.Val)
 		case InstCaptureStart:
@@ -451,12 +451,12 @@ func (r *ThompsonVM) matchSequenceM3(prog Prog, expr []Expr, sub *Captures) (boo
 		case InstMatchAny:
 			consume = true
 		case InstMatchHead:
-			consume = e.HeadExpr() == i.Val
+			consume = e.Head() == i.Val
 		case InstMatchLiteral:
 			consume = e.Equal(i.Val)
 		case InstMatchList:
 			sub.refs = 1
-			if list, ok := e.(List); ok && list.HeadExpr() == i.Val {
+			if list, ok := e.(List); ok && (i.Val == symbolNull || list.Head() == i.Val) {
 				if ok, nsub := r.matchSequenceM3(i.Data.(Prog), list.Tail(), sub); ok {
 					sub = nsub
 					consume = true
@@ -523,8 +523,13 @@ func (r *ThompsonVM) matchM4(prog Prog, expr Expr, sub *Captures) (bool, *Captur
 		switch i.Op {
 		case InstMatchList:
 			consume = false
-			if list, ok := e.(List); ok && (list.HeadExpr() == i.Val) {
+
+			fmt.Println("list = ", e, "iVal = ", i.Val, ", iVal==Null", i.Val == symbolNull)
+			i.Data.(Prog).Dump()
+			if list, ok := e.(List); ok && (i.Val == symbolNull || list.Head() == i.Val) {
+				fmt.Println("    Passed condition, tail: ", list.Tail())
 				if ok, nsub := r.matchSequenceM4(i.Data.(Prog), list.Tail(), sub); ok {
+					fmt.Println("   And passed again")
 					sub = nsub
 					consume = true
 				}
@@ -540,7 +545,7 @@ func (r *ThompsonVM) matchM4(prog Prog, expr Expr, sub *Captures) (bool, *Captur
 		case InstMatchAny:
 			consume = e != nil
 		case InstMatchHead:
-			consume = e != nil && matchHead(e.HeadExpr(), i.Val.(Symbol))
+			consume = e != nil && matchHead(e.Head(), i.Val.(Symbol))
 		case InstMatchLiteral:
 			consume = e != nil && e.Equal(i.Val)
 		case InstCaptureStart:
@@ -582,7 +587,7 @@ func (r *ThompsonVM) matchSequenceM4(prog Prog, args []Expr, sub *Captures) (boo
 		switch i.Op {
 		case InstMatchList:
 			consume = false
-			if list, ok := e.(List); ok && list.HeadExpr() == i.Val {
+			if list, ok := e.(List); ok && (i.Val == symbolNull || list.Head() == i.Val) {
 				if ok, nsub := r.matchSequenceM4(i.Data.(Prog), list.Tail(), sub); ok {
 					sub = nsub
 					consume = true
@@ -595,7 +600,7 @@ func (r *ThompsonVM) matchSequenceM4(prog Prog, args []Expr, sub *Captures) (boo
 		case InstMatchAny:
 			consume = e != nil
 		case InstMatchHead:
-			consume = e != nil && matchHead(e.HeadExpr(), i.Val.(Symbol))
+			consume = e != nil && matchHead(e.Head(), i.Val.(Symbol))
 		case InstMatchLiteral:
 			consume = e != nil && e.Equal(i.Val)
 		case InstCaptureStart:

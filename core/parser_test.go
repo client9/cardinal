@@ -480,8 +480,8 @@ func TestParser_ParseAtoms(t *testing.T) {
 				return
 			}
 
-			if expr.HeadExpr().String() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, expr.HeadExpr().String())
+			if expr.Head().String() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Head().String())
 			}
 
 			// Check value based on the expected type
@@ -583,9 +583,9 @@ func TestParser_ParseLists(t *testing.T) {
 				return
 			}
 
-			head, ok := ExtractSymbol(list.HeadExpr())
+			head, ok := ExtractSymbol(list.Head())
 			if !ok {
-				t.Errorf("expected head to be Symbol, got %T", list.HeadExpr())
+				t.Errorf("expected head to be Symbol, got %T", list.Head())
 				return
 			}
 

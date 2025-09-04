@@ -3,7 +3,7 @@ package core
 // Pure pattern matching (no variable binding)
 
 func IsExcept(pattern Expr) Expr {
-	if pattern.HeadExpr() != symbolExcept {
+	if pattern.Head() != symbolExcept {
 		return nil
 	}
 	plist, _ := pattern.(List)
@@ -11,7 +11,7 @@ func IsExcept(pattern Expr) Expr {
 }
 
 func IsAlternatives(pattern Expr) []Expr {
-	if pattern.HeadExpr() != symbolAlternatives {
+	if pattern.Head() != symbolAlternatives {
 		return nil
 	}
 	plist, _ := pattern.(List)
@@ -116,7 +116,7 @@ func matchBlankWithBindings(pinfo PatternInfo, expr Expr, bindings *PatternBindi
 
 // matchListWithBindings tests if a list pattern matches a list expression
 func matchListWithBindings(patternList, exprList List, bindings *PatternBindings) bool {
-	if patternList.HeadExpr() != exprList.HeadExpr() {
+	if patternList.Head() != exprList.Head() {
 		return false
 	}
 	return matchListWithBindingsSequential(patternList, exprList, bindings, 0, 0)

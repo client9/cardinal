@@ -35,7 +35,7 @@ func (i bigRat) InputForm() string {
 	return i.String()
 }
 
-func (i bigRat) HeadExpr() Symbol {
+func (i bigRat) Head() Expr {
 	return symbolRational
 }
 

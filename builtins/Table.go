@@ -17,7 +17,7 @@ func Table(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	spec := args[1] // Don't evaluate spec yet
 
 	// if list, assume iterator spec
-	if list, ok := spec.(core.List); ok && list.HeadExpr() == symbol.List {
+	if list, ok := spec.(core.List); ok && list.Head() == symbol.List {
 		return tableIterator(e, c, expr, list)
 	}
 
@@ -43,7 +43,7 @@ func tableSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64
 	}
 
 	if n == 0 {
-		return core.ListExpr()
+		return core.NewList(symbol.List)
 	}
 
 	// Create result list with proper capacity
@@ -60,7 +60,7 @@ func tableSimple(e *engine.Evaluator, c *engine.Context, expr core.Expr, n int64
 		elements[i] = evaluated
 	}
 
-	return core.ListExpr(elements...)
+	return core.NewList(symbol.List, elements...)
 }
 
 // evaluateTableIterator implements Table(expr, core.List(i, start, end, increment))
@@ -98,7 +98,7 @@ func tableIterator(e *engine.Evaluator, c *engine.Context, expr core.Expr, iterS
 		}
 	}
 
-	return core.ListExpr(results...)
+	return core.NewList(symbol.List, results...)
 }
 
 // parseTableIteratorSpec parses iterator specifications and normalizes them

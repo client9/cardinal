@@ -72,7 +72,7 @@ func (m rat64) InputForm() string {
 	return m.String()
 }
 
-func (m rat64) HeadExpr() Symbol {
+func (m rat64) Head() Expr {
 	return symbolRational
 }
 

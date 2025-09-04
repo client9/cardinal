@@ -21,7 +21,7 @@ func Sort(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 		return expr
 	}
 
-	head := list.HeadExpr()
+	head := list.Head()
 	elements := make([]core.Expr, list.Length())
 	copy(elements, list.Tail())
 

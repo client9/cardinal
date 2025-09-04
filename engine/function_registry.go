@@ -70,7 +70,9 @@ func (r *FunctionRegistry) registerPatternBuiltin(patternStr string, impl Patter
 	}
 
 	list := pattern.(core.List)
-	functionName := list.HeadExpr()
+
+	// Safe since builtins always have a symbol for head
+	functionName := list.Head().(core.Symbol)
 	args := list.Tail()
 
 	c := core.NewCompiler()
@@ -135,7 +137,7 @@ func (r *FunctionRegistry) registerFunctionDef(functionName core.Symbol, newDef 
 
 // RegisterUserFunction registers a user-defined function with pattern and body
 func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Expr) error {
-	functionName := pattern.HeadExpr()
+	functionName := pattern.Head().(core.Symbol)
 
 	funcDef := FunctionDef{
 		Pattern:     pattern,
@@ -152,7 +154,7 @@ func (r *FunctionRegistry) RegisterUserFunction(pattern core.Expr, body core.Exp
 func (r *FunctionRegistry) FindMatchingFunction2(fn core.Expr) (*FunctionDef, core.PatternBindings) {
 
 	list := fn.(core.List)
-	fname := list.HeadExpr()
+	fname := list.Head().(core.Symbol)
 	args := list.Tail()
 
 	definitions, exists := r.functions[fname]

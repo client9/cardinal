@@ -4,10 +4,12 @@ package core
 type Expr interface {
 	String() string
 	InputForm() string
-
-	HeadExpr() Symbol
-
-	Length() int64
+	Head() Expr
 	Equal(rhs Expr) bool
-	IsAtom() bool // Distinguishes atomic vs composite types
+
+	// Length returns 0 is atomic, or the length of the list item.
+	Length() int64
+
+	// IsAtom returns true is not a compound element, and no futher reduction is possible.
+	IsAtom() bool
 }

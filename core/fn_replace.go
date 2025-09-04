@@ -4,7 +4,7 @@ package core
 // Replace(expr, Rule(pattern, replacement)) -> replacement if expr matches pattern, else expr
 func ReplaceExpr(expr Expr, rule Expr) Expr {
 	// Extract pattern and replacement from Rule(pattern, replacement)
-	if ruleList, ok := rule.(List); ok && ruleList.Length() == 2 && ruleList.HeadExpr() == symbolRule {
+	if ruleList, ok := rule.(List); ok && ruleList.Length() == 2 && ruleList.Head() == symbolRule {
 		e := ruleList.Tail()
 		if matches, bindings := MatchWithBindings(expr, e[0]); matches {
 			return SubstituteBindings(e[1], bindings)
@@ -22,12 +22,12 @@ func ReplaceWithRules(expr Expr, rulesList Expr) Expr {
 	if !ok {
 		return expr
 	}
-	if list.HeadExpr() != symbolList {
+	if list.Head() != symbolList {
 		return expr
 	}
 	// Iterate through each rule in order
 	for _, rule := range list.Tail() {
-		if ruleExpr, ok := rule.(List); ok && ruleExpr.Length() == 2 && ruleExpr.HeadExpr() == symbolRule {
+		if ruleExpr, ok := rule.(List); ok && ruleExpr.Length() == 2 && ruleExpr.Head() == symbolRule {
 			// Try to apply this rule using existing ReplaceExpr logic
 			result := ReplaceExpr(expr, rule)
 			if !result.Equal(expr) {

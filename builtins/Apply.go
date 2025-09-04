@@ -12,7 +12,7 @@ import (
 // ApplyExpr applies a function to a list of arguments using EngineFunc signature
 // Apply(f, {a, b, c}) -> f(a, b, c)
 //
-// @ExprPattern (_,_List)
+// @ExprPattern (_, _(___))
 func ApplyExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	// TODO: restrict to list types
 	fn := args[0]

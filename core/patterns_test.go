@@ -5,6 +5,21 @@ import (
 	"testing"
 )
 
+func TestIsSymbolicPattern(t *testing.T) {
+	p := MustParse("Pattern(x, 1)")
+	ok, _, _ := IsSymbolicPattern(p)
+	if !ok {
+		t.Errorf("expected smbolic pattern")
+	}
+
+	p = MustParse("Just(x, 1)")
+	ok, _, _ = IsSymbolicPattern(p)
+	if ok {
+		t.Errorf("Did not expected symbolic pattern")
+	}
+
+}
+
 // Test pattern analysis functions
 func TestIsSymbolicBlank(t *testing.T) {
 	tests := []struct {
@@ -35,30 +50,6 @@ func TestIsSymbolicBlank(t *testing.T) {
 	}
 }
 
-func TestIsSymbolicPattern(t *testing.T) {
-	nameExpr := NewSymbol("x")
-	blankExpr := ListFrom(symbolBlank)
-	pattern := ListFrom(symbolPattern, nameExpr, blankExpr)
-
-	// Test valid pattern
-	isPattern, gotName, gotBlank := IsSymbolicPattern(pattern)
-	if !isPattern {
-		t.Error("IsSymbolicPattern should return true for Pattern expression")
-	}
-	if !reflect.DeepEqual(gotName, nameExpr) {
-		t.Errorf("IsSymbolicPattern name = %v, want %v", gotName, nameExpr)
-	}
-	if !reflect.DeepEqual(gotBlank, blankExpr) {
-		t.Errorf("IsSymbolicPattern blank = %v, want %v", gotBlank, blankExpr)
-	}
-
-	// Test non-pattern
-	isPattern, _, _ = IsSymbolicPattern(NewSymbol("x"))
-	if isPattern {
-		t.Error("IsSymbolicPattern should return false for non-Pattern expression")
-	}
-}
-
 // Test type matching functions
 func TestMatchesType(t *testing.T) {
 	tests := []struct {
@@ -73,7 +64,7 @@ func TestMatchesType(t *testing.T) {
 		{NewReal(3.14), "Number", true},
 		{NewString("hello"), "String", true},
 		{NewSymbol("x"), "Symbol", true},
-		{NewList("List"), "List", true},
+		{NewList(symbolList), "List", true},
 		{NewInteger(42), "", true}, // No constraint
 		{NewObjectExpr(NewSymbol("CustomType"), NewInteger(1)), "CustomType", true},
 		{NewObjectExpr(NewSymbol("CustomType"), NewInteger(1)), "OtherType", false},

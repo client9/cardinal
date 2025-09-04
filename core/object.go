@@ -29,7 +29,7 @@ func (o ObjectExpr) Length() int64 {
 	return o.Value.Length() // Delegate to wrapper Expr
 }
 
-func (o ObjectExpr) HeadExpr() Symbol {
+func (o ObjectExpr) Head() Expr {
 	return o.TypeName
 }
 

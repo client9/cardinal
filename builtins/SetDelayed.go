@@ -18,7 +18,7 @@ func SetDelayedExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 	// Handle function definitions: f(x_) := body
 	if list, ok := lhs.(core.List); ok && list.Length() > 0 {
 		// This is a function definition
-		headExpr := list.HeadExpr()
+		headExpr := list.Head()
 		if _, ok := core.ExtractSymbol(headExpr); ok {
 			// Get the function registry from context
 			registry := c.GetFunctionRegistry()

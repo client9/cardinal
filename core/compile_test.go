@@ -18,6 +18,15 @@ func TestCompileCheck(t *testing.T) {
 	p2.Dump()
 }
 
+func TestCompileCheck2(t *testing.T) {
+	c := NewCompiler()
+	e := MustParse("Blank()(MatchStar(MatchAny()))")
+	p := c.compileNFA(e)
+	p.Dump()
+	fmt.Printf("----\n")
+	p2 := c.compileOneStep(e)
+	p2.Dump()
+}
 func BenchmarkCompileNFA(b *testing.B) {
 
 	e := MustParse("[ [ Pattern(x,MatchHead(Integer)), Pattern(y,MatchHead(Integer)) ], Pattern(n,MatchHead(Integer)) ]")

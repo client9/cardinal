@@ -20,7 +20,7 @@ func AssociationRules(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 
 	// Process each Rule expression
 	for _, rule := range args {
-		if ruleList, ok := rule.(core.List); ok && ruleList.Length() == 2 && ruleList.HeadExpr() == symbol.Rule {
+		if ruleList, ok := rule.(core.List); ok && ruleList.Length() == 2 && ruleList.Head() == symbol.Rule {
 			args := ruleList.Tail()
 			assoc = assoc.Set(args[0], args[1]) // Returns new association (immutable)
 			continue

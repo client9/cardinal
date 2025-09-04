@@ -49,7 +49,7 @@ func TestExtractInt64(t *testing.T) {
 		},
 		{
 			name:     "list",
-			expr:     NewList("Plus", NewInteger(1), NewInteger(2)),
+			expr:     NewList(symbolPlus, NewInteger(1), NewInteger(2)),
 			expected: 0,
 			ok:       false,
 		},
@@ -282,7 +282,7 @@ func TestCopyExprList(t *testing.T) {
 		{
 			name:     "nested expression",
 			head:     "Outer",
-			args:     []Expr{NewList("Inner", NewInteger(1))},
+			args:     []Expr{NewList(NewSymbol("Inner"), NewInteger(1))},
 			expected: "Outer(Inner(1))",
 		},
 	}
@@ -302,9 +302,9 @@ func TestCopyExprList(t *testing.T) {
 			}
 
 			// Verify head
-			if result.HeadExpr().String() != tt.head {
+			if result.Head().String() != tt.head {
 				t.Errorf("CopyExprList head = %s, want %s",
-					result.HeadExpr().String(), tt.head)
+					result.Head().String(), tt.head)
 			}
 
 			// Verify args (should be copies of references, not deep copies)
@@ -322,8 +322,8 @@ func TestCopyExprList(t *testing.T) {
 func TestHelperFunctionsWithRealExpressions(t *testing.T) {
 	// Test helper functions with more complex expressions
 	// Create complex expressions for testing
-	plusExpr := NewList("Plus", NewInteger(1), NewInteger(2))
-	timesExpr := NewList("Times", NewReal(2.5), NewReal(4.0))
+	plusExpr := NewList(symbolPlus, NewInteger(1), NewInteger(2))
+	timesExpr := NewList(symbolTimes, NewReal(2.5), NewReal(4.0))
 
 	// Test that helper functions work correctly with real expressions
 	if val, ok := ExtractInt64(NewInteger(42)); !ok || val != 42 {

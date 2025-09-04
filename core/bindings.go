@@ -101,7 +101,7 @@ func (c *Captures) AsRules(names []Symbol) Expr {
 
 	if c.Length() == 0 {
 		//fmt.Printf("Capture had nothing\n")
-		return ListExpr()
+		return ListFrom(symbolList)
 	}
 	rules := make([]Expr, 0, len(c.captures))
 	for i, cap := range c.captures {
@@ -119,7 +119,7 @@ func (c *Captures) AsRules(names []Symbol) Expr {
 			target = cap.exprs[cap.start]
 		} else {
 			// mutliple elements go in a list`
-			target = ListExpr(cap.exprs[cap.start:cap.end]...)
+			target = ListFrom(symbolList, cap.exprs[cap.start:cap.end]...)
 		}
 		if names != nil {
 			name = names[i]
@@ -128,5 +128,5 @@ func (c *Captures) AsRules(names []Symbol) Expr {
 		}
 		rules = append(rules, ListFrom(symbolRule, name, target))
 	}
-	return ListExpr(rules...)
+	return ListFrom(symbolList, rules...)
 }

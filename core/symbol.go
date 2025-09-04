@@ -19,7 +19,7 @@ func (s Symbol) InputForm() string {
 	return s.String()
 }
 
-func (s Symbol) HeadExpr() Symbol {
+func (s Symbol) Head() Expr {
 	return symbolSymbol
 }
 

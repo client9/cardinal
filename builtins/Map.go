@@ -25,7 +25,7 @@ func MapExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr
 	}
 
 	// Extract head and elements
-	head := listExpr.HeadExpr()
+	head := listExpr.Head()
 	elements := listExpr.Tail()
 
 	// Apply the function to each element

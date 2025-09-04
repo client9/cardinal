@@ -24,7 +24,7 @@ func (s SliceFloat64) InputForm() string {
 	return s.String()
 }
 
-func (s SliceFloat64) HeadExpr() Symbol {
+func (s SliceFloat64) Head() Expr {
 	return symbolList
 }
 

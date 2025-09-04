@@ -45,8 +45,13 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 		return false, PatternUnknown, nil
 	}
 
+	head := list.Head()
+	sym, ok := head.(Symbol)
+	if !ok {
+		return true, BlankPattern, head
+	}
 	var ptype PatternType
-	switch list.HeadExpr() {
+	switch sym {
 	case symbolBlank:
 		ptype = BlankPattern
 	case symbolBlankSequence:
@@ -67,7 +72,7 @@ func IsSymbolicBlank(expr Expr) (bool, PatternType, Expr) {
 
 // IsSymbolicPattern checks if an expression is a symbolic Pattern[name, blank]
 func IsSymbolicPattern(expr Expr) (bool, Expr, Expr) {
-	if list, ok := expr.(List); ok && list.Length() == 2 && list.HeadExpr() == symbolPattern {
+	if list, ok := expr.(List); ok && list.Length() == 2 && list.Head() == symbolPattern {
 		args := list.Tail()
 		return true, args[0], args[1]
 	}
@@ -114,7 +119,7 @@ func MatchesType(expr Expr, typeName string) bool {
 		_, ok := GetNumericValue(expr)
 		return ok
 	}
-	return expr.HeadExpr().String() == typeName
+	return expr.Head().String() == typeName
 }
 
 // IsBuiltinType checks if a type name is a built-in type
@@ -249,7 +254,7 @@ func CalculateCompoundSpecificity(pattern List) CompoundSpecificity {
 	}
 
 	// Calculate head specificity
-	cs.HeadSpecificity = GetPatternSpecificity(pattern.HeadExpr())
+	cs.HeadSpecificity = GetPatternSpecificity(pattern.Head())
 
 	// Calculate argument specificities
 	totalArgScore := 0
@@ -282,7 +287,7 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 		return pattern1.Equal(pattern2)
 	case List:
 		if p2, ok := pattern2.(List); ok {
-			if p1.HeadExpr() != p2.HeadExpr() {
+			if p1.Head() != p2.Head() {
 				return false
 			}
 			s1 := p1.Tail()
@@ -306,7 +311,7 @@ func PatternsEqual(pattern1, pattern2 Expr) bool {
 
 // checks to see if an expression has a "Pattern" symbol
 func ExprHasNamedPattern(e Expr) bool {
-	if e.HeadExpr() == symbolPattern {
+	if e.Head() == symbolPattern {
 		return true
 	}
 	if list, ok := e.(List); ok {

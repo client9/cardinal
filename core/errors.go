@@ -80,7 +80,7 @@ func (e ErrorExpr) InputForm() string {
 	return e.String()
 }
 
-func (e ErrorExpr) HeadExpr() Symbol {
+func (e ErrorExpr) Head() Expr {
 	return symbolError
 }
 

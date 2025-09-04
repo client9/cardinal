@@ -112,7 +112,7 @@ func TestAtom_Type(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.atom.HeadExpr().String()
+			result := tt.atom.Head().String()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
@@ -128,32 +128,32 @@ func TestList_String(t *testing.T) {
 	}{
 		{
 			name:     "empty list",
-			list:     NewList("List"),
+			list:     NewList(symbolList),
 			expected: "List()",
 		},
 		{
 			name:     "single element list",
-			list:     NewList("Plus"),
+			list:     NewList(symbolPlus),
 			expected: "Plus()",
 		},
 		{
 			name:     "simple function call",
-			list:     NewList("Plus", NewInteger(1), NewInteger(2)),
+			list:     NewList(symbolPlus, NewInteger(1), NewInteger(2)),
 			expected: "Plus(1, 2)",
 		},
 		{
 			name:     "mixed types",
-			list:     NewList("List", NewInteger(1), NewReal(2.5), NewString("hello"), NewBool(true)),
+			list:     NewList(symbolList, NewInteger(1), NewReal(2.5), NewString("hello"), NewBool(true)),
 			expected: `List(1, 2.5, "hello", True)`,
 		},
 		{
 			name:     "nested list",
-			list:     NewList("Plus", NewInteger(1), NewList("Times", NewInteger(2), NewInteger(3))),
+			list:     NewList(symbolPlus, NewInteger(1), NewList(symbolTimes, NewInteger(2), NewInteger(3))),
 			expected: "Plus(1, Times(2, 3))",
 		},
 		{
 			name:     "deeply nested",
-			list:     NewList("f", NewList("g", NewList("h", NewInteger(1)))),
+			list:     NewList(NewSymbol("f"), NewList(NewSymbol("g"), NewList(NewSymbol("h"), NewInteger(1)))),
 			expected: "f(g(h(1)))",
 		},
 	}
@@ -176,19 +176,19 @@ func TestList_Type(t *testing.T) {
 	}{
 		{
 			name:     "empty list type",
-			list:     NewList("List"),
+			list:     NewList(symbolList),
 			expected: "List",
 		},
 		{
 			name:     "non-empty list type",
-			list:     NewList("Plus", NewInteger(1), NewInteger(2)),
+			list:     NewList(symbolPlus, NewInteger(1), NewInteger(2)),
 			expected: "Plus",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.list.HeadExpr().String()
+			result := tt.list.Head().String()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
@@ -245,8 +245,8 @@ func TestConstructorFunctions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expr := tt.constructor()
 
-			if expr.HeadExpr().String() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, expr.HeadExpr().String())
+			if expr.Head().String() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, expr.Head().String())
 			}
 
 			// Check value based on the expected type
@@ -299,13 +299,13 @@ func TestNewList(t *testing.T) {
 	}{
 		{
 			name:           "multiple elements",
-			list:           NewList("Plus", NewInteger(1), NewInteger(2)),
+			list:           NewList(symbolPlus, NewInteger(1), NewInteger(2)),
 			expectedLength: 2,
 			expectedType:   "Plus",
 		},
 		{
 			name:           "nested list",
-			list:           NewList("f", NewList("g", NewInteger(1))),
+			list:           NewList(NewSymbol("f"), NewList(NewSymbol("g"), NewInteger(1))),
 			expectedLength: 1,
 			expectedType:   "f",
 		},
@@ -313,8 +313,8 @@ func TestNewList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.list.HeadExpr().String() != tt.expectedType {
-				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.HeadExpr().String())
+			if tt.list.Head().String() != tt.expectedType {
+				t.Errorf("expected type %q, got %q", tt.expectedType, tt.list.Head().String())
 			}
 
 			if len(tt.list.Tail()) != tt.expectedLength {
@@ -332,8 +332,8 @@ func TestComplexExpressions(t *testing.T) {
 	}{
 		{
 			name: "mathematical expression",
-			expr: NewList("Plus",
-				NewList("Times", NewInteger(2), NewSymbol("x")),
+			expr: NewList(symbolPlus,
+				NewList(symbolTimes, NewInteger(2), NewSymbol("x")),
 				NewInteger(5),
 			),
 			expected: "Plus(Times(2, x), 5)",
@@ -341,26 +341,26 @@ func TestComplexExpressions(t *testing.T) {
 		{
 			name: "function definition",
 			expr: NewList(
-				"Function",
+				symbolFunction,
 				NewString("x"),
-				NewList("Power", NewSymbol("x"), NewInteger(2)),
+				NewList(symbolPower, NewSymbol("x"), NewInteger(2)),
 			),
 			expected: `Function("x", Power(x, 2))`,
 		},
 		{
 			name: "conditional expression",
 			expr: NewList(
-				"If",
-				NewList("Greater", NewSymbol("x"), NewInteger(0)),
+				symbolIf,
+				NewList(symbolGreater, NewSymbol("x"), NewInteger(0)),
 				NewSymbol("x"),
-				NewList("Minus", NewSymbol("x")),
+				NewList(symbolMinus, NewSymbol("x")),
 			),
 			expected: "If(Greater(x, 0), x, Minus(x))",
 		},
 		{
 			name: "list with mixed types",
 			expr: NewList(
-				"List",
+				symbolList,
 				NewInteger(1),
 				NewReal(2.5),
 				NewString("hello"),

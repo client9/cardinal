@@ -18,7 +18,7 @@ func (s String) InputForm() string {
 	return s.String()
 }
 
-func (s String) HeadExpr() Symbol {
+func (s String) Head() Expr {
 	return symbolString
 }
 

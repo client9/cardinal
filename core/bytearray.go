@@ -86,7 +86,7 @@ func (b ByteArray) InputForm() string {
 	return b.String()
 }
 
-func (b ByteArray) HeadExpr() Symbol {
+func (b ByteArray) Head() Expr {
 	return symbolByteArray
 }
 

@@ -185,7 +185,7 @@ func DropRange(expr Expr, rangeList List) Expr {
 func createEmpty(expr Expr) Expr {
 	switch e := expr.(type) {
 	case List:
-		return ListFrom(e.HeadExpr())
+		return ListFrom(e.Head())
 	case String:
 		return NewString("")
 	case ByteArray:

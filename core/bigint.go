@@ -39,7 +39,7 @@ func (i bigInt) InputForm() string {
 	return i.String()
 }
 
-func (i bigInt) HeadExpr() Symbol {
+func (i bigInt) Head() Expr {
 	return symbolInteger
 }
 

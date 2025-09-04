@@ -2,8 +2,8 @@ package builtins
 
 import (
 	"github.com/client9/sexpr/core"
+	"github.com/client9/sexpr/core/symbol"
 	"github.com/client9/sexpr/engine"
-	"log"
 )
 
 // @ExprSymbol Attributes
@@ -20,6 +20,5 @@ func AttributesExpr(e *engine.Evaluator, c *engine.Context, args []core.Expr) co
 
 	attrs := symbolTable.Attributes(symbolName)
 
-	log.Printf("attr symbols %v", engine.AttributeToSymbols(attrs))
-	return core.ListExpr(engine.AttributeToSymbols(attrs)...)
+	return core.NewList(symbol.List, engine.AttributeToSymbols(attrs)...)
 }

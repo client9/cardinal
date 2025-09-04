@@ -25,7 +25,7 @@ func Do(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	spec := args[1] // Don't evaluate spec yet
 
 	// if list, assume iterator spec
-	if list, ok := spec.(core.List); ok && list.HeadExpr() == symbol.List {
+	if list, ok := spec.(core.List); ok && list.Head() == symbol.List {
 		return doIterator(e, c, expr, list)
 	}
 

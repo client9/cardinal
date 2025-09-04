@@ -28,7 +28,7 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 	}
 
 	// Check if this is a special function that has infix/shortcut representation
-	switch l.HeadExpr() {
+	switch l.Head() {
 	case symbolList:
 		// List(...) -> [...]
 		if l.Length() == 0 {
@@ -47,7 +47,7 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 		}
 		var pairs []string
 		for _, elem := range l.Tail() {
-			if ruleList, ok := elem.(List); ok && ruleList.Length() == 2 && ruleList.HeadExpr() == symbolRule {
+			if ruleList, ok := elem.(List); ok && ruleList.Length() == 2 && ruleList.Head() == symbolRule {
 				args := ruleList.Tail()
 				key := args[0].InputForm()
 				value := args[1].InputForm()
@@ -175,7 +175,7 @@ func (l List) inputFormWithPrecedence(parentPrecedence Precedence) string {
 	for _, elem := range l.Tail() {
 		elements = append(elements, elem.InputForm())
 	}
-	return fmt.Sprintf("%s(%s)", l.HeadExpr().String(), strings.Join(elements, ", "))
+	return fmt.Sprintf("%s(%s)", l.Head().String(), strings.Join(elements, ", "))
 }
 
 // formatInfixWithParens formats a binary infix operation with parentheses if needed

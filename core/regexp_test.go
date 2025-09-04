@@ -393,6 +393,13 @@ var cases = []tc{
 		binding: "",
 		match:   false,
 	},
+	{
+		name:    "Any list head",
+		expr:    "RGBColor(1,2,3)",
+		pattern: "MatchAny()(MatchStar(MatchAny()))",
+		binding: "",
+		match:   true,
+	},
 	/*
 		{
 			name:    "List with any head",

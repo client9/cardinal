@@ -30,7 +30,7 @@ func (r Real) InputForm() string {
 	return r.String()
 }
 
-func (r Real) HeadExpr() Symbol {
+func (r Real) Head() Expr {
 	return symbolReal
 }
 

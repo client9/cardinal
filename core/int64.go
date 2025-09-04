@@ -29,7 +29,7 @@ func (i machineInt) InputForm() string {
 	return i.String()
 }
 
-func (i machineInt) HeadExpr() Symbol {
+func (i machineInt) Head() Expr {
 	return symbolInteger
 }
 

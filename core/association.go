@@ -177,7 +177,7 @@ func (a Association) InputForm() string {
 	return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
 }
 
-func (a Association) HeadExpr() Symbol {
+func (a Association) Head() Expr {
 	return symbolAssociation
 }
 

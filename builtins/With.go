@@ -27,7 +27,7 @@ func With(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	rules := list.Copy()
 	for _, arg := range rules.Tail() {
 		r, ok := arg.(core.List)
-		if !ok || r.HeadExpr() != symbol.Set || r.Length() != 2 {
+		if !ok || r.Head() != symbol.Set || r.Length() != 2 {
 			return core.NewError("ArgumentError", "With expected list of set assignments")
 		}
 		// TODO: DANGER
