@@ -9,12 +9,12 @@ import (
 
 	"github.com/client9/sexpr/engine"
 )
+
 // Power(_Integer, _Rational) simplification is non-obvious
 //  4^(1/2) --> (2^2)^(1/2) --> 2^1 --> 2
 //  4^(3/5) --> (2^2)^(3/5) --> 2^(6/5) --> 2 * 2^(1/5)
 // 12^(3/5) --> (2^2 * 3)^(3/5) --> 2*2^(1/5) * 3^(3/5)
 //
-
 
 // @ExprSymbol Power
 // @ExprAttributes  OneIdentity NumericFunction

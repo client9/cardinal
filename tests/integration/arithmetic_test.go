@@ -71,7 +71,7 @@ func TestBasicArithmetic(t *testing.T) {
 		{
 			name:     "Integer division with remainder",
 			input:    "Divide(7, 2)",
-			expected: "3",
+			expected: "7/2",
 		},
 
 		// Power
