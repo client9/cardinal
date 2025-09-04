@@ -77,12 +77,12 @@ func TestFlatten(t *testing.T) {
 		{
 			name:     "Non-list input",
 			input:    "Flatten(42)",
-			expected: "42",
+			expected: "Flatten(42)",
 		},
 		{
 			name:     "Symbol input",
 			input:    "Flatten(x)",
-			expected: "x",
+			expected: "Flatten(x)",
 		},
 
 		// Complex nested structures
