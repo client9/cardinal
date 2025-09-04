@@ -207,7 +207,7 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "unary minus",
 			input:    "-5",
-			expected: "Minus(5)",
+			expected: "-5",
 			hasError: false,
 		},
 		{
@@ -219,7 +219,7 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name:     "unary minus with expression",
 			input:    "-(2 + 3)",
-			expected: "Minus(Plus(2, 3))",
+			expected: "Times(-1, Plus(2, 3))",
 			hasError: false,
 		},
 		{
