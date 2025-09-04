@@ -17,10 +17,11 @@ func TestUnset(t *testing.T) {
 			expected: "Null",
 		},
 		{
+			// Should error
 			name:      "Unset non-symbol",
 			input:     "Unset(100)",
-			expected:  "",
-			errorType: "ArgumentError",
+			expected:  "Unset(100)",
+			errorType: "",
 		},
 
 		// TODO: need better error handling

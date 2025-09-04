@@ -241,7 +241,7 @@ func TestFunction_AmpersandSyntax(t *testing.T) {
 		},
 		{
 			name:     "& function with mixed types",
-			input:    "(Append($1, \" world\") &)(\"hello\")",
+			input:    `(Append($1, " world") &)("hello")`,
 			expected: "\"hello world\"",
 		},
 
