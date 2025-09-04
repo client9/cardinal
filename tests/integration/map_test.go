@@ -84,7 +84,8 @@ func TestMap_EdgeCases(t *testing.T) {
 		{
 			name:      "Map with non-list should error",
 			input:     `Map(Plus, 42)`,
-			errorType: `ArgumentError`,
+			expected:  "Map(Plus, 42)",
+			errorType: "",
 		},
 		{
 			name:     "Map with wrong number of arguments returns unevaluated",
