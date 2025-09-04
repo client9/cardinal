@@ -257,36 +257,42 @@ func TimesList(args []Expr) Expr {
 		*/
 	} else if intprod.exists() {
 		total := intprod.Total()
+		if total.Sign() == 0 {
+			return NewInteger(0)
+		}
+
 		if realprod.exists() {
 			realprod.Update(Real(intprod.Total().Float64()))
 		} else {
-			if len(nonnum) == 0 || total.Sign() != 0 {
+			if !total.IsInt64() || total.Int64() != 1 {
 				resultElements = append(resultElements, total)
 			}
 		}
 	}
 	if ratprod.exists() {
 		total := ratprod.Total()
+		if total.Sign() == 0 {
+			return NewInteger(0)
+		}
 		if realprod.exists() {
 			// All ints and rationals are added
 			// Convert to float, and let next part deal with it
 			realprod.Update(Real(total.Float64()))
 		} else {
-			if len(nonnum) == 0 || total.Sign() != 0 {
-				if total.IsInt() {
-					resultElements = append(resultElements, total.Numerator())
-				} else {
-					resultElements = append(resultElements, total)
-				}
+			if total.IsInt() {
+				resultElements = append(resultElements, total.Numerator())
+			} else {
+				resultElements = append(resultElements, total)
 			}
 		}
 	}
 
 	if realprod.exists() {
 		total := realprod.Total()
-		if len(nonnum) == 0 || total != 0.0 {
-			resultElements = append(resultElements, total)
+		if total == 0.0 {
+			return NewInteger(0)
 		}
+		resultElements = append(resultElements, total)
 	}
 
 	// Add non-numeric terms
