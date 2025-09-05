@@ -16,26 +16,35 @@
 - TODO: Fuzz, and negative tests.  Can panic if malformed input
 - TODO: Decide on `=` or `:=` for assignment, remove other.
 - TODO: Remove old `->`, `=>` for RuleDelayed (in Mathematica it's `:>` but we obsoleted it)
-- TODO: Decide on multiline comments `/* ... */`
-- TODO: Decide on MMA's postfix operators, e.g. `/.`, `//`, `@@`, etc.
+- TODO: Decide on multiline comments `/* ... */`, `(* ... *)`, or some other python-like things with `#`
+- TODO: Decide on MMA's postfix operators, e.g. `./`, `//`, `@@`, etc.
 
 ## Symbols
 
-- No (?) string literals in code.  Everything uses "unique" handles defined in core/symbol.
+- Everything uses "unique" handles defined in core/symbol.  no string literals for symbols.
+- Fast pointer check for equality
 - Builtin symbols generated from code/comments in 'builtin' directory.
+- [ ] TODO: add `SymbolName` (trivial)
+- [x] TODO: add `Symbol` constructor
+- [ ] TODO: Fix parser to accept unicode symbols
 
 ## Numerics
 
 - Unlimited precision integers and rational types, handling Plus,Times,Division,Minus,Power
 - Switches from machine integers to unlimited automatically.
 
-- TODO: Real numbers are only machine precision
-- TODO: Testing needs major improvement
-- TODO: Complex numbers
+- [ ] TODO: Real numbers are only machine precision
+- [ ] TODO: Testing needs major improvement
+- [ ] TODO: Complex numbers
+- [ ] TODO: Trig functions
+- [ ] TODO: E, Log
+- [x] Abs- Done.
+- [ ] TODO: Internal precomputed versions of E, Pi, etc to 5,000 digits.
 
 ## Lists
 
 - Many list operations complete, Take,Drop,First,Rest,etc.
+- [ ] TODO: what basics are missing?
 - Vectors and Matrix support is primitive
 
 - TODO: general "Level Spec" needs  implementation. 
@@ -46,23 +55,27 @@
 
 - [x]: add Rune as a fundamental atom.
 - [x]: change parser to handle rune literals 'a', 'b', 'c' as per Go standards
-- TODO: check "hello"[1] = 'X'
-- TODO: add Character based functions
-- TODO: add Regexp
+- [ ]: TODO:  ToString function
+- [ ]: TODO: "hello"[1] = 'X', fails.
+- [ ]: TODO: add Character based functions
+- [ ]: TODO: add Regexp
+- [ ]: TODO: consider adding []rune specialization instead of List of Expr/Rune.
 
 ## Sets and Associations
 
 - Basic `Association` type works (a map of Expression to Expression)
 - Needs some cleanup
 
-- TODO: pure set types.. Decide if Sets are ordered or not.
-- TODO: Union, works only for true List objects, need to expand to any list-like object
+- TODO: pure set types.. Decide if Sets are ordered or not.  Sets aren't really needed but
+        easy to add since we have the `{... }` syntax already.  See Python Sets.
+- TODO: Union, works only for true List objects, need to expand to any list-like object. See Pattern matching below for blocker.
 - TODO: Difference, Intersection, Complement
 
 ## Pattern Matching
 
 - Excellent matching virtual machine with no backtracking, and fast 'one-step NFA' for simple matching.
 
+- TODO: Condition predicate
 - TODO: consolidate.  Currently one system for function lookup, another for generic MatchQ stuff
 - TODO: add lazy matching (should be easy)
 - TODO: Add  pattern or one-or-more or zero-or-more "list-like" objects.  ANy list object can be expressed with `_(...)`.  Need to extend to `__(...)` and `___(...)`
@@ -89,9 +102,10 @@
 
 ## Cleanup
 
-- TODO: two matching systems
-- TODO: unclear why there is a `Function` atom in `core`
-- TODO: InputForm is implemented in the interface of Expr, however objects doesn't parse themselves so unclear why they would know how to print various forms.  Perhaps move to separate function.
-- TODO: unclear if the Equal method in Expr is correct or needed.
-
-
+- [ ] TODO: two matching systems
+- [ ] TODO: unclear why there is a `Function` atom in `core`
+- [ ] TODO: InputForm is implemented in the interface of Expr, however objects doesn't parse themselves so unclear why they would know how to print various forms.  Perhaps move to separate function.
+- [  ] TODO: unclear if the Equal method in Expr is correct or needed.
+- [  ] TODO: Slice assignment is goofy, and uses `PartSet(expression, index, value)` as a special thing in the Parser/Evaluator.  Overload `Set` such as  `Set( Part(expresssion, index), newvalue)`, which can call the same code. 
+- [ ] TODO: in core, the function "CanoncialCompare" is really "Less", consider making it a true compare that return -1,0,1 an rename to "CompareExpr" or so.
+- [ ] TODO:  `a / b` is parsed as Divide(a, b) then transformed into Times(a, Power(b,-1)).  The Divide step could be skipped.
