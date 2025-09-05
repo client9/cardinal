@@ -50,3 +50,14 @@ func (r Real) Equal(rhs Expr) bool {
 func (r Real) IsAtom() bool {
 	return true
 }
+
+func (r Real) Sign() int {
+	if r < 0.0 {
+		return -1
+	}
+	if r > 0.0 {
+		return 1
+	}
+	return 0
+}
+
