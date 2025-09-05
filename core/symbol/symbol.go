@@ -17,15 +17,15 @@ func NewSymbol(s string) SymbolExpr {
 }
 
 func (s SymbolExpr) String() string {
+	return unique.Handle[string](s).Value()
+}
+
+func (s SymbolExpr) InputForm() string {
 	v := unique.Handle[string](s).Value()
 	if isSymbolLiteral(v) {
 		return v
 	}
 	return "Symbol(" + strconv.Quote(v) + ")"
-}
-
-func (s SymbolExpr) InputForm() string {
-	return s.String()
 }
 
 func (s SymbolExpr) Head() Expr {
@@ -53,28 +53,26 @@ func (s SymbolExpr) IsAtom() bool {
 }
 
 func isSymbolLiteral(s string) bool {
-
 	for i, r := range s {
 		if i == 0 {
-			if !isFirstRune(r) {
+			if !IsSymbolRuneFirst(r) {
 				return false
 			}
-		} else if !isPrintableRune(r) {
+		} else if !IsSymbolRuneRest(r) {
 			return false
 		}
 	}
 	return true
-
 }
 
-func isFirstRune(r rune) bool {
+func IsSymbolRuneFirst(r rune) bool {
 	// symbols can't start with a number
 	if r >= '0' && r <= '9' {
 		return false
 	}
-	return isPrintableRune(r)
+	return IsSymbolRuneRest(r)
 }
 
-func isPrintableRune(r rune) bool {
+func IsSymbolRuneRest(r rune) bool {
 	return unicode.IsPrint(r) && !unicode.IsSpace(r) && r != '_'
 }
