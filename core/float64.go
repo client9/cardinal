@@ -60,4 +60,3 @@ func (r Real) Sign() int {
 	}
 	return 0
 }
-

@@ -1,6 +1,8 @@
 package symbol
 
 import (
+	"strconv"
+	"unicode"
 	"unique"
 )
 
@@ -15,7 +17,11 @@ func NewSymbol(s string) SymbolExpr {
 }
 
 func (s SymbolExpr) String() string {
-	return unique.Handle[string](s).Value()
+	v := unique.Handle[string](s).Value()
+	if isSymbolLiteral(v) {
+		return v
+	}
+	return "Symbol(" + strconv.Quote(v) + ")"
 }
 
 func (s SymbolExpr) InputForm() string {
@@ -44,4 +50,31 @@ func (s SymbolExpr) Equal(rhs Expr) bool {
 
 func (s SymbolExpr) IsAtom() bool {
 	return true
+}
+
+func isSymbolLiteral(s string) bool {
+
+	for i, r := range s {
+		if i == 0 {
+			if !isFirstRune(r) {
+				return false
+			}
+		} else if !isPrintableRune(r) {
+			return false
+		}
+	}
+	return true
+
+}
+
+func isFirstRune(r rune) bool {
+	// symbols can't start with a number
+	if r >= '0' && r <= '9' {
+		return false
+	}
+	return isPrintableRune(r)
+}
+
+func isPrintableRune(r rune) bool {
+	return unicode.IsPrint(r) && !unicode.IsSpace(r) && r != '_'
 }
