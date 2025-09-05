@@ -3,7 +3,7 @@
 build: 
 	go run ./cmd/geninit 
 	go build ./...
-	(cd cmd/cardinal; go build .; mv cardinal ../..)
+	go build -o cardinal ./cmd/cardinal
 
 generate:
 	go generate ./...
