@@ -14,7 +14,7 @@ func TestSliceSyntaxBasicIndexing(t *testing.T) {
 		{
 			name:     "String single index access",
 			input:    `"hello"[2]`,
-			expected: `"e"`,
+			expected: "'e'",
 		},
 		{
 			name:     "Variable list indexing",
@@ -24,7 +24,7 @@ func TestSliceSyntaxBasicIndexing(t *testing.T) {
 		{
 			name:     "Variable string indexing",
 			input:    `str = "world"; str[1]`,
-			expected: `"w"`,
+			expected: "'w'",
 		},
 		{
 			name:     "First element",
@@ -113,7 +113,7 @@ func TestSliceSyntaxNegativeIndexing(t *testing.T) {
 		{
 			name:     "String negative indexing",
 			input:    `"hello"[-1]`,
-			expected: `"o"`,
+			expected: "'o'",
 		},
 		{
 			name:     "String negative slice",
@@ -233,7 +233,7 @@ func TestSliceSyntaxPrecedence(t *testing.T) {
 		{
 			name:     "String slice then indexing",
 			input:    `"hello world"[1:5][2]`,
-			expected: `"e"`,
+			expected: "'e'",
 		},
 	}
 	runTestCases(t, tests)

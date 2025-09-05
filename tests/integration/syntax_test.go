@@ -183,7 +183,7 @@ func TestSlicingSyntax(t *testing.T) {
 		{
 			name:     "String indexing",
 			input:    "\"hello\"[1]",
-			expected: "\"h\"",
+			expected: "'h'",
 		},
 		{
 			name:     "String slicing",

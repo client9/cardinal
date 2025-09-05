@@ -46,7 +46,7 @@ func TestSliceableInterface(t *testing.T) {
 
 	// Test ElementAt on string
 	char := strSliceable.ElementAt(2)
-	if !char.Equal(NewString("e")) {
+	if !char.Equal(NewRune('e')) {
 		t.Errorf("String ElementAt(2) expected 'e', got %v", char)
 	}
 
