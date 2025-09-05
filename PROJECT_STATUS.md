@@ -10,7 +10,8 @@
 - `fn(...)` for functional calls/objects
 - proper slice/indexing in go/python style  `[2:10]`
 
-- TODO: add Rune (character) literal parsing
+- [x]: add Rune (character) literal parsing
+
 - TODO: Fuzz, and negative tests.  Can panic if malformed input
 - TODO: Decide on `=` or `:=` for assignment, remove other.
 - TODO: Remove old `=>` for RuleDelayed (in Mathematica it's `:>` but we obsoleted it)
@@ -42,7 +43,8 @@
 
 - Strings are "sliceable" type, so any function that works on lists will work on strings.
 
-- TODO: add Rune as a fundamental atom.
+- [x]: add Rune as a fundamental atom.
+- TODO: check "hello"[1] = 'X'
 - TODO: change parser to handle rune literals 'a', 'b', 'c' as per Go standards
 - TODO: add Character based functions
 - TODO: add Regexp

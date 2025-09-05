@@ -147,6 +147,9 @@ func (p *Parser) ParseAtom() Expr {
 	case STRING:
 		expr = p.parseString()
 		p.nextToken()
+	case RUNE:
+		expr = p.parseRune()
+		p.nextToken()
 	case LBRACKET:
 		expr = p.parseListLiteral()
 	case LBRACE:
@@ -351,6 +354,27 @@ func (p *Parser) parseFloat() Expr {
 func (p *Parser) parseString() Expr {
 	value := p.unescapeString(p.currentToken.Value)
 	return NewString(value)
+}
+
+func (p *Parser) parseRune() Expr {
+	s := p.currentToken.Value
+	if len(s) == 0 {
+		p.addError("empty rune literal")
+		return nil
+	}
+
+	r, _, tail, err := strconv.UnquoteChar(s, '\'')
+	if err != nil {
+		p.addError(fmt.Sprintf("invalid rune literal: %v", err))
+		return nil
+	}
+
+	if len(tail) > 0 {
+		p.addError("rune literal contains more than one character")
+		return nil
+	}
+
+	return NewRune(r)
 }
 
 func (p *Parser) unescapeString(s string) string {

@@ -1,6 +1,4 @@
-# S-Expression Evaluator
-
-A Go implementation of an s-expression parser and evaluator with Mathematica-style semantics.
+# Cardinal - symbolic programming language, in Go
 
 ## Features
 
@@ -21,7 +19,7 @@ A Go implementation of an s-expression parser and evaluator with Mathematica-sty
 ## Installation
 
 ```bash
-go get github.com/client9/sexpr
+go get github.com/client9/cardinal
 ```
 
 ## Usage
@@ -33,7 +31,7 @@ package main
 
 import (
     "fmt"
-    "github.com/client9/sexpr"
+    "github.com/client9/cardinal"
 )
 
 func main() {
@@ -57,8 +55,8 @@ func main() {
 Build and run the interactive REPL:
 
 ```bash
-go build -o repl ./cmd/repl
-./repl
+go build -o cardinal ./cmd/cardinal
+./cardinal
 ```
 
 Example session:

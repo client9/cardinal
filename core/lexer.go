@@ -12,6 +12,7 @@ const (
 	INTEGER
 	FLOAT
 	STRING
+	RUNE
 	LBRACKET
 	RBRACKET
 	LBRACE
@@ -66,6 +67,8 @@ func (t Token) String() string {
 		return fmt.Sprintf("FLOAT(%s)", t.Value)
 	case STRING:
 		return fmt.Sprintf("STRING(%s)", t.Value)
+	case RUNE:
+		return fmt.Sprintf("RUNE(%s)", t.Value)
 	case LBRACKET:
 		return "LBRACKET"
 	case RBRACKET:
@@ -201,6 +204,41 @@ func (l *Lexer) readString() string {
 	}
 
 	// Handle unclosed string - return what we have
+	if l.position > len(l.input) {
+		return l.input[position:]
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) readRune() string {
+	position := l.position
+	l.readChar() // skip opening single quote
+
+	// Handle empty rune literal
+	if l.ch == '\'' {
+		l.readChar() // skip closing quote
+		return ""    // Empty rune literal - will be handled as error in parser
+	}
+
+	// Read the content between quotes
+	for l.ch != '\'' && l.ch != 0 {
+		if l.ch == '\\' {
+			l.readChar() // skip escape character
+			if l.ch != 0 {
+				l.readChar() // skip escaped character
+			}
+		} else {
+			l.readChar()
+		}
+	}
+
+	if l.ch == '\'' {
+		result := l.input[position : l.position-1]
+		l.readChar() // skip closing quote
+		return result
+	}
+
+	// Handle unclosed rune literal - return what we have
 	if l.position > len(l.input) {
 		return l.input[position:]
 	}
@@ -406,6 +444,11 @@ func (l *Lexer) NextToken() Token {
 	case '"':
 		tok.Type = STRING
 		tok.Value = l.readString()
+		tok.Position = l.position - len(tok.Value) - 2
+		return tok
+	case '\'':
+		tok.Type = RUNE
+		tok.Value = l.readRune()
 		tok.Position = l.position - len(tok.Value) - 2
 		return tok
 	case '_':

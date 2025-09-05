@@ -49,6 +49,18 @@ func TestParser_Parse(t *testing.T) {
 			hasError: false,
 		},
 		{
+			name:     "rune - ascii",
+			input:    "'x'",
+			expected: "'x'",
+			hasError: false,
+		},
+		{
+			name:     "rune - emoji",
+			input:    "'😂'",
+			expected: "'😂'",
+			hasError: false,
+		},
+		{
 			name:     "empty list function call",
 			input:    "List()",
 			expected: "List()",
