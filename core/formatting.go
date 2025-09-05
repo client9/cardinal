@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 // inputFormWithPrecedence formats a List with precedence-aware operator handling

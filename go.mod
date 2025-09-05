@@ -1,4 +1,4 @@
-module github.com/client9/sexpr
+module github.com/client9/cardinal
 
 go 1.24.4
 

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
-	"github.com/client9/sexpr/engine"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/symbol"
+	"github.com/client9/cardinal/engine"
 )
 
 // @ExprSymbol Block

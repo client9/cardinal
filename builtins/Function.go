@@ -1,9 +1,9 @@
 package builtins
 
 import (
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
-	"github.com/client9/sexpr/engine"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/symbol"
+	"github.com/client9/cardinal/engine"
 )
 
 // @ExprSymbol Function
@@ -30,7 +30,7 @@ func varsToSymbolList(vars core.Expr) []core.Expr {
 		return []core.Expr{vars}
 	}
 
-	// convert sexpression to native slice
+	// convert cardinalession to native slice
 	if vlist, ok := vars.(core.List); ok {
 		// could validate here that all are symbols
 		return vlist.Tail()

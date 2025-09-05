@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/symbol"
 
-	"github.com/client9/sexpr/engine"
+	"github.com/client9/cardinal/engine"
 )
 
 // Power(_Integer, _Rational) simplification is non-obvious

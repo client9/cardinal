@@ -4,13 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	//	"github.com/client9/sexpr"
+	//	"github.com/client9/cardinal"
 )
 
 func main() {
 	// Define command line flags
 	var (
-		prompt = flag.String("prompt", "sexpr> ", "REPL prompt string")
+		prompt = flag.String("prompt", "cardinal> ", "REPL prompt string")
 		help   = flag.Bool("help", false, "Show help message")
 		//file   = flag.String("file", "", "Execute expressions from file instead of interactive mode")
 		cmd = flag.String("c", "", "Execute expression from command line")
@@ -36,7 +36,7 @@ func main() {
 	/*
 		// Enable Uint64 extension if requested
 		if *withUint64 {
-			if err := sexpr.RegisterUint64(repl.GetEvaluator().GetContext().GetFunctionRegistry()); err != nil {
+			if err := cardinal.RegisterUint64(repl.GetEvaluator().GetContext().GetFunctionRegistry()); err != nil {
 				fmt.Fprintf(os.Stderr, "Error enabling Uint64 system: %v\n", err)
 				os.Exit(1)
 			}
@@ -76,14 +76,14 @@ Usage:
   repl [flags] [file]
 
 Flags:
-  -prompt string    Set the REPL prompt (default "sexpr> ")
+  -prompt string    Set the REPL prompt (default "cardinal> ")
   -c expression     Evaluate expression and exit
   -help             Show this help message
 
 Examples:
   repl                               # Start interactive REPL
   repl -c 'InputForm(List(1,2,3))'   # Prints [1,2,3]
-  repl examples.sexpr                # Execute file and exit
+  repl examples.cardinal                # Execute file and exit
 
 For detailed usage information, start the REPL and type 'help'.`)
 }

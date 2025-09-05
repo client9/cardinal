@@ -3,7 +3,7 @@ package core
 import (
 	"math/big"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 type bigInt struct {

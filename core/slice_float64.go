@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 type SliceFloat64 []float64

@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 	"math/big"
 )
 

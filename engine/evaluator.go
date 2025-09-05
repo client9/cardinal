@@ -5,8 +5,8 @@ import (
 	"sort"
 	//	"log"
 
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 // Evaluator represents the expression evaluator

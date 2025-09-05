@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 // ByteArray represents an array of bytes as a first-class expression type

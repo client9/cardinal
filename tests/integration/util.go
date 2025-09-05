@@ -3,8 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/client9/sexpr"
-	"github.com/client9/sexpr/core"
+	"github.com/client9/cardinal"
+	"github.com/client9/cardinal/core"
 )
 
 type TestCase struct {
@@ -22,7 +22,7 @@ type TestCase struct {
 func evaluateAndExpect(t *testing.T, tt TestCase) {
 	t.Helper()
 
-	result, err := sexpr.EvaluateString(tt.input)
+	result, err := cardinal.EvaluateString(tt.input)
 	if err != nil {
 		t.Errorf("%s: parse error %s", L4(tt.name), tt.input)
 		return
@@ -55,8 +55,8 @@ func evaluateAndExpect(t *testing.T, tt TestCase) {
 // evaluateAndExpectError is a test helper that expects an error of a specific type
 func evaluateAndExpectError(t *testing.T, input, errorType string) {
 	t.Helper()
-	eval := sexpr.NewEvaluator()
-	expr, err := sexpr.ParseString(input)
+	eval := cardinal.NewEvaluator()
+	expr, err := cardinal.ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error for %q: %v", input, err)
 	}
@@ -97,7 +97,7 @@ func runErrorTestCases(t *testing.T, tests []struct {
 
 // Helper function to evaluate a string and return the result
 func evaluateString(input string) string {
-	expr, err := sexpr.EvaluateString(input)
+	expr, err := cardinal.EvaluateString(input)
 	if err != nil {
 		return "ERROR"
 	}

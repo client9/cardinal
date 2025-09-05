@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 // FunctionExpr represents a pure/lambda function created by Function(args, body)

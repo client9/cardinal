@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/client9/sexpr/core"
+	"github.com/client9/cardinal/core"
 )
 
 // PatternFunc represents a Go function that can be called with pattern-matched arguments

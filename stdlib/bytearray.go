@@ -1,7 +1,7 @@
 package stdlib
 
 import (
-	"github.com/client9/sexpr/core"
+	"github.com/client9/cardinal/core"
 )
 
 // ByteArrayReverse reverses a byte array

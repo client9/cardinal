@@ -3,8 +3,8 @@ package engine
 //go:generate stringer -type=Attribute
 
 import (
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 // Attribute represents a symbol attribute in Mathematica-style

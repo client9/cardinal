@@ -3,7 +3,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/client9/sexpr"
+	"github.com/client9/cardinal"
 )
 
 func TestAndOrMixedBooleanValues(t *testing.T) {
@@ -167,13 +167,13 @@ func TestAndOrNestedMixed(t *testing.T) {
 }
 
 func TestAndOrWithVariableAssignments(t *testing.T) {
-	evaluator := sexpr.NewEvaluator()
+	evaluator := cardinal.NewEvaluator()
 	// Set up some variables
-	expr, _ := sexpr.ParseString("Set(a, True)")
+	expr, _ := cardinal.ParseString("Set(a, True)")
 	evaluator.Evaluate(expr)
-	expr, _ = sexpr.ParseString("Set(b, False)")
+	expr, _ = cardinal.ParseString("Set(b, False)")
 	evaluator.Evaluate(expr)
-	expr, _ = sexpr.ParseString("Set(c, 42)")
+	expr, _ = cardinal.ParseString("Set(c, 42)")
 	evaluator.Evaluate(expr)
 
 	tests := []struct {
@@ -210,7 +210,7 @@ func TestAndOrWithVariableAssignments(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expr, err := sexpr.ParseString(tt.input)
+			expr, err := cardinal.ParseString(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}

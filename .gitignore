@@ -34,11 +34,9 @@ go.work.sum
 coverage.html
 coverage.out
 *.bak*
-cmd/geninit/wrapgen
+*.prof
 init.go
-./repl
+./cardinal
 attribute_string.go
-cpu.prof
-mem.prof
 symbols.go
 

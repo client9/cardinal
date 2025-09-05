@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 type String string
@@ -46,7 +46,7 @@ func (s String) ElementAt(n int64) Expr {
 	if err != nil {
 		return NewError(err.Error(), "")
 	}
-	return String(string(r))
+	return NewRune(r)
 }
 
 func (s String) Slice(start, stop int64) Expr {

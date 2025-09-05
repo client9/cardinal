@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 // ErrorExpr represents an error that occurred during evaluation

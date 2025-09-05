@@ -12,9 +12,9 @@ import (
 
 	"github.com/lmorg/readline/v4"
 
-	"github.com/client9/sexpr"
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/engine"
+	"github.com/client9/cardinal"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/engine"
 )
 
 // REPL represents a Read-Eval-Print Loop for s-expressions
@@ -29,7 +29,7 @@ type REPL struct {
 // NewREPL creates a new REPL instance
 func NewREPL() *REPL {
 	start := time.Now()
-	e := sexpr.NewEvaluator()
+	e := cardinal.NewEvaluator()
 	elapsed := time.Since(start)
 	log.Printf("Start up in %g ms", 1000.0*float64(elapsed)/1.0e9)
 
@@ -39,23 +39,23 @@ func NewREPL() *REPL {
 		ctx:       c,
 		input:     os.Stdin,
 		output:    os.Stdout,
-		prompt:    "sexpr> ",
+		prompt:    "cardinal> ",
 	}
 }
 
 // NewREPLWithIO creates a new REPL instance with custom input/output
 func NewREPLWithIO(input io.Reader, output io.Writer) *REPL {
-	e := sexpr.NewEvaluator()
+	e := cardinal.NewEvaluator()
 	c := e.GetContext()
 	// Set up built-in attributes for the evaluator
-	sexpr.SetupBuiltinAttributes(c.GetSymbolTable())
+	cardinal.SetupBuiltinAttributes(c.GetSymbolTable())
 
 	return &REPL{
 		evaluator: e,
 		ctx:       c,
 		input:     input,
 		output:    output,
-		prompt:    "sexpr> ",
+		prompt:    "cardinal> ",
 	}
 }
 
@@ -234,7 +234,7 @@ func (r *REPL) Run() error {
 // Returns true if successful, false if the expression is incomplete
 func (r *REPL) tryProcessExpression(expr string) bool {
 	// Try to parse the expression
-	_, err := sexpr.ParseString(expr)
+	_, err := cardinal.ParseString(expr)
 	if err != nil {
 		errStr := err.Error()
 		// Check if this looks like an incomplete expression
@@ -300,7 +300,7 @@ func (r *REPL) handleSpecialCommands(line string) bool {
 // processLine parses and evaluates a single line of input
 func (r *REPL) processLine(line string) error {
 	// Parse the expression
-	expr, err := sexpr.ParseString(line)
+	expr, err := cardinal.ParseString(line)
 	if err != nil {
 		return fmt.Errorf("parse error: %v", err)
 	}
@@ -364,9 +364,9 @@ Operators:
 
 // clearContext clears all variable assignments
 func (r *REPL) clearContext() {
-	r.evaluator = sexpr.NewEvaluator()
+	r.evaluator = cardinal.NewEvaluator()
 	r.ctx = r.evaluator.GetContext()
-	sexpr.SetupBuiltinAttributes(r.ctx.GetSymbolTable())
+	cardinal.SetupBuiltinAttributes(r.ctx.GetSymbolTable())
 }
 
 // exprInfo represents a parsed expression with its location information
@@ -406,7 +406,7 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 		currentExpr.WriteString(line)
 
 		// Try to parse the current accumulated expression
-		_, err := sexpr.ParseString(currentExpr.String())
+		_, err := cardinal.ParseString(currentExpr.String())
 		if err == nil {
 			// Successfully parsed - we have a complete expression
 			expressions = append(expressions, exprInfo{
@@ -424,7 +424,7 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 	// Check if we have an incomplete expression at the end
 	if currentExpr.Len() > 0 {
 		// Try to parse one more time
-		_, err := sexpr.ParseString(currentExpr.String())
+		_, err := cardinal.ParseString(currentExpr.String())
 		if err != nil {
 			return nil, fmt.Errorf("incomplete expression starting at line %d: %v", startLine, err)
 		}
@@ -439,7 +439,7 @@ func (r *REPL) parseFileContent(content string) ([]exprInfo, error) {
 
 // EvaluateString is a convenience function for evaluating a string expression
 func (r *REPL) EvaluateString(input string) (string, error) {
-	expr, err := sexpr.ParseString(input)
+	expr, err := cardinal.ParseString(input)
 	if err != nil {
 		return "", fmt.Errorf("parse error: %v", err)
 	}

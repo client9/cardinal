@@ -1,7 +1,7 @@
 package builtins
 
 import (
-	"github.com/client9/sexpr/core"
+	"github.com/client9/cardinal/core"
 )
 
 // ListQ checks if an expression is a list

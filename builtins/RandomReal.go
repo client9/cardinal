@@ -3,9 +3,9 @@ package builtins
 import (
 	"math/rand/v2"
 
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/core/symbol"
-	"github.com/client9/sexpr/engine"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/symbol"
+	"github.com/client9/cardinal/engine"
 )
 
 func rand01() float64 {

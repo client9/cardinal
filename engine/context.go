@@ -3,7 +3,7 @@ package engine
 import (
 	"fmt"
 
-	"github.com/client9/sexpr/core"
+	"github.com/client9/cardinal/core"
 )
 
 // EvaluationStack represents the current evaluation call stack

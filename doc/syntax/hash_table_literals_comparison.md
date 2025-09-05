@@ -1,5 +1,20 @@
 # Hash Table / Dictionary Literal Syntax Comparison
 
+* brace-and-colon `{ key : value, ... }` used by many, notablely Python/Javascript/JSON
+* brace-and-rocket `{ key => value }` used by older scripting languages Ruby, PHP, Perl, etc, and Julia. 
+* List of pairs, `{{key, value}, {key, value}...`.  
+* A plain list, must be even.
+
+Mathematica has an odd syntax `<| ... |>` (they ran out of characters), but effectively a list of rules (a list of pairs).
+
+See: https://reference.wolfram.com/language/ref/Association.html
+
+```
+
+#
+
+Created by ChatGPT 4, in July 2025.
+
 This table compares how various programming languages represent **hash tables**, **dictionaries**, or **associative arrays** using literal syntax.
 
 | Language        | Data Structure Name      | Literal Syntax Example                                      | Notes                                                                 |

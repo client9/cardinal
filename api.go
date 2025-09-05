@@ -1,8 +1,8 @@
-package sexpr
+package cardinal
 
 import (
-	"github.com/client9/sexpr/core"
-	"github.com/client9/sexpr/engine"
+	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/engine"
 )
 
 // Public API - these are the only functions external code should use

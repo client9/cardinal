@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/client9/sexpr/core"
+	"github.com/client9/cardinal/core"
 )
 
 func main() {

@@ -119,7 +119,7 @@ func TestEvaluateStackBehavior(t *testing.T) {
 	evaluator := engine.NewEvaluator()
 
 	// Create a deeply nested expression to test stack management
-	expr, err := sexpr.ParseString("Evaluate(Plus(1, Times(2, Plus(3, 4))))")
+	expr, err := cardinal.ParseString("Evaluate(Plus(1, Times(2, Plus(3, 4))))")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}

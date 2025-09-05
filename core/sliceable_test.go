@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/client9/sexpr/core/symbol"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 func TestSliceableInterface(t *testing.T) {
