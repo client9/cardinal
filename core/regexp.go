@@ -526,12 +526,10 @@ func (r *ThompsonVM) matchM4(prog Prog, expr Expr, sub *Captures) (bool, *Captur
 		case InstMatchList:
 			consume = false
 
-			fmt.Println("list = ", e, "iVal = ", i.Val, ", iVal==Null", i.Val == symbol.Null)
-			i.Data.(Prog).Dump()
+			//fmt.Println("list = ", e, "iVal = ", i.Val, ", iVal==Null", i.Val == symbol.Null)
+			//i.Data.(Prog).Dump()
 			if list, ok := e.(List); ok && (i.Val == symbol.Null || list.Head() == i.Val) {
-				fmt.Println("    Passed condition, tail: ", list.Tail())
 				if ok, nsub := r.matchSequenceM4(i.Data.(Prog), list.Tail(), sub); ok {
-					fmt.Println("   And passed again")
 					sub = nsub
 					consume = true
 				}
