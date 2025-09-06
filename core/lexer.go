@@ -2,6 +2,9 @@ package core
 
 import (
 	"fmt"
+	"unicode/utf8"
+
+	"github.com/client9/cardinal/core/symbol"
 )
 
 type TokenType int
@@ -139,15 +142,18 @@ func (t Token) String() string {
 }
 
 type Lexer struct {
-	input    string
-	position int
-	ch       byte
+	input        string
+	position     int  // byte position
+	runePosition int  // rune position for error reporting
+	ch           rune // current character
+	width        int  // width of current rune in bytes
 }
 
 func NewLexer(input string) *Lexer {
 	l := &Lexer{
-		input:    input,
-		position: 0,
+		input:        input,
+		position:     0,
+		runePosition: 0,
 	}
 	l.readChar()
 	return l
@@ -156,17 +162,24 @@ func NewLexer(input string) *Lexer {
 func (l *Lexer) readChar() {
 	if l.position >= len(l.input) {
 		l.ch = 0
+		l.width = 0
 	} else {
-		l.ch = l.input[l.position]
+		l.ch, l.width = utf8.DecodeRuneInString(l.input[l.position:])
+		if l.ch == utf8.RuneError {
+			l.ch = rune(l.input[l.position])
+			l.width = 1
+		}
 	}
-	l.position++
+	l.position += l.width
+	l.runePosition++
 }
 
-func (l *Lexer) peekChar() byte {
+func (l *Lexer) peekChar() rune {
 	if l.position >= len(l.input) {
 		return 0
 	}
-	return l.input[l.position]
+	r, _ := utf8.DecodeRuneInString(l.input[l.position:])
+	return r
 }
 
 func (l *Lexer) skipWhitespace() {
@@ -198,7 +211,7 @@ func (l *Lexer) readString() string {
 	}
 
 	if l.ch == '"' {
-		result := l.input[position : l.position-1]
+		result := l.input[position : l.position-l.width]
 		l.readChar() // skip closing quote
 		return result
 	}
@@ -233,7 +246,7 @@ func (l *Lexer) readRune() string {
 	}
 
 	if l.ch == '\'' {
-		result := l.input[position : l.position-1]
+		result := l.input[position : l.position-l.width]
 		l.readChar() // skip closing quote
 		return result
 	}
@@ -246,51 +259,23 @@ func (l *Lexer) readRune() string {
 }
 
 func (l *Lexer) readIdentifier() string {
-	position := l.position - 1
-	for isLetter(l.ch) || isDigit(l.ch) {
+	position := l.position - l.width
+	for symbol.IsSymbolRuneRest(l.ch) {
 		l.readChar()
 	}
-	return l.input[position : l.position-1]
+	return l.input[position : l.position-l.width]
 }
 
 func (l *Lexer) readUnderscores() string {
-	position := l.position - 1
+	position := l.position - l.width
 	for l.ch == '_' {
 		l.readChar()
 	}
-	return l.input[position : l.position-1]
-}
-
-func (l *Lexer) readDollarSymbol() string {
-	position := l.position - 1
-	l.readChar() // consume '$'
-
-	// Handle bare '$'
-	if !isDigit(l.ch) && !isLetter(l.ch) {
-		return l.input[position : l.position-1]
-	}
-
-	// Handle $1, $2, $10, $11, etc. (multi-digit numbers)
-	if isDigit(l.ch) {
-		for isDigit(l.ch) {
-			l.readChar() // consume all digits
-		}
-		return l.input[position : l.position-1]
-	}
-
-	// Handle $name (alphabetical name)
-	if isLetter(l.ch) {
-		for isLetter(l.ch) || isDigit(l.ch) {
-			l.readChar()
-		}
-		return l.input[position : l.position-1]
-	}
-
-	return l.input[position : l.position-1]
+	return l.input[position : l.position-l.width]
 }
 
 func (l *Lexer) readNumber() (string, TokenType) {
-	position := l.position - 1
+	position := l.position - l.width
 	tokenType := INTEGER
 
 	for isDigit(l.ch) {
@@ -305,7 +290,7 @@ func (l *Lexer) readNumber() (string, TokenType) {
 		}
 	}
 
-	return l.input[position : l.position-1], tokenType
+	return l.input[position : l.position-l.width], tokenType
 }
 
 func (l *Lexer) NextToken() Token {
@@ -452,7 +437,7 @@ func (l *Lexer) NextToken() Token {
 		tok.Position = l.position - len(tok.Value) - 2
 		return tok
 	case '_':
-		tok.Position = l.position - 1
+		tok.Position = l.position - l.width
 		underscoreValue := l.readUnderscores()
 		if len(underscoreValue) > 3 {
 			tok = Token{Type: ILLEGAL, Value: underscoreValue, Position: tok.Position}
@@ -460,30 +445,24 @@ func (l *Lexer) NextToken() Token {
 			tok = Token{Type: UNDERSCORE, Value: underscoreValue, Position: tok.Position}
 		}
 		return tok
-	case '$':
-		tok.Position = l.position - 1
-		tok.Type = SYMBOL
-		tok.Symbol = NewSymbol(l.readDollarSymbol())
-		tok.Value = tok.Symbol.String()
-		return tok
 	case 0:
 		tok.Type = EOF
 		tok.Value = ""
 		tok.Position = l.position
 		return tok
 	default:
-		if isLetter(l.ch) {
-			tok.Position = l.position - 1
+		if symbol.IsSymbolRuneFirst(l.ch) {
+			tok.Position = l.position - l.width
 			tok.Type = SYMBOL
-			tok.Symbol = NewSymbol(l.readIdentifier())
+			tok.Symbol = symbol.NewSymbol(l.readIdentifier())
 			tok.Value = tok.Symbol.String()
 			return tok
 		} else if isDigit(l.ch) {
-			tok.Position = l.position - 1
+			tok.Position = l.position - l.width
 			tok.Value, tok.Type = l.readNumber()
 			return tok
 		} else {
-			tok = Token{Type: ILLEGAL, Value: string(l.ch), Position: l.position - 1}
+			tok = Token{Type: ILLEGAL, Value: string(l.ch), Position: l.position - l.width}
 		}
 	}
 
@@ -491,11 +470,7 @@ func (l *Lexer) NextToken() Token {
 	return tok
 }
 
-func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z'
-}
-
-func isDigit(ch byte) bool {
+func isDigit(ch rune) bool {
 	return '0' <= ch && ch <= '9'
 }
 

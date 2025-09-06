@@ -74,5 +74,5 @@ func IsSymbolRuneFirst(r rune) bool {
 }
 
 func IsSymbolRuneRest(r rune) bool {
-	return unicode.IsPrint(r) && !unicode.IsSpace(r) && r != '_'
+	return r != '_' && unicode.IsPrint(r) && !unicode.IsSpace(r) && !unicode.IsPunct(r)
 }

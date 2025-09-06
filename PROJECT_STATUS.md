@@ -24,9 +24,9 @@
 - Everything uses "unique" handles defined in core/symbol.  no string literals for symbols.
 - Fast pointer check for equality
 - Builtin symbols generated from code/comments in 'builtin' directory.
-- [ ] TODO: add `SymbolName` (trivial)
+- [x] TODO: add `SymbolName` (trivial)
 - [x] TODO: add `Symbol` constructor
-- [ ] TODO: Fix parser to accept unicode symbols
+- [x] TODO: Fix parser to accept unicode symbols
 
 ## Numerics
 
