@@ -443,6 +443,10 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 	// Power (^) is right-associative, so use precedence - 1
 	if operator.Type == CARET {
 		right := p.parseInfixExpression(precedence - 1)
+		if right == nil {
+			p.addError(fmt.Sprintf("incomplete expression: expected operand after '%s'", operator.Value))
+			return left // Return the left operand as is
+		}
 		return p.createInfixExpr(operator.Type, left, right)
 	}
 
@@ -453,6 +457,12 @@ func (p *Parser) parseInfixOperation(left Expr) Expr {
 		right = symbol.Null
 	}
 
+	// Handle incomplete expressions (missing right operand)
+	if right == nil {
+		p.addError(fmt.Sprintf("incomplete expression: expected operand after '%s'", operator.Value))
+		return left // Return the left operand as is
+	}
+
 	return p.createInfixExpr(operator.Type, left, right)
 }
 
@@ -460,6 +470,11 @@ func (p *Parser) parsePrefixExpression() Expr {
 	operator := p.currentToken
 	p.nextToken()
 	right := p.parseInfixExpression(PrecedenceUnary)
+
+	if right == nil {
+		p.addError(fmt.Sprintf("incomplete expression: expected operand after '%s'", operator.Value))
+		return nil
+	}
 
 	return p.createPrefixExpr(operator.Type, right)
 }

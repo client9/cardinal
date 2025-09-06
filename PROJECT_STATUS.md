@@ -13,7 +13,7 @@
 
 - [x]: add Rune (character) literal parsing
 
-- TODO: Fuzz, and negative tests.  Can panic if malformed input
+- TODO: Fuzz, and negative tests. 
 - TODO: Decide on `=` or `:=` for assignment, remove other.
 - TODO: Remove old `->`, `=>` for RuleDelayed (in Mathematica it's `:>` but we obsoleted it)
 - TODO: Decide on multiline comments `/* ... */`, `(* ... *)`, or some other python-like things with `#`
@@ -90,6 +90,12 @@
 - TODO: Fix "In" and "Out" support
 - TODO: General cleanup
 - TODO: In programming mode, do not print "last result"
+
+## System
+
+- [ ] Contexts... Currently everything is in one context.
+- [ ] Loadable packages.  Will be not like MMA
+- [ ] Add atttribute for Unevaluated is Error.  If a function has no match in the registry, return error.  For numeric function, no evaluation is fine(e.g. Cos(1)). 
 
 ## Testing
 
