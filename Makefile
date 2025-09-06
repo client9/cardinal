@@ -3,6 +3,7 @@
 build: 
 	go run ./cmd/geninit 
 	go build ./...
+	go build -o lex ./cmd/lex
 	go build -o cardinal ./cmd/cardinal
 
 generate:
