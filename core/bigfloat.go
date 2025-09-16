@@ -1,0 +1,209 @@
+package core
+
+import (
+	"github.com/client9/cardinal/core/symbol"
+
+	"math"
+	"math/big"
+	"strings"
+)
+
+type BigFloat struct {
+	val *big.Float
+}
+
+func NewFloat(n float64) BigFloat {
+	return BigFloat{
+		val: big.NewFloat(n),
+	}
+}
+
+// mutable zero value
+func bigFloatZero() BigFloat {
+	return BigFloat{
+		val: new(big.Float),
+	}
+}
+
+func bigFloatOne() BigFloat {
+	return BigFloat{
+		val: big.NewFloat(1.0),
+	}
+}
+
+// String -- TODO review type implementation
+func (i BigFloat) String() string {
+	// big.Float.String() does x.Text('g', 10)
+	// does not print trailing zeros... TBD
+	return i.val.Text('f', -1)
+}
+
+// InputForm -- TODO review
+func (i BigFloat) InputForm() string {
+	return i.val.String()
+}
+
+func (i BigFloat) Prec() uint {
+	return i.val.Prec()
+}
+
+func (i BigFloat) Head() Expr {
+	return symbol.Real
+}
+
+func (i BigFloat) Length() int64 {
+	return 0
+}
+
+func (i BigFloat) Equal(rhs Expr) bool {
+	switch val := rhs.(type) {
+	case Real:
+		other, _ := i.val.Float64()
+		return i.Float64() == other
+	case BigFloat:
+		return i.val.Cmp(val.val) == 0
+	default:
+		return false
+	}
+}
+
+func (i BigFloat) IsAtom() bool {
+	return true
+}
+
+func (i BigFloat) IsFloat64() bool {
+	return false
+}
+
+func (i BigFloat) Float64() float64 {
+	val, _ := i.val.Float64()
+	return val
+}
+
+func (i BigFloat) IsInt() bool {
+	return i.val.IsInt()
+}
+
+func (i BigFloat) Sign() int {
+	if i.val == nil {
+		// Why would this happen?
+		return 0
+	}
+	return i.val.Sign()
+}
+
+func (i BigFloat) Inv() Expr {
+	num := big.NewFloat(1.0)
+	den := i.val
+
+	return BigFloat{
+		val: new(big.Float).Quo(num, den),
+	}
+}
+
+func (i BigFloat) Neg() Real {
+	return BigFloat{
+		val: new(big.Float).Neg(i.val),
+	}
+}
+
+// DOES NOT MAKE A COPY.  INTERNAL USE ONLY
+func (i BigFloat) AsBigFloat() BigFloat {
+	return i
+}
+
+// DESTRUCTIIVE
+func (i *BigFloat) add(n BigFloat) {
+	i.val.Add(i.val, n.val)
+}
+
+// DESTRUCTIVE
+func (i *BigFloat) times(n BigFloat) {
+	i.val.Mul(i.val, n.val)
+}
+
+func (z *BigFloat) Add(x, y *BigFloat) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.Add(x.val, y.val)
+	return z
+}
+
+func (z *BigFloat) Mul(x, y *BigFloat) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.Mul(x.val, y.val)
+	return z
+}
+
+func (z *BigFloat) Quo(x, y *BigFloat) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.Quo(x.val, y.val)
+	return z
+}
+func (z *BigFloat) Set(x *BigFloat) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.Set(x.val)
+	return z
+}
+
+func (z *BigFloat) SetInt(x *BigInt) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.SetInt(x.val)
+	return z
+}
+
+func (z *BigFloat) SetPrec(r uint) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.SetPrec(r)
+	return z
+}
+
+func (z *BigFloat) SetRat(x *BigRat) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.SetRat(x.val)
+	return z
+}
+
+func (z *BigFloat) SetString(s string) (*BigFloat, bool) {
+	//
+	// terrible hack to figure out precision in advance
+	//
+
+	integerDigitCount := strings.Index(s, ".")
+	if integerDigitCount == -1 {
+		return nil, false
+	}
+	digits := len(s) - 1
+	precision := uint(math.Ceil(float64(digits) * math.Log2(10.0)))
+
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.SetPrec(precision)
+	_, ok := z.val.SetString(s)
+	if !ok {
+		return nil, false
+	}
+	return z, true
+}
+
+func (z *BigFloat) Sqrt(x *BigFloat) *BigFloat {
+	if z.val == nil {
+		z.val = new(big.Float)
+	}
+	z.val.Sqrt(x.val)
+	return z
+}

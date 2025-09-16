@@ -78,6 +78,6 @@ func (m rat64) Head() Expr {
 	return symbol.Rational
 }
 
-func (m rat64) asBigRat() bigRat {
+func (m rat64) AsBigRat() BigRat {
 	return newBigRat(big.NewRat(m.a, m.b))
 }

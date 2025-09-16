@@ -342,13 +342,12 @@ func (p *Parser) parseInteger() Expr {
 }
 
 func (p *Parser) parseFloat() Expr {
-	value, err := strconv.ParseFloat(p.currentToken.Value, 64)
+	r, err := ParseReal(p.currentToken.Value)
 	if err != nil {
 		p.addError(fmt.Sprintf("invalid float: %s", p.currentToken.Value))
 		return nil
 	}
-
-	return NewReal(value)
+	return r
 }
 
 func (p *Parser) parseString() Expr {

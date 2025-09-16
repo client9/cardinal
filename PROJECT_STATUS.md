@@ -24,22 +24,24 @@
 - Everything uses "unique" handles defined in core/symbol.  no string literals for symbols.
 - Fast pointer check for equality
 - Builtin symbols generated from code/comments in 'builtin' directory.
-- [x] TODO: add `SymbolName` (trivial)
-- [x] TODO: add `Symbol` constructor
-- [x] TODO: Fix parser to accept unicode symbols
+- [x] add `SymbolName` (trivial)
+- [x] add `Symbol` constructor
+- [x] Fix parser to accept unicode symbols
 
 ## Numerics
 
 - Unlimited precision integers and rational types, handling Plus,Times,Division,Minus,Power
 - Switches from machine integers to unlimited automatically.
 
-- [ ] TODO: Real numbers are only machine precision
-- [ ] TODO: Testing needs major improvement
+- [x] TODO: Real numbers are only machine precision
+- [ ] TODO: Testing needs major improvement, especially for precision issues
 - [ ] TODO: Complex numbers
 - [ ] TODO: Trig functions
 - [ ] TODO: E, Log
 - [x] Abs- Done.
+- [x] Sqrt - Done
 - [ ] TODO: Internal precomputed versions of E, Pi, etc to 5,000 digits.
+- [ ] Improve N function
 
 ## Lists
 
@@ -54,6 +56,8 @@
 - Strings are "sliceable" type, so any function that works on lists will work on strings.
 
 - [x]: add Rune as a fundamental atom.
+- [ ]: Do we need to expose Rune as a type, or is it just an optimization
+       SOmehow Python just exposes characters as strings of length 1
 - [x]: change parser to handle rune literals 'a', 'b', 'c' as per Go standards
 - [ ]: TODO:  ToString function
 - [ ]: TODO: "hello"[1] = 'X', fails.

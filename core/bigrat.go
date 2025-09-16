@@ -5,49 +5,55 @@ import (
 	"math/big"
 )
 
-type bigRat struct {
+type BigRat struct {
 	val *big.Rat
 }
 
-func newBigRat(n *big.Rat) bigRat {
-	return bigRat{
+func NewRat(a, b int64) BigRat {
+	return BigRat{
+		val: big.NewRat(a, b),
+	}
+}
+
+func newBigRat(n *big.Rat) BigRat {
+	return BigRat{
 		val: n,
 	}
 }
 
-func (i bigRat) IsInt() bool {
+func (i BigRat) IsInt() bool {
 	return i.val.IsInt()
 }
 
-func (i bigRat) Denominator() Integer {
+func (i BigRat) Denominator() Integer {
 	return newBigInt(i.val.Denom())
 }
 
-func (i bigRat) Numerator() Integer {
+func (i BigRat) Numerator() Integer {
 	return newBigInt(i.val.Num())
 }
 
 // Integer type implementation
-func (i bigRat) String() string {
+func (i BigRat) String() string {
 	return i.val.String()
 }
 
-func (i bigRat) InputForm() string {
+func (i BigRat) InputForm() string {
 	return i.String()
 }
 
-func (i bigRat) Head() Expr {
+func (i BigRat) Head() Expr {
 	return symbol.Rational
 }
 
-func (i bigRat) Length() int64 {
+func (i BigRat) Length() int64 {
 	return 0
 }
 
-func (i bigRat) Equal(rhs Expr) bool {
+func (i BigRat) Equal(rhs Expr) bool {
 
 	switch ratval := rhs.(type) {
-	case bigRat:
+	case BigRat:
 		return i.val.Cmp(ratval.val) == 0
 		/* TODO
 		case rat64:
@@ -58,42 +64,59 @@ func (i bigRat) Equal(rhs Expr) bool {
 	}
 }
 
-func (i bigRat) IsAtom() bool {
+func (i BigRat) IsAtom() bool {
 	return true
 }
 
-func (i bigRat) Float64() float64 {
+func (i BigRat) Float64() float64 {
 	val, _ := i.val.Float64()
 	return val
 }
 
-func (i bigRat) Sign() int {
+func (i BigRat) Sign() int {
 	return i.val.Sign()
 }
 
-func (i bigRat) Neg() Rational {
-	return bigRat{
+func (i BigRat) Neg() Rational {
+	return BigRat{
 		val: new(big.Rat).Neg(i.val),
 	}
 }
 
-func (i bigRat) Inv() Rational {
-	return bigRat{
+func (i BigRat) Inv() Rational {
+	return BigRat{
 		val: new(big.Rat).Inv(i.val),
 	}
 }
 
 // DOES NOT MAKE A COPY.  INTERNAL USE ONLY
-func (i bigRat) asBigRat() bigRat {
+func (i BigRat) AsBigRat() BigRat {
 	return i
 }
 
-// DESTRUCTIIVE
-func (i *bigRat) add(n bigRat) {
-	i.val.Add(i.val, n.val)
+func (z *BigRat) Add(x, y *BigRat) *BigRat {
+	z.val.Add(x.val, y.val)
+	return z
+}
+func (z *BigRat) AddInt(x *BigRat, y *BigInt) *BigRat {
+	return z.Add(x, new(BigRat).SetInt(y))
 }
 
-// DESTRUCTIVE
-func (i *bigRat) times(n bigRat) {
-	i.val.Mul(i.val, n.asBigRat().val)
+func (z *BigRat) Mul(x, y *BigRat) *BigRat {
+	z.val.Mul(x.val, y.val)
+	return z
+}
+
+func (z *BigRat) MulInt(x *BigRat, y *BigInt) *BigRat {
+	return z.Mul(x, new(BigRat).SetInt(y))
+}
+
+func (z *BigRat) Set(x *BigRat) *BigRat {
+	z.val.Set(x.val)
+	return z
+}
+
+func (z *BigRat) SetInt(x *BigInt) *BigRat {
+	z.val.SetInt(x.val)
+	return z
 }

@@ -2,6 +2,11 @@ package core
 
 // Type extraction helper functions for builtin function wrappers
 
+func ExtractNumber(e Expr) (Number, bool) {
+	val, ok := GetNumericValue(e)
+	return NewReal(val), ok
+}
+
 // ExtractInt64 safely extracts an int64 value from an Expr
 func ExtractInt64(expr Expr) (int64, bool) {
 	// Check new Integer type first
@@ -15,7 +20,7 @@ func ExtractInt64(expr Expr) (int64, bool) {
 func ExtractFloat64(expr Expr) (float64, bool) {
 	// Check new Real type first
 	if r, ok := expr.(Real); ok {
-		return float64(r), true
+		return r.Float64(), true
 	}
 	return 0, false
 }
@@ -59,7 +64,7 @@ func GetNumericValue(expr Expr) (float64, bool) {
 		return float64(i.Int64()), true
 	}
 	if r, ok := expr.(Real); ok {
-		return float64(r), true
+		return r.Float64(), true
 	}
 	return 0, false
 }

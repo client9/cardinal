@@ -47,7 +47,7 @@ func (i machineInt) Equal(rhs Expr) bool {
 	switch intval := rhs.(type) {
 	case machineInt:
 		return i == intval
-	case bigInt:
+	case BigInt:
 		return intval.IsInt64() && intval.Int64() == i.Int64()
 	default:
 		return false
@@ -80,7 +80,12 @@ func (i machineInt) Sign() int {
 	return 0
 }
 
-func (i machineInt) asBigInt() bigInt {
+func (i machineInt) AsBigInt() BigInt {
+	return BigInt{
+		val: big.NewInt(int64(i)),
+	}
+}
+func (i machineInt) asBigInt() BigInt {
 	return newBigInt(big.NewInt(int64(i)))
 }
 

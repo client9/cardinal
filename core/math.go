@@ -120,6 +120,27 @@ func timesInteger(xi, yi Integer) Integer {
 	return z
 }
 
+func timesReal(xi, yi Real) Real {
+	if xi.IsFloat64() && yi.IsFloat64() {
+		return NewReal(xi.Float64() * yi.Float64())
+	}
+	// one or both is not a float64.. convert to bigmath
+	x := xi.AsBigFloat()
+	y := yi.AsBigFloat()
+	return new(BigFloat).Mul(&x, &y)
+}
+
+func DivReal(xi, yi Real) Real {
+	if xi.IsFloat64() && yi.IsFloat64() {
+		return NewReal(xi.Float64() / yi.Float64())
+	}
+	// one or both is not a float64.. convert to bigmath
+	x := xi.AsBigFloat()
+	y := yi.AsBigFloat()
+
+	return new(BigFloat).Quo(&x, &y)
+}
+
 func PowerInteger(xi, yi Integer) Integer {
 	if !yi.IsInt64() {
 		panic("overflow")
@@ -128,11 +149,11 @@ func PowerInteger(xi, yi Integer) Integer {
 	if xi.IsInt64() {
 		return powerSmall(xi.Int64(), y)
 	}
-	return powerBig(xi.(bigInt), y)
+	return powerBig(xi.(BigInt), y)
 
 }
 
-func powerBig(xi bigInt, y int64) Integer {
+func powerBig(xi BigInt, y int64) Integer {
 	// make copy
 	x := new(big.Int).Set(xi.val)
 	r := big.NewInt(1)

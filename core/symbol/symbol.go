@@ -74,5 +74,9 @@ func IsSymbolRuneFirst(r rune) bool {
 }
 
 func IsSymbolRuneRest(r rune) bool {
-	return r != '_' && unicode.IsPrint(r) && !unicode.IsSpace(r) && !unicode.IsPunct(r)
+	switch r {
+	case '_', '=', '-', '+', '<', '>', '!', '@', ' ', '^', '/':
+		return false
+	}
+	return unicode.IsPrint(r) && !unicode.IsSpace(r) && !unicode.IsPunct(r)
 }

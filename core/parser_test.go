@@ -460,9 +460,9 @@ func TestParser_ParseAtoms(t *testing.T) {
 		},
 		{
 			name:         "float atom",
-			input:        "45.67",
+			input:        "45.125",
 			expectedType: "Real",
-			expectedVal:  45.67,
+			expectedVal:  45.125,
 		},
 		{
 			name:         "string atom",
@@ -516,8 +516,8 @@ func TestParser_ParseAtoms(t *testing.T) {
 				}
 			case "Real":
 				if real, ok := expr.(Real); ok {
-					if float64(real) != tt.expectedVal.(float64) {
-						t.Errorf("expected value %v, got %v", tt.expectedVal, float64(real))
+					if real.Float64() != tt.expectedVal.(float64) {
+						t.Errorf("expected value %v, got %v", tt.expectedVal, real.Float64())
 					}
 				} else {
 					t.Errorf("expected Real, got %T", expr)

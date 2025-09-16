@@ -7,12 +7,14 @@ import (
 
 type Integer interface {
 	Expr
+	Number
 
 	IsInt64() bool
 	Int64() int64
-	asBigInt() bigInt
 
-	Sign() int
+	AsBigInt() BigInt
+
+	asBigInt() BigInt
 
 	// Inv returns the reciprocal or Power(x,-1) of the value
 	// // TODO zero
@@ -37,5 +39,5 @@ func NewIntegerFromString(s string) (Integer, bool) {
 	if !ok {
 		return newMachineInt(0), false
 	}
-	return bigInt{val: z}, true
+	return BigInt{val: z}, true
 }

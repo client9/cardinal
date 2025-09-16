@@ -271,8 +271,8 @@ func TestConstructorFunctions(t *testing.T) {
 				}
 			case "Real":
 				if real, ok := expr.(Real); ok {
-					if float64(real) != tt.expectedValue.(float64) {
-						t.Errorf("expected value %v, got %v", tt.expectedValue, float64(real))
+					if real.Float64() != tt.expectedValue.(float64) {
+						t.Errorf("expected value %v, got %v", tt.expectedValue, real.Float64())
 					}
 				} else {
 					t.Errorf("expected Real, got %T", expr)

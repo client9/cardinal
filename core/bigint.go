@@ -6,112 +6,123 @@ import (
 	"github.com/client9/cardinal/core/symbol"
 )
 
-type bigInt struct {
+type BigInt struct {
 	val *big.Int
 }
 
+func newBigInt(n *big.Int) BigInt {
+	return BigInt{val: n}
+}
+
 // mutable zero value
-func bigIntZero() bigInt {
+func BigIntZero() BigInt {
 	return newBigInt(big.NewInt(0))
 }
 
 // mutable one value
-func bigIntOne() bigInt {
+func BigIntOne() BigInt {
 	return newBigInt(big.NewInt(1))
 }
 
-func NewBigInt(n int64) bigInt {
-	return bigInt{
+func NewBigInt(n int64) BigInt {
+	return BigInt{
 		val: big.NewInt(n),
 	}
 }
 
-func newBigInt(n *big.Int) bigInt {
-	return bigInt{
-		val: n,
-	}
-}
-
 // Integer type implementation
-func (i bigInt) String() string {
+func (i BigInt) String() string {
 	return i.val.String()
 }
 
-func (i bigInt) InputForm() string {
+func (i BigInt) InputForm() string {
 	return i.String()
 }
 
-func (i bigInt) Head() Expr {
+func (i BigInt) Head() Expr {
 	return symbol.Integer
 }
 
-func (i bigInt) Length() int64 {
+func (i BigInt) Length() int64 {
 	return 0
 }
 
-func (i bigInt) Equal(rhs Expr) bool {
+func (i BigInt) Equal(rhs Expr) bool {
 	switch intval := rhs.(type) {
 	case machineInt:
 		return i.IsInt64() && i.Int64() == intval.Int64()
-	case bigInt:
+	case BigInt:
 		return i.val.Cmp(intval.val) == 0
 	default:
 		return false
 	}
 }
 
-func (i bigInt) IsAtom() bool {
+func (i BigInt) IsAtom() bool {
 	return true
 }
 
-func (i bigInt) Float64() float64 {
+func (i BigInt) Float64() float64 {
 	return i.Float64()
 }
 
-func (i bigInt) IsInt64() bool {
+func (i BigInt) IsInt64() bool {
 	if i.val == nil {
 		return true
 	}
 	return i.val.IsInt64()
 }
 
-func (i bigInt) Int64() int64 {
+func (i BigInt) Int64() int64 {
 	if i.val == nil {
 		return 0
 	}
 	return i.val.Int64()
 }
 
-func (i bigInt) Sign() int {
+func (i BigInt) Sign() int {
 	if i.val == nil {
 		return 0
 	}
 	return i.val.Sign()
 }
 
-func (i bigInt) Inv() Expr {
+func (i BigInt) Inv() Expr {
 	num := big.NewInt(1)
 	den := i.val
 	return newBigRat(new(big.Rat).SetFrac(num, den))
 }
 
-func (i bigInt) Neg() Integer {
-	return bigInt{
+func (i BigInt) Neg() Integer {
+	return BigInt{
 		val: new(big.Int).Neg(i.val),
 	}
 }
 
 // DOES NOT MAKE A COPY.  INTERNAL USE ONLY
-func (i bigInt) asBigInt() bigInt {
+func (i BigInt) AsBigInt() BigInt {
+	return i
+}
+
+// DOES NOT MAKE A COPY.  INTERNAL USE ONLY
+func (i BigInt) asBigInt() BigInt {
 	return i
 }
 
 // DESTRUCTIIVE
-func (i *bigInt) add(n bigInt) {
+func (i *BigInt) add(n BigInt) {
 	i.val.Add(i.val, n.val)
 }
 
 // DESTRUCTIVE
-func (i *bigInt) times(n bigInt) {
+func (i *BigInt) times(n BigInt) {
 	i.val.Mul(i.val, n.asBigInt().val)
+}
+
+func (z *BigInt) Set(x *BigInt) *BigInt {
+	if z.val == nil {
+		z.val = new(big.Int)
+	}
+	z.val.Set(x.val)
+	return z
 }

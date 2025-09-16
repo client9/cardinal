@@ -6,6 +6,7 @@ import (
 
 type Rational interface {
 	Expr
+	Number
 
 	Denominator() Integer
 	Numerator() Integer
@@ -23,7 +24,7 @@ type Rational interface {
 	// Inv returns the reciprocal
 	Inv() Rational
 
-	asBigRat() bigRat
+	AsBigRat() BigRat
 }
 
 // this normalizes and may return an integer.
@@ -121,15 +122,15 @@ func addRat64Int64(xi rat64, yi machineInt) (rat64, bool) {
 	return rat64{xNum / g, xi.Denominator().Int64() / g}, true
 }
 
-func addBigRatInt64(xi bigRat, yi machineInt) Rational {
+func addBigRatInt64(xi BigRat, yi machineInt) Rational {
 	return addBigRatBigInt(xi, yi.asBigInt())
 }
 
-func addRat64BigInt(xi rat64, yi bigInt) Rational {
-	return addBigRatBigInt(xi.asBigRat(), yi)
+func addRat64BigInt(xi rat64, yi BigInt) Rational {
+	return addBigRatBigInt(xi.AsBigRat(), yi)
 }
 
-func addBigRatBigInt(yi bigRat, xi bigInt) Rational {
+func addBigRatBigInt(yi BigRat, xi BigInt) Rational {
 	numerator := new(big.Int).Mul(xi.val, yi.val.Denom())
 	numerator.Add(numerator, yi.val.Num())
 

@@ -1,22 +1,28 @@
 package core
 
 import (
+	"math"
 	"strconv"
 	"strings"
 
 	"github.com/client9/cardinal/core/symbol"
 )
 
-type Real float64
+type f64 float64
 
-func NewReal(f float64) Real { return Real(f) }
+func NewReal(f float64) Real { return f64(f) }
 
+// for testing?
 func MustFloat64(e Expr) float64 {
-	return float64(e.(Real))
+	return e.(Real).Float64()
+}
+
+func (r f64) Prec() uint {
+	return 53
 }
 
 // Real type implementation
-func (r Real) String() string {
+func (r f64) String() string {
 	str := strconv.FormatFloat(float64(r), 'f', -1, 64)
 	if !strings.Contains(str, ".") {
 		str += ".0"
@@ -24,34 +30,50 @@ func (r Real) String() string {
 	return str
 }
 
-func (r Real) Neg() Real {
+func (r f64) Neg() Real {
 	return -r
 }
 
-func (r Real) InputForm() string {
+func (r f64) InputForm() string {
 	return r.String()
 }
 
-func (r Real) Head() Expr {
+func (r f64) Head() Expr {
 	return symbol.Real
 }
 
-func (r Real) Length() int64 {
+func (r f64) Length() int64 {
 	return 0
 }
 
-func (r Real) Equal(rhs Expr) bool {
-	if other, ok := rhs.(Real); ok {
+func (r f64) Equal(rhs Expr) bool {
+	if other, ok := rhs.(f64); ok {
 		return r == other
 	}
 	return false
 }
 
-func (r Real) IsAtom() bool {
+func (r f64) IsAtom() bool {
 	return true
 }
 
-func (r Real) Sign() int {
+func (r f64) IsFloat64() bool {
+	return true
+}
+
+func (r f64) Float64() float64 {
+	return float64(r)
+}
+func (r f64) AsBigFloat() BigFloat {
+	return NewFloat(float64(r))
+}
+
+func (r f64) IsInt() bool {
+	f := float64(r)
+	return float64(f) == math.Round(f)
+}
+
+func (r f64) Sign() int {
 	if r < 0.0 {
 		return -1
 	}
