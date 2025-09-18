@@ -1,11 +1,12 @@
 package core
 
 import (
-	"github.com/client9/cardinal/core/symbol"
 
 	"math"
-	"math/big"
 	"strings"
+
+	"github.com/client9/bignum/big"
+	"github.com/client9/cardinal/core/symbol"
 )
 
 type BigFloat struct {
@@ -194,7 +195,7 @@ func (z *BigFloat) SetString(s string) (*BigFloat, bool) {
 	}
 	z.SetPrec(precision)
 	_, ok := z.val.SetString(s)
-	if !ok {
+	if ok != nil {
 		return nil, false
 	}
 	return z, true

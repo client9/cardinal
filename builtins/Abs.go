@@ -11,7 +11,7 @@ import (
 func AbsInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	i := args[0].(core.Integer)
 	if i.Sign() == -1 {
-		return i.Neg()
+		return i.AsNeg()
 	}
 	return i
 }
@@ -20,7 +20,7 @@ func AbsInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.E
 func AbsRational(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	i := args[0].(core.Rational)
 	if i.Sign() == -1 {
-		return i.Neg()
+		return i.AsNeg()
 	}
 	return i
 }
@@ -29,7 +29,7 @@ func AbsRational(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.
 func AbsReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
 	i := args[0].(core.Real)
 	if i.Sign() == -1 {
-		return i.Neg()
+		return i.AsNeg()
 	}
 	return i
 }

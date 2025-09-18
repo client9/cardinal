@@ -1,9 +1,9 @@
 package core
 
 import (
-	"math/big"
 	"strconv"
 
+	"github.com/client9/cardinal/core/big"
 	"github.com/client9/cardinal/core/symbol"
 )
 
@@ -47,8 +47,6 @@ func (i machineInt) Equal(rhs Expr) bool {
 	switch intval := rhs.(type) {
 	case machineInt:
 		return i == intval
-	case BigInt:
-		return intval.IsInt64() && intval.Int64() == i.Int64()
 	default:
 		return false
 	}
@@ -80,16 +78,19 @@ func (i machineInt) Sign() int {
 	return 0
 }
 
-func (i machineInt) AsBigInt() BigInt {
-	return BigInt{
-		val: big.NewInt(int64(i)),
-	}
-}
-func (i machineInt) asBigInt() BigInt {
-	return newBigInt(big.NewInt(int64(i)))
+func (i machineInt) AsBigInt() *big.Int {
+	return big.NewInt(int64(i))
 }
 
-// TBD ... unclear if needed or if it's just an optimization of "Times(-1, x)"
-func (i machineInt) Neg() Integer {
+func (i machineInt) AsNeg() Expr {
 	return machineInt(-i)
+}
+func (i machineInt) AsInv() Expr {
+	if i > 0 {
+		return rat64{1, int64(i)}
+	}
+	if i < 0 {
+		return rat64{-1, -int64(i)}
+	}
+	panic("divide by zero")
 }

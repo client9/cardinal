@@ -1,0 +1,14 @@
+package main
+
+import (
+	"testing"
+)
+
+func TestBI2(t *testing.T) {
+	z := BigInt2{}
+	x := BigInt2{}
+	y := BigInt2{}
+	z.Add(&x.Int,&y.Int)
+}
+
+

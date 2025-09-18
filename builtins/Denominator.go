@@ -22,5 +22,5 @@ func DenominatorReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) c
 
 // @ExprPattern (_Rational)
 func DenominatorRational(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	return args[0].(core.Rational).Denominator()
+	return args[0].(core.Rational).AsDenom()
 }

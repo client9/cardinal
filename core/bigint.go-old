@@ -1,0 +1,130 @@
+package core
+
+import (
+	"github.com/client9/bignum/big"
+	"github.com/client9/cardinal/core/symbol"
+)
+
+type Bigint = big.Int
+
+type BigInt struct {
+	
+	val *big.Int
+}
+
+func newBigInt(n *big.Int) BigInt {
+	return BigInt{val: n}
+}
+
+// mutable zero value
+func BigIntZero() BigInt {
+	return newBigInt(big.NewInt(0))
+}
+
+// mutable one value
+func BigIntOne() BigInt {
+	return newBigInt(big.NewInt(1))
+}
+
+func NewBigInt(n int64) BigInt {
+	return BigInt{
+		val: big.NewInt(n),
+	}
+}
+
+// Integer type implementation
+func (i BigInt) String() string {
+	return i.val.String()
+}
+
+func (i BigInt) InputForm() string {
+	return i.String()
+}
+
+func (i BigInt) Head() Expr {
+	return symbol.Integer
+}
+
+func (i BigInt) Length() int64 {
+	return 0
+}
+
+func (i BigInt) Equal(rhs Expr) bool {
+	switch intval := rhs.(type) {
+	case machineInt:
+		return i.IsInt64() && i.Int64() == intval.Int64()
+	case BigInt:
+		return i.val.Cmp(intval.val) == 0
+	default:
+		return false
+	}
+}
+
+func (i BigInt) IsAtom() bool {
+	return true
+}
+
+func (i BigInt) Float64() float64 {
+	return i.Float64()
+}
+
+func (i BigInt) IsInt64() bool {
+	if i.val == nil {
+		return true
+	}
+	return i.val.IsInt64()
+}
+
+func (i BigInt) Int64() int64 {
+	if i.val == nil {
+		return 0
+	}
+	return i.val.Int64()
+}
+
+func (i BigInt) Sign() int {
+	if i.val == nil {
+		return 0
+	}
+	return i.val.Sign()
+}
+
+func (i BigInt) Inv() Expr {
+	num := big.NewInt(1)
+	den := i.val
+	return new(big.Rat).SetFrac(num, den)
+}
+
+func (i BigInt) Neg() Integer {
+	return BigInt{
+		val: new(big.Int).Neg(i.val),
+	}
+}
+
+// DOES NOT MAKE A COPY.  INTERNAL USE ONLY
+func (i BigInt) AsBigInt() BigInt {
+	return i
+}
+
+// DOES NOT MAKE A COPY.  INTERNAL USE ONLY
+func (i BigInt) asBigInt() BigInt {
+	return i
+}
+
+// DESTRUCTIIVE
+func (i *BigInt) add(n BigInt) {
+	i.val.Add(i.val, n.val)
+}
+
+// DESTRUCTIVE
+func (i *BigInt) times(n BigInt) {
+	i.val.Mul(i.val, n.asBigInt().val)
+}
+
+func (z *BigInt) Set(x *BigInt) *BigInt {
+	if z.val == nil {
+		z.val = new(big.Int)
+	}
+	z.val.Set(x.val)
+	return z
+}

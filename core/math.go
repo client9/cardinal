@@ -1,9 +1,25 @@
 package core
 
 import (
+	"fmt"
 	"math"
-	"math/big"
+
+	"github.com/client9/cardinal/core/big"
 )
+
+func UMin(x, y uint) uint {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func UMax(x, y uint) uint {
+	if x > y {
+		return x
+	}
+	return y
+}
 
 func addInt64(x, y int64) (int64, bool) {
 	if y > 0 {
@@ -95,13 +111,9 @@ func addInteger(xi, yi Integer) Integer {
 		}
 	}
 	// one is BigInt, or the addition would overflow.
-	x := xi.asBigInt()
-	y := yi.asBigInt()
-
-	z := NewBigInt(0)
-	z.add(x)
-	z.add(y)
-	return z
+	x := xi.AsBigInt()
+	y := yi.AsBigInt()
+	return new(big.Int).Add(x, y)
 }
 
 func timesInteger(xi, yi Integer) Integer {
@@ -112,12 +124,9 @@ func timesInteger(xi, yi Integer) Integer {
 		}
 	}
 	// one is BigInt, or the addition would overflow.
-	x := xi.asBigInt()
-	y := yi.asBigInt()
-	z := NewBigInt(1)
-	z.times(x)
-	z.times(y)
-	return z
+	x := xi.AsBigInt()
+	y := yi.AsBigInt()
+	return new(big.Int).Mul(x, y)
 }
 
 func timesReal(xi, yi Real) Real {
@@ -127,7 +136,7 @@ func timesReal(xi, yi Real) Real {
 	// one or both is not a float64.. convert to bigmath
 	x := xi.AsBigFloat()
 	y := yi.AsBigFloat()
-	return new(BigFloat).Mul(&x, &y)
+	return new(big.Float).Mul(x, y)
 }
 
 func DivReal(xi, yi Real) Real {
@@ -138,7 +147,7 @@ func DivReal(xi, yi Real) Real {
 	x := xi.AsBigFloat()
 	y := yi.AsBigFloat()
 
-	return new(BigFloat).Quo(&x, &y)
+	return new(big.Float).Quo(x, y)
 }
 
 func PowerInteger(xi, yi Integer) Integer {
@@ -149,13 +158,24 @@ func PowerInteger(xi, yi Integer) Integer {
 	if xi.IsInt64() {
 		return powerSmall(xi.Int64(), y)
 	}
-	return powerBig(xi.(BigInt), y)
+	return powerBig(xi.AsBigInt(), y)
 
 }
 
-func powerBig(xi BigInt, y int64) Integer {
+func PowerFloat64(base, exp float64) (float64, error) {
+	result := math.Pow(base, exp)
+
+	// Check for invalid results (NaN, Inf)
+	if math.IsNaN(result) || math.IsInf(result, 0) {
+		return 0, fmt.Errorf("MathematicalError")
+	}
+
+	return result, nil
+}
+
+func powerBig(xi *big.Int, y int64) Integer {
 	// make copy
-	x := new(big.Int).Set(xi.val)
+	x := new(big.Int).Set(xi)
 	r := big.NewInt(1)
 	return powerBigLoop(x, y, r)
 }
@@ -169,7 +189,7 @@ func powerBigLoop(x *big.Int, y int64, r *big.Int) Integer {
 		x.Mul(x, x)
 		y /= 2
 	}
-	return newBigInt(r)
+	return r
 }
 
 func powerSmall(x, y int64) Integer {

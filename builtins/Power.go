@@ -2,9 +2,9 @@ package builtins
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/big"
 	"github.com/client9/cardinal/core/symbol"
 
 	"github.com/client9/cardinal/engine"
@@ -36,24 +36,23 @@ func PowerOneRealX(e *engine.Evaluator, c *engine.Context, args []core.Expr) cor
 	return args[0]
 }
 
-// @ExprPattern (_Integer, -1)
-func PowerIntegerInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	arg := args[0].(core.Integer)
-	if arg.Sign() == 0 {
-
-		return core.NewError("DivisionByZero", "Division by zero")
-	}
-	return arg.Inv()
+// @ExprPattern (_Number, -1.0)
+func PowerNumberInvReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	return PowerNumberInv(e, c, args)
 }
 
-// @ExprPattern (_Rational, -1)
-func PowerRationalInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	arg := args[0].(core.Rational)
+// @ExprPattern (_Number, -1)
+func PowerNumberInv(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	fmt.Println("IN POWER -1")
+	arg := args[0].(core.Number)
+	fmt.Println("In power number inv: ", arg)
 	if arg.Sign() == 0 {
 
 		return core.NewError("DivisionByZero", "Division by zero")
 	}
-	return arg.Inv()
+	result := arg.AsInv()
+	fmt.Println(result)
+	return arg.AsInv()
 }
 
 // @ExprPattern (_Integer, _Integer)
@@ -70,7 +69,7 @@ func PowerInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core
 		return core.NewInteger(1)
 	case -1:
 		// x ^ -y == 1/ (x^y)
-		return core.PowerInteger(x, y.Neg()).Inv()
+		return core.PowerInteger(x, y.AsNeg().(core.Integer)).AsInv()
 	default:
 		return core.PowerInteger(x, y)
 	}
@@ -87,9 +86,57 @@ func PowerRatInt(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.
 
 	// (x/y)^n = x^n/y^n = x^n * y^-n
 	return core.ListFrom(symbol.Times,
-		core.ListFrom(symbol.Power, x.Numerator(), n),
-		core.ListFrom(symbol.Power, x.Denominator(), n.Neg()),
+		core.ListFrom(symbol.Power, x.AsNum(), n),
+		core.ListFrom(symbol.Power, x.AsDenom(), n.AsNeg()),
 	)
+
+}
+
+// @ExprPattern (_Integer,_Real)
+func PowerIntToReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	base := args[0].(core.Integer)
+	exp := args[1].(core.Real)
+
+	if exp.IsFloat64() {
+		result, err := core.PowerFloat64(base.Float64(), exp.Float64())
+		if err != nil {
+			return core.NewError("DivisionByZero", "Division by zero")
+		}
+		return core.NewReal(result)
+	}
+
+	expflt := exp.AsBigFloat()
+	baseflt := core.ToBigFloat(new(big.Float).SetPrec(exp.Prec()), base)
+
+	return new(big.Float).SetPrec(exp.Prec()).Pow(baseflt, expflt)
+}
+
+// @ExprPattern (_Real, _Integer)
+func PowerRealToInt(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
+	base := args[0].(core.Real)
+	exp := args[1].(core.Integer)
+
+	if base.IsFloat64() {
+		result, err := core.PowerFloat64(base.Float64(), exp.Float64())
+		if err != nil {
+			return core.NewError("DivisionByZero", "Division by zero")
+		}
+		return core.NewReal(result)
+	}
+
+	// base is BigFloat
+	baseflt := base.AsBigFloat()
+	prec := uint(baseflt.Prec())
+
+	// set exponent default precision
+	//   will get adjused by ToBigFloat
+	expflt := new(big.Float).SetPrec(prec)
+	core.ToBigFloat(expflt, exp)
+
+	prec = core.UMin(prec, expflt.Prec())
+
+	z := new(big.Float).SetPrec(prec).Pow(baseflt, expflt)
+	return z
 
 }
 
@@ -97,27 +144,22 @@ func PowerRatInt(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.
 // Returns (float64, error) for clear type safety
 // TODO: Error handling
 //
-// @ExprPattern (_Number, _Number)
+// @ExprPattern (_Real, _Real)
 func PowerNumbers(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	base, _ := core.GetNumericValue(args[0])
-	exp, _ := core.GetNumericValue(args[1])
+	base := args[0].(core.Real)
+	exp := args[1].(core.Real)
 
-	result, err := powerFloat64(base, exp)
-	if err != nil {
-		return core.NewError("DivisionByZero", "Division by zero")
-	}
-	return core.NewReal(result)
-}
-
-func powerFloat64(base, exp float64) (float64, error) {
-	result := math.Pow(base, exp)
-
-	// Check for invalid results (NaN, Inf)
-	if math.IsNaN(result) || math.IsInf(result, 0) {
-		return 0, fmt.Errorf("MathematicalError")
+	if base.IsFloat64() || exp.IsFloat64() {
+		result, err := core.PowerFloat64(base.Float64(), exp.Float64())
+		if err != nil {
+			return core.NewError("DivisionByZero", "Division by zero")
+		}
+		return core.NewReal(result)
 	}
 
-	return result, nil
+	// both are Big Floats
+	b := base.AsBigFloat()
+	return new(big.Float).SetPrec(b.Prec()).Pow(b, exp.AsBigFloat())
 }
 
 // (a^(x))^(y) = a^(x*y) if y is an integer only

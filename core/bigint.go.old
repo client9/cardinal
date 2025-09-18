@@ -1,12 +1,12 @@
 package core
 
 import (
-	"math/big"
-
+	"github.com/client9/bignum/big"
 	"github.com/client9/cardinal/core/symbol"
 )
 
 type BigInt struct {
+	
 	val *big.Int
 }
 

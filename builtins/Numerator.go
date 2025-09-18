@@ -22,5 +22,5 @@ func NumeratorReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) cor
 
 // @ExprPattern (_Rational)
 func NumeratorRational(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	return args[0].(core.Rational).Numerator()
+	return args[0].(core.Rational).AsNum()
 }

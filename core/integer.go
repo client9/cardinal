@@ -1,30 +1,22 @@
 package core
 
 import (
-	"math/big"
 	"strconv"
+
+	"github.com/client9/cardinal/core/big"
 )
 
 type Integer interface {
 	Expr
 	Number
 
+	AsBigInt() *big.Int
+
+	//
+	// These are satified by big.Int
+	//
 	IsInt64() bool
 	Int64() int64
-
-	AsBigInt() BigInt
-
-	asBigInt() BigInt
-
-	// Inv returns the reciprocal or Power(x,-1) of the value
-	// // TODO zero
-	Inv() Expr
-
-	// TBD if actually needed
-	Neg() Integer
-
-	// TBD
-	Float64() float64
 }
 
 func NewIntegerFromString(s string) (Integer, bool) {
@@ -39,5 +31,5 @@ func NewIntegerFromString(s string) (Integer, bool) {
 	if !ok {
 		return newMachineInt(0), false
 	}
-	return BigInt{val: z}, true
+	return z, true
 }

@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"github.com/client9/cardinal/core"
+	"github.com/client9/cardinal/core/big"
 	"github.com/client9/cardinal/engine"
 )
 
@@ -15,6 +16,5 @@ func SetPrecisionReal(e *engine.Evaluator, c *engine.Context, args []core.Expr) 
 	if prec <= 53 {
 		return core.NewReal(r.Float64())
 	}
-	x := r.(core.BigFloat)
-	return new(core.BigFloat).Set(&x).SetPrec(uint(prec))
+	return new(big.Float).Set(r.AsBigFloat()).SetPrec(uint(prec))
 }

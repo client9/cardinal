@@ -1,0 +1,21 @@
+
+package main
+
+import (
+	"github.com/client9/bignum/big"
+)
+
+type Int = big.Int
+type BigInt2 struct {
+	Int
+}
+
+func NewBigInt2(n int64) BigInt2 {
+	return BigInt2{
+		 Int: *big.NewInt(n), 
+	}
+}
+
+
+ 
+

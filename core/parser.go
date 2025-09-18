@@ -578,14 +578,22 @@ func (p *Parser) createPrefixExpr(operator TokenType, operand Expr) Expr {
 //
 // Possible this could be handled earlier in the lexer or parser.
 func (p *Parser) createMinusExpr(e Expr) Expr {
+	//return ListFrom(symbol.Times, newMachineInt(-1), e)
 	switch e.Head() {
 	case symbol.Integer:
-		return e.(Integer).Neg()
+
+		return e.(Integer).AsNeg()
+
 	case symbol.Rational:
-		return e.(Rational).Neg()
+
+		return e.(Rational).AsNeg()
+
 	case symbol.Real:
-		return e.(Real).Neg()
+
+		return e.(Real).AsNeg()
+
 	default:
+
 		return ListFrom(symbol.Times, newMachineInt(-1), e)
 	}
 }

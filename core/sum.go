@@ -1,6 +1,9 @@
 package core
 
 import (
+	"fmt"
+
+	"github.com/client9/cardinal/core/big"
 	"github.com/client9/cardinal/core/symbol"
 )
 
@@ -21,15 +24,15 @@ func PlusList(args []Expr) Expr {
 		switch num := arg.(type) {
 		case machineInt:
 			intsum.Plus(num)
-		case BigInt:
+		case *big.Int:
 			intsum.PlusBig(num)
 		case rat64:
 			ratsum.PlusRat64(num)
-		case BigRat:
+		case *big.Rat:
 			ratsum.PlusBigRat(num)
 		case f64:
 			realsum.PlusFloat64(num.Float64())
-		case BigFloat:
+		case *big.Float:
 			bigreal.Plus(num)
 		default:
 			nonnum = append(nonnum, num)
@@ -59,7 +62,7 @@ func PlusList(args []Expr) Expr {
 		if intsum.exists() && ratsum.exists() {
 			ratsum.PlusInt64(intsum.sum)
 			if intsum.bigcount {
-				ratsum.PlusBigInt(intsum.bigsum)
+				ratsum.PlusBigInt(&intsum.bigsum)
 			}
 			realsum.PlusFloat64(ratsum.Total().Float64())
 		} else if intsum.exists() {
@@ -84,9 +87,11 @@ func PlusList(args []Expr) Expr {
 		}
 		total = bigreal.Total()
 	} else if intsum.exists() && ratsum.exists() {
-		ratsum.PlusInt64(intsum.sum)
+		if intsum.count {
+			ratsum.PlusInt64(intsum.sum)
+		}
 		if intsum.bigcount {
-			ratsum.PlusBigInt(intsum.bigsum)
+			ratsum.PlusBigInt(&intsum.bigsum)
 		}
 		total = ratsum.Total()
 	} else if ratsum.exists() {
@@ -133,15 +138,15 @@ func TimesList(args []Expr) Expr {
 		switch num := arg.(type) {
 		case machineInt:
 			intsum.TimesInt64(num)
-		case BigInt:
+		case *big.Int:
 			intsum.TimesBigInt(num)
 		case rat64:
 			ratsum.TimesRat64(num)
-		case BigRat:
+		case *big.Rat:
 			ratsum.TimesBigRat(num)
 		case f64:
 			realsum.TimesFloat64(num.Float64())
-		case BigFloat:
+		case *big.Float:
 			bigreal.Times(num)
 		default:
 			nonnum = append(nonnum, num)
@@ -158,9 +163,11 @@ func TimesList(args []Expr) Expr {
 		// if we have both types, add them into one rational
 		// convert to float and update floatsum.
 		if intsum.exists() && ratsum.exists() {
-			ratsum.TimesInt64(intsum.sum)
+			if intsum.count {
+				ratsum.TimesInt64(intsum.sum)
+			}
 			if intsum.bigcount {
-				ratsum.TimesBigInt(intsum.bigsum)
+				ratsum.TimesBigInt(&intsum.bigsum)
 			}
 			realsum.TimesFloat64(ratsum.Total().Float64())
 		} else if intsum.exists() {
@@ -186,9 +193,11 @@ func TimesList(args []Expr) Expr {
 
 		total = bigreal.Total()
 	} else if intsum.exists() && ratsum.exists() {
-		ratsum.TimesInt64(intsum.sum)
+		if intsum.count {
+			ratsum.TimesInt64(intsum.sum)
+		}
 		if intsum.bigcount {
-			ratsum.TimesBigInt(intsum.bigsum)
+			ratsum.TimesBigInt(&intsum.bigsum)
 		}
 		total = ratsum.Total()
 	} else if ratsum.exists() {
@@ -200,11 +209,11 @@ func TimesList(args []Expr) Expr {
 		if total.Sign() == 0 {
 			return NewInteger(0)
 		}
-
-		if r, ok := total.(Rational); ok && r.IsInt() {
-			total = r.Numerator()
-		}
-
+		/*
+			if r, ok := total.(Rational); ok && r.IsInt() {
+				total = r.Num()
+			}
+		*/
 		if len(nonnum) == 0 {
 			// if we don't have any non-numerical arguments, add it
 			resultElements = append(resultElements, total)
@@ -248,7 +257,7 @@ func TimesList(args []Expr) Expr {
 // Adds a series of integers
 type AccumulatorInteger struct {
 	sum      machineInt
-	bigsum   BigInt
+	bigsum   big.Int
 	count    bool
 	bigcount bool
 }
@@ -263,18 +272,18 @@ func (a *AccumulatorInteger) Plus(b machineInt) {
 		a.sum = newMachineInt(sumnext)
 		return
 	}
-	a.PlusBig(a.sum.asBigInt())
-	a.PlusBig(b.asBigInt())
+	a.PlusBig(a.sum.AsBigInt())
+	a.PlusBig(b.AsBigInt())
 	a.sum = 0
 }
 
-func (a *AccumulatorInteger) PlusBig(b BigInt) {
+func (a *AccumulatorInteger) PlusBig(b *big.Int) {
 	if !a.bigcount {
-		a.bigsum.Set(&b)
+		a.bigsum.Set(b)
 		a.bigcount = true
 		return
 	}
-	a.bigsum.add(b)
+	a.bigsum.Add(&a.bigsum, b)
 }
 
 func (a *AccumulatorInteger) TimesInt64(b machineInt) {
@@ -284,18 +293,18 @@ func (a *AccumulatorInteger) TimesInt64(b machineInt) {
 		a.sum = newMachineInt(prodnext)
 		return
 	}
-	a.TimesBigInt(a.sum.asBigInt())
-	a.TimesBigInt(b.asBigInt())
+	a.TimesBigInt(a.sum.AsBigInt())
+	a.TimesBigInt(b.AsBigInt())
 	a.sum = 0
 }
 
-func (a *AccumulatorInteger) TimesBigInt(b BigInt) {
+func (a *AccumulatorInteger) TimesBigInt(b *big.Int) {
 	if !a.bigcount {
-		a.bigsum.Set(&b)
+		a.bigsum.Set(b)
 		a.bigcount = true
 		return
 	}
-	a.bigsum.times(b)
+	a.bigsum.Mul(&a.bigsum, b)
 }
 
 func (a *AccumulatorInteger) Total() Integer {
@@ -304,15 +313,16 @@ func (a *AccumulatorInteger) Total() Integer {
 	}
 
 	if a.sum != 0 {
-		a.bigsum.add(a.sum.asBigInt())
+		// TODO: can use specialty function and not convert to bigint
+		a.bigsum.Add(&a.bigsum, a.sum.AsBigInt())
 	}
-	return a.bigsum
+	return &a.bigsum
 }
 
 // Adds a series of integers
 type AccumulatorRational struct {
 	sum    rat64
-	bigsum BigRat
+	bigsum big.Rat
 
 	count    bool
 	bigcount bool
@@ -343,20 +353,20 @@ func (a *AccumulatorRational) PlusInt64(b machineInt) {
 	a.PlusBigInt(b.AsBigInt())
 }
 
-func (a *AccumulatorRational) PlusBigInt(b BigInt) {
+func (a *AccumulatorRational) PlusBigInt(b *big.Int) {
 	if !a.bigcount {
 		a.bigcount = true
-		a.bigsum.SetInt(&b)
+		a.bigsum.SetInt(b)
 		return
 	}
-	a.bigsum.AddInt(&a.bigsum, &b)
+	a.bigsum.AddInt(&a.bigsum, b)
 }
-func (a *AccumulatorRational) PlusBigRat(b BigRat) {
+func (a *AccumulatorRational) PlusBigRat(b *big.Rat) {
 	if !a.count {
 		a.bigcount = true
-		a.bigsum.Set(&b)
+		a.bigsum.Set(b)
 	}
-	a.bigsum.Add(&a.bigsum, &b)
+	a.bigsum.Add(&a.bigsum, b)
 }
 
 func (a *AccumulatorRational) TimesInt64(b machineInt) {
@@ -369,9 +379,12 @@ func (a *AccumulatorRational) TimesInt64(b machineInt) {
 }
 
 func (a *AccumulatorRational) TimesRat64(b rat64) {
+	fmt.Println("Acc TimesRat64 INPUT:", b)
 	if prodnext, ok := timesRat64(a.sum, b); ok {
 		a.sum = prodnext
 		a.count = true
+
+		fmt.Println("Acc TimesRat64 OUTPUT", a.sum)
 		return
 	}
 	a.TimesBigRat(a.sum.AsBigRat())
@@ -379,23 +392,23 @@ func (a *AccumulatorRational) TimesRat64(b rat64) {
 	a.sum = rat64One
 }
 
-func (a *AccumulatorRational) TimesBigRat(b BigRat) {
+func (a *AccumulatorRational) TimesBigRat(b *big.Rat) {
 	if !a.bigcount {
-		a.bigsum.Set(&b)
+		a.bigsum.Set(b)
 		a.bigcount = true
 		return
 	}
-	a.bigsum.Mul(&a.bigsum, &b)
+	a.bigsum.Mul(&a.bigsum, b)
 }
 
-func (a *AccumulatorRational) TimesBigInt(b BigInt) {
+func (a *AccumulatorRational) TimesBigInt(b *big.Int) {
 	if !a.bigcount {
-		a.bigsum.SetInt(&b)
+		a.bigsum.SetInt(b)
 		a.bigcount = true
 		return
 	}
 
-	a.bigsum.MulInt(&a.bigsum, &b)
+	a.bigsum.MulInt(&a.bigsum, b)
 }
 
 func (a *AccumulatorRational) Total() Rational {
@@ -403,9 +416,8 @@ func (a *AccumulatorRational) Total() Rational {
 		return a.sum
 	}
 	tmp := a.sum.AsBigRat()
-
-	a.bigsum.Add(&a.bigsum, &tmp)
-	return a.bigsum
+	a.bigsum.Add(&a.bigsum, tmp)
+	return &a.bigsum
 }
 
 // Adds a series of floats
@@ -431,53 +443,58 @@ func (a *AccumulatorFloat64) Total() Real {
 }
 
 type AccumulatorBigFloat struct {
-	sum   BigFloat
-	count int
+	sum   big.Float
+	count bool
 }
 
 func (a *AccumulatorBigFloat) exists() bool {
-	return a.count > 0
+	return a.count
 }
 
-func (a *AccumulatorBigFloat) Plus(b BigFloat) {
-	if a.count == 0 {
-		a.sum.Set(&b)
-		a.count += 1
+func (a *AccumulatorBigFloat) Plus(b *big.Float) {
+	if !a.count {
+		a.sum.Set(b)
+		a.count = true
 		return
 	}
-	a.sum.Add(&a.sum, &b)
+	a.sum.Add(&a.sum, b)
 }
 
-func (a *AccumulatorBigFloat) Times(b BigFloat) {
-	if a.count == 0 {
-		a.sum.Set(&b)
-		a.count += 1
+func (a *AccumulatorBigFloat) Times(b *big.Float) {
+	if !a.count {
+		fmt.Println("ACC BIG FLOAT SETUP: ", b.Prec(), b)
+		a.sum.SetPrec(b.Prec())
+		a.sum.Set(b)
+		fmt.Println("ACC BIG FLOAT SUM ", a.sum.String())
+		a.count = true
 		return
 	}
 
-	a.sum.Mul(&a.sum, &b)
+	fmt.Println("ACC BIG FLOAT NEXT: ", b.Prec(), b)
+	a.sum.Mul(&a.sum, b)
+	fmt.Println("ACC BIG FLOAT SUM ", a.sum.String())
 }
 
 func (a *AccumulatorBigFloat) PlusInt(n Integer) {
 	ba := n.AsBigInt()
-	a.sum.Add(&a.sum, new(BigFloat).SetInt(&ba))
+	a.sum.Add(&a.sum, new(big.Float).SetInt(ba))
 }
 
 func (a *AccumulatorBigFloat) TimesInt(n Integer) {
 	ba := n.AsBigInt()
-	a.sum.Mul(&a.sum, new(BigFloat).SetInt(&ba))
+	a.sum.Mul(&a.sum, new(big.Float).SetInt(ba))
 }
 
 func (a *AccumulatorBigFloat) PlusRat(n Rational) {
 	ba := n.AsBigRat()
-	a.sum.Add(&a.sum, new(BigFloat).SetRat(&ba))
+	a.sum.Add(&a.sum, new(big.Float).SetRat(ba))
 }
 
 func (a *AccumulatorBigFloat) TimesRat(n Rational) {
 	ba := n.AsBigRat()
-	a.sum.Mul(&a.sum, new(BigFloat).SetRat(&ba))
+	a.sum.Mul(&a.sum, new(big.Float).SetRat(ba))
 }
 
 func (a *AccumulatorBigFloat) Total() Real {
-	return a.sum
+	return &a.sum
 }

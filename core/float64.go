@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/client9/cardinal/core/big"
 	"github.com/client9/cardinal/core/symbol"
 )
 
@@ -47,8 +48,8 @@ func (r f64) Length() int64 {
 }
 
 func (r f64) Equal(rhs Expr) bool {
-	if other, ok := rhs.(f64); ok {
-		return r == other
+	if other, ok := rhs.(Number); ok {
+		return r.Float64() == other.Float64()
 	}
 	return false
 }
@@ -64,8 +65,16 @@ func (r f64) IsFloat64() bool {
 func (r f64) Float64() float64 {
 	return float64(r)
 }
-func (r f64) AsBigFloat() BigFloat {
-	return NewFloat(float64(r))
+func (r f64) AsBigFloat() *big.Float {
+	return big.NewFloat(float64(r))
+}
+
+func (r f64) AsNeg() Expr {
+	return f64(-r)
+}
+
+func (r f64) AsInv() Expr {
+	return f64(1.0 / r)
 }
 
 func (r f64) IsInt() bool {

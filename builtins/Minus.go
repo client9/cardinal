@@ -11,13 +11,13 @@ import (
 // MinusInteger returns the negation of an integer
 // @ExprPattern (_Integer)
 func MinusInteger(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	return args[0].(core.Integer).Neg()
+	return args[0].(core.Integer).AsNeg()
 }
 
 // MinusInteger returns the negation of an integer
 // @ExprPattern (_Rational)
 func MinusRational(e *engine.Evaluator, c *engine.Context, args []core.Expr) core.Expr {
-	return args[0].(core.Rational).Neg()
+	return args[0].(core.Rational).AsNeg()
 }
 
 // MinusReal returns the negation of a real number
