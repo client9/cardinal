@@ -6,8 +6,14 @@ import (
 )
 
 // Extends Int to include Expr interface
-func (i *Float) InputForm() string {
-	return i.String()
+func (z *Float) InputForm() string {
+	//return mpfr.Sprintf3("%.10R*g", z.mode, z.ptr)
+	// matches precision
+	return mpfr.Sprintf3("%R*e", z.mode, z.ptr)
+
+	// all digits
+	s, _ := mpfr.GetStr(10, 0, z.ptr, z.mode)
+	return s
 }
 
 func (i *Float) Head() Expr {
@@ -123,5 +129,33 @@ func (z *Float) Exp(x *Float) *Float {
 		z.SetPrec(x.Prec())
 	}
 	mpfr.Exp(z.ptr, x.ptr, z.mode)
+	return z
+}
+
+func (z *Float) Trunc(x *Float) *Float {
+	if z.ptr == nil {
+		z.init()
+	}
+	if x.ptr == nil {
+		x.init()
+	}
+	if z.Prec() == 0 {
+		z.SetPrec(x.Prec())
+	}
+	mpfr.Trunc(z.ptr, x.ptr)
+	return z
+}
+
+func (z *Float) Frac(x *Float) *Float {
+	if z.ptr == nil {
+		z.init()
+	}
+	if x.ptr == nil {
+		x.init()
+	}
+	if z.Prec() == 0 {
+		z.SetPrec(x.Prec())
+	}
+	mpfr.Frac(z.ptr, x.ptr, mpfr.RNDZ)
 	return z
 }

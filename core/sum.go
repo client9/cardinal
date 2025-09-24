@@ -1,8 +1,6 @@
 package core
 
 import (
-	"fmt"
-
 	"github.com/client9/cardinal/core/big"
 	"github.com/client9/cardinal/core/symbol"
 )
@@ -379,12 +377,10 @@ func (a *AccumulatorRational) TimesInt64(b machineInt) {
 }
 
 func (a *AccumulatorRational) TimesRat64(b rat64) {
-	fmt.Println("Acc TimesRat64 INPUT:", b)
 	if prodnext, ok := timesRat64(a.sum, b); ok {
 		a.sum = prodnext
 		a.count = true
 
-		fmt.Println("Acc TimesRat64 OUTPUT", a.sum)
 		return
 	}
 	a.TimesBigRat(a.sum.AsBigRat())
@@ -462,17 +458,13 @@ func (a *AccumulatorBigFloat) Plus(b *big.Float) {
 
 func (a *AccumulatorBigFloat) Times(b *big.Float) {
 	if !a.count {
-		fmt.Println("ACC BIG FLOAT SETUP: ", b.Prec(), b)
 		a.sum.SetPrec(b.Prec())
 		a.sum.Set(b)
-		fmt.Println("ACC BIG FLOAT SUM ", a.sum.String())
 		a.count = true
 		return
 	}
 
-	fmt.Println("ACC BIG FLOAT NEXT: ", b.Prec(), b)
 	a.sum.Mul(&a.sum, b)
-	fmt.Println("ACC BIG FLOAT SUM ", a.sum.String())
 }
 
 func (a *AccumulatorBigFloat) PlusInt(n Integer) {

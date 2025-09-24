@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/client9/cardinal/core/big"
 )
 
@@ -56,7 +55,6 @@ func addRat64(xi rat64, yi rat64) (rat64, bool) {
 }
 
 func timesRat64(xi, yi rat64) (rat64, bool) {
-	fmt.Println("timesRat64", xi, yi)
 	num, ok := timesInt64(xi.Num().Int64(), yi.Num().Int64())
 	if !ok {
 		return rat64Zero, false
@@ -68,11 +66,9 @@ func timesRat64(xi, yi rat64) (rat64, bool) {
 	}
 	g := gcd(num, den)
 	r := rat64{num / g, den / g}
-	fmt.Println("timesRat64 Output:", num, den, g, r)
 	return r, true
 }
 func timesRat64Int64(xi rat64, yi machineInt) (rat64, bool) {
-	fmt.Println("Input", "rat=", xi, "int=", yi)
 	num, ok := timesInt64(xi.Num().Int64(), yi.Int64())
 	if !ok {
 		return rat64Zero, false
@@ -81,7 +77,6 @@ func timesRat64Int64(xi rat64, yi machineInt) (rat64, bool) {
 
 	g := gcd(num, den)
 	r := rat64{num / g, den / g}
-	fmt.Println("Output", r)
 	return r, true
 }
 

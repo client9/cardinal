@@ -1,9 +1,8 @@
 package core
 
 import (
-	"strconv"
-
 	"github.com/client9/cardinal/core/big"
+	"strconv"
 )
 
 type Real interface {
